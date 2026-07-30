@@ -6,7 +6,7 @@ import {
   Home, Laptop, GraduationCap, Dog, Car, Tractor, PartyPopper, Building2,
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
-  Baby, Church, Tag, Navigation, User, LocateFixed,
+  Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -168,7 +168,7 @@ function activeDiscounts(biz) {
 
 function emptyBusiness() {
   return {
-    id: uid(),
+    id: uid(), kind: "business",
     name: "", desc: "", cat: "comida", zone: ZONES[0],
     services: [], specialties: [], paymentMethods: [], delivery: false, acceptsWhatsapp: true,
     phone: "", ig: "", logo: "", photos: [], loc: "",
@@ -181,10 +181,22 @@ function emptyBusiness() {
   };
 }
 
+function emptyJob() {
+  return {
+    id: uid(), kind: "job",
+    name: "", desc: "", phone: "", zone: ZONES[0],
+    status: "active",
+    createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
+    views: 0,
+    ownerCode: uid().slice(0, 8).toUpperCase(),
+  };
+}
+
 /* ---------- almacenamiento persistente (backend Express + MongoDB) ---------- */
 
 function normalizeBusiness(b) {
   return {
+    kind: "business",
     lat: null, lng: null, discounts: [],
     ownerCode: uid().slice(0, 8).toUpperCase(),
     ...b,
@@ -1084,6 +1096,75 @@ function BusinessForm({ initial, onSave, onCancel }) {
   );
 }
 
+/* ---------- empleos ---------- */
+
+function JobForm({ initial, onSave, onCancel }) {
+  const [form, setForm] = useState(initial);
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const submit = () => {
+    if (!form.name.trim() || !form.phone.trim()) return;
+    onSave(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#1B1E2Acc" }}>
+      <div className="bg-white w-full max-w-lg p-6 my-6" style={{ borderRadius: 12 }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 20 }}>
+            {initial.name ? "Editar trabajo" : "Nuevo trabajo"}
+          </h2>
+          <button onClick={onCancel}><X size={20} /></button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <input placeholder="Nombre del trabajo (ej: Se busca albañil)" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <textarea placeholder="Descripción: de qué se trata, requisitos, horario, etc." value={form.desc} onChange={set("desc")} rows={4} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <input placeholder="Número de contacto (WhatsApp, con código país sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+            {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Vence</p>
+              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+            </div>
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Estado</p>
+              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>Cancelar</button>
+            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobCard({ job }) {
+  return (
+    <div className="bg-white p-4 flex flex-col" style={{ borderRadius: 10, border: "1px solid #E7E5DD", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}>
+      <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-medium mb-1" style={{ color: "#2E8A6E", fontFamily: "'IBM Plex Mono', monospace" }}>
+        <Briefcase size={12} /> Empleo · {job.zone}
+      </span>
+      <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 17, color: "#1B1E2A" }}>{job.name}</h3>
+      <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#565A66", whiteSpace: "pre-wrap" }}>{job.desc}</p>
+      <a
+        href={waLink(job.phone)} target="_blank" rel="noreferrer"
+        className="flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
+        style={{ backgroundColor: "#25A24C", color: "#fff", borderRadius: 10 }}
+      >
+        <MessageCircle size={16} /> Contactar por WhatsApp
+      </a>
+    </div>
+  );
+}
+
 function ReviewsModal({ business, onDeleteReview, onClose }) {
   return (
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
@@ -1116,10 +1197,11 @@ function ReviewsModal({ business, onDeleteReview, onClose }) {
   );
 }
 
-function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew, onDelete, onOpenReviews, onLogout }) {
+function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleStatus, onRenew, onDelete, onOpenReviews, onLogout }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todos");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -1131,12 +1213,16 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
       else if (filter === "inactivos") matchFilter = b.status === "inactive";
       else if (filter === "por_vencer") matchFilter = du !== null && du >= 0 && du <= 7;
       else if (filter === "vencidos") matchFilter = du !== null && du < 0;
+      else if (filter === "negocios") matchFilter = b.kind !== "job";
+      else if (filter === "empleos") matchFilter = b.kind === "job";
       return matchQ && matchFilter;
     });
   }, [businesses, search, filter]);
 
   const FILTERS = [
     { id: "todos", label: "Todos" },
+    { id: "negocios", label: "Negocios" },
+    { id: "empleos", label: "Empleos" },
     { id: "activos", label: "Activos" },
     { id: "inactivos", label: "Inactivos" },
     { id: "por_vencer", label: "Por vencer" },
@@ -1146,12 +1232,22 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
   return (
     <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh" }}>
       <header className="sticky top-0 z-30" style={{ backgroundColor: "#1B3A5C" }}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
           <h1 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Panel de administración</h1>
-          <div className="flex gap-2">
-            <button onClick={onAddNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#F2A93B", color: "#1B1E2A" }}>
-              <Plus size={14} /> Nuevo negocio
+          <div className="flex gap-2 relative">
+            <button onClick={() => setShowAddMenu((v) => !v)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#F2A93B", color: "#1B1E2A" }}>
+              <Plus size={14} /> Nuevo
             </button>
+            {showAddMenu && (
+              <div className="absolute top-full mt-1 right-0 bg-white shadow-lg flex flex-col z-40" style={{ borderRadius: 8, border: "1px solid #E7E5DD", minWidth: 180 }}>
+                <button onClick={() => { setShowAddMenu(false); onAddNew(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1B1E2A" }}>
+                  <Building2 size={14} /> Agregar negocio
+                </button>
+                <button onClick={() => { setShowAddMenu(false); onAddNewJob(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1B1E2A", borderTop: "1px solid #F0EEE7" }}>
+                  <Briefcase size={14} /> Agregar trabajo
+                </button>
+              </div>
+            )}
             <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
               <LogOut size={14} /> Salir
             </button>
@@ -1162,7 +1258,7 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
       <main className="max-w-5xl mx-auto px-4 py-6">
         <div className="flex items-center gap-2 bg-white px-3 py-2 mb-3" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>
           <Search size={16} color="#8A8D98" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar negocio por nombre..." className="w-full outline-none text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre..." className="w-full outline-none text-sm" />
         </div>
 
         <div className="flex gap-2 mb-5 overflow-x-auto">
@@ -1177,10 +1273,11 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
         </div>
 
         {filtered.length === 0 ? (
-          <p className="text-sm text-center py-10" style={{ color: "#8A8D98" }}>No hay negocios que coincidan.</p>
+          <p className="text-sm text-center py-10" style={{ color: "#8A8D98" }}>No hay resultados que coincidan.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {filtered.map((b) => {
+              const isJob = b.kind === "job";
               const du = daysUntil(b.expiresAt);
               const expiringSoon = du !== null && du >= 0 && du <= 7;
               const expired = du !== null && du < 0;
@@ -1188,12 +1285,13 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
                 <div key={b.id} className="bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {isJob && <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E4F3EA", color: "#1E6B44", borderRadius: 6 }}><Briefcase size={10} /> Empleo</span>}
                       <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15 }}>{b.name}</h3>
                       <StatusBadge status={b.status} />
-                      {b.featured && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>Destacado</span>}
+                      {!isJob && b.featured && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>Destacado</span>}
                     </div>
                     <p className="text-xs" style={{ color: "#8A8D98" }}>
-                      {catInfo(b.cat)?.label} · {b.zone}
+                      {isJob ? "Empleo" : catInfo(b.cat)?.label} · {b.zone}
                     </p>
                     <p className="text-xs mt-1" style={{ color: "#565A66" }}>
                       Alta: {fmtDate(b.createdAt)} · Renovación: {fmtDate(b.lastRenewal)} ·{" "}
@@ -1206,7 +1304,7 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
                     <button onClick={() => onEdit(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Pencil size={12} /> Editar</button>
                     <button onClick={() => onToggleStatus(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Power size={12} /> {b.status === "active" ? "Desactivar" : "Reactivar"}</button>
                     <button onClick={() => onRenew(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><RefreshCw size={12} /> Renovar</button>
-                    <button onClick={() => onOpenReviews(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Star size={12} /> Reseñas ({b.reviews.length})</button>
+                    {!isJob && <button onClick={() => onOpenReviews(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Star size={12} /> Reseñas ({b.reviews.length})</button>}
                     <button onClick={() => setConfirmDelete(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={12} /> Eliminar</button>
                   </div>
                 </div>
@@ -1387,6 +1485,7 @@ export default function MiZona() {
   const [activeCat, setActiveCat] = useState(null);
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
+  const [viewMode, setViewMode] = useState("negocios"); // "negocios" | "empleos"
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -1455,6 +1554,7 @@ export default function MiZona() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = businesses.filter((b) => {
+      if (b.kind === "job") return false;
       if (b.status !== "active") return false;
       const matchCat = activeCat ? b.cat === activeCat : true;
       const matchZone = b.zone === zone;
@@ -1477,6 +1577,15 @@ export default function MiZona() {
     }
     return list;
   }, [businesses, query, activeCat, zone, onlyOpen, sortBy, userLoc]);
+
+  const jobsFiltered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return businesses.filter((b) => {
+      if (b.kind !== "job" || b.status !== "active" || b.zone !== zone) return false;
+      const haystack = (b.name + " " + b.desc).toLowerCase();
+      return q ? haystack.includes(q) : true;
+    });
+  }, [businesses, query, zone]);
 
   const selected = businesses.find((b) => b.id === selectedId);
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
@@ -1572,6 +1681,7 @@ export default function MiZona() {
         <AdminDashboard
           businesses={businesses}
           onAddNew={() => setEditingBiz(emptyBusiness())}
+          onAddNewJob={() => setEditingBiz(emptyJob())}
           onEdit={(b) => setEditingBiz(b)}
           onToggleStatus={toggleStatus}
           onRenew={renewSubscription}
@@ -1579,7 +1689,12 @@ export default function MiZona() {
           onOpenReviews={(b) => setReviewsBiz(b)}
           onLogout={() => { setAdminView(false); setAdminAuthed(false); }}
         />
-        {editingBiz && <BusinessForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />}
+        {editingBiz && editingBiz.kind === "job" && (
+          <JobForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />
+        )}
+        {editingBiz && editingBiz.kind !== "job" && (
+          <BusinessForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />
+        )}
         {reviewsBiz && <ReviewsModal business={reviewsBiz} onDeleteReview={deleteReview} onClose={() => setReviewsBiz(null)} />}
       </div>
     );
@@ -1632,6 +1747,43 @@ export default function MiZona() {
       {showAddBusiness && <AddBusinessModal onClose={() => setShowAddBusiness(false)} />}
 
       <main className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => setViewMode("negocios")}
+            className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2"
+            style={{ borderRadius: 8, backgroundColor: viewMode === "negocios" ? "#1B3A5C" : "#fff", color: viewMode === "negocios" ? "#fff" : "#1B1E2A", border: "1px solid " + (viewMode === "negocios" ? "#1B3A5C" : "#E7E5DD") }}
+          >
+            <Building2 size={15} /> Negocios
+          </button>
+          <button
+            onClick={() => setViewMode("empleos")}
+            className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2"
+            style={{ borderRadius: 8, backgroundColor: viewMode === "empleos" ? "#2E8A6E" : "#fff", color: viewMode === "empleos" ? "#fff" : "#1B1E2A", border: "1px solid " + (viewMode === "empleos" ? "#2E8A6E" : "#E7E5DD") }}
+          >
+            <Briefcase size={15} /> Empleos
+          </button>
+        </div>
+
+        {viewMode === "empleos" ? (
+          <>
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#8A8D98" }} className="mb-4">
+              {jobsFiltered.length} {jobsFiltered.length === 1 ? "empleo en" : "empleos en"} {zone}
+            </p>
+            {jobsFiltered.length === 0 ? (
+              <div className="text-center py-16" style={{ color: "#8A8D98" }}>
+                <p className="mb-1" style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 19, color: "#1B1E2A" }}>
+                  No hay empleos publicados en {zone}
+                </p>
+                <p className="text-sm">Probá cambiando de zona, o volvé más adelante.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {jobsFiltered.map((job) => <JobCard key={job.id} job={job} />)}
+              </div>
+            )}
+          </>
+        ) : (
+        <>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#8A8D98" }}>
             {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
@@ -1710,6 +1862,8 @@ export default function MiZona() {
               />
             ))}
           </div>
+        )}
+        </>
         )}
       </main>
 
