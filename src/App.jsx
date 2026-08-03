@@ -236,7 +236,7 @@ async function deleteBusinessOnServer(id) {
 }
 
 const CLOUDINARY_CLOUD_NAME = "hiyaxxdk";
-const CLOUDINARY_UPLOAD_PRESET = "mi-zona-web";
+const CLOUDINARY_UPLOAD_PRESET = "mi-zona-fotos";
 
 async function uploadImage(file) {
   const formData = new FormData();
