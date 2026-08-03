@@ -23,7 +23,7 @@ const OWNER_WHATSAPP = "5493816265332"; // +54 381 6265332
 const CATEGORIES = [
   { id: "comida", label: "Gastronomía", icon: UtensilsCrossed, color: "#C1443A", quick: true },
   { id: "salud", label: "Salud", icon: Pill, color: "#2C6E8A", quick: true },
-  { id: "servicios", label: "Servicios", icon: Wrench, color: "#1B3A5C", quick: true },
+  { id: "servicios", label: "Servicios", icon: Wrench, color: "#163832", quick: true },
   { id: "hogar", label: "Hogar", icon: Home, color: "#3C8558", quick: true },
   { id: "moda", label: "Moda y retail", icon: Shirt, color: "#7A4F9E", quick: true },
   { id: "automotor", label: "Automotor", icon: Car, color: "#4A5568", quick: false },
@@ -45,7 +45,7 @@ const CATEGORIES = [
   { id: "limpieza", label: "Limpieza y lavandería", icon: Droplet, color: "#2C8AA6", quick: false },
   { id: "imprenta", label: "Imprenta y gráfica", icon: Printer, color: "#5B5F6B", quick: false },
   { id: "cerrajeria", label: "Cerrajería", icon: KeyRound, color: "#8A7A2E", quick: false },
-  { id: "barberias", label: "Barberías", icon: Scissors, color: "#1B3A5C", quick: false },
+  { id: "barberias", label: "Barberías", icon: Scissors, color: "#163832", quick: false },
   { id: "mayoristas", label: "Mayoristas y distribuidores", icon: Package, color: "#4A5568", quick: false },
   { id: "florerias", label: "Florerías y regalos", icon: Gift, color: "#A6437A", quick: false },
   { id: "ferreterias", label: "Ferreterías y materiales", icon: HardHat, color: "#B8703F", quick: false },
@@ -236,7 +236,7 @@ async function deleteBusinessOnServer(id) {
 }
 
 const CLOUDINARY_CLOUD_NAME = "hiyaxxdk";
-const CLOUDINARY_UPLOAD_PRESET = "mi-zona-fotos";
+const CLOUDINARY_UPLOAD_PRESET = "mi-zona-web";
 
 async function uploadImage(file) {
   const formData = new FormData();
@@ -327,7 +327,7 @@ function StarPicker({ value, onChange }) {
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <button key={n} type="button" onClick={() => onChange(n)}>
-          <Star size={22} color={n <= value ? "#F2A93B" : "#D8D5C9"} fill={n <= value ? "#F2A93B" : "none"} />
+          <Star size={22} color={n <= value ? "#FF6B4A" : "#D8D5C9"} fill={n <= value ? "#FF6B4A" : "none"} />
         </button>
       ))}
     </div>
@@ -358,9 +358,9 @@ function TagInput({ values, onChange, placeholder }) {
           value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={placeholder}
-          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#E7E5DD" }}
+          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#E6E2D6" }}
         />
-        <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#1B3A5C", color: "#fff", borderRadius: 6 }}>
+        <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#163832", color: "#fff", borderRadius: 6 }}>
           Agregar
         </button>
       </div>
@@ -370,16 +370,16 @@ function TagInput({ values, onChange, placeholder }) {
 
 function ConfirmModal({ title, message, confirmLabel = "Confirmar", danger, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onCancel}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 17 }}>{title}</h3>
-        <p className="text-sm mt-2 mb-5" style={{ color: "#565A66" }}>{message}</p>
+        <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 17 }}>{title}</h3>
+        <p className="text-sm mt-2 mb-5" style={{ color: "#5C5F53" }}>{message}</p>
         <div className="flex gap-2 justify-end">
-          <button onClick={onCancel} className="text-sm px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>Cancelar</button>
+          <button onClick={onCancel} className="text-sm px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>Cancelar</button>
           <button
             onClick={onConfirm}
             className="text-sm font-medium px-3 py-1.5"
-            style={{ borderRadius: 8, backgroundColor: danger ? "#C1443A" : "#1B3A5C", color: "#fff" }}
+            style={{ borderRadius: 8, backgroundColor: danger ? "#C1443A" : "#163832", color: "#fff" }}
           >
             {confirmLabel}
           </button>
@@ -400,10 +400,10 @@ function Lightbox({ src, onClose }) {
 
 function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
   return (
-    <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -418,20 +418,20 @@ function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
 
 function CategoryModal({ activeCat, onSelect, onClose }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-lg max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           <button
             onClick={() => onSelect(null)}
             className="flex flex-col items-center gap-1.5 py-3 px-2 text-center"
-            style={{ borderRadius: 12, backgroundColor: activeCat === null ? "#1B3A5C" : "#F5F4EF" }}
+            style={{ borderRadius: 12, backgroundColor: activeCat === null ? "#163832" : "#F5F4EF" }}
           >
-            <Grid3x3 size={22} color={activeCat === null ? "#fff" : "#1B1E2A"} />
-            <span className="text-xs font-medium" style={{ color: activeCat === null ? "#fff" : "#1B1E2A" }}>Todos</span>
+            <Grid3x3 size={22} color={activeCat === null ? "#fff" : "#1E2119"} />
+            <span className="text-xs font-medium" style={{ color: activeCat === null ? "#fff" : "#1E2119" }}>Todos</span>
           </button>
           {CATEGORIES.map((c) => {
             const Icon = c.icon;
@@ -443,7 +443,7 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
                 style={{ borderRadius: 12, backgroundColor: active ? c.color : "#F5F4EF" }}
               >
                 <Icon size={22} color={active ? "#fff" : c.color} />
-                <span className="text-xs font-medium leading-tight" style={{ color: active ? "#fff" : "#1B1E2A" }}>{c.label}</span>
+                <span className="text-xs font-medium leading-tight" style={{ color: active ? "#fff" : "#1E2119" }}>{c.label}</span>
               </button>
             );
           })}
@@ -461,21 +461,21 @@ function PasswordGate({ onSuccess, onClose }) {
     else { setError(true); setPw(""); }
   };
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-4">
-          <Lock size={18} color="#1B3A5C" />
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }}>Acceso administrador</h2>
+          <Lock size={18} color="#163832" />
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }}>Acceso administrador</h2>
         </div>
         <input
           type="password" autoFocus value={pw}
           onChange={(e) => { setPw(e.target.value); setError(false); }}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="Contraseña"
-          className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E7E5DD" }}
+          className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E6E2D6" }}
         />
         {error && <p className="text-xs mb-3" style={{ color: "#C1443A" }}>Contraseña incorrecta.</p>}
-        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>
+        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8 }}>
           Ingresar
         </button>
       </div>
@@ -506,13 +506,13 @@ function WeekHoursEditor({ value, onChange }) {
                 <input
                   type="number" value={entry[0]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [Number(e.target.value), entry[1]] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E7E5DD" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E6E2D6" }}
                 />
                 <span>a</span>
                 <input
                   type="number" value={entry[1]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [entry[0], Number(e.target.value)] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E7E5DD" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E6E2D6" }}
                 />
               </>
             )}
@@ -535,14 +535,14 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
       onClick={() => onOpen(biz.id)}
       onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
       className="bg-white flex flex-col overflow-hidden transition-shadow hover:shadow-md text-left cursor-pointer"
-      style={{ borderRadius: 10, border: "1px solid #E7E5DD", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}
+      style={{ borderRadius: 10, border: "1px solid #E6E2D6", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}
     >
       <div className="relative">
         <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} clickable={false} />
         {discounts.length > 0 && (
           <span
             className="absolute top-2 left-2 flex items-center gap-1 text-[11px] font-semibold px-2 py-1"
-            style={{ background: "#1B3A5C", color: "#F2A93B", borderRadius: 20 }}
+            style={{ background: "#163832", color: "#FF6B4A", borderRadius: 20 }}
           >
             <Tag size={11} /> {discounts[0].percent ? `${discounts[0].percent} OFF` : "Tiene descuentos"}
           </span>
@@ -553,12 +553,12 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
           <span className="text-[11px] uppercase tracking-wide font-medium" style={{ color: c?.color, fontFamily: "'IBM Plex Mono', monospace" }}>
             {c?.label}
           </span>
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: "#8A8D98" }}>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: "#84887C" }}>
             <Eye size={12} /> {fmtNum(biz.views)}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 17, color: "#1B1E2A" }}>{biz.name}</h3>
+          <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 17, color: "#1E2119" }}>{biz.name}</h3>
           {biz.featured && (
             <span className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
               <Star size={10} fill="#8A5B12" /> Destacado
@@ -566,15 +566,15 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
           )}
         </div>
         {rating && (
-          <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: "#565A66" }}>
-            <Star size={12} fill="#F2A93B" color="#F2A93B" /> {rating} ({biz.reviews.length})
+          <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: "#5C5F53" }}>
+            <Star size={12} fill="#FF6B4A" color="#FF6B4A" /> {rating} ({biz.reviews.length})
           </span>
         )}
-        <p className="text-sm mt-1 mb-2 flex-1" style={{ color: "#565A66" }}>{biz.desc}</p>
+        <p className="text-sm mt-1 mb-2 flex-1" style={{ color: "#5C5F53" }}>{biz.desc}</p>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <OpenBadge weekHours={biz.weekHours} />
           {typeof distanceKm === "number" && (
-            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1B3A5C" }}>
+            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#163832" }}>
               <Navigation size={12} /> A {fmtDistance(distanceKm)} de vos
             </span>
           )}
@@ -582,7 +582,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
         <a
           href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-xs w-fit hover:underline" style={{ color: "#8A8D98" }}
+          className="flex items-center gap-1 text-xs w-fit hover:underline" style={{ color: "#84887C" }}
         >
           <MapPin size={12} /> {biz.loc} · {biz.zone}
         </a>
@@ -608,8 +608,8 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
   };
 
   return (
-    <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh" }}>
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#1B3A5C" }}>
+    <div style={{ backgroundColor: "#FAF7F1", minHeight: "100vh" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#163832" }}>
         <div className="max-w-3xl mx-auto px-4 py-3">
           <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "#fff" }}>
             <ArrowLeft size={16} /> Volver a la búsqueda
@@ -627,12 +627,12 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
           ))}
         </div>
         {biz.photos?.length === 0 && (
-          <p className="flex items-center gap-1.5 text-xs mb-6" style={{ color: "#8A8D98" }}>
+          <p className="flex items-center gap-1.5 text-xs mb-6" style={{ color: "#84887C" }}>
             <ImageIcon size={13} /> Este negocio todavía no cargó fotos
           </p>
         )}
         {biz.photos?.length > 5 && (
-          <button onClick={() => setShowAllPhotos(true)} className="flex items-center gap-1.5 text-xs font-medium mb-6" style={{ color: "#1B3A5C" }}>
+          <button onClick={() => setShowAllPhotos(true)} className="flex items-center gap-1.5 text-xs font-medium mb-6" style={{ color: "#163832" }}>
             <Grid3x3 size={13} /> Ver las {biz.photos.length} fotos
           </button>
         )}
@@ -644,7 +644,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
               {c?.label} · {biz.zone}
             </span>
             <div className="flex items-center gap-2">
-              <h1 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 26, color: "#1B1E2A" }}>{biz.name}</h1>
+              <h1 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 26, color: "#1E2119" }}>{biz.name}</h1>
               {biz.featured && (
                 <span className="flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
                   <Star size={11} fill="#8A5B12" /> Destacado
@@ -652,14 +652,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
               )}
             </div>
             {rating ? (
-              <span className="flex items-center gap-1 text-sm mt-1" style={{ color: "#565A66" }}>
-                <Star size={14} fill="#F2A93B" color="#F2A93B" /> {rating}/5 ({biz.reviews.length} reseñas)
+              <span className="flex items-center gap-1 text-sm mt-1" style={{ color: "#5C5F53" }}>
+                <Star size={14} fill="#FF6B4A" color="#FF6B4A" /> {rating}/5 ({biz.reviews.length} reseñas)
               </span>
             ) : (
-              <span className="text-sm mt-1 block" style={{ color: "#8A8D98" }}>Todavía sin reseñas</span>
+              <span className="text-sm mt-1 block" style={{ color: "#84887C" }}>Todavía sin reseñas</span>
             )}
           </div>
-          <span className="flex items-center gap-1 text-xs shrink-0 mt-1" style={{ color: "#8A8D98" }}>
+          <span className="flex items-center gap-1 text-xs shrink-0 mt-1" style={{ color: "#84887C" }}>
             <Eye size={13} /> {fmtNum(biz.views)} vistas
           </span>
         </div>
@@ -672,7 +672,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
             {biz.services?.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {biz.services.map((s) => (
-                  <span key={s} className="text-xs px-2 py-1" style={{ background: "#EEF2F6", color: "#1B3A5C", borderRadius: 20 }}>{s}</span>
+                  <span key={s} className="text-xs px-2 py-1" style={{ background: "#E9F1EC", color: "#163832", borderRadius: 20 }}>{s}</span>
                 ))}
               </div>
             )}
@@ -686,7 +686,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#565A66" }}>
+        <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#5C5F53" }}>
           {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
           {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
         </div>
@@ -702,32 +702,32 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
           {biz.ig && (
             <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
               className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
-              style={{ border: "1px solid #E7E5DD", color: "#1B1E2A", borderRadius: 10 }}
+              style={{ border: "1px solid #E6E2D6", color: "#1E2119", borderRadius: 10 }}
             >
               <Instagram size={17} /> @{biz.ig}
             </a>
           )}
         </div>
 
-        <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#1B3A5C" }}>
-          <MapPin size={15} /> {biz.loc} <span style={{ color: "#8A8D98" }}>· ver en el mapa</span>
+        <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#163832" }}>
+          <MapPin size={15} /> {biz.loc} <span style={{ color: "#84887C" }}>· ver en el mapa</span>
         </a>
 
         {activeDiscounts(biz).length > 0 && (
           <div className="mb-6">
-            <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 16, color: "#1B1E2A" }}>
+            <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 16, color: "#1E2119" }}>
               <Tag size={16} /> Descuentos vigentes
             </h2>
             <div className="flex flex-col gap-2">
               {activeDiscounts(biz).map((d) => (
-                <div key={d.id} className="p-4" style={{ borderRadius: 10, border: "1px solid #F2A93B", background: "#FBEBD1" }}>
+                <div key={d.id} className="p-4" style={{ borderRadius: 10, border: "1px solid #FF6B4A", background: "#FBEBD1" }}>
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15, color: "#1B1E2A" }}>{d.title}</h3>
-                    {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#1B3A5C", color: "#F2A93B", borderRadius: 20 }}>{d.percent} OFF</span>}
+                    <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 15, color: "#1E2119" }}>{d.title}</h3>
+                    {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#163832", color: "#FF6B4A", borderRadius: 20 }}>{d.percent} OFF</span>}
                   </div>
                   {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
                   {d.desc && <p className="text-sm" style={{ color: "#3D4048" }}>{d.desc}</p>}
-                  <p className="text-[11px] mt-1" style={{ color: "#8A8D98" }}>Válido hasta el {fmtDate(d.endDate)}</p>
+                  <p className="text-[11px] mt-1" style={{ color: "#84887C" }}>Válido hasta el {fmtDate(d.endDate)}</p>
                 </div>
               ))}
             </div>
@@ -735,13 +735,13 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
         )}
 
         <div className="mb-6">
-          <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 16, color: "#1B1E2A" }}>
+          <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 16, color: "#1E2119" }}>
             <Clock size={16} /> Horarios de atención
           </h2>
-          <div className="bg-white overflow-hidden" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
+          <div className="bg-white overflow-hidden" style={{ borderRadius: 10, border: "1px solid #E6E2D6" }}>
             {DAYS.map((day, i) => (
               <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
-                style={{ borderTop: i === 0 ? "none" : "1px solid #F0EEE7", backgroundColor: i === todayIdx ? "#EEF2F6" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#1B1E2A" }}
+                style={{ borderTop: i === 0 ? "none" : "1px solid #F0EEE7", backgroundColor: i === todayIdx ? "#E9F1EC" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#1E2119" }}
               >
                 <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
                 <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#3D4048" }}>{fmtHours(biz.weekHours[i])}</span>
@@ -752,22 +752,22 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
 
         {/* Reseñas */}
         <div className="mb-6">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 16, color: "#1B1E2A" }} className="mb-3">
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 16, color: "#1E2119" }} className="mb-3">
             Reseñas y opiniones
           </h2>
 
-          <div className="bg-white p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
-            <p className="text-xs font-medium mb-2" style={{ color: "#565A66" }}>Dejá tu opinión</p>
+          <div className="bg-white p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E6E2D6" }}>
+            <p className="text-xs font-medium mb-2" style={{ color: "#5C5F53" }}>Dejá tu opinión</p>
             <StarPicker value={reviewRating} onChange={setReviewRating} />
             <input
               value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
-              className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}
+              className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}
             />
             <textarea
               value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
-              rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}
+              rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}
             />
-            <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>
+            <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8 }}>
               Publicar reseña
             </button>
           </div>
@@ -775,14 +775,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
           {biz.reviews?.length > 0 ? (
             <div className="flex flex-col gap-3">
               {[...biz.reviews].reverse().map((r) => (
-                <div key={r.id} className="bg-white p-4" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
+                <div key={r.id} className="bg-white p-4" style={{ borderRadius: 10, border: "1px solid #E6E2D6" }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium">{r.name}</span>
-                    <span className="text-xs" style={{ color: "#8A8D98" }}>{fmtDate(r.date)}</span>
+                    <span className="text-xs" style={{ color: "#84887C" }}>{fmtDate(r.date)}</span>
                   </div>
                   <div className="flex items-center gap-0.5 mb-1.5">
                     {[1, 2, 3, 4, 5].map((n) => (
-                      <Star key={n} size={13} fill={n <= r.rating ? "#F2A93B" : "none"} color={n <= r.rating ? "#F2A93B" : "#D8D5C9"} />
+                      <Star key={n} size={13} fill={n <= r.rating ? "#FF6B4A" : "none"} color={n <= r.rating ? "#FF6B4A" : "#D8D5C9"} />
                     ))}
                   </div>
                   <p className="text-sm" style={{ color: "#3D4048" }}>{r.text}</p>
@@ -790,7 +790,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
               ))}
             </div>
           ) : (
-            <p className="text-sm" style={{ color: "#8A8D98" }}>Sé el primero en dejar una reseña.</p>
+            <p className="text-sm" style={{ color: "#84887C" }}>Sé el primero en dejar una reseña.</p>
           )}
         </div>
       </div>
@@ -802,11 +802,11 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
 
 function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner }) {
   return (
-    <header className="sticky top-0 z-40" style={{ backgroundColor: "#1B3A5C" }}>
+    <header className="sticky top-0 z-40" style={{ backgroundColor: "#163832" }}>
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 mr-2">
-          <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 22, color: "#fff" }}>Mi</span>
-          <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 22, color: "#F2A93B" }}>Zona</span>
+          <span style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 22, color: "#fff" }}>Mi</span>
+          <span style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 22, color: "#FF6B4A" }}>Zona</span>
         </div>
 
         <div className="relative">
@@ -815,20 +815,20 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             className="appearance-none pl-8 pr-7 py-2 text-sm font-medium"
             style={{ borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }}
           >
-            {ZONES.map((z) => <option key={z} value={z} style={{ color: "#1B1E2A" }}>{z}</option>)}
+            {ZONES.map((z) => <option key={z} value={z} style={{ color: "#1E2119" }}>{z}</option>)}
           </select>
-          <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" color="#F2A93B" />
+          <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" color="#FF6B4A" />
           <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2" color="#fff" />
         </div>
 
         <div className="flex items-center gap-2 bg-white px-3 py-2 flex-1 min-w-[200px]" style={{ borderRadius: 8 }}>
-          <Search size={16} color="#8A8D98" />
+          <Search size={16} color="#84887C" />
           <input
             value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscá un negocio, producto o servicio..."
-            className="w-full outline-none text-sm" style={{ color: "#1B1E2A" }}
+            className="w-full outline-none text-sm" style={{ color: "#1E2119" }}
           />
-          {query && <button onClick={() => setQuery("")}><X size={14} color="#8A8D98" /></button>}
+          {query && <button onClick={() => setQuery("")}><X size={14} color="#84887C" /></button>}
         </div>
 
         <button
@@ -842,7 +842,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         <button
           onClick={onOpenAdmin}
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-2"
-          style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#F2A93B" }}
+          style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#FF6B4A" }}
         >
           <Lock size={13} /> Administrador
         </button>
@@ -852,7 +852,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         <button
           onClick={() => setActiveCat(null)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-          style={{ borderRadius: 20, backgroundColor: activeCat === null ? "#F2A93B" : "#ffffff15", color: activeCat === null ? "#1B1E2A" : "#fff" }}
+          style={{ borderRadius: 20, backgroundColor: activeCat === null ? "#FF6B4A" : "#ffffff15", color: activeCat === null ? "#1E2119" : "#fff" }}
         >
           Todos los rubros
         </button>
@@ -863,7 +863,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             <button
               key={c.id} onClick={() => setActiveCat(active ? null : c.id)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-              style={{ borderRadius: 20, backgroundColor: active ? "#F2A93B" : "#ffffff15", color: active ? "#1B1E2A" : "#fff" }}
+              style={{ borderRadius: 20, backgroundColor: active ? "#FF6B4A" : "#ffffff15", color: active ? "#1E2119" : "#fff" }}
             >
               <Icon size={13} /> {c.label}
             </button>
@@ -881,13 +881,13 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
 
 function AddBusinessModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute" style={{ marginLeft: "auto", display: "block", marginTop: -16, marginRight: -16 }}><X size={18} /></button>
-        <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 19, color: "#1B1E2A" }} className="mb-3">
+        <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 19, color: "#1E2119" }} className="mb-3">
           ¿Querés sumar tu negocio a Mi Zona?
         </h2>
-        <p className="text-sm mb-5" style={{ color: "#565A66" }}>
+        <p className="text-sm mb-5" style={{ color: "#5C5F53" }}>
           Hacé que más personas conozcan tu negocio, encuentren tus productos o servicios y puedan contactarte fácilmente.
         </p>
         <a
@@ -970,45 +970,45 @@ function BusinessForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#1B1E2Acc" }}>
+    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#1E2119cc" }}>
       <div className="bg-white w-full max-w-lg p-6 my-6" style={{ borderRadius: 12 }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 20 }}>
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 20 }}>
             {initial.name ? "Editar negocio" : "Nuevo negocio"}
           </h2>
           <button onClick={onCancel}><X size={20} /></button>
         </div>
 
         <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
 
-          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}>
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
-          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}>
             {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
 
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Servicios disponibles</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Servicios disponibles</p>
             <TagInput values={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="Ej: reparación de celulares" />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Especialidades</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Especialidades</p>
             <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Métodos de pago</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Métodos de pago</p>
             <div className="flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const active = form.paymentMethods.includes(m);
                 return (
                   <button key={m} type="button" onClick={() => togglePayment(m)}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#1B3A5C" : "#E7E5DD"), backgroundColor: active ? "#1B3A5C" : "#fff", color: active ? "#fff" : "#1B1E2A" }}
+                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#163832" : "#E6E2D6"), backgroundColor: active ? "#163832" : "#fff", color: active ? "#fff" : "#1E2119" }}
                   >
                     {active && <Check size={12} />} {m}
                   </button>
@@ -1019,13 +1019,13 @@ function BusinessForm({ initial, onSave, onCancel }) {
 
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.delivery} onChange={setBool("delivery")} /> Hace envíos</label>
 
-          <input placeholder="Teléfono WhatsApp (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <input placeholder="Teléfono WhatsApp (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Logo (opcional)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Logo (opcional)</p>
             <div className="flex items-center gap-3">
               {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>
                 {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
               </label>
@@ -1036,48 +1036,48 @@ function BusinessForm({ initial, onSave, onCancel }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Fotos de productos</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.photos.map((url) => (
                   <div key={url} className="relative">
                     <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
-                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #E7E5DD" }}>
+                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #E6E2D6" }}>
                       <X size={12} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>
+            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>
               {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
               <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
             </label>
             {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
-          <input placeholder="Dirección" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <input placeholder="Dirección" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "#565A66" }}>Horarios de la semana</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: "#5C5F53" }}>Horarios de la semana</p>
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={setBool("featured")} /> Marcar como destacado</label>
 
-          <div className="p-3" style={{ borderRadius: 8, background: "#EEF2F6" }}>
-            <p className="text-xs font-medium mb-1" style={{ color: "#1B3A5C" }}>Código de dueño (para el panel "Mi negocio")</p>
-            <p className="text-sm font-mono font-semibold" style={{ color: "#1B1E2A" }}>{form.ownerCode}</p>
-            <p className="text-[11px] mt-1" style={{ color: "#565A66" }}>Compartíselo al dueño para que administre sus propios descuentos, sin poder tocar otros negocios.</p>
+          <div className="p-3" style={{ borderRadius: 8, background: "#E9F1EC" }}>
+            <p className="text-xs font-medium mb-1" style={{ color: "#163832" }}>Código de dueño (para el panel "Mi negocio")</p>
+            <p className="text-sm font-mono font-semibold" style={{ color: "#1E2119" }}>{form.ownerCode}</p>
+            <p className="text-[11px] mt-1" style={{ color: "#5C5F53" }}>Compartíselo al dueño para que administre sus propios descuentos, sin poder tocar otros negocios.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Vence</p>
-              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Vence</p>
+              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Estado</p>
-              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Estado</p>
+              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}>
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
@@ -1085,8 +1085,8 @@ function BusinessForm({ initial, onSave, onCancel }) {
           </div>
 
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>Cancelar</button>
-            <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>Cancelar</button>
+            <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
               {saving ? "Ubicando dirección..." : "Guardar"}
             </button>
           </div>
@@ -1108,37 +1108,37 @@ function JobForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#1B1E2Acc" }}>
+    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#1E2119cc" }}>
       <div className="bg-white w-full max-w-lg p-6 my-6" style={{ borderRadius: 12 }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 20 }}>
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 20 }}>
             {initial.name ? "Editar trabajo" : "Nuevo trabajo"}
           </h2>
           <button onClick={onCancel}><X size={20} /></button>
         </div>
         <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del trabajo (ej: Se busca albañil)" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <textarea placeholder="Descripción: de qué se trata, requisitos, horario, etc." value={form.desc} onChange={set("desc")} rows={4} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <input placeholder="Número de contacto (WhatsApp, con código país sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+          <input placeholder="Nombre del trabajo (ej: Se busca albañil)" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <textarea placeholder="Descripción: de qué se trata, requisitos, horario, etc." value={form.desc} onChange={set("desc")} rows={4} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <input placeholder="Número de contacto (WhatsApp, con código país sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}>
             {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Vence</p>
-              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Vence</p>
+              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Estado</p>
-              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }}>
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Estado</p>
+              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }}>
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
             </div>
           </div>
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>Cancelar</button>
-            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>Guardar</button>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>Cancelar</button>
+            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8 }}>Guardar</button>
           </div>
         </div>
       </div>
@@ -1148,12 +1148,12 @@ function JobForm({ initial, onSave, onCancel }) {
 
 function JobCard({ job }) {
   return (
-    <div className="bg-white p-4 flex flex-col" style={{ borderRadius: 10, border: "1px solid #E7E5DD", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}>
+    <div className="bg-white p-4 flex flex-col" style={{ borderRadius: 10, border: "1px solid #E6E2D6", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}>
       <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-medium mb-1" style={{ color: "#2E8A6E", fontFamily: "'IBM Plex Mono', monospace" }}>
         <Briefcase size={12} /> Empleo · {job.zone}
       </span>
-      <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 17, color: "#1B1E2A" }}>{job.name}</h3>
-      <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#565A66", whiteSpace: "pre-wrap" }}>{job.desc}</p>
+      <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 17, color: "#1E2119" }}>{job.name}</h3>
+      <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#5C5F53", whiteSpace: "pre-wrap" }}>{job.desc}</p>
       <a
         href={waLink(job.phone)} target="_blank" rel="noreferrer"
         className="flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
@@ -1167,25 +1167,25 @@ function JobCard({ job }) {
 
 function ReviewsModal({ business, onDeleteReview, onClose }) {
   return (
-    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-md max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }}>Reseñas · {business.name}</h2>
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }}>Reseñas · {business.name}</h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         {business.reviews.length === 0 ? (
-          <p className="text-sm" style={{ color: "#8A8D98" }}>Todavía no tiene reseñas.</p>
+          <p className="text-sm" style={{ color: "#84887C" }}>Todavía no tiene reseñas.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {business.reviews.map((r) => (
-              <div key={r.id} className="p-3 flex items-start justify-between gap-2" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>
+              <div key={r.id} className="p-3 flex items-start justify-between gap-2" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>
                 <div>
                   <div className="flex items-center gap-1 mb-1">
-                    {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={12} fill={n <= r.rating ? "#F2A93B" : "none"} color={n <= r.rating ? "#F2A93B" : "#D8D5C9"} />)}
+                    {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={12} fill={n <= r.rating ? "#FF6B4A" : "none"} color={n <= r.rating ? "#FF6B4A" : "#D8D5C9"} />)}
                     <span className="text-xs font-medium ml-1">{r.name}</span>
                   </div>
                   <p className="text-xs" style={{ color: "#3D4048" }}>{r.text}</p>
-                  <p className="text-[11px] mt-1" style={{ color: "#8A8D98" }}>{fmtDate(r.date)}</p>
+                  <p className="text-[11px] mt-1" style={{ color: "#84887C" }}>{fmtDate(r.date)}</p>
                 </div>
                 <button onClick={() => onDeleteReview(business.id, r.id)} style={{ color: "#C1443A" }}><Trash2 size={15} /></button>
               </div>
@@ -1230,20 +1230,20 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
   ];
 
   return (
-    <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh" }}>
-      <header className="sticky top-0 z-30" style={{ backgroundColor: "#1B3A5C" }}>
+    <div style={{ backgroundColor: "#FAF7F1", minHeight: "100vh" }}>
+      <header className="sticky top-0 z-30" style={{ backgroundColor: "#163832" }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
-          <h1 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Panel de administración</h1>
+          <h1 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Panel de administración</h1>
           <div className="flex gap-2 relative">
-            <button onClick={() => setShowAddMenu((v) => !v)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#F2A93B", color: "#1B1E2A" }}>
+            <button onClick={() => setShowAddMenu((v) => !v)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#FF6B4A", color: "#1E2119" }}>
               <Plus size={14} /> Nuevo
             </button>
             {showAddMenu && (
-              <div className="absolute top-full mt-1 right-0 bg-white shadow-lg flex flex-col z-40" style={{ borderRadius: 8, border: "1px solid #E7E5DD", minWidth: 180 }}>
-                <button onClick={() => { setShowAddMenu(false); onAddNew(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1B1E2A" }}>
+              <div className="absolute top-full mt-1 right-0 bg-white shadow-lg flex flex-col z-40" style={{ borderRadius: 8, border: "1px solid #E6E2D6", minWidth: 180 }}>
+                <button onClick={() => { setShowAddMenu(false); onAddNew(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1E2119" }}>
                   <Building2 size={14} /> Agregar negocio
                 </button>
-                <button onClick={() => { setShowAddMenu(false); onAddNewJob(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1B1E2A", borderTop: "1px solid #F0EEE7" }}>
+                <button onClick={() => { setShowAddMenu(false); onAddNewJob(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#1E2119", borderTop: "1px solid #F0EEE7" }}>
                   <Briefcase size={14} /> Agregar trabajo
                 </button>
               </div>
@@ -1256,8 +1256,8 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-2 bg-white px-3 py-2 mb-3" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>
-          <Search size={16} color="#8A8D98" />
+        <div className="flex items-center gap-2 bg-white px-3 py-2 mb-3" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>
+          <Search size={16} color="#84887C" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre..." className="w-full outline-none text-sm" />
         </div>
 
@@ -1265,7 +1265,7 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
           {FILTERS.map((f) => (
             <button key={f.id} onClick={() => setFilter(f.id)}
               className="px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-              style={{ borderRadius: 20, backgroundColor: filter === f.id ? "#1B3A5C" : "#fff", color: filter === f.id ? "#fff" : "#1B1E2A", border: "1px solid " + (filter === f.id ? "#1B3A5C" : "#E7E5DD") }}
+              style={{ borderRadius: 20, backgroundColor: filter === f.id ? "#163832" : "#fff", color: filter === f.id ? "#fff" : "#1E2119", border: "1px solid " + (filter === f.id ? "#163832" : "#E6E2D6") }}
             >
               {f.label}
             </button>
@@ -1273,7 +1273,7 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
         </div>
 
         {filtered.length === 0 ? (
-          <p className="text-sm text-center py-10" style={{ color: "#8A8D98" }}>No hay resultados que coincidan.</p>
+          <p className="text-sm text-center py-10" style={{ color: "#84887C" }}>No hay resultados que coincidan.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {filtered.map((b) => {
@@ -1282,29 +1282,29 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
               const expiringSoon = du !== null && du >= 0 && du <= 7;
               const expired = du !== null && du < 0;
               return (
-                <div key={b.id} className="bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
+                <div key={b.id} className="bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between" style={{ borderRadius: 10, border: "1px solid #E6E2D6" }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       {isJob && <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E4F3EA", color: "#1E6B44", borderRadius: 6 }}><Briefcase size={10} /> Empleo</span>}
-                      <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15 }}>{b.name}</h3>
+                      <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 15 }}>{b.name}</h3>
                       <StatusBadge status={b.status} />
                       {!isJob && b.featured && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>Destacado</span>}
                     </div>
-                    <p className="text-xs" style={{ color: "#8A8D98" }}>
+                    <p className="text-xs" style={{ color: "#84887C" }}>
                       {isJob ? "Empleo" : catInfo(b.cat)?.label} · {b.zone}
                     </p>
-                    <p className="text-xs mt-1" style={{ color: "#565A66" }}>
+                    <p className="text-xs mt-1" style={{ color: "#5C5F53" }}>
                       Alta: {fmtDate(b.createdAt)} · Renovación: {fmtDate(b.lastRenewal)} ·{" "}
-                      <span style={{ color: expired ? "#C1443A" : expiringSoon ? "#B8703F" : "#565A66", fontWeight: expired || expiringSoon ? 600 : 400 }}>
+                      <span style={{ color: expired ? "#C1443A" : expiringSoon ? "#B8703F" : "#5C5F53", fontWeight: expired || expiringSoon ? 600 : 400 }}>
                         Vence: {fmtDate(b.expiresAt)}{expired ? " (vencido)" : expiringSoon ? " (por vencer)" : ""}
                       </span>
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5 shrink-0">
-                    <button onClick={() => onEdit(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Pencil size={12} /> Editar</button>
-                    <button onClick={() => onToggleStatus(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Power size={12} /> {b.status === "active" ? "Desactivar" : "Reactivar"}</button>
-                    <button onClick={() => onRenew(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><RefreshCw size={12} /> Renovar</button>
-                    {!isJob && <button onClick={() => onOpenReviews(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Star size={12} /> Reseñas ({b.reviews.length})</button>}
+                    <button onClick={() => onEdit(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><Pencil size={12} /> Editar</button>
+                    <button onClick={() => onToggleStatus(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><Power size={12} /> {b.status === "active" ? "Desactivar" : "Reactivar"}</button>
+                    <button onClick={() => onRenew(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><RefreshCw size={12} /> Renovar</button>
+                    {!isJob && <button onClick={() => onOpenReviews(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><Star size={12} /> Reseñas ({b.reviews.length})</button>}
                     <button onClick={() => setConfirmDelete(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={12} /> Eliminar</button>
                   </div>
                 </div>
@@ -1340,13 +1340,13 @@ function OwnerGate({ businesses, onSuccess, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-4">
-          <User size={18} color="#1B3A5C" />
-          <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }}>Mi negocio</h2>
+          <User size={18} color="#163832" />
+          <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }}>Mi negocio</h2>
         </div>
-        <p className="text-xs mb-3" style={{ color: "#565A66" }}>
+        <p className="text-xs mb-3" style={{ color: "#5C5F53" }}>
           Ingresá el código de dueño que te dieron al registrar tu negocio en Mi Zona.
         </p>
         <input
@@ -1354,10 +1354,10 @@ function OwnerGate({ businesses, onSuccess, onClose }) {
           onChange={(e) => { setCode(e.target.value); setError(false); }}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="Código de dueño"
-          className="w-full border px-3 py-2 text-sm mb-2 font-mono" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E7E5DD" }}
+          className="w-full border px-3 py-2 text-sm mb-2 font-mono" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E6E2D6" }}
         />
         {error && <p className="text-xs mb-3" style={{ color: "#C1443A" }}>No encontramos ningún negocio con ese código.</p>}
-        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>
+        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8 }}>
           Ingresar
         </button>
       </div>
@@ -1375,29 +1375,29 @@ function DiscountForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#1B1E2Acc" }} onClick={onCancel}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#1E2119cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18 }} className="mb-4">
+        <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 18 }} className="mb-4">
           {initial.title ? "Editar descuento" : "Nuevo descuento"}
         </h2>
         <div className="flex flex-col gap-3">
-          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Desde</p>
-              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Desde</p>
+              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#565A66" }}>Hasta</p>
-              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E7E5DD" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#5C5F53" }}>Hasta</p>
+              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E6E2D6" }} />
             </div>
           </div>
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E7E5DD" }}>Cancelar</button>
-            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#1B3A5C", color: "#fff", borderRadius: 8 }}>Guardar</button>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E6E2D6" }}>Cancelar</button>
+            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#163832", color: "#fff", borderRadius: 8 }}>Guardar</button>
           </div>
         </div>
       </div>
@@ -1411,11 +1411,11 @@ function OwnerPanel({ business, onSaveDiscount, onToggleDiscount, onDeleteDiscou
   const emptyDiscount = () => ({ id: uid(), title: "", item: "", percent: "", desc: "", startDate: todayISO(), endDate: addDays(todayISO(), 30), active: true });
 
   return (
-    <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
-      <header className="sticky top-0 z-30" style={{ backgroundColor: "#1B3A5C" }}>
+    <div style={{ backgroundColor: "#FAF7F1", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
+      <header className="sticky top-0 z-30" style={{ backgroundColor: "#163832" }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi negocio</h1>
+          <h1 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi negocio</h1>
           <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
             <LogOut size={13} /> Salir
           </button>
@@ -1423,36 +1423,36 @@ function OwnerPanel({ business, onSaveDiscount, onToggleDiscount, onDeleteDiscou
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "#1B1E2A" }} className="mb-1">{business.name}</h2>
-        <p className="text-sm mb-6" style={{ color: "#8A8D98" }}>{catInfo(business.cat)?.label} · {business.zone}</p>
+        <h2 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 22, color: "#1E2119" }} className="mb-1">{business.name}</h2>
+        <p className="text-sm mb-6" style={{ color: "#84887C" }}>{catInfo(business.cat)?.label} · {business.zone}</p>
 
         <div className="flex items-center justify-between mb-4">
-          <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 16 }}>Mis descuentos</h3>
-          <button onClick={() => setEditing(emptyDiscount())} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5" style={{ borderRadius: 8, backgroundColor: "#1B3A5C", color: "#fff" }}>
+          <h3 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 16 }}>Mis descuentos</h3>
+          <button onClick={() => setEditing(emptyDiscount())} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5" style={{ borderRadius: 8, backgroundColor: "#163832", color: "#fff" }}>
             <Plus size={13} /> Crear descuento
           </button>
         </div>
 
         {(business.discounts || []).length === 0 ? (
-          <p className="text-sm" style={{ color: "#8A8D98" }}>Todavía no creaste ningún descuento.</p>
+          <p className="text-sm" style={{ color: "#84887C" }}>Todavía no creaste ningún descuento.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {business.discounts.map((d) => {
               const active = isDiscountActive(d);
               return (
-                <div key={d.id} className="p-4 flex items-start justify-between gap-3" style={{ borderRadius: 10, border: "1px solid #E7E5DD" }}>
+                <div key={d.id} className="p-4 flex items-start justify-between gap-3" style={{ borderRadius: 10, border: "1px solid #E6E2D6" }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 15 }}>{d.title}</h4>
+                      <h4 style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 600, fontSize: 15 }}>{d.title}</h4>
                       <span className="text-[10px] font-medium px-1.5 py-0.5" style={{ borderRadius: 10, background: active ? "#E4F3EA" : "#EEEDE7", color: active ? "#1E6B44" : "#7A7D87" }}>
                         {d.active ? (active ? "Vigente" : "Fuera de fecha") : "Desactivado"}
                       </span>
                     </div>
-                    <p className="text-xs" style={{ color: "#565A66" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</p>
+                    <p className="text-xs" style={{ color: "#5C5F53" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <button onClick={() => setEditing(d)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Pencil size={13} /></button>
-                    <button onClick={() => onToggleDiscount(d.id)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E7E5DD" }}><Power size={13} /></button>
+                    <button onClick={() => setEditing(d)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><Pencil size={13} /></button>
+                    <button onClick={() => onToggleDiscount(d.id)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E6E2D6" }}><Power size={13} /></button>
                     <button onClick={() => onDeleteDiscount(d.id)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={13} /></button>
                   </div>
                 </div>
@@ -1648,11 +1648,11 @@ export default function MiZona() {
   };
 
   if (loading) {
-    return <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#8A8D98"}}>Cargando...</span></div>;
+    return <div style={{ backgroundColor: "#FAF7F1", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#84887C"}}>Cargando...</span></div>;
   }
 
   const globalStyle = (
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
   );
 
   /* ---- vista panel del dueño ---- */
@@ -1671,7 +1671,7 @@ export default function MiZona() {
   /* ---- vista administración ---- */
   if (adminView && adminAuthed) {
     return (
-      <div style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
         {errorMsg && (
           <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#F7E7E5", color: "#9A3B34" }}>
@@ -1703,7 +1703,7 @@ export default function MiZona() {
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
-      <div style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
         <BusinessDetail biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview} />
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
@@ -1713,7 +1713,7 @@ export default function MiZona() {
 
   /* ---- vista pública: listado ---- */
   return (
-    <div style={{ backgroundColor: "#FAF9F6", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ backgroundColor: "#FAF7F1", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
       {globalStyle}
 
       {errorMsg && (
@@ -1751,14 +1751,14 @@ export default function MiZona() {
           <button
             onClick={() => setViewMode("negocios")}
             className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2"
-            style={{ borderRadius: 8, backgroundColor: viewMode === "negocios" ? "#1B3A5C" : "#fff", color: viewMode === "negocios" ? "#fff" : "#1B1E2A", border: "1px solid " + (viewMode === "negocios" ? "#1B3A5C" : "#E7E5DD") }}
+            style={{ borderRadius: 8, backgroundColor: viewMode === "negocios" ? "#163832" : "#fff", color: viewMode === "negocios" ? "#fff" : "#1E2119", border: "1px solid " + (viewMode === "negocios" ? "#163832" : "#E6E2D6") }}
           >
             <Building2 size={15} /> Negocios
           </button>
           <button
             onClick={() => setViewMode("empleos")}
             className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2"
-            style={{ borderRadius: 8, backgroundColor: viewMode === "empleos" ? "#2E8A6E" : "#fff", color: viewMode === "empleos" ? "#fff" : "#1B1E2A", border: "1px solid " + (viewMode === "empleos" ? "#2E8A6E" : "#E7E5DD") }}
+            style={{ borderRadius: 8, backgroundColor: viewMode === "empleos" ? "#2E8A6E" : "#fff", color: viewMode === "empleos" ? "#fff" : "#1E2119", border: "1px solid " + (viewMode === "empleos" ? "#2E8A6E" : "#E6E2D6") }}
           >
             <Briefcase size={15} /> Empleos
           </button>
@@ -1766,12 +1766,12 @@ export default function MiZona() {
 
         {viewMode === "empleos" ? (
           <>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#8A8D98" }} className="mb-4">
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#84887C" }} className="mb-4">
               {jobsFiltered.length} {jobsFiltered.length === 1 ? "empleo en" : "empleos en"} {zone}
             </p>
             {jobsFiltered.length === 0 ? (
-              <div className="text-center py-16" style={{ color: "#8A8D98" }}>
-                <p className="mb-1" style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 19, color: "#1B1E2A" }}>
+              <div className="text-center py-16" style={{ color: "#84887C" }}>
+                <p className="mb-1" style={{ fontFamily: "'Fraunces', sans-serif", fontSize: 19, color: "#1E2119" }}>
                   No hay empleos publicados en {zone}
                 </p>
                 <p className="text-sm">Probá cambiando de zona, o volvé más adelante.</p>
@@ -1785,14 +1785,14 @@ export default function MiZona() {
         ) : (
         <>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#8A8D98" }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#84887C" }}>
             {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setOnlyOpen((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
-              style={{ borderRadius: 20, backgroundColor: onlyOpen ? "#E4F3EA" : "#fff", color: onlyOpen ? "#1E6B44" : "#565A66", border: "1px solid " + (onlyOpen ? "#2C9A5F" : "#E7E5DD") }}
+              style={{ borderRadius: 20, backgroundColor: onlyOpen ? "#E4F3EA" : "#fff", color: onlyOpen ? "#1E6B44" : "#5C5F53", border: "1px solid " + (onlyOpen ? "#2C9A5F" : "#E6E2D6") }}
             >
               <span className="rounded-full" style={{ width: 6, height: 6, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} />
               Solo abiertos ahora
@@ -1801,32 +1801,32 @@ export default function MiZona() {
               <select
                 value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none text-xs font-medium pl-3 pr-7 py-1.5"
-                style={{ borderRadius: 20, border: "1px solid #E7E5DD", color: "#1B1E2A", backgroundColor: "#fff" }}
+                style={{ borderRadius: 20, border: "1px solid #E6E2D6", color: "#1E2119", backgroundColor: "#fff" }}
               >
                 <option value="destacados">⭐ Destacados</option>
                 <option value="vistas">👁️ Más visitados</option>
                 <option value="descuentos">🏷️ Descuentos</option>
                 <option value="cercanos">📍 Más cercanos</option>
               </select>
-              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" color="#8A8D98" />
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" color="#84887C" />
             </div>
           </div>
         </div>
 
         {sortBy === "cercanos" && locStatus === "idle" && (
-          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "#EEF2F6", borderRadius: 10 }}>
-            <p className="text-sm" style={{ color: "#1B3A5C" }}>Activá tu ubicación para ver qué negocios tenés más cerca.</p>
+          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "#E9F1EC", borderRadius: 10 }}>
+            <p className="text-sm" style={{ color: "#163832" }}>Activá tu ubicación para ver qué negocios tenés más cerca.</p>
             <button
               onClick={requestLocation}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0"
-              style={{ borderRadius: 8, backgroundColor: "#1B3A5C", color: "#fff" }}
+              style={{ borderRadius: 8, backgroundColor: "#163832", color: "#fff" }}
             >
               <LocateFixed size={14} /> Activar ubicación
             </button>
           </div>
         )}
         {sortBy === "cercanos" && locStatus === "loading" && (
-          <p className="text-xs mb-4" style={{ color: "#565A66" }}>Ubicándote para ordenar por cercanía...</p>
+          <p className="text-xs mb-4" style={{ color: "#5C5F53" }}>Ubicándote para ordenar por cercanía...</p>
         )}
         {sortBy === "cercanos" && locStatus === "denied" && (
           <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3 flex-wrap" style={{ background: "#F7E7E5", borderRadius: 10 }}>
@@ -1845,8 +1845,8 @@ export default function MiZona() {
         )}
 
         {filtered.length === 0 ? (
-          <div className="text-center py-16" style={{ color: "#8A8D98" }}>
-            <p className="mb-1" style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 19, color: "#1B1E2A" }}>
+          <div className="text-center py-16" style={{ color: "#84887C" }}>
+            <p className="mb-1" style={{ fontFamily: "'Fraunces', sans-serif", fontSize: 19, color: "#1E2119" }}>
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">
@@ -1870,12 +1870,12 @@ export default function MiZona() {
       <button
         onClick={() => setShowAddBusiness(true)}
         className="fixed bottom-5 right-5 z-30 flex items-center gap-2 text-sm font-semibold px-4 py-3 shadow-lg"
-        style={{ borderRadius: 30, backgroundColor: "#F2A93B", color: "#1B1E2A" }}
+        style={{ borderRadius: 30, backgroundColor: "#FF6B4A", color: "#1E2119" }}
       >
         <Plus size={16} /> Agregar mi local
       </button>
 
-      <footer className="text-center py-8 text-xs" style={{ color: "#8A8D98" }}>Mi Zona · directorio de negocios locales · prototipo</footer>
+      <footer className="text-center py-8 text-xs" style={{ color: "#84887C" }}>Mi Zona · directorio de negocios locales · prototipo</footer>
 
       {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
