@@ -802,78 +802,108 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
 
 function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner }) {
   return (
-    <header className="sticky top-0 z-40" style={{ backgroundColor: "#163832" }}>
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 mr-2">
-          <span style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 22, color: "#fff" }}>Mi</span>
-          <span style={{ fontFamily: "'Fraunces', sans-serif", fontWeight: 700, fontSize: 22, color: "#FF6B4A" }}>Zona</span>
-        </div>
-
-        <div className="relative">
-          <select
-            value={zone} onChange={(e) => setZone(e.target.value)}
-            className="appearance-none pl-8 pr-7 py-2 text-sm font-medium"
-            style={{ borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }}
-          >
-            {ZONES.map((z) => <option key={z} value={z} style={{ color: "#1E2119" }}>{z}</option>)}
-          </select>
-          <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" color="#FF6B4A" />
-          <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2" color="#fff" />
-        </div>
-
-        <div className="flex items-center gap-2 bg-white px-3 py-2 flex-1 min-w-[200px]" style={{ borderRadius: 8 }}>
-          <Search size={16} color="#84887C" />
-          <input
-            value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscá un negocio, producto o servicio..."
-            className="w-full outline-none text-sm" style={{ color: "#1E2119" }}
-          />
-          {query && <button onClick={() => setQuery("")}><X size={14} color="#84887C" /></button>}
-        </div>
-
-        <button
-          onClick={onOpenOwner}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2"
-          style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}
-        >
-          <User size={13} /> Mi negocio
-        </button>
-
-        <button
-          onClick={onOpenAdmin}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2"
-          style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#FF6B4A" }}
-        >
-          <Lock size={13} /> Administrador
-        </button>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto">
-        <button
-          onClick={() => setActiveCat(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-          style={{ borderRadius: 20, backgroundColor: activeCat === null ? "#FF6B4A" : "#ffffff15", color: activeCat === null ? "#1E2119" : "#fff" }}
-        >
-          Todos los rubros
-        </button>
-        {QUICK_CATEGORIES.map((c) => {
-          const Icon = c.icon;
-          const active = activeCat === c.id;
-          return (
-            <button
-              key={c.id} onClick={() => setActiveCat(active ? null : c.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-              style={{ borderRadius: 20, backgroundColor: active ? "#FF6B4A" : "#ffffff15", color: active ? "#1E2119" : "#fff" }}
-            >
-              <Icon size={13} /> {c.label}
+    <>
+      {/* barra superior, simple */}
+      <div className="sticky top-0 z-40" style={{ backgroundColor: "#163832" }}>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Mi</span>
+            <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 20, color: "#FF6B4A" }}>Zona</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onOpenOwner} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
+              <User size={13} /> Mi negocio
             </button>
-          );
-        })}
-        <button onClick={onOpenAllCats} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap" style={{ borderRadius: 20, border: "1px dashed #ffffff50", color: "#fff" }}>
-          <Grid3x3 size={13} /> Más rubros
-        </button>
+            <button onClick={onOpenAdmin} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#FF6B4A" }}>
+              <Lock size={13} /> Administrador
+            </button>
+          </div>
+        </div>
       </div>
-    </header>
+
+      {/* hero */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: "#163832" }}>
+        <div
+          className="absolute rounded-full"
+          style={{ width: 420, height: 420, background: "radial-gradient(circle, #FF6B4A33, transparent 70%)", top: -140, right: -100, filter: "blur(10px)" }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{ width: 300, height: 300, background: "radial-gradient(circle, #2E8A6E44, transparent 70%)", bottom: -120, left: -80, filter: "blur(10px)" }}
+        />
+        <div className="max-w-3xl mx-auto px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 text-center relative z-10">
+          <span
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider px-3 py-1 mb-5"
+            style={{ background: "#FF6B4A22", color: "#FFB39F", borderRadius: 20, fontFamily: "'IBM Plex Mono', monospace" }}
+          >
+            Directorio local · Tucumán
+          </span>
+          <h1
+            style={{
+              fontFamily: "'Fraunces', serif", fontWeight: 600, color: "#FAF7F1",
+              fontSize: "clamp(1.9rem, 6vw, 3rem)", lineHeight: 1.08,
+            }}
+          >
+            Lo que buscás está más cerca de lo que pensás
+          </h1>
+          <p className="mt-4 mb-8 text-sm sm:text-base" style={{ color: "#C7D2C6", maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}>
+            Negocios, servicios y empleos de tu zona, en un solo lugar. Buscá, mirá si está abierto, y contactá directo por WhatsApp.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2 max-w-xl mx-auto text-left">
+            <div className="relative">
+              <select
+                value={zone} onChange={(e) => setZone(e.target.value)}
+                className="appearance-none pl-9 pr-8 py-3 text-sm font-medium w-full sm:w-auto"
+                style={{ borderRadius: 10, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }}
+              >
+                {ZONES.map((z) => <option key={z} value={z} style={{ color: "#1E2119" }}>{z}</option>)}
+              </select>
+              <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2" color="#FF6B4A" />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#fff" />
+            </div>
+            <div className="flex items-center gap-2 bg-white px-4 py-3 flex-1" style={{ borderRadius: 10 }}>
+              <Search size={17} color="#84887C" />
+              <input
+                value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscá un negocio, producto o servicio..."
+                className="w-full outline-none text-sm" style={{ color: "#1E2119" }}
+              />
+              {query && <button onClick={() => setQuery("")}><X size={14} color="#84887C" /></button>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* rubros rápidos */}
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0F2A25" }}>
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveCat(null)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
+            style={{ borderRadius: 20, backgroundColor: activeCat === null ? "#FF6B4A" : "#ffffff15", color: activeCat === null ? "#1E2119" : "#fff" }}
+          >
+            Todos los rubros
+          </button>
+          {QUICK_CATEGORIES.map((c) => {
+            const Icon = c.icon;
+            const active = activeCat === c.id;
+            return (
+              <button
+                key={c.id} onClick={() => setActiveCat(active ? null : c.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap"
+                style={{ borderRadius: 20, backgroundColor: active ? "#FF6B4A" : "#ffffff15", color: active ? "#1E2119" : "#fff" }}
+              >
+                <Icon size={13} /> {c.label}
+              </button>
+            );
+          })}
+          <button onClick={onOpenAllCats} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap" style={{ borderRadius: 20, border: "1px dashed #ffffff50", color: "#fff" }}>
+            <Grid3x3 size={13} /> Más rubros
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
