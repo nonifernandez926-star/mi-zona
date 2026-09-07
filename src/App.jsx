@@ -7,6 +7,7 @@ import {
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
+  Heart, Share2, Send, Mail,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -123,6 +124,46 @@ function addBusinessWaLink() {
 }
 function mapsLink(loc, zone) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc + ", " + zone)}`;
+}
+
+/* ---------- favoritos (guardados en este dispositivo) ---------- */
+
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem("miZonaFavoritos") || "[]"); } catch { return []; }
+}
+function saveFavorites(list) {
+  localStorage.setItem("miZonaFavoritos", JSON.stringify(list));
+}
+
+/* ---------- compartir un negocio ---------- */
+
+async function shareBusiness(biz) {
+  const url = `${window.location.origin}${window.location.pathname}?negocio=${biz.id}`;
+  const data = { title: biz.name, text: `Mirá ${biz.name} en Mi Zona`, url };
+  if (navigator.share) {
+    try { await navigator.share(data); return; } catch { /* el usuario canceló */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    alert("Enlace copiado al portapapeles");
+  } catch { /* nada más que hacer */ }
+}
+
+/* ---------- chat con el asistente del negocio (memoria local del dispositivo) ---------- */
+
+function getConversation(bizId) {
+  try { return JSON.parse(localStorage.getItem(`miZonaChat_${bizId}`) || "[]"); } catch { return []; }
+}
+function saveConversation(bizId, messages) {
+  localStorage.setItem(`miZonaChat_${bizId}`, JSON.stringify(messages));
+}
+function getAllConversationIds() {
+  const ids = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith("miZonaChat_")) ids.push(key.replace("miZonaChat_", ""));
+  }
+  return ids;
 }
 
 /* ---------- ubicación: geocodificar direcciones y calcular distancia ---------- */
@@ -332,6 +373,133 @@ function StarPicker({ value, onChange }) {
       ))}
     </div>
   );
+}
+
+/* ---------- chat con el asistente del negocio ---------- */
+
+function ChatScreen({ biz, onBack }) {
+  const c = catInfo(biz.cat);
+  const [messages, setMessages] = useState(() => getConversation(biz.id));
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      const saludo = {
+        id: uid(), rol: "asistente",
+        texto: `¡Hola! Soy el asistente de ${biz.name}. ¿En qué puedo ayudarte?`,
+        hora: new Date().toISOString(),
+      };
+      setMessages([saludo]);
+      saveConversation(biz.id, [saludo]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { saveConversation(biz.id, messages); }, [biz.id, messages]);
+
+  const enviar = async () => {
+    const contenido = text.trim();
+    if (!contenido || sending) return;
+    const msgCliente = { id: uid(), rol: "cliente", texto: contenido, hora: new Date().toISOString() };
+    const historial = [...messages, msgCliente];
+    setMessages(historial);
+    setText("");
+    setSending(true);
+
+    try {
+      const res = await fetch(`${API_URL}/chat/${biz.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensaje: contenido, sesionClienteId: sesionClienteId() }),
+      });
+      if (!res.ok) throw new Error("sin respuesta del asistente");
+      const data = await res.json();
+      const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, hora: new Date().toISOString() };
+      setMessages((prev) => [...prev, msgAsistente]);
+    } catch {
+      const fallback = {
+        id: uid(), rol: "asistente",
+        texto: "Gracias por tu mensaje. En este momento no puedo responder automáticamente, pero el negocio va a ver tu consulta apenas conecte su asistente.",
+        hora: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, fallback]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", fontWeight: 700, fontSize: 14 }}>
+            {biz.name?.[0]?.toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
+            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>Asistente virtual · {c?.label}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-4 flex flex-col gap-2.5 overflow-y-auto" style={{ paddingBottom: 90 }}>
+        {messages.map((m) => (
+          <div key={m.id} className="flex" style={{ justifyContent: m.rol === "cliente" ? "flex-end" : "flex-start" }}>
+            <div
+              className="px-3.5 py-2.5 text-sm"
+              style={{
+                maxWidth: "78%", borderRadius: 14,
+                backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
+                color: m.rol === "cliente" ? "#fff" : "#0B1220",
+                border: m.rol === "cliente" ? "none" : "1px solid #E2E8F0",
+                borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
+                borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
+              }}
+            >
+              {m.texto}
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div className="flex" style={{ justifyContent: "flex-start" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#6B7280" }}>
+              Escribiendo...
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #E2E8F0" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
+          <input
+            value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
+            placeholder="Escribí tu mensaje..."
+            className="flex-1 px-4 py-2.5 text-sm outline-none"
+            style={{ borderRadius: 24, border: "1px solid #E2E8F0", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+          />
+          <button
+            onClick={enviar} disabled={sending || !text.trim()}
+            className="flex items-center justify-center shrink-0"
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2F6FED", opacity: sending || !text.trim() ? 0.5 : 1 }}
+          >
+            <Send size={16} color="#fff" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function sesionClienteId() {
+  let id = sessionStorage.getItem("miZonaSesionCliente");
+  if (!id) {
+    id = "sesion-" + Math.random().toString(36).slice(2) + Date.now();
+    sessionStorage.setItem("miZonaSesionCliente", id);
+  }
+  return id;
 }
 
 function TagInput({ values, onChange, placeholder }) {
@@ -591,7 +759,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
   );
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isFavorite, onToggleFavorite }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const gallery = biz.photos?.length > 0 ? biz.photos : [null, null, null, null];
@@ -599,6 +767,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewName, setReviewName] = useState("");
+  const [tab, setTab] = useState("info"); // info | opiniones | fotos
   const rating = avgRating(biz.reviews);
 
   const submitReview = () => {
@@ -607,191 +776,241 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview }) {
     setReviewText(""); setReviewName(""); setReviewRating(5);
   };
 
+  const TabButton = ({ id, label }) => (
+    <button
+      onClick={() => setTab(id)}
+      className="px-1 pb-3 text-sm font-medium relative shrink-0"
+      style={{ color: tab === id ? "#2F6FED" : "#6B7280" }}
+    >
+      {label}
+      {tab === id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
+    </button>
+  );
+
   return (
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+      {/* header con volver / compartir / favorito */}
       <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "#fff" }}>
-            <ArrowLeft size={16} /> Volver a la búsqueda
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <button onClick={onBack} className="flex items-center justify-center" style={{ width: 32, height: 32 }}>
+            <ArrowLeft size={19} color="#fff" />
           </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => shareBusiness(biz)}><Share2 size={17} color="#fff" /></button>
+            <button onClick={() => onToggleFavorite(biz.id)}>
+              <Heart size={19} color="#fff" fill={isFavorite ? "#fff" : "none"} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-4 gap-2 mb-2">
-          <div className="col-span-2 row-span-2">
-            <Photo cat={biz.cat} src={gallery[0]} height={280} radius="12px" iconSize={48} onOpen={onOpenPhoto} />
-          </div>
-          {gallery.slice(1, 5).map((src, i) => (
-            <Photo key={i} cat={biz.cat} src={src} height={136} radius="12px" iconSize={20} onOpen={onOpenPhoto} />
-          ))}
-        </div>
-        {biz.photos?.length === 0 && (
-          <p className="flex items-center gap-1.5 text-xs mb-6" style={{ color: "#6B7280" }}>
-            <ImageIcon size={13} /> Este negocio todavía no cargó fotos
-          </p>
-        )}
-        {biz.photos?.length > 5 && (
-          <button onClick={() => setShowAllPhotos(true)} className="flex items-center gap-1.5 text-xs font-medium mb-6" style={{ color: "#0B2A54" }}>
-            <Grid3x3 size={13} /> Ver las {biz.photos.length} fotos
-          </button>
-        )}
-        {showAllPhotos && <AllPhotosModal photos={biz.photos} cat={biz.cat} onOpenPhoto={onOpenPhoto} onClose={() => setShowAllPhotos(false)} />}
-
-        <div className="flex items-start justify-between gap-3 mb-2 mt-4">
-          <div>
-            <span className="text-xs uppercase tracking-wide font-medium" style={{ color: c?.color, fontFamily: "'IBM Plex Mono', monospace" }}>
-              {c?.label} · {biz.zone}
-            </span>
-            <div className="flex items-center gap-2">
-              <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 26, color: "#0B1220" }}>{biz.name}</h1>
-              {biz.featured && (
-                <span className="flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
-                  <Star size={11} fill="#8A5B12" /> Destacado
-                </span>
-              )}
-            </div>
-            {rating ? (
-              <span className="flex items-center gap-1 text-sm mt-1" style={{ color: "#4B5563" }}>
-                <Star size={14} fill="#2F6FED" color="#2F6FED" /> {rating}/5 ({biz.reviews.length} reseñas)
-              </span>
-            ) : (
-              <span className="text-sm mt-1 block" style={{ color: "#6B7280" }}>Todavía sin reseñas</span>
-            )}
-          </div>
-          <span className="flex items-center gap-1 text-xs shrink-0 mt-1" style={{ color: "#6B7280" }}>
-            <Eye size={13} /> {fmtNum(biz.views)} vistas
-          </span>
+      <div className="max-w-3xl mx-auto">
+        {/* foto principal con badge de abierto/cerrado */}
+        <div style={{ position: "relative" }}>
+          <Photo cat={biz.cat} src={gallery[0]} height={220} radius="0" iconSize={48} onOpen={onOpenPhoto} />
+          <div className="absolute" style={{ top: 12, left: 16 }}><OpenBadge weekHours={biz.weekHours} /></div>
         </div>
 
-        <div className="mb-4"><OpenBadge weekHours={biz.weekHours} /></div>
-        <p className="text-sm mb-4" style={{ color: "#1F2937" }}>{biz.desc}</p>
-
-        {(biz.services?.length > 0 || biz.specialties?.length > 0) && (
-          <div className="mb-4 flex flex-col gap-2">
-            {biz.services?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {biz.services.map((s) => (
-                  <span key={s} className="text-xs px-2 py-1" style={{ background: "#E8F0FE", color: "#0B2A54", borderRadius: 20 }}>{s}</span>
-                ))}
-              </div>
-            )}
-            {biz.specialties?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {biz.specialties.map((s) => (
-                  <span key={s} className="text-xs px-2 py-1" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 20 }}>{s}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#4B5563" }}>
-          {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
-          {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
-        </div>
-
-        <div className="flex gap-2 mb-6">
-          <a
-            href={waLink(biz.phone)} target="_blank" rel="noreferrer"
-            className="flex items-center justify-center gap-2 text-sm font-semibold flex-1 py-3"
-            style={{ backgroundColor: "#25A24C", color: "#fff", borderRadius: 10 }}
-          >
-            <MessageCircle size={17} /> Escribir por WhatsApp
-          </a>
-          {biz.ig && (
-            <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
-              style={{ border: "1px solid #E2E8F0", color: "#0B1220", borderRadius: 10 }}
-            >
-              <Instagram size={17} /> @{biz.ig}
-            </a>
-          )}
-        </div>
-
-        <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
-          <MapPin size={15} /> {biz.loc} <span style={{ color: "#6B7280" }}>· ver en el mapa</span>
-        </a>
-
-        {activeDiscounts(biz).length > 0 && (
-          <div className="mb-6">
-            <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
-              <Tag size={16} /> Descuentos vigentes
-            </h2>
-            <div className="flex flex-col gap-2">
-              {activeDiscounts(biz).map((d) => (
-                <div key={d.id} className="p-4" style={{ borderRadius: 10, border: "1px solid #2F6FED", background: "#FBEBD1" }}>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
-                    {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}>{d.percent} OFF</span>}
-                  </div>
-                  {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
-                  {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
-                  <p className="text-[11px] mt-1" style={{ color: "#6B7280" }}>Válido hasta el {fmtDate(d.endDate)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
-            <Clock size={16} /> Horarios de atención
-          </h2>
-          <div className="bg-white overflow-hidden" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-            {DAYS.map((day, i) => (
-              <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
-                style={{ borderTop: i === 0 ? "none" : "1px solid #EEF2F7", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
+        <div className="px-4">
+          {/* tarjeta de identidad del negocio */}
+          <div className="bg-white -mt-6 relative p-4 mb-1" style={{ borderRadius: "14px 14px 0 0" }}>
+            <div className="flex items-start gap-3">
+              <div
+                className="flex items-center justify-center shrink-0 text-lg font-bold"
+                style={{ width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", fontFamily: "'Poppins', sans-serif", marginTop: -34, border: "3px solid #fff" }}
               >
-                <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
-                <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#1F2937" }}>{fmtHours(biz.weekHours[i])}</span>
+                {biz.name?.[0]?.toUpperCase()}
               </div>
-            ))}
+              <div className="flex-1 min-w-0 pt-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{biz.name}</h1>
+                  {biz.featured && (
+                    <span className="flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
+                      <Star size={11} fill="#8A5B12" /> Destacado
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  {rating ? (
+                    <span className="flex items-center gap-1 text-sm" style={{ color: "#4B5563" }}>
+                      <Star size={14} fill="#2F6FED" color="#2F6FED" /> {rating} ({biz.reviews.length})
+                    </span>
+                  ) : (
+                    <span className="text-xs" style={{ color: "#6B7280" }}>Sin reseñas</span>
+                  )}
+                  <span className="flex items-center gap-1 text-xs" style={{ color: "#6B7280" }}>
+                    <Eye size={13} /> {fmtNum(biz.views)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Reseñas */}
-        <div className="mb-6">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }} className="mb-3">
-            Reseñas y opiniones
-          </h2>
-
-          <div className="bg-white p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-            <p className="text-xs font-medium mb-2" style={{ color: "#4B5563" }}>Dejá tu opinión</p>
-            <StarPicker value={reviewRating} onChange={setReviewRating} />
-            <input
-              value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
-              className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
-            />
-            <textarea
-              value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
-              rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
-            />
-            <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
-              Publicar reseña
-            </button>
+          {/* pestañas */}
+          <div className="flex items-center gap-6 mb-5" style={{ borderBottom: "1px solid #E2E8F0" }}>
+            <TabButton id="info" label="Información" />
+            <TabButton id="opiniones" label={`Opiniones${biz.reviews?.length ? ` (${biz.reviews.length})` : ""}`} />
+            <TabButton id="fotos" label="Fotos" />
           </div>
 
-          {biz.reviews?.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {[...biz.reviews].reverse().map((r) => (
-                <div key={r.id} className="bg-white p-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{r.name}</span>
-                    <span className="text-xs" style={{ color: "#6B7280" }}>{fmtDate(r.date)}</span>
-                  </div>
-                  <div className="flex items-center gap-0.5 mb-1.5">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star key={n} size={13} fill={n <= r.rating ? "#2F6FED" : "none"} color={n <= r.rating ? "#2F6FED" : "#D1D5DB"} />
+          {tab === "info" && (
+            <div className="pb-6">
+              <p className="text-sm mb-4" style={{ color: "#1F2937" }}>{biz.desc}</p>
+
+              {(biz.services?.length > 0 || biz.specialties?.length > 0) && (
+                <div className="mb-4 flex flex-col gap-2">
+                  {biz.services?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {biz.services.map((s) => (
+                        <span key={s} className="text-xs px-2 py-1" style={{ background: "#E8F0FE", color: "#0B2A54", borderRadius: 20 }}>{s}</span>
+                      ))}
+                    </div>
+                  )}
+                  {biz.specialties?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {biz.specialties.map((s) => (
+                        <span key={s} className="text-xs px-2 py-1" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 20 }}>{s}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#4B5563" }}>
+                {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
+                {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
+              </div>
+
+              {biz.ig && (
+                <div className="flex gap-2 mb-5">
+                  <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
+                    className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
+                    style={{ border: "1px solid #E2E8F0", color: "#0B1220", borderRadius: 10 }}
+                  >
+                    <Instagram size={17} /> @{biz.ig}
+                  </a>
+                </div>
+              )}
+
+              <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
+                <MapPin size={15} /> {biz.loc} <span style={{ color: "#6B7280" }}>· ver en el mapa</span>
+              </a>
+
+              {activeDiscounts(biz).length > 0 && (
+                <div className="mb-6">
+                  <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                    <Tag size={16} /> Descuentos vigentes
+                  </h2>
+                  <div className="flex flex-col gap-2">
+                    {activeDiscounts(biz).map((d) => (
+                      <div key={d.id} className="p-4" style={{ borderRadius: 10, border: "1px solid #2F6FED", background: "#FBEBD1" }}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
+                          {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}>{d.percent} OFF</span>}
+                        </div>
+                        {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
+                        {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
+                        <p className="text-[11px] mt-1" style={{ color: "#6B7280" }}>Válido hasta el {fmtDate(d.endDate)}</p>
+                      </div>
                     ))}
                   </div>
-                  <p className="text-sm" style={{ color: "#1F2937" }}>{r.text}</p>
                 </div>
-              ))}
+              )}
+
+              <div className="mb-2">
+                <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                  <Clock size={16} /> Horarios de atención
+                </h2>
+                <div className="bg-white overflow-hidden" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                  {DAYS.map((day, i) => (
+                    <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
+                      style={{ borderTop: i === 0 ? "none" : "1px solid #EEF2F7", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
+                    >
+                      <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
+                      <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#1F2937" }}>{fmtHours(biz.weekHours[i])}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm" style={{ color: "#6B7280" }}>Sé el primero en dejar una reseña.</p>
           )}
+
+          {tab === "opiniones" && (
+            <div className="pb-6">
+              <div className="bg-white p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                <p className="text-xs font-medium mb-2" style={{ color: "#4B5563" }}>Dejá tu opinión</p>
+                <StarPicker value={reviewRating} onChange={setReviewRating} />
+                <input
+                  value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
+                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                />
+                <textarea
+                  value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
+                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                />
+                <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
+                  Publicar reseña
+                </button>
+              </div>
+
+              {biz.reviews?.length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  {[...biz.reviews].reverse().map((r) => (
+                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{r.name}</span>
+                        <span className="text-xs" style={{ color: "#6B7280" }}>{fmtDate(r.date)}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-1.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star key={n} size={13} fill={n <= r.rating ? "#2F6FED" : "none"} color={n <= r.rating ? "#2F6FED" : "#D1D5DB"} />
+                        ))}
+                      </div>
+                      <p className="text-sm" style={{ color: "#1F2937" }}>{r.text}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: "#6B7280" }}>Sé el primero en dejar una reseña.</p>
+              )}
+            </div>
+          )}
+
+          {tab === "fotos" && (
+            <div className="pb-6">
+              {biz.photos?.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {biz.photos.map((src, i) => (
+                    <Photo key={i} cat={biz.cat} src={src} height={140} radius="10px" iconSize={22} onOpen={onOpenPhoto} />
+                  ))}
+                </div>
+              ) : (
+                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#6B7280" }}>
+                  <ImageIcon size={15} /> Este negocio todavía no cargó fotos
+                </p>
+              )}
+              {showAllPhotos && <AllPhotosModal photos={biz.photos} cat={biz.cat} onOpenPhoto={onOpenPhoto} onClose={() => setShowAllPhotos(false)} />}
+            </div>
+          )}
+
+          {/* acciones principales: chat con el asistente y cómo llegar */}
+          <div className="flex flex-col gap-2" style={{ paddingBottom: 100 }}>
+            <button
+              onClick={() => onOpenChat(biz)}
+              className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
+              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+            >
+              <MessageCircle size={17} /> Abrir chat con el asistente
+            </button>
+            <a
+              href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
+              className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
+              style={{ backgroundColor: "#E8F0FE", color: "#0B2A54", borderRadius: 10 }}
+            >
+              <Navigation size={16} /> Cómo llegar
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -909,7 +1128,7 @@ function AccountSheet({ onOpenOwner, onOpenAdmin, onClose }) {
   );
 }
 
-function BottomNav({ active, onInicio, onExplorar, onAdd, onEmpleos, onPerfil }) {
+function BottomNav({ active, onInicio, onExplorar, onAdd, onPerfil }) {
   const Item = ({ id, label, Icon, onClick }) => (
     <button onClick={onClick} className="flex flex-col items-center gap-1 py-1" style={{ minWidth: 56 }}>
       <Icon size={20} color={active === id ? "#2F6FED" : "#94A3B8"} />
@@ -924,7 +1143,6 @@ function BottomNav({ active, onInicio, onExplorar, onAdd, onEmpleos, onPerfil })
         <button onClick={onAdd} className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#2F6FED", marginTop: -18 }}>
           <Plus size={20} color="#fff" />
         </button>
-        <Item id="empleos" label="Empleos" Icon={Briefcase} onClick={onEmpleos} />
         <Item id="perfil" label="Perfil" Icon={User} onClick={onPerfil} />
       </div>
     </div>
@@ -1539,7 +1757,6 @@ export default function MiZona() {
   const [activeCat, setActiveCat] = useState(null);
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
-  const [viewMode, setViewMode] = useState("negocios"); // "negocios" | "empleos"
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -1559,9 +1776,22 @@ export default function MiZona() {
   // agregar mi local
   const [showAddBusiness, setShowAddBusiness] = useState(false);
 
-  // pestaña activa de la barra inferior (Inicio | Explorar | Empleos | Perfil)
+  // pestaña activa de la barra inferior (Inicio | Explorar | Mensajes | Perfil)
   const [activeTab, setActiveTab] = useState("inicio");
   const [showAccountSheet, setShowAccountSheet] = useState(false);
+
+  // favoritos (guardados en este dispositivo)
+  const [favorites, setFavorites] = useState(() => getFavorites());
+  const toggleFavorite = (bizId) => {
+    setFavorites((prev) => {
+      const next = prev.includes(bizId) ? prev.filter((id) => id !== bizId) : [...prev, bizId];
+      saveFavorites(next);
+      return next;
+    });
+  };
+
+  // chat con el asistente de un negocio
+  const [chatBiz, setChatBiz] = useState(null);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -1635,15 +1865,6 @@ export default function MiZona() {
     }
     return list;
   }, [businesses, query, activeCat, zone, onlyOpen, sortBy, userLoc]);
-
-  const jobsFiltered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return businesses.filter((b) => {
-      if (b.kind !== "job" || b.status !== "active" || b.zone !== zone) return false;
-      const haystack = (b.name + " " + b.desc).toLowerCase();
-      return q ? haystack.includes(q) : true;
-    });
-  }, [businesses, query, zone]);
 
   const selected = businesses.find((b) => b.id === selectedId);
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
@@ -1758,12 +1979,25 @@ export default function MiZona() {
     );
   }
 
+  /* ---- vista chat con el asistente ---- */
+  if (chatBiz) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <ChatScreen biz={chatBiz} onBack={() => setChatBiz(null)} />
+      </div>
+    );
+  }
+
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
       <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
-        <BusinessDetail biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview} />
+        <BusinessDetail
+          biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
+          onOpenChat={setChatBiz} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
+        />
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       </div>
     );
@@ -1822,26 +2056,6 @@ export default function MiZona() {
           </div>
         )}
 
-        {viewMode === "empleos" ? (
-          <>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#6B7280" }} className="mb-4">
-              {jobsFiltered.length} {jobsFiltered.length === 1 ? "empleo en" : "empleos en"} {zone}
-            </p>
-            {jobsFiltered.length === 0 ? (
-              <div className="text-center py-16" style={{ color: "#6B7280" }}>
-                <p className="mb-1" style={{ fontFamily: "'Poppins', sans-serif", fontSize: 19, color: "#0B1220" }}>
-                  No hay empleos publicados en {zone}
-                </p>
-                <p className="text-sm">Probá cambiando de zona, o volvé más adelante.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {jobsFiltered.map((job) => <JobCard key={job.id} job={job} />)}
-              </div>
-            )}
-          </>
-        ) : (
-        <>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#6B7280" }}>
             {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
@@ -1921,16 +2135,12 @@ export default function MiZona() {
             ))}
           </div>
         )}
-        </>
-        )}
       </main>
-
       <BottomNav
         active={activeTab}
-        onInicio={() => { setActiveTab("inicio"); setViewMode("negocios"); setActiveCat(null); setSortBy("destacados"); window.scrollTo(0, 0); }}
-        onExplorar={() => { setActiveTab("explorar"); setViewMode("negocios"); window.scrollTo(0, 0); }}
+        onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); window.scrollTo(0, 0); }}
+        onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
         onAdd={() => setShowAddBusiness(true)}
-        onEmpleos={() => { setActiveTab("empleos"); setViewMode("empleos"); window.scrollTo(0, 0); }}
         onPerfil={() => { setActiveTab("perfil"); setShowAccountSheet(true); }}
       />
 
