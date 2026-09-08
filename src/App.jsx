@@ -7,7 +7,7 @@ import {
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
-  Heart, Share2, Send, Mail,
+  Heart, Share2, Send, Mail, Settings,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -15,11 +15,6 @@ const ADMIN_PASSWORD = "padre";
 // URL del backend (servidor Express + MongoDB). En desarrollo local usa localhost;
 // en producción se configura con la variable de entorno VITE_API_URL (ver LEEME.md).
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-// Número de WhatsApp del dueño de Mi Zona (recibe los pedidos de "Agregar mi local")
-// TODO: reemplazar por el número real, formato: código de país + área + número, sin espacios ni signos.
-// Ejemplo Argentina/Tucumán: "5493865551234"
-const OWNER_WHATSAPP = "5493816265332"; // +54 381 6265332
 
 const CATEGORIES = [
   { id: "comida", label: "Gastronomía", icon: UtensilsCrossed, color: "#C1443A", quick: true },
@@ -55,18 +50,81 @@ const CATEGORIES = [
 ];
 const QUICK_CATEGORIES = CATEGORIES.filter((c) => c.quick);
 
-const ZONES = [
-  "Burruyacú", "Capital (San Miguel de Tucumán)", "Chicligasta (Concepción)",
-  "Cruz Alta (Banda del Río Salí)", "Famaillá", "Graneros", "Juan Bautista Alberdi",
-  "La Cocha", "Leales", "Lules", "Monteros", "Río Chico (Aguilares)", "Simoca",
-  "Tafí del Valle", "Tafí Viejo", "Trancas", "Yerba Buena",
+// Preguntas específicas según el rubro elegido, para el formulario de alta de negocio.
+// Los rubros más comunes tienen preguntas propias; el resto usa un set genérico.
+const CATEGORY_QUESTIONS = {
+  comida: [
+    { key: "opcionesVeg", label: "¿Tenés opciones vegetarianas o veganas?", type: "bool" },
+    { key: "aptoCeliaco", label: "¿Tenés opciones aptas para celíacos?", type: "bool" },
+    { key: "reservas", label: "¿Se puede reservar mesa?", type: "bool" },
+    { key: "tiempoEntrega", label: "Tiempo estimado de entrega/espera", type: "text", placeholder: "Ej: 30-40 minutos" },
+  ],
+  salud: [
+    { key: "obraSocial", label: "¿Atendés obras sociales o prepagas?", type: "text", placeholder: "Ej: OSDE, Swiss Medical, PAMI..." },
+    { key: "turnoOnline", label: "¿Se puede sacar turno online o por teléfono?", type: "bool" },
+    { key: "urgencias", label: "¿Atendés urgencias?", type: "bool" },
+    { key: "matricula", label: "N° de matrícula profesional (opcional)", type: "text", placeholder: "Ej: MP 12345" },
+  ],
+  servicios: [
+    { key: "presupuestoSinCargo", label: "¿El presupuesto es sin cargo?", type: "bool" },
+    { key: "vaDomicilio", label: "¿Vas al domicilio del cliente?", type: "bool" },
+    { key: "garantia", label: "¿Ofrecés garantía sobre el trabajo?", type: "text", placeholder: "Ej: 30 días" },
+    { key: "zonaCobertura", label: "Zona de cobertura", type: "text", placeholder: "Ej: toda la provincia, solo capital..." },
+  ],
+  hogar: [
+    { key: "envioInstalacion", label: "¿El envío incluye instalación/armado?", type: "bool" },
+    { key: "financiacion", label: "¿Ofrecés financiación o cuotas?", type: "bool" },
+    { key: "marcas", label: "Marcas o rubros principales", type: "text", placeholder: "Ej: electrodomésticos, muebles, decoración" },
+  ],
+  moda: [
+    { key: "talles", label: "Rango de talles disponibles", type: "text", placeholder: "Ej: S al XXL" },
+    { key: "probador", label: "¿Tenés probador en el local?", type: "bool" },
+    { key: "cambios", label: "Política de cambios y devoluciones", type: "text", placeholder: "Ej: cambios dentro de 10 días con ticket" },
+  ],
+};
+const DEFAULT_QUESTIONS = [
+  { key: "atencionPersonalizada", label: "¿Ofrecés atención personalizada o a medida?", type: "bool" },
+  { key: "zonaCobertura", label: "Zona de cobertura o alcance", type: "text", placeholder: "Ej: toda la provincia, solo capital..." },
 ];
+
+// Lista de respaldo (por si la API de Georef no responde). Las provincias y localidades
+// reales de todo el país se obtienen en vivo desde la API oficial del Gobierno argentino.
+const ZONES = [
+  "San Miguel de Tucumán, Tucumán", "Yerba Buena, Tucumán", "Tafí Viejo, Tucumán",
+  "Concepción, Tucumán", "Banda del Río Salí, Tucumán", "Aguilares, Tucumán",
+];
+
+const GEOREF_API = "https://apis.datos.gob.ar/georef/api";
+let provinciasCache = null;
+const localidadesCache = {};
+
+async function fetchProvincias() {
+  if (provinciasCache) return provinciasCache;
+  try {
+    const res = await fetch(`${GEOREF_API}/provincias?campos=id,nombre&orden=nombre&max=30`);
+    const data = await res.json();
+    provinciasCache = data.provincias.map((p) => ({ id: p.id, nombre: p.nombre }));
+    return provinciasCache;
+  } catch {
+    return [];
+  }
+}
+
+async function fetchLocalidades(provinciaId) {
+  if (localidadesCache[provinciaId]) return localidadesCache[provinciaId];
+  try {
+    const res = await fetch(`${GEOREF_API}/localidades?provincia=${provinciaId}&campos=id,nombre&orden=nombre&max=5000&aplanar=true`);
+    const data = await res.json();
+    const nombres = [...new Set(data.localidades.map((l) => l.nombre))].sort((a, b) => a.localeCompare(b, "es"));
+    localidadesCache[provinciaId] = nombres;
+    return nombres;
+  } catch {
+    return [];
+  }
+}
 
 const PAYMENT_METHODS = ["Efectivo", "Tarjeta de débito", "Tarjeta de crédito", "Transferencia", "Mercado Pago"];
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
-const WHATSAPP_MESSAGE = "Hola. Te encontré en Mi Zona y quisiera consultar por sus servicios. ¿Podrían brindarme más información?";
-const ADD_BUSINESS_MESSAGE = "Hola, encontré Mi Zona y quiero agregar mi local al directorio. Me gustaría recibir información para registrar mi negocio.";
 
 /* ---------- utilidades ---------- */
 
@@ -115,12 +173,6 @@ function fmtHours(range) {
 function avgRating(reviews) {
   if (!reviews || reviews.length === 0) return null;
   return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
-}
-function waLink(phone) {
-  return `https://wa.me/${phone}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
-}
-function addBusinessWaLink() {
-  return `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(ADD_BUSINESS_MESSAGE)}`;
 }
 function mapsLink(loc, zone) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc + ", " + zone)}`;
@@ -217,18 +269,7 @@ function emptyBusiness() {
     weekHours: DAYS.map(() => [9, 20]),
     featured: false, status: "active",
     createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
-    views: 0, reviews: [], discounts: [],
-    ownerCode: uid().slice(0, 8).toUpperCase(),
-  };
-}
-
-function emptyJob() {
-  return {
-    id: uid(), kind: "job",
-    name: "", desc: "", phone: "", zone: ZONES[0],
-    status: "active",
-    createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
-    views: 0,
+    views: 0, reviews: [], discounts: [], extra: {},
     ownerCode: uid().slice(0, 8).toUpperCase(),
   };
 }
@@ -371,6 +412,68 @@ function StarPicker({ value, onChange }) {
           <Star size={22} color={n <= value ? "#2F6FED" : "#D1D5DB"} fill={n <= value ? "#2F6FED" : "none"} />
         </button>
       ))}
+    </div>
+  );
+}
+
+/* ---------- selector de Provincia + Localidad (toda Argentina, vía API oficial) ---------- */
+
+function ZonePicker({ value, onChange, dark = false, compact = false }) {
+  const [provincias, setProvincias] = useState([]);
+  const [localidades, setLocalidades] = useState([]);
+  const [provinciaId, setProvinciaId] = useState("");
+  const [localidad, setLocalidad] = useState("");
+  const [loadingLoc, setLoadingLoc] = useState(false);
+
+  useEffect(() => {
+    fetchProvincias().then(setProvincias);
+  }, []);
+
+  // si `value` ya trae "Localidad, Provincia" (o venimos de la lista de respaldo), tratamos de ubicar la provincia
+  useEffect(() => {
+    if (!value || provincias.length === 0 || provinciaId) return;
+    const partes = value.split(",").map((s) => s.trim());
+    const nombreProv = partes[1] || partes[0];
+    const match = provincias.find((p) => p.nombre.toLowerCase() === nombreProv.toLowerCase());
+    if (match) { setProvinciaId(match.id); setLocalidad(partes[0]); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, provincias]);
+
+  useEffect(() => {
+    if (!provinciaId) { setLocalidades([]); return; }
+    setLoadingLoc(true);
+    fetchLocalidades(provinciaId).then((list) => { setLocalidades(list); setLoadingLoc(false); });
+  }, [provinciaId]);
+
+  const inputCls = "appearance-none text-sm px-3 py-2.5";
+  const style = dark
+    ? { borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }
+    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1220", border: "1px solid #E2E8F0" };
+
+  return (
+    <div className={compact ? "flex gap-2" : "flex flex-col gap-2 sm:flex-row"}>
+      <select
+        value={provinciaId}
+        onChange={(e) => { setProvinciaId(e.target.value); setLocalidad(""); }}
+        className={inputCls} style={{ ...style, flex: 1 }}
+      >
+        <option value="" style={{ color: "#0B1220" }}>Provincia...</option>
+        {provincias.map((p) => <option key={p.id} value={p.id} style={{ color: "#0B1220" }}>{p.nombre}</option>)}
+      </select>
+      <select
+        value={localidad}
+        disabled={!provinciaId || loadingLoc}
+        onChange={(e) => {
+          const loc = e.target.value;
+          setLocalidad(loc);
+          const prov = provincias.find((p) => p.id === provinciaId);
+          if (loc && prov) onChange(`${loc}, ${prov.nombre}`);
+        }}
+        className={inputCls} style={{ ...style, flex: 1, opacity: !provinciaId || loadingLoc ? 0.6 : 1 }}
+      >
+        <option value="" style={{ color: "#0B1220" }}>{loadingLoc ? "Cargando..." : "Localidad..."}</option>
+        {localidades.map((l) => <option key={l} value={l} style={{ color: "#0B1220" }}>{l}</option>)}
+      </select>
     </div>
   );
 }
@@ -1020,6 +1123,8 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
 /* ---------- header público ---------- */
 
 function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner, showAccount, setShowAccount }) {
+  const [showZoneModal, setShowZoneModal] = useState(false);
+  const [pendingZone, setPendingZone] = useState(zone);
   return (
     <>
       {/* barra superior estilo app */}
@@ -1054,17 +1159,9 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             {query && <button onClick={() => setQuery("")}><X size={14} color="#6B7280" /></button>}
           </div>
 
-          <div className="relative inline-block mt-2.5">
-            <select
-              value={zone} onChange={(e) => setZone(e.target.value)}
-              className="appearance-none pl-5 pr-6 py-0.5 text-xs font-medium"
-              style={{ color: "#DCE7FB", background: "transparent" }}
-            >
-              {ZONES.map((z) => <option key={z} value={z} style={{ color: "#0B1220" }}>{z}</option>)}
-            </select>
-            <MapPin size={13} className="absolute left-0 top-1/2 -translate-y-1/2" color="#7FA8F5" />
-            <ChevronDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" color="#DCE7FB" />
-          </div>
+          <button onClick={() => setShowZoneModal(true)} className="flex items-center gap-1.5 mt-2.5 text-xs font-medium" style={{ color: "#DCE7FB" }}>
+            <MapPin size={13} color="#7FA8F5" /> {zone} <ChevronDown size={12} />
+          </button>
         </div>
       </div>
 
@@ -1074,6 +1171,26 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           onOpenAdmin={() => { setShowAccount(false); onOpenAdmin(); }}
           onClose={() => setShowAccount(false)}
         />
+      )}
+
+      {showZoneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowZoneModal(false)}>
+          <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14 }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
+              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#6B7280" /></button>
+            </div>
+            <ZonePicker value={pendingZone} onChange={setPendingZone} />
+            <button
+              onClick={() => { if (pendingZone) { setZone(pendingZone); setShowZoneModal(false); } }}
+              disabled={!pendingZone}
+              className="w-full text-sm font-semibold py-3 mt-4"
+              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: pendingZone ? 1 : 0.5 }}
+            >
+              Confirmar ubicación
+            </button>
+          </div>
+        </div>
       )}
 
       {/* categorías, en íconos circulares */}
@@ -1109,6 +1226,81 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   );
 }
 
+function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
+  const [sub, setSub] = useState(null); // null | "acerca" | "ayuda" | "soporte"
+
+  const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
+    <button
+      onClick={onClick} disabled={disabled}
+      className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
+      style={{ borderBottom: "1px solid #EEF2F7", opacity: disabled ? 0.55 : 1 }}
+    >
+      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: danger ? "#F7E7E5" : "#E8F0FE" }}>
+        <Icon size={16} color={danger ? "#9A3B34" : "#2F6FED"} />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{title}</span>
+          {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
+        </span>
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>}
+      </span>
+      <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+    </button>
+  );
+
+  if (sub) {
+    const content = {
+      acerca: {
+        title: "Acerca de Mi Zona",
+        body: "Mi Zona conecta a los clientes con los negocios de su localidad: descubrí, explorá y contactá al asistente de cada negocio en un solo lugar. Este proyecto está en construcción activa — nuevas funciones se agregan cada semana.",
+      },
+      ayuda: {
+        title: "Centro de ayuda",
+        body: "¿Sos cliente? Buscá el negocio que te interesa y abrí el chat con su asistente para consultar. ¿Sos dueño de un negocio? Tocá \"+\" para registrarlo, o entrá a Herramientas con tu código de dueño para administrarlo.",
+      },
+      soporte: {
+        title: "Soporte",
+        body: "¿Encontraste un problema o tenés una sugerencia? Escribinos y te respondemos a la brevedad.",
+      },
+    }[sub];
+    return (
+      <div>
+        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+          <ArrowLeft size={15} /> Volver a Ajustes
+        </button>
+        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">{content.title}</h2>
+        <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.6 }}>{content.body}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ajustes</p>
+      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
+
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+        <Row Icon={User} title="Mi cuenta" desc="Iniciá sesión con Google para acceder" badge="Próximamente" disabled />
+        <Row Icon={Lock} title="Seguridad" desc="Cambiar contraseña y opciones de seguridad" badge="Próximamente" disabled />
+        <Row Icon={Mail} title="Notificaciones" desc="Elegí qué notificaciones querés recibir" badge="Próximamente" disabled />
+        <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
+      </div>
+
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+        <Row Icon={Building2} title="Mi negocio" desc="Administrá tu negocio con tu código de dueño" onClick={onOpenOwner} />
+        <Row Icon={Lock} title="Administrador" desc="Acceso al panel general de Mi Zona" onClick={onOpenAdmin} />
+      </div>
+
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+        <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Información de la aplicación" onClick={() => setSub("acerca")} />
+        <Row Icon={MessageCircle} title="Centro de ayuda" desc="Preguntas frecuentes y asistencia" onClick={() => setSub("ayuda")} />
+        <Row Icon={Send} title="Soporte" desc="Contactar al equipo de Mi Zona" onClick={() => setSub("soporte")} />
+      </div>
+    </div>
+  );
+}
+
 function AccountSheet({ onOpenOwner, onOpenAdmin, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={onClose}>
@@ -1128,7 +1320,7 @@ function AccountSheet({ onOpenOwner, onOpenAdmin, onClose }) {
   );
 }
 
-function BottomNav({ active, onInicio, onExplorar, onAdd, onPerfil }) {
+function BottomNav({ active, onInicio, onExplorar, onAdd, onHerramientas, onAjustes }) {
   const Item = ({ id, label, Icon, onClick }) => (
     <button onClick={onClick} className="flex flex-col items-center gap-1 py-1" style={{ minWidth: 56 }}>
       <Icon size={20} color={active === id ? "#2F6FED" : "#94A3B8"} />
@@ -1143,40 +1335,16 @@ function BottomNav({ active, onInicio, onExplorar, onAdd, onPerfil }) {
         <button onClick={onAdd} className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#2F6FED", marginTop: -18 }}>
           <Plus size={20} color="#fff" />
         </button>
-        <Item id="perfil" label="Perfil" Icon={User} onClick={onPerfil} />
+        <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />
+        <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
       </div>
     </div>
   );
 }
 
-/* ---------- "Agregar mi local" ---------- */
+/* ---------- formulario de negocio (admin y alta pública) ---------- */
 
-function AddBusinessModal({ onClose }) {
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute" style={{ marginLeft: "auto", display: "block", marginTop: -16, marginRight: -16 }}><X size={18} /></button>
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 19, color: "#0B1220" }} className="mb-3">
-          ¿Querés sumar tu negocio a Mi Zona?
-        </h2>
-        <p className="text-sm mb-5" style={{ color: "#4B5563" }}>
-          Hacé que más personas conozcan tu negocio, encuentren tus productos o servicios y puedan contactarte fácilmente.
-        </p>
-        <a
-          href={addBusinessWaLink()} target="_blank" rel="noreferrer"
-          className="flex items-center justify-center gap-2 text-sm font-semibold py-3"
-          style={{ backgroundColor: "#25A24C", color: "#fff", borderRadius: 10 }}
-        >
-          <MessageCircle size={17} /> Contactarme por WhatsApp
-        </a>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- panel de administración ---------- */
-
-function BusinessForm({ initial, onSave, onCancel }) {
+function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   const [form, setForm] = useState(initial);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -1238,7 +1406,7 @@ function BusinessForm({ initial, onSave, onCancel }) {
       if (geo) coords = geo;
     }
     setSaving(false);
-    onSave({ ...form, lat: coords.lat, lng: coords.lng });
+    onSave({ ...form, lat: coords.lat, lng: coords.lng, status: publicMode ? "inactive" : form.status });
   };
 
   return (
@@ -1257,9 +1425,7 @@ function BusinessForm({ initial, onSave, onCancel }) {
           <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
-          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
-            {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
-          </select>
+          <ZonePicker value={form.zone} onChange={(z) => setForm((f) => ({ ...f, zone: z }))} />
 
           <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
@@ -1270,6 +1436,38 @@ function BusinessForm({ initial, onSave, onCancel }) {
           <div>
             <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Especialidades</p>
             <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
+          </div>
+
+          <div className="p-3" style={{ borderRadius: 8, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
+            <p className="text-xs font-semibold mb-2.5" style={{ color: "#0B2A54" }}>
+              Preguntas sobre tu rubro ({CATEGORIES.find((c) => c.id === form.cat)?.label})
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {(CATEGORY_QUESTIONS[form.cat] || DEFAULT_QUESTIONS).map((q) => (
+                <div key={q.key}>
+                  {q.type === "bool" ? (
+                    <label className="flex items-center gap-2 text-sm" style={{ color: "#1F2937" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!form.extra?.[q.key]}
+                        onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.checked } }))}
+                      />
+                      {q.label}
+                    </label>
+                  ) : (
+                    <>
+                      <p className="text-xs mb-1" style={{ color: "#4B5563" }}>{q.label}</p>
+                      <input
+                        placeholder={q.placeholder}
+                        value={form.extra?.[q.key] || ""}
+                        onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.value } }))}
+                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                      />
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -1291,7 +1489,7 @@ function BusinessForm({ initial, onSave, onCancel }) {
 
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.delivery} onChange={setBool("delivery")} /> Hace envíos</label>
 
-          <input placeholder="Teléfono WhatsApp (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <div>
             <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Logo (opcional)</p>
@@ -1334,27 +1532,35 @@ function BusinessForm({ initial, onSave, onCancel }) {
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={setBool("featured")} /> Marcar como destacado</label>
+          {!publicMode && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={setBool("featured")} /> Marcar como destacado</label>
+          )}
 
           <div className="p-3" style={{ borderRadius: 8, background: "#E8F0FE" }}>
             <p className="text-xs font-medium mb-1" style={{ color: "#0B2A54" }}>Código de dueño (para el panel "Mi negocio")</p>
             <p className="text-sm font-mono font-semibold" style={{ color: "#0B1220" }}>{form.ownerCode}</p>
-            <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>Compartíselo al dueño para que administre sus propios descuentos, sin poder tocar otros negocios.</p>
+            <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>
+              {publicMode
+                ? "Guardá este código: lo vas a necesitar para administrar tu negocio (editar datos, ver reseñas, y más adelante vincular Mi Asistente)."
+                : "Compartíselo al dueño para que administre sus propios descuentos, sin poder tocar otros negocios."}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Vence</p>
-              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          {!publicMode && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Vence</p>
+                <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Estado</p>
+                <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
+                  <option value="active">Activo</option>
+                  <option value="inactive">Inactivo</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Estado</p>
-              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
-            </div>
-          </div>
+          )}
 
           <div className="flex gap-2 mt-2">
             <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
@@ -1370,72 +1576,6 @@ function BusinessForm({ initial, onSave, onCancel }) {
 
 /* ---------- empleos ---------- */
 
-function JobForm({ initial, onSave, onCancel }) {
-  const [form, setForm] = useState(initial);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-
-  const submit = () => {
-    if (!form.name.trim() || !form.phone.trim()) return;
-    onSave(form);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#0B1220cc" }}>
-      <div className="bg-white w-full max-w-lg p-6 my-6" style={{ borderRadius: 12 }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 20 }}>
-            {initial.name ? "Editar trabajo" : "Nuevo trabajo"}
-          </h2>
-          <button onClick={onCancel}><X size={20} /></button>
-        </div>
-        <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del trabajo (ej: Se busca albañil)" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <textarea placeholder="Descripción: de qué se trata, requisitos, horario, etc." value={form.desc} onChange={set("desc")} rows={4} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Número de contacto (WhatsApp, con código país sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <select value={form.zone} onChange={set("zone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
-            {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Vence</p>
-              <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-            </div>
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Estado</p>
-              <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
-            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>Guardar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function JobCard({ job }) {
-  return (
-    <div className="bg-white p-4 flex flex-col" style={{ borderRadius: 10, border: "1px solid #E2E8F0", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}>
-      <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-medium mb-1" style={{ color: "#2F6FED", fontFamily: "'IBM Plex Mono', monospace" }}>
-        <Briefcase size={12} /> Empleo · {job.zone}
-      </span>
-      <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>{job.name}</h3>
-      <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#4B5563", whiteSpace: "pre-wrap" }}>{job.desc}</p>
-      <a
-        href={waLink(job.phone)} target="_blank" rel="noreferrer"
-        className="flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
-        style={{ backgroundColor: "#25A24C", color: "#fff", borderRadius: 10 }}
-      >
-        <MessageCircle size={16} /> Contactar por WhatsApp
-      </a>
-    </div>
-  );
-}
 
 function ReviewsModal({ business, onDeleteReview, onClose }) {
   return (
@@ -1469,11 +1609,10 @@ function ReviewsModal({ business, onDeleteReview, onClose }) {
   );
 }
 
-function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleStatus, onRenew, onDelete, onOpenReviews, onLogout }) {
+function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew, onDelete, onOpenReviews, onLogout }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todos");
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -1486,7 +1625,6 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
       else if (filter === "por_vencer") matchFilter = du !== null && du >= 0 && du <= 7;
       else if (filter === "vencidos") matchFilter = du !== null && du < 0;
       else if (filter === "negocios") matchFilter = b.kind !== "job";
-      else if (filter === "empleos") matchFilter = b.kind === "job";
       return matchQ && matchFilter;
     });
   }, [businesses, search, filter]);
@@ -1494,7 +1632,6 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
   const FILTERS = [
     { id: "todos", label: "Todos" },
     { id: "negocios", label: "Negocios" },
-    { id: "empleos", label: "Empleos" },
     { id: "activos", label: "Activos" },
     { id: "inactivos", label: "Inactivos" },
     { id: "por_vencer", label: "Por vencer" },
@@ -1507,19 +1644,9 @@ function AdminDashboard({ businesses, onAddNew, onAddNewJob, onEdit, onToggleSta
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
           <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Panel de administración</h1>
           <div className="flex gap-2 relative">
-            <button onClick={() => setShowAddMenu((v) => !v)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#2F6FED", color: "#0B1220" }}>
-              <Plus size={14} /> Nuevo
+            <button onClick={onAddNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#2F6FED", color: "#0B1220" }}>
+              <Plus size={14} /> Agregar negocio
             </button>
-            {showAddMenu && (
-              <div className="absolute top-full mt-1 right-0 bg-white shadow-lg flex flex-col z-40" style={{ borderRadius: 8, border: "1px solid #E2E8F0", minWidth: 180 }}>
-                <button onClick={() => { setShowAddMenu(false); onAddNew(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#0B1220" }}>
-                  <Building2 size={14} /> Agregar negocio
-                </button>
-                <button onClick={() => { setShowAddMenu(false); onAddNewJob(); }} className="flex items-center gap-2 text-sm px-3 py-2.5 text-left hover:bg-gray-50" style={{ color: "#0B1220", borderTop: "1px solid #EEF2F7" }}>
-                  <Briefcase size={14} /> Agregar trabajo
-                </button>
-              </div>
-            )}
             <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
               <LogOut size={14} /> Salir
             </button>
@@ -1775,6 +1902,16 @@ export default function MiZona() {
 
   // agregar mi local
   const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [addBusinessDone, setAddBusinessDone] = useState(null); // guarda el código de dueño tras enviar
+  const submitPublicBusiness = async (data) => {
+    try {
+      await createBusinessOnServer(data);
+      setShowAddBusiness(false);
+      setAddBusinessDone(data.ownerCode);
+    } catch {
+      alert("No se pudo enviar tu negocio. Probá de nuevo en un momento.");
+    }
+  };
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Mensajes | Perfil)
   const [activeTab, setActiveTab] = useState("inicio");
@@ -1960,7 +2097,6 @@ export default function MiZona() {
         <AdminDashboard
           businesses={businesses}
           onAddNew={() => setEditingBiz(emptyBusiness())}
-          onAddNewJob={() => setEditingBiz(emptyJob())}
           onEdit={(b) => setEditingBiz(b)}
           onToggleStatus={toggleStatus}
           onRenew={renewSubscription}
@@ -1968,10 +2104,7 @@ export default function MiZona() {
           onOpenReviews={(b) => setReviewsBiz(b)}
           onLogout={() => { setAdminView(false); setAdminAuthed(false); }}
         />
-        {editingBiz && editingBiz.kind === "job" && (
-          <JobForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />
-        )}
-        {editingBiz && editingBiz.kind !== "job" && (
+        {editingBiz && (
           <BusinessForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />
         )}
         {reviewsBiz && <ReviewsModal business={reviewsBiz} onDeleteReview={deleteReview} onClose={() => setReviewsBiz(null)} />}
@@ -2037,9 +2170,38 @@ export default function MiZona() {
           onClose={() => setShowOwnerGate(false)}
         />
       )}
-      {showAddBusiness && <AddBusinessModal onClose={() => setShowAddBusiness(false)} />}
+      {showAddBusiness && (
+        <BusinessForm
+          publicMode
+          initial={emptyBusiness()}
+          onSave={submitPublicBusiness}
+          onCancel={() => setShowAddBusiness(false)}
+        />
+      )}
+
+      {addBusinessDone && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={() => setAddBusinessDone(null)}>
+          <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-center mx-auto mb-3" style={{ width: 48, height: 48, borderRadius: "50%", background: "#E4F3EA" }}>
+              <Check size={24} color="#1E6B44" />
+            </div>
+            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Negocio enviado!</h2>
+            <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
+              En breve el equipo de Mi Zona lo va a revisar y activar. Guardá este código, lo vas a necesitar para administrar tu negocio:
+            </p>
+            <p className="text-lg font-mono font-bold mb-5" style={{ color: "#0B2A54" }}>{addBusinessDone}</p>
+            <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
+        {activeTab === "ajustes" ? (
+          <AjustesScreen onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))} onOpenOwner={() => setShowOwnerGate(true)} />
+        ) : (
+        <>
         {activeTab === "explorar" && (
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -2135,13 +2297,16 @@ export default function MiZona() {
             ))}
           </div>
         )}
+        </>
+        )}
       </main>
       <BottomNav
         active={activeTab}
         onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); window.scrollTo(0, 0); }}
         onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
         onAdd={() => setShowAddBusiness(true)}
-        onPerfil={() => { setActiveTab("perfil"); setShowAccountSheet(true); }}
+        onHerramientas={() => { setActiveTab("herramientas"); setShowOwnerGate(true); }}
+        onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
       />
 
       {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
