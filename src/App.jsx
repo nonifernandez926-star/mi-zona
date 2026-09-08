@@ -7,7 +7,7 @@ import {
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
-  Heart, Share2, Send, Mail, Settings,
+  Heart, Share2, Send, Mail, Settings, Menu, Bell,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -805,8 +805,8 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
       role="button" tabIndex={0}
       onClick={() => onOpen(biz.id)}
       onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
-      className="bg-white flex flex-col overflow-hidden transition-shadow hover:shadow-md text-left cursor-pointer"
-      style={{ borderRadius: 10, border: "1px solid #E2E8F0", boxShadow: "0 1px 2px rgba(20,26,40,0.04)" }}
+      className="bg-white flex flex-col overflow-hidden transition-shadow hover:shadow-lg text-left cursor-pointer"
+      style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 4px 16px rgba(11,42,84,0.08)" }}
     >
       <div className="relative">
         <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} clickable={false} />
@@ -1122,26 +1122,43 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner, showAccount, setShowAccount }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner, onHerramientas, onAjustes }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
+  const [showDrawer, setShowDrawer] = useState(false);
   return (
     <>
       {/* barra superior estilo app */}
       <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-6xl mx-auto px-4 pt-4 pb-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1">
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Mi</span>
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#7FA8F5" }}>Zona</span>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setShowDrawer(true)}
+                className="flex items-center justify-center shrink-0"
+                style={{ width: 34, height: 34, borderRadius: 10, background: "#ffffff1f" }}
+              >
+                <Menu size={17} color="#fff" />
+              </button>
+              <div className="flex items-center gap-1">
+                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Mi</span>
+                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#7FA8F5" }}>Zona</span>
+              </div>
             </div>
-            <button
-              onClick={() => setShowAccount(true)}
-              className="flex items-center justify-center shrink-0"
-              style={{ width: 34, height: 34, borderRadius: "50%", background: "#ffffff20" }}
-            >
-              <User size={16} color="#fff" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="flex items-center justify-center shrink-0"
+                style={{ width: 34, height: 34, borderRadius: 10, background: "#ffffff1f" }}
+              >
+                <Bell size={16} color="#fff" />
+              </button>
+              <div
+                className="flex items-center justify-center shrink-0 overflow-hidden"
+                style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)", border: "2px solid #ffffff30" }}
+              >
+                <User size={16} color="#fff" />
+              </div>
+            </div>
           </div>
 
           <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 17, color: "#fff" }}>¡Descubrí tu zona!</p>
@@ -1149,7 +1166,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             Encontrá negocios, productos y servicios cerca tuyo.
           </p>
 
-          <div className="flex items-center gap-2 bg-white px-3.5 py-2.5" style={{ borderRadius: 10 }}>
+          <div className="flex items-center gap-2 bg-white px-3.5 py-2.5" style={{ borderRadius: 10, boxShadow: "0 2px 10px #00000022" }}>
             <Search size={16} color="#6B7280" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
@@ -1165,17 +1182,19 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         </div>
       </div>
 
-      {showAccount && (
-        <AccountSheet
-          onOpenOwner={() => { setShowAccount(false); onOpenOwner(); }}
-          onOpenAdmin={() => { setShowAccount(false); onOpenAdmin(); }}
-          onClose={() => setShowAccount(false)}
+      {showDrawer && (
+        <DrawerMenu
+          onClose={() => setShowDrawer(false)}
+          onHerramientas={() => { setShowDrawer(false); onHerramientas(); }}
+          onAjustes={() => { setShowDrawer(false); onAjustes(); }}
+          onOpenOwner={() => { setShowDrawer(false); onOpenOwner(); }}
+          onOpenAdmin={() => { setShowDrawer(false); onOpenAdmin(); }}
         />
       )}
 
       {showZoneModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowZoneModal(false)}>
-          <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14 }} onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14, boxShadow: "0 12px 40px #00000033" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
               <button onClick={() => setShowZoneModal(false)}><X size={18} color="#6B7280" /></button>
@@ -1194,7 +1213,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       )}
 
       {/* categorías, en íconos circulares */}
-      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E2E8F0" }}>
+      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E2E8F0", boxShadow: "0 4px 14px #0b2a5410" }}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 14, color: "#0B1220" }}>Categorías</span>
@@ -1202,7 +1221,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           </div>
           <div className="flex gap-4 overflow-x-auto pb-1">
             <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 60 }}>
-              <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: activeCat === null ? "#2F6FED" : "#E8F0FE" }}>
+              <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: activeCat === null ? "#2F6FED" : "#E8F0FE", boxShadow: activeCat === null ? "0 4px 10px #2F6FED44" : "none" }}>
                 <Grid3x3 size={18} color={activeCat === null ? "#fff" : "#2F6FED"} />
               </span>
               <span className="text-[11px] text-center" style={{ color: "#4B5563" }}>Todos</span>
@@ -1212,7 +1231,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               const active = activeCat === c.id;
               return (
                 <button key={c.id} onClick={() => setActiveCat(active ? null : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 60 }}>
-                  <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: active ? c.color : `${c.color}1A` }}>
+                  <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: active ? c.color : `${c.color}1A`, boxShadow: active ? `0 4px 10px ${c.color}55` : "none" }}>
                     <Icon size={18} color={active ? "#fff" : c.color} />
                   </span>
                   <span className="text-[11px] text-center leading-tight" style={{ color: "#4B5563" }}>{c.label.split(" ")[0]}</span>
@@ -1223,6 +1242,48 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         </div>
       </div>
     </>
+  );
+}
+
+function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdmin }) {
+  const Item = ({ Icon, label, onClick, danger }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>
+      <Icon size={18} color={danger ? "#9A3B34" : "#0B2A54"} />
+      <span className="text-sm font-medium">{label}</span>
+    </button>
+  );
+  return (
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      <div className="absolute inset-0" style={{ background: "#0B122066" }} />
+      <div
+        className="absolute top-0 left-0 bottom-0 bg-white flex flex-col"
+        style={{ width: "min(78vw, 300px)", boxShadow: "6px 0 30px #00000033" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5" style={{ background: "linear-gradient(135deg, #0B2A54, #17407F)" }}>
+          <div
+            className="flex items-center justify-center mb-3"
+            style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)" }}
+          >
+            <User size={24} color="#fff" />
+          </div>
+          <p className="text-sm font-semibold" style={{ color: "#fff" }}>Explorá tu zona</p>
+          <p className="text-xs" style={{ color: "#BBD1FB" }}>Mi Zona</p>
+        </div>
+        <div className="py-2 flex-1 overflow-y-auto">
+          <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
+          <Item Icon={Settings} label="Ajustes" onClick={onAjustes} />
+          <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
+          <Item Icon={Lock} label="Administrador" onClick={onOpenAdmin} />
+          <div style={{ borderTop: "1px solid #EEF2F7", margin: "8px 0" }} />
+          <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onClose} />
+          <Item Icon={Send} label="Soporte" onClick={onClose} />
+        </div>
+        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#6B7280", borderTop: "1px solid #EEF2F7" }}>
+          <X size={13} /> Cerrar menú
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -1280,19 +1341,19 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
       <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ajustes</p>
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
         <Row Icon={User} title="Mi cuenta" desc="Iniciá sesión con Google para acceder" badge="Próximamente" disabled />
         <Row Icon={Lock} title="Seguridad" desc="Cambiar contraseña y opciones de seguridad" badge="Próximamente" disabled />
         <Row Icon={Mail} title="Notificaciones" desc="Elegí qué notificaciones querés recibir" badge="Próximamente" disabled />
         <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
       </div>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
         <Row Icon={Building2} title="Mi negocio" desc="Administrá tu negocio con tu código de dueño" onClick={onOpenOwner} />
         <Row Icon={Lock} title="Administrador" desc="Acceso al panel general de Mi Zona" onClick={onOpenAdmin} />
       </div>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
         <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Información de la aplicación" onClick={() => setSub("acerca")} />
         <Row Icon={MessageCircle} title="Centro de ayuda" desc="Preguntas frecuentes y asistencia" onClick={() => setSub("ayuda")} />
         <Row Icon={Send} title="Soporte" desc="Contactar al equipo de Mi Zona" onClick={() => setSub("soporte")} />
@@ -1301,24 +1362,6 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
   );
 }
 
-function AccountSheet({ onOpenOwner, onOpenAdmin, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Perfil</span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
-        </div>
-        <button onClick={onOpenOwner} className="w-full flex items-center gap-2.5 text-sm font-medium px-3 py-3 mb-2" style={{ borderRadius: 10, border: "1px solid #E2E8F0", color: "#0B1220" }}>
-          <User size={16} color="#2F6FED" /> Mi negocio
-        </button>
-        <button onClick={onOpenAdmin} className="w-full flex items-center gap-2.5 text-sm font-medium px-3 py-3" style={{ borderRadius: 10, border: "1px solid #E2E8F0", color: "#0B1220" }}>
-          <Lock size={16} color="#2F6FED" /> Administrador
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function BottomNav({ active, onInicio, onExplorar, onAdd, onHerramientas, onAjustes }) {
   const Item = ({ id, label, Icon, onClick }) => (
@@ -1491,24 +1534,49 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
           <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Logo (opcional)</p>
-            <div className="flex items-center gap-3">
-              {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
-                {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
-                <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-              </label>
-              {form.logo && !uploadingLogo && (
-                <button type="button" onClick={() => setForm({ ...form, logo: "" })} className="text-xs" style={{ color: "#C1443A" }}>Quitar</button>
+
+          <div className="p-3.5" style={{ borderRadius: 10, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
+            <p className="text-xs font-semibold mb-3" style={{ color: "#0B2A54" }}>Fotos del negocio</p>
+
+            <div className="flex items-center gap-3 mb-3">
+              <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#E8F0FE" }}>
+                <Building2 size={18} color="#2F6FED" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Logo del negocio</p>
+                <p className="text-[11px]" style={{ color: "#6B7280" }}>Se va a mostrar en tu perfil dentro de Mi Zona.</p>
+              </div>
+              {form.logo ? (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <img src={form.logo} alt="" className="w-9 h-9 object-cover" style={{ borderRadius: 8 }} />
+                  <button type="button" onClick={() => setForm({ ...form, logo: "" })}><X size={13} color="#9A3B34" /></button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center shrink-0 cursor-pointer" style={{ width: 64, height: 52, borderRadius: 10, border: "1.5px dashed #2F6FED55" }}>
+                  <ImageIcon size={15} color="#2F6FED" />
+                  <span className="text-[9px] font-semibold mt-0.5" style={{ color: "#2F6FED" }}>{uploadingLogo ? "..." : "Subir"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                </label>
               )}
             </div>
-          </div>
 
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Fotos de productos</p>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#E8F0FE" }}>
+                <ImageIcon size={18} color="#2F6FED" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Fotos de productos</p>
+                <p className="text-[11px]" style={{ color: "#6B7280" }}>Mostrales a tus clientes lo que ofrecés.</p>
+              </div>
+              <label className="flex flex-col items-center justify-center shrink-0 cursor-pointer" style={{ width: 64, height: 52, borderRadius: 10, border: "1.5px dashed #2F6FED55" }}>
+                <ImageIcon size={15} color="#2F6FED" />
+                <span className="text-[9px] font-semibold mt-0.5" style={{ color: "#2F6FED" }}>{uploadingPhotos ? "..." : "Subir"}</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
+              </label>
+            </div>
+
             {form.photos?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {form.photos.map((url) => (
                   <div key={url} className="relative">
                     <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
@@ -1519,12 +1587,9 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
                 ))}
               </div>
             )}
-            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
-              {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
-            </label>
-            {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
+            {uploadError && <p className="text-xs mt-2" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
+
           <input placeholder="Dirección" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
@@ -1901,6 +1966,7 @@ export default function MiZona() {
   const [ownerBizId, setOwnerBizId] = useState(null);
 
   // agregar mi local
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [addBusinessDone, setAddBusinessDone] = useState(null); // guarda el código de dueño tras enviar
   const submitPublicBusiness = async (data) => {
@@ -1913,9 +1979,8 @@ export default function MiZona() {
     }
   };
 
-  // pestaña activa de la barra inferior (Inicio | Explorar | Mensajes | Perfil)
+  // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
   const [activeTab, setActiveTab] = useState("inicio");
-  const [showAccountSheet, setShowAccountSheet] = useState(false);
 
   // favoritos (guardados en este dispositivo)
   const [favorites, setFavorites] = useState(() => getFavorites());
@@ -2153,7 +2218,8 @@ export default function MiZona() {
         onOpenAllCats={() => setShowAllCats(true)}
         onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))}
         onOpenOwner={() => setShowOwnerGate(true)}
-        showAccount={showAccountSheet} setShowAccount={setShowAccountSheet}
+        onHerramientas={() => { setActiveTab("herramientas"); setShowOwnerGate(true); }}
+        onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
       />
 
       {showAllCats && <CategoryModal activeCat={activeCat} onSelect={(id) => { setActiveCat(id); setShowAllCats(false); }} onClose={() => setShowAllCats(false)} />}
@@ -2170,6 +2236,32 @@ export default function MiZona() {
           onClose={() => setShowOwnerGate(false)}
         />
       )}
+
+      {showAddSheet && (
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={() => setShowAddSheet(false)}>
+          <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 30px #00000022" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 4, background: "#E2E8F0", margin: "0 auto 16px" }} />
+            <div className="flex items-center justify-between mb-4">
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>¿Qué querés hacer?</span>
+              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#6B7280" /></button>
+            </div>
+            <button
+              onClick={() => { setShowAddSheet(false); setShowAddBusiness(true); }}
+              className="w-full flex items-center gap-3 p-3.5 text-left"
+              style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px #0000000d" }}
+            >
+              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#E8F0FE" }}>
+                <Building2 size={19} color="#2F6FED" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Agregar mi negocio</span>
+                <span className="block text-xs" style={{ color: "#6B7280" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {showAddBusiness && (
         <BusinessForm
           publicMode
@@ -2304,7 +2396,7 @@ export default function MiZona() {
         active={activeTab}
         onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); window.scrollTo(0, 0); }}
         onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
-        onAdd={() => setShowAddBusiness(true)}
+        onAdd={() => setShowAddSheet(true)}
         onHerramientas={() => { setActiveTab("herramientas"); setShowOwnerGate(true); }}
         onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
       />
