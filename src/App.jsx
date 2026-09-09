@@ -1287,6 +1287,94 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
   );
 }
 
+function HerramientasScreen({ onOpenOwner, onOpenAllCats, onGoFavoritos }) {
+  const [modo, setModo] = useState(() => localStorage.getItem("miZonaModoHerramientas") || null); // null | "cliente" | "negocio"
+
+  const elegir = (m) => {
+    setModo(m);
+    localStorage.setItem("miZonaModoHerramientas", m);
+  };
+
+  const Row = ({ Icon, title, desc, onClick, badge }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white" style={{ borderBottom: "1px solid #EEF2F7" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "#E8F0FE" }}>
+        <Icon size={16} color="#2F6FED" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-medium" style={{ color: "#0B1220" }}>{title}</span>
+          {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
+        </span>
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>}
+      </span>
+      <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+    </button>
+  );
+
+  if (!modo) {
+    return (
+      <div>
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
+        <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Elegí cómo querés usar Mi Zona</p>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => elegir("cliente")}
+            className="flex items-center gap-3 p-4 text-left bg-white"
+            style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}
+          >
+            <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: "#E8F0FE" }}>
+              <Search size={20} color="#2F6FED" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Busco negocios</span>
+              <span className="block text-xs" style={{ color: "#6B7280" }}>Soy cliente y quiero encontrar lo que necesito.</span>
+            </span>
+          </button>
+          <button
+            onClick={() => elegir("negocio")}
+            className="flex items-center gap-3 p-4 text-left bg-white"
+            style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}
+          >
+            <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: "#E8F0FE" }}>
+              <Building2 size={20} color="#2F6FED" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Tengo un negocio</span>
+              <span className="block text-xs" style={{ color: "#6B7280" }}>Quiero administrar y hacer crecer mi negocio.</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
+        <button onClick={() => elegir(null)} className="text-xs font-medium" style={{ color: "#2F6FED" }}>Cambiar</button>
+      </div>
+      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>
+        {modo === "cliente" ? "Para ayudarte a encontrar lo que buscás" : "Para ayudarte a mantener tu negocio"}
+      </p>
+
+      {modo === "cliente" ? (
+        <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
+          <Row Icon={Grid3x3} title="Explorar por categoría" desc="Encontrá negocios según el rubro que buscás" onClick={onOpenAllCats} />
+          <Row Icon={Heart} title="Mis favoritos" desc="Los negocios que marcaste con el corazón" onClick={onGoFavoritos} />
+          <Row Icon={LocateFixed} title="Cerca de mí" desc="Ordená por distancia" badge="Próximamente" />
+        </div>
+      ) : (
+        <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
+          <Row Icon={KeyRound} title="Acceder a mi negocio" desc="Ingresá con tu código de dueño" onClick={onOpenOwner} />
+          <Row Icon={Star} title="Descuentos y promociones" desc="Administrá tus descuentos activos" badge="Próximamente" />
+          <Row Icon={Eye} title="Estadísticas" desc="Vistas y contactos de tu negocio" badge="Próximamente" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
   const [sub, setSub] = useState(null); // null | "acerca" | "ayuda" | "soporte"
 
@@ -1535,48 +1623,24 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
-          <div className="p-3.5" style={{ borderRadius: 10, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
-            <p className="text-xs font-semibold mb-3" style={{ color: "#0B2A54" }}>Fotos del negocio</p>
-
-            <div className="flex items-center gap-3 mb-3">
-              <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#E8F0FE" }}>
-                <Building2 size={18} color="#2F6FED" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Logo del negocio</p>
-                <p className="text-[11px]" style={{ color: "#6B7280" }}>Se va a mostrar en tu perfil dentro de Mi Zona.</p>
-              </div>
-              {form.logo ? (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <img src={form.logo} alt="" className="w-9 h-9 object-cover" style={{ borderRadius: 8 }} />
-                  <button type="button" onClick={() => setForm({ ...form, logo: "" })}><X size={13} color="#9A3B34" /></button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center shrink-0 cursor-pointer" style={{ width: 64, height: 52, borderRadius: 10, border: "1.5px dashed #2F6FED55" }}>
-                  <ImageIcon size={15} color="#2F6FED" />
-                  <span className="text-[9px] font-semibold mt-0.5" style={{ color: "#2F6FED" }}>{uploadingLogo ? "..." : "Subir"}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-                </label>
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Logo (opcional)</p>
+            <div className="flex items-center gap-3">
+              {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+              </label>
+              {form.logo && !uploadingLogo && (
+                <button type="button" onClick={() => setForm({ ...form, logo: "" })} className="text-xs" style={{ color: "#C1443A" }}>Quitar</button>
               )}
             </div>
+          </div>
 
-            <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#E8F0FE" }}>
-                <ImageIcon size={18} color="#2F6FED" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Fotos de productos</p>
-                <p className="text-[11px]" style={{ color: "#6B7280" }}>Mostrales a tus clientes lo que ofrecés.</p>
-              </div>
-              <label className="flex flex-col items-center justify-center shrink-0 cursor-pointer" style={{ width: 64, height: 52, borderRadius: 10, border: "1.5px dashed #2F6FED55" }}>
-                <ImageIcon size={15} color="#2F6FED" />
-                <span className="text-[9px] font-semibold mt-0.5" style={{ color: "#2F6FED" }}>{uploadingPhotos ? "..." : "Subir"}</span>
-                <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
-              </label>
-            </div>
-
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mb-2">
                 {form.photos.map((url) => (
                   <div key={url} className="relative">
                     <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
@@ -1587,7 +1651,11 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
                 ))}
               </div>
             )}
-            {uploadError && <p className="text-xs mt-2" style={{ color: "#C1443A" }}>{uploadError}</p>}
+            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+              {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
+            </label>
+            {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
 
           <input placeholder="Dirección" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
@@ -1599,32 +1667,6 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
           {!publicMode && (
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={setBool("featured")} /> Marcar como destacado</label>
-          )}
-
-          <div className="p-3" style={{ borderRadius: 8, background: "#E8F0FE" }}>
-            <p className="text-xs font-medium mb-1" style={{ color: "#0B2A54" }}>Código de dueño (para el panel "Mi negocio")</p>
-            <p className="text-sm font-mono font-semibold" style={{ color: "#0B1220" }}>{form.ownerCode}</p>
-            <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>
-              {publicMode
-                ? "Guardá este código: lo vas a necesitar para administrar tu negocio (editar datos, ver reseñas, y más adelante vincular Mi Asistente)."
-                : "Compartíselo al dueño para que administre sus propios descuentos, sin poder tocar otros negocios."}
-            </p>
-          </div>
-
-          {!publicMode && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Vence</p>
-                <input type="date" value={form.expiresAt} onChange={set("expiresAt")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-              </div>
-              <div>
-                <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Estado</p>
-                <select value={form.status} onChange={set("status")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
-              </div>
-            </div>
           )}
 
           <div className="flex gap-2 mt-2">
@@ -1948,6 +1990,7 @@ export default function MiZona() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState(null);
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
@@ -2051,8 +2094,9 @@ export default function MiZona() {
       const haystack = [b.name, b.desc, ...(b.services || []), ...(b.specialties || [])].join(" ").toLowerCase();
       const matchQ = q ? haystack.includes(q) : true;
       const matchOpen = onlyOpen ? isOpenNow(b.weekHours) : true;
+      const matchFav = onlyFavorites ? favorites.includes(b.id) : true;
       const matchDiscount = sortBy === "descuentos" ? activeDiscounts(b).length > 0 : true;
-      return matchCat && matchZone && matchQ && matchOpen && matchDiscount;
+      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchDiscount;
     });
     list = [...list];
     if (sortBy === "vistas") {
@@ -2066,7 +2110,7 @@ export default function MiZona() {
       list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [businesses, query, activeCat, zone, onlyOpen, sortBy, userLoc]);
+  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, sortBy, userLoc]);
 
   const selected = businesses.find((b) => b.id === selectedId);
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
@@ -2218,7 +2262,7 @@ export default function MiZona() {
         onOpenAllCats={() => setShowAllCats(true)}
         onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))}
         onOpenOwner={() => setShowOwnerGate(true)}
-        onHerramientas={() => { setActiveTab("herramientas"); setShowOwnerGate(true); }}
+        onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
         onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
       />
 
@@ -2292,6 +2336,12 @@ export default function MiZona() {
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
         {activeTab === "ajustes" ? (
           <AjustesScreen onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))} onOpenOwner={() => setShowOwnerGate(true)} />
+        ) : activeTab === "herramientas" ? (
+          <HerramientasScreen
+            onOpenOwner={() => setShowOwnerGate(true)}
+            onOpenAllCats={() => setShowAllCats(true)}
+            onGoFavoritos={() => { setActiveTab("explorar"); setOnlyFavorites(true); window.scrollTo(0, 0); }}
+          />
         ) : (
         <>
         {activeTab === "explorar" && (
@@ -2315,6 +2365,15 @@ export default function MiZona() {
             {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
           </p>
           <div className="flex items-center gap-2">
+            {onlyFavorites && (
+              <button
+                onClick={() => setOnlyFavorites(false)}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
+                style={{ borderRadius: 20, backgroundColor: "#F7E7E5", color: "#9A3B34", border: "1px solid #C1443A" }}
+              >
+                <Heart size={11} fill="#9A3B34" /> Solo favoritos <X size={11} />
+              </button>
+            )}
             <button
               onClick={() => setOnlyOpen((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
@@ -2394,10 +2453,10 @@ export default function MiZona() {
       </main>
       <BottomNav
         active={activeTab}
-        onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); window.scrollTo(0, 0); }}
+        onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); window.scrollTo(0, 0); }}
         onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
         onAdd={() => setShowAddSheet(true)}
-        onHerramientas={() => { setActiveTab("herramientas"); setShowOwnerGate(true); }}
+        onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
         onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
       />
 
