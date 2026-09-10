@@ -7,7 +7,7 @@ import {
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
-  Heart, Share2, Send, Mail, Settings, Menu, Bell,
+  Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -95,6 +95,9 @@ const ZONES = [
 ];
 
 const GEOREF_API = "https://apis.datos.gob.ar/georef/api";
+
+// TODO: reemplazar por la URL real donde está publicado Mi Asistente
+const MI_ASISTENTE_URL = "https://nonifernandez926-star.github.io/empleado-virtual-ia/registro.html";
 let provinciasCache = null;
 const localidadesCache = {};
 
@@ -271,6 +274,7 @@ function emptyBusiness() {
     createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
     views: 0, reviews: [], discounts: [], extra: {},
     ownerCode: uid().slice(0, 8).toUpperCase(),
+    asistenteCodigo: "",
   };
 }
 
@@ -290,6 +294,16 @@ async function loadBusinesses() {
   if (!res.ok) throw new Error("No se pudieron cargar los negocios");
   const list = await res.json();
   return list.map(normalizeBusiness);
+}
+
+async function buscarConAsistente(mensaje, historial) {
+  const res = await fetch(`${API_URL}/asistente/buscar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mensaje, historial }),
+  });
+  if (!res.ok) throw new Error("No se pudo consultar al asistente");
+  return res.json(); // { respuesta, negocios: [ids] }
 }
 
 async function createBusinessOnServer(biz) {
@@ -479,6 +493,122 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
 }
 
 /* ---------- chat con el asistente del negocio ---------- */
+
+function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness }) {
+  const [messages, setMessages] = useState([
+    { id: uid(), rol: "asistente", texto: "¡Hola! Contame qué estás buscando y te ayudo a encontrarlo en Mi Zona.", negocios: [] },
+  ]);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const enviar = async () => {
+    const contenido = text.trim();
+    if (!contenido || sending) return;
+    const historialActual = messages;
+    const msgCliente = { id: uid(), rol: "cliente", texto: contenido, negocios: [] };
+    setMessages((prev) => [...prev, msgCliente]);
+    setText("");
+    setSending(true);
+    try {
+      const data = await buscarConAsistente(contenido, historialActual);
+      const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, negocios: data.negocios || [] };
+      setMessages((prev) => [...prev, msgAsistente]);
+    } catch {
+      setMessages((prev) => [...prev, { id: uid(), rol: "asistente", texto: "No pude buscar en este momento. Probá de nuevo en un rato.", negocios: [] }]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
+      <div style={{ backgroundColor: "#0B2A54" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)" }}>
+            <Search size={16} color="#fff" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Asistente de búsqueda</p>
+            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>Te ayudo a encontrar lo que necesitás</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-4 flex flex-col gap-3 overflow-y-auto">
+        {messages.map((m) => (
+          <div key={m.id} className="flex flex-col" style={{ alignItems: m.rol === "cliente" ? "flex-end" : "flex-start" }}>
+            <div
+              className="px-3.5 py-2.5 text-sm"
+              style={{
+                maxWidth: "85%", borderRadius: 14,
+                backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
+                color: m.rol === "cliente" ? "#fff" : "#0B1220",
+                border: m.rol === "cliente" ? "none" : "1px solid #E2E8F0",
+                borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
+                borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
+              }}
+            >
+              {m.texto}
+            </div>
+            {m.negocios?.length > 0 && (
+              <div className="flex flex-col gap-2 mt-2" style={{ maxWidth: "85%", width: "100%" }}>
+                {m.negocios.map((id) => {
+                  const biz = businesses.find((b) => b.id === id);
+                  if (!biz) return null;
+                  const c = catInfo(biz.cat);
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => onOpenBusiness(id)}
+                      className="flex items-center gap-3 p-3 text-left bg-white"
+                      style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 10px rgba(11,42,84,0.07)" }}
+                    >
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "#2F6FED" }}>
+                        {c?.icon ? <c.icon size={18} color="#fff" /> : <Building2 size={18} color="#fff" />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
+                        <span className="block text-xs truncate" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</span>
+                      </span>
+                      <ChevronDown size={14} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+        {sending && (
+          <div className="flex" style={{ justifyContent: "flex-start" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#6B7280" }}>
+              Buscando...
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ backgroundColor: "#fff", borderTop: "1px solid #E2E8F0" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
+          <input
+            value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
+            placeholder="Ej: quiero comer una hamburguesa..."
+            className="flex-1 px-4 py-2.5 text-sm outline-none"
+            style={{ borderRadius: 24, border: "1px solid #E2E8F0", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+          />
+          <button
+            onClick={enviar} disabled={sending || !text.trim()}
+            className="flex items-center justify-center shrink-0"
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2F6FED", opacity: sending || !text.trim() ? 0.5 : 1 }}
+          >
+            <Send size={16} color="#fff" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ChatScreen({ biz, onBack }) {
   const c = catInfo(biz.cat);
@@ -1287,61 +1417,40 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
   );
 }
 
-function HerramientasScreen({ onOpenOwner, onOpenAllCats, onGoFavoritos }) {
-  const [modo, setModo] = useState(() => localStorage.getItem("miZonaModoHerramientas") || null); // null | "cliente" | "negocio"
+function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode }) {
+  const [showQR, setShowQR] = useState(false);
 
-  const elegir = (m) => {
-    setModo(m);
-    localStorage.setItem("miZonaModoHerramientas", m);
-  };
-
-  const Row = ({ Icon, title, desc, onClick, badge }) => (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white" style={{ borderBottom: "1px solid #EEF2F7" }}>
-      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "#E8F0FE" }}>
-        <Icon size={16} color="#2F6FED" />
+  const Tool = ({ Icon, bg, title, desc, onClick }) => (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3.5 p-4 text-left bg-white mb-3"
+      style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+    >
+      <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: bg }}>
+        <Icon size={21} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: "#0B1220" }}>{title}</span>
-          {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
-        </span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>}
+        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{title}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>
       </span>
-      <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+      <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
   );
 
-  if (!modo) {
+  // el dueño todavía no ingresó su código: pedimos acceso antes de mostrar las herramientas
+  if (!ownerBiz) {
     return (
       <div>
         <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
-        <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Elegí cómo querés usar Mi Zona</p>
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => elegir("cliente")}
-            className="flex items-center gap-3 p-4 text-left bg-white"
-            style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}
-          >
-            <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: "#E8F0FE" }}>
-              <Search size={20} color="#2F6FED" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Busco negocios</span>
-              <span className="block text-xs" style={{ color: "#6B7280" }}>Soy cliente y quiero encontrar lo que necesito.</span>
-            </span>
-          </button>
-          <button
-            onClick={() => elegir("negocio")}
-            className="flex items-center gap-3 p-4 text-left bg-white"
-            style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}
-          >
-            <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: "#E8F0FE" }}>
-              <Building2 size={20} color="#2F6FED" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Tengo un negocio</span>
-              <span className="block text-xs" style={{ color: "#6B7280" }}>Quiero administrar y hacer crecer mi negocio.</span>
-            </span>
+        <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Gestioná tu negocio fácilmente</p>
+        <div className="p-5 text-center" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#E8F0FE" }}>
+            <KeyRound size={22} color="#2F6FED" />
+          </span>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Estas herramientas son para tu negocio</p>
+          <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Ingresá con el código de dueño que recibiste al registrarlo.</p>
+          <button onClick={onOpenOwner} className="text-sm font-semibold px-5 py-2.5" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+            Ingresar código de dueño
           </button>
         </div>
       </div>
@@ -1350,25 +1459,62 @@ function HerramientasScreen({ onOpenOwner, onOpenAllCats, onGoFavoritos }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
-        <button onClick={() => elegir(null)} className="text-xs font-medium" style={{ color: "#2F6FED" }}>Cambiar</button>
-      </div>
-      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>
-        {modo === "cliente" ? "Para ayudarte a encontrar lo que buscás" : "Para ayudarte a mantener tu negocio"}
-      </p>
+      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
+      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Gestioná tu negocio fácilmente</p>
 
-      {modo === "cliente" ? (
-        <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
-          <Row Icon={Grid3x3} title="Explorar por categoría" desc="Encontrá negocios según el rubro que buscás" onClick={onOpenAllCats} />
-          <Row Icon={Heart} title="Mis favoritos" desc="Los negocios que marcaste con el corazón" onClick={onGoFavoritos} />
-          <Row Icon={LocateFixed} title="Cerca de mí" desc="Ordená por distancia" badge="Próximamente" />
-        </div>
-      ) : (
-        <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
-          <Row Icon={KeyRound} title="Acceder a mi negocio" desc="Ingresá con tu código de dueño" onClick={onOpenOwner} />
-          <Row Icon={Star} title="Descuentos y promociones" desc="Administrá tus descuentos activos" badge="Próximamente" />
-          <Row Icon={Eye} title="Estadísticas" desc="Vistas y contactos de tu negocio" badge="Próximamente" />
+      <Tool
+        Icon={Pencil} bg="#2F6FED" title="Editar mi negocio"
+        desc="Actualizá la información de tu negocio cuando quieras."
+        onClick={onEditBusiness}
+      />
+      <Tool
+        Icon={TrendingUp} bg="#2F6FED" title="Estadísticas"
+        desc={`${fmtNum(ownerBiz.views)} vistas · ${ownerBiz.reviews?.length || 0} reseñas`}
+        onClick={onEditBusiness}
+      />
+      <Tool
+        Icon={QrCode} bg="#F5A623" title="Mi código de negocio"
+        desc="Mostrá tu código QR para que los clientes te encuentren fácilmente."
+        onClick={() => setShowQR(true)}
+      />
+      <Tool
+        Icon={Share2} bg="#7A4F9E" title="Compartir mi negocio"
+        desc="Compartí tu negocio en redes sociales o con tus contactos."
+        onClick={() => shareBusiness(ownerBiz)}
+      />
+      <Tool
+        Icon={Download} bg="#2C9A5F" title="Descargar Mi Asistente"
+        desc="Conseguí tu asistente virtual con IA para atender a tus clientes."
+        onClick={() => window.open(MI_ASISTENTE_URL, "_blank")}
+      />
+      <Tool
+        Icon={KeyRound} bg="#0B2A54" title="Vincular Mi Asistente"
+        desc={ownerBiz.asistenteCodigo ? "Código vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
+        onClick={onOpenAsistenteCode}
+      />
+
+      {showQR && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowQR(false)}>
+          <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Mi código de negocio</span>
+              <button onClick={() => setShowQR(false)}><X size={18} color="#6B7280" /></button>
+            </div>
+            <img
+              alt="Código QR de tu negocio"
+              className="mx-auto mb-4"
+              style={{ width: 200, height: 200, borderRadius: 10, border: "1px solid #E2E8F0" }}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
+            />
+            <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
+            <button
+              onClick={() => shareBusiness(ownerBiz)}
+              className="w-full text-sm font-semibold py-2.5"
+              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+            >
+              Compartir enlace
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -1835,6 +1981,36 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
 
 /* ---------- panel del dueño (acceso por código, solo su negocio) ---------- */
 
+function AsistenteCodeModal({ business, onSave, onClose }) {
+  const [codigo, setCodigo] = useState(business.asistenteCodigo || "");
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Vincular Mi Asistente</span>
+          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+        </div>
+        <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
+          Si ya pagaste Mi Asistente pero te registraste ahí con una cuenta de Google distinta a la de acá, pegá el código que te dieron para que tu negocio muestre que tiene asistente.
+        </p>
+        <input
+          value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+          placeholder="Código de Mi Asistente"
+          className="w-full border px-3 py-2.5 text-sm font-mono mb-4" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+        />
+        <button
+          onClick={() => codigo.trim() && onSave(codigo.trim())}
+          disabled={!codigo.trim()}
+          className="w-full text-sm font-semibold py-3"
+          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: codigo.trim() ? 1 : 0.5 }}
+        >
+          Guardar código
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OwnerGate({ businesses, onSuccess, onClose }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
@@ -2006,6 +2182,8 @@ export default function MiZona() {
 
   // panel del dueño
   const [showOwnerGate, setShowOwnerGate] = useState(false);
+  const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
+  const [showAsistenteCode, setShowAsistenteCode] = useState(false);
   const [ownerBizId, setOwnerBizId] = useState(null);
 
   // agregar mi local
@@ -2037,6 +2215,7 @@ export default function MiZona() {
 
   // chat con el asistente de un negocio
   const [chatBiz, setChatBiz] = useState(null);
+  const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -2180,19 +2359,6 @@ export default function MiZona() {
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
   );
 
-  /* ---- vista panel del dueño ---- */
-  if (ownerBiz) {
-    return (
-      <OwnerPanel
-        business={ownerBiz}
-        onSaveDiscount={saveOwnerDiscount}
-        onToggleDiscount={toggleOwnerDiscount}
-        onDeleteDiscount={deleteOwnerDiscount}
-        onLogout={() => setOwnerBizId(null)}
-      />
-    );
-  }
-
   /* ---- vista administración ---- */
   if (adminView && adminAuthed) {
     return (
@@ -2227,6 +2393,20 @@ export default function MiZona() {
       <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
         <ChatScreen biz={chatBiz} onBack={() => setChatBiz(null)} />
+      </div>
+    );
+  }
+
+  /* ---- vista del asistente de búsqueda general ---- */
+  if (showBusquedaAsistente) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <BusquedaAsistenteScreen
+          businesses={businesses}
+          onBack={() => setShowBusquedaAsistente(false)}
+          onOpenBusiness={(id) => { setShowBusquedaAsistente(false); openDetail(id); }}
+        />
       </div>
     );
   }
@@ -2278,6 +2458,23 @@ export default function MiZona() {
           businesses={businesses}
           onSuccess={(id) => { setOwnerBizId(id); setShowOwnerGate(false); }}
           onClose={() => setShowOwnerGate(false)}
+        />
+      )}
+
+      {showEditOwnerBiz && ownerBiz && (
+        <BusinessForm
+          publicMode
+          initial={ownerBiz}
+          onSave={(data) => { persistOne(ownerBizId, data); setShowEditOwnerBiz(false); }}
+          onCancel={() => setShowEditOwnerBiz(false)}
+        />
+      )}
+
+      {showAsistenteCode && ownerBiz && (
+        <AsistenteCodeModal
+          business={ownerBiz}
+          onSave={(codigo) => { persistOne(ownerBizId, { ...ownerBiz, asistenteCodigo: codigo }); setShowAsistenteCode(false); }}
+          onClose={() => setShowAsistenteCode(false)}
         />
       )}
 
@@ -2338,9 +2535,10 @@ export default function MiZona() {
           <AjustesScreen onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))} onOpenOwner={() => setShowOwnerGate(true)} />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
+            ownerBiz={ownerBiz}
             onOpenOwner={() => setShowOwnerGate(true)}
-            onOpenAllCats={() => setShowAllCats(true)}
-            onGoFavoritos={() => { setActiveTab("explorar"); setOnlyFavorites(true); window.scrollTo(0, 0); }}
+            onEditBusiness={() => setShowEditOwnerBiz(true)}
+            onOpenAsistenteCode={() => setShowAsistenteCode(true)}
           />
         ) : (
         <>
@@ -2451,6 +2649,20 @@ export default function MiZona() {
         </>
         )}
       </main>
+
+      <button
+        onClick={() => setShowBusquedaAsistente(true)}
+        className="fixed z-40 flex items-center justify-center"
+        style={{
+          right: 16, bottom: 78, width: 54, height: 54, borderRadius: "50%",
+          background: "linear-gradient(135deg, #2F6FED, #7FA8F5)",
+          boxShadow: "0 8px 20px rgba(47,111,237,0.45)",
+        }}
+        aria-label="Buscar con el asistente"
+      >
+        <Search size={22} color="#fff" />
+      </button>
+
       <BottomNav
         active={activeTab}
         onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); window.scrollTo(0, 0); }}
