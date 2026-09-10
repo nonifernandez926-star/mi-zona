@@ -29,6 +29,7 @@ const businessSchema = new mongoose.Schema(
     reviews: { type: mongoose.Schema.Types.Mixed, default: [] },
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
     ownerCode: String,
+    asistenteCodigo: String,
   },
   { timestamps: true, strict: false }
 );
