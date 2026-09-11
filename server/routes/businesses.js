@@ -37,6 +37,22 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Sumar o restar 1 al contador de "veces guardado en favoritos" (atómico, para el ranking)
+router.patch("/:id/favorito", async (req, res) => {
+  try {
+    const delta = req.body?.delta === -1 ? -1 : 1;
+    const updated = await Business.findOneAndUpdate(
+      { id: req.params.id },
+      { $inc: { vecesFavorito: delta } },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ error: "Negocio no encontrado" });
+    res.json({ vecesFavorito: Math.max(0, updated.vecesFavorito || 0) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Eliminar un negocio
 router.delete("/:id", async (req, res) => {
   try {
