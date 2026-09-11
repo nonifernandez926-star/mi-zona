@@ -7,7 +7,7 @@ import {
   Palmtree, Dumbbell, Pill, Truck, Check, Hammer, ShoppingCart, Beef, Apple,
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
-  Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp,
+  Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "padre";
@@ -177,6 +177,29 @@ function avgRating(reviews) {
   if (!reviews || reviews.length === 0) return null;
   return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
 }
+
+/* ---------- ranking de negocios (Top) ---------- */
+// Puntaje combinando vistas, reseñas y valoración. El peso de "guardado en favoritos"
+// se suma cuando el negocio tenga el contador vecesFavorito sincronizado con el servidor.
+function rankingScore(biz) {
+  const vistas = biz.views || 0;
+  const cantReviews = biz.reviews?.length || 0;
+  const rating = avgRating(biz.reviews) ? parseFloat(avgRating(biz.reviews)) : 0;
+  const vecesFavorito = biz.vecesFavorito || 0;
+  return vistas * 0.3 + cantReviews * rating * 0.5 + vecesFavorito * 2;
+}
+function rankedBusinesses(businesses) {
+  return [...businesses]
+    .filter((b) => b.kind !== "job" && b.status === "active")
+    .sort((a, b) => rankingScore(b) - rankingScore(a));
+}
+// Posición de un negocio puntual dentro del Top 10 de su propia zona (o null si no entra)
+function businessRankPosition(biz, allBusinesses) {
+  const ranking = rankedBusinesses(allBusinesses.filter((b) => b.zone === biz.zone));
+  const idx = ranking.findIndex((b) => b.id === biz.id);
+  return idx >= 0 && idx < 10 ? idx + 1 : null;
+}
+
 function mapsLink(loc, zone) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc + ", " + zone)}`;
 }
@@ -926,10 +949,11 @@ function WeekHoursEditor({ value, onChange }) {
 
 /* ---------- ficha pública del negocio ---------- */
 
-function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
+function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank }) {
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
+  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#94A3B8" : rank === 3 ? "#C97B4A" : "#0B2A54";
   return (
     <div
       role="button" tabIndex={0}
@@ -946,6 +970,14 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
             style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}
           >
             <Tag size={11} /> {discounts[0].percent ? `${discounts[0].percent} OFF` : "Tiene descuentos"}
+          </span>
+        )}
+        {rank && (
+          <span
+            className="absolute top-2 right-2 flex items-center gap-1 text-[11px] font-bold px-2 py-1"
+            style={{ background: rankColor, color: "#fff", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
+          >
+            <Trophy size={11} /> #{rank}
           </span>
         )}
       </div>
@@ -992,7 +1024,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm }) {
   );
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isFavorite, onToggleFavorite }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isFavorite, onToggleFavorite, rank }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const gallery = biz.photos?.length > 0 ? biz.photos : [null, null, null, null];
@@ -1042,6 +1074,17 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
         <div style={{ position: "relative" }}>
           <Photo cat={biz.cat} src={gallery[0]} height={220} radius="0" iconSize={48} onOpen={onOpenPhoto} />
           <div className="absolute" style={{ top: 12, left: 16 }}><OpenBadge weekHours={biz.weekHours} /></div>
+          {rank && (
+            <div
+              className="absolute flex items-center gap-1 text-xs font-bold px-2.5 py-1.5"
+              style={{
+                top: 12, right: 16, borderRadius: 20, color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
+                background: rank === 1 ? "#F5A623" : rank === 2 ? "#94A3B8" : rank === 3 ? "#C97B4A" : "#0B2A54",
+              }}
+            >
+              <Trophy size={13} /> Top #{rank} en tu zona
+            </div>
+          )}
         </div>
 
         <div className="px-4">
@@ -1417,7 +1460,106 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
   );
 }
 
-function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode }) {
+function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
+  const ranking = useMemo(() => rankedBusinesses(businesses.filter((b) => b.zone === zone)), [businesses, zone]);
+  const podio = ranking.slice(0, 3);
+  const resto = ranking.slice(3, 20);
+  const [oro, plata, bronce] = podio;
+
+  const PODIO_STYLE = {
+    1: { alto: 132, color: "#F5A623", claro: "#FDF3DC", label: "#1" },
+    2: { alto: 96, color: "#94A3B8", claro: "#EEF1F5", label: "#2" },
+    3: { alto: 76, color: "#C97B4A", claro: "#FBEAE0", label: "#3" },
+  };
+
+  const Puesto = ({ biz, puesto }) => {
+    if (!biz) return <div style={{ width: 96 }} />;
+    const st = PODIO_STYLE[puesto];
+    const rating = avgRating(biz.reviews);
+    return (
+      <button onClick={() => onOpenBusiness(biz.id)} className="flex flex-col items-center" style={{ width: 104 }}>
+        <div className="relative mb-2">
+          <div
+            className="flex items-center justify-center overflow-hidden"
+            style={{ width: puesto === 1 ? 68 : 56, height: puesto === 1 ? 68 : 56, borderRadius: "50%", border: `3px solid ${st.color}`, background: "#fff" }}
+          >
+            <Photo cat={biz.cat} src={biz.logo} height={puesto === 1 ? 68 : 56} radius="50%" iconSize={puesto === 1 ? 26 : 20} clickable={false} />
+          </div>
+          <span
+            className="absolute flex items-center justify-center text-[11px] font-bold"
+            style={{ bottom: -6, right: -2, width: 22, height: 22, borderRadius: "50%", background: st.color, color: "#fff", border: "2px solid #fff" }}
+          >
+            {puesto}
+          </span>
+        </div>
+        <p className="text-xs font-semibold text-center leading-tight mb-1" style={{ color: "#0B1220" }}>{biz.name}</p>
+        {rating && (
+          <span className="flex items-center gap-0.5 text-[11px]" style={{ color: "#4B5563" }}>
+            <Star size={10} fill="#F5A623" color="#F5A623" /> {rating}
+          </span>
+        )}
+        <div className="w-full mt-2" style={{ height: st.alto, borderRadius: "10px 10px 0 0", background: `linear-gradient(180deg, ${st.claro}, ${st.color}22)`, border: `1px solid ${st.color}55`, borderBottom: "none" }} />
+      </button>
+    );
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ranking</p>
+      </div>
+      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Los negocios más destacados en {zone}</p>
+
+      {ranking.length === 0 ? (
+        <p className="text-sm text-center py-10" style={{ color: "#6B7280" }}>Todavía no hay suficientes datos para armar el ranking de tu zona.</p>
+      ) : (
+        <>
+          {podio.length > 0 && (
+            <div className="flex items-end justify-center gap-3 mb-6 px-2">
+              <Puesto biz={plata} puesto={2} />
+              <Puesto biz={oro} puesto={1} />
+              <Puesto biz={bronce} puesto={3} />
+            </div>
+          )}
+
+          {resto.length > 0 && (
+            <div className="overflow-hidden" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
+              {resto.map((biz, i) => {
+                const rating = avgRating(biz.reviews);
+                const c = catInfo(biz.cat);
+                return (
+                  <button
+                    key={biz.id}
+                    onClick={() => onOpenBusiness(biz.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white"
+                    style={{ borderBottom: "1px solid #EEF2F7" }}
+                  >
+                    <span className="text-sm font-bold shrink-0" style={{ width: 22, color: "#94A3B8" }}>{i + 4}</span>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden" }}>
+                      <Photo cat={biz.cat} src={biz.logo} height={36} radius="9px" iconSize={16} clickable={false} />
+                    </div>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
+                      <span className="block text-[11px] truncate" style={{ color: "#6B7280" }}>{c?.label}</span>
+                    </span>
+                    {rating && (
+                      <span className="flex items-center gap-0.5 text-xs shrink-0" style={{ color: "#4B5563" }}>
+                        <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking }) {
   const [showQR, setShowQR] = useState(false);
 
   const Tool = ({ Icon, bg, title, desc, onClick }) => (
@@ -1442,7 +1584,16 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
     return (
       <div>
         <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
-        <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Gestioná tu negocio fácilmente</p>
+        <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
+
+        <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>PARA VOS</p>
+        <Tool
+          Icon={Trophy} bg="#F5A623" title="Ranking"
+          desc="Los negocios más destacados de tu zona."
+          onClick={onOpenRanking}
+        />
+
+        <p className="text-xs font-semibold mb-2 mt-4" style={{ color: "#6B7280" }}>TU NEGOCIO</p>
         <Tool
           Icon={KeyRound} bg="#2F6FED" title="Ingresar código de dueño"
           desc="¿Ya registraste tu negocio? Ingresá el código que recibiste para administrarlo."
@@ -1455,8 +1606,16 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
   return (
     <div>
       <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
-      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Gestioná tu negocio fácilmente</p>
+      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
 
+      <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>PARA VOS</p>
+      <Tool
+        Icon={Trophy} bg="#F5A623" title="Ranking"
+        desc="Los negocios más destacados de tu zona."
+        onClick={onOpenRanking}
+      />
+
+      <p className="text-xs font-semibold mb-2 mt-4" style={{ color: "#6B7280" }}>TU NEGOCIO</p>
       <Tool
         Icon={Pencil} bg="#2F6FED" title="Editar mi negocio"
         desc="Actualizá la información de tu negocio cuando quieras."
@@ -2206,6 +2365,7 @@ export default function MiZona() {
   // chat con el asistente de un negocio
   const [chatBiz, setChatBiz] = useState(null);
   const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
+  const [showRanking, setShowRanking] = useState(false);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -2401,6 +2561,23 @@ export default function MiZona() {
     );
   }
 
+  /* ---- vista del ranking ---- */
+  if (showRanking) {
+    return (
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
+          <RankingScreen
+            businesses={businesses}
+            zone={zone}
+            onBack={() => setShowRanking(false)}
+            onOpenBusiness={(id) => { setShowRanking(false); openDetail(id); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
@@ -2409,6 +2586,7 @@ export default function MiZona() {
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
           onOpenChat={setChatBiz} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
+          rank={businessRankPosition(selected, businesses)}
         />
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       </div>
@@ -2529,6 +2707,7 @@ export default function MiZona() {
             onOpenOwner={() => setShowOwnerGate(true)}
             onEditBusiness={() => setShowEditOwnerBiz(true)}
             onOpenAsistenteCode={() => setShowAsistenteCode(true)}
+            onOpenRanking={() => setShowRanking(true)}
           />
         ) : (
         <>
@@ -2632,6 +2811,7 @@ export default function MiZona() {
               <BusinessCard
                 key={biz.id} biz={biz} onOpen={openDetail} onOpenPhoto={setLightboxSrc}
                 distanceKm={sortBy === "cercanos" && userLoc && biz.lat && biz.lng ? haversineKm(userLoc.lat, userLoc.lng, biz.lat, biz.lng) : undefined}
+                rank={businessRankPosition(biz, businesses)}
               />
             ))}
           </div>
