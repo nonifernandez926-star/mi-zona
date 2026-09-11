@@ -26,6 +26,7 @@ const businessSchema = new mongoose.Schema(
     expiresAt: String,
     lastRenewal: String,
     views: { type: Number, default: 0 },
+    vecesFavorito: { type: Number, default: 0 },
     reviews: { type: mongoose.Schema.Types.Mixed, default: [] },
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
     ownerCode: String,
