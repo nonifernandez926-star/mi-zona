@@ -349,6 +349,18 @@ async function updateBusinessOnServer(id, biz) {
   return res.json();
 }
 
+async function toggleFavoritoOnServer(id, delta) {
+  try {
+    await fetch(`${API_URL}/businesses/${id}/favorito`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ delta }),
+    });
+  } catch {
+    // si falla la sincronización del contador, el favorito local igual queda guardado
+  }
+}
+
 async function deleteBusinessOnServer(id) {
   const res = await fetch(`${API_URL}/businesses/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("No se pudo eliminar el negocio");
@@ -949,7 +961,7 @@ function WeekHoursEditor({ value, onChange }) {
 
 /* ---------- ficha pública del negocio ---------- */
 
-function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank }) {
+function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, onToggleFavorite }) {
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
@@ -979,6 +991,19 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank }) {
           >
             <Trophy size={11} /> #{rank}
           </span>
+        )}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(biz.id); }}
+            className="absolute bottom-2 right-2 flex items-center justify-center"
+            style={{
+              width: 32, height: 32, borderRadius: "50%", background: "#fff",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.2)", transition: "transform 0.15s ease",
+              transform: isFavorite ? "scale(1.08)" : "scale(1)",
+            }}
+          >
+            <Heart size={16} color={isFavorite ? "#C1443A" : "#94A3B8"} fill={isFavorite ? "#C1443A" : "none"} />
+          </button>
         )}
       </div>
       <div className="p-4 flex-1 flex flex-col">
@@ -1460,6 +1485,68 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
   );
 }
 
+function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusiness, onBack }) {
+  const guardados = businesses.filter((b) => favorites.includes(b.id) && b.kind !== "job");
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
+      </div>
+      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Tus negocios guardados</p>
+
+      {guardados.length === 0 ? (
+        <div className="text-center py-14">
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#F7E7E5" }}>
+            <Heart size={22} color="#C1443A" />
+          </span>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no guardaste ningún negocio</p>
+          <p className="text-xs" style={{ color: "#6B7280" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {guardados.map((biz) => {
+            const c = catInfo(biz.cat);
+            const rating = avgRating(biz.reviews);
+            return (
+              <button
+                key={biz.id}
+                onClick={() => onOpenBusiness(biz.id)}
+                className="w-full flex items-center gap-3 p-3 text-left bg-white"
+                style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+              >
+                <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
+                  <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={52} radius="12px" iconSize={22} clickable={false} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
+                  <p className="text-xs truncate mb-1" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</p>
+                  <div className="flex items-center gap-2">
+                    {rating && (
+                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#4B5563" }}>
+                        <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
+                      </span>
+                    )}
+                    <OpenBadge weekHours={biz.weekHours} compact />
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleFavorite(biz.id); }}
+                  className="flex items-center justify-center shrink-0"
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: "#F7E7E5" }}
+                >
+                  <Heart size={16} color="#C1443A" fill="#C1443A" />
+                </button>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   const ranking = useMemo(() => rankedBusinesses(businesses.filter((b) => b.zone === zone)), [businesses, zone]);
   const podio = ranking.slice(0, 3);
@@ -1559,7 +1646,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking }) {
+function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos }) {
   const [showQR, setShowQR] = useState(false);
 
   const Tool = ({ Icon, bg, title, desc, onClick }) => (
@@ -1585,15 +1672,16 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
       <div>
         <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
         <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
-
-        <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>PARA VOS</p>
+        <Tool
+          Icon={Heart} bg="#C1443A" title="Favoritos"
+          desc="Los negocios que guardaste."
+          onClick={onOpenFavoritos}
+        />
         <Tool
           Icon={Trophy} bg="#F5A623" title="Ranking"
           desc="Los negocios más destacados de tu zona."
           onClick={onOpenRanking}
         />
-
-        <p className="text-xs font-semibold mb-2 mt-4" style={{ color: "#6B7280" }}>TU NEGOCIO</p>
         <Tool
           Icon={KeyRound} bg="#2F6FED" title="Ingresar código de dueño"
           desc="¿Ya registraste tu negocio? Ingresá el código que recibiste para administrarlo."
@@ -1607,15 +1695,16 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
     <div>
       <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
       <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
-
-      <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>PARA VOS</p>
+      <Tool
+        Icon={Heart} bg="#C1443A" title="Favoritos"
+        desc="Los negocios que guardaste."
+        onClick={onOpenFavoritos}
+      />
       <Tool
         Icon={Trophy} bg="#F5A623" title="Ranking"
         desc="Los negocios más destacados de tu zona."
         onClick={onOpenRanking}
       />
-
-      <p className="text-xs font-semibold mb-2 mt-4" style={{ color: "#6B7280" }}>TU NEGOCIO</p>
       <Tool
         Icon={Pencil} bg="#2F6FED" title="Editar mi negocio"
         desc="Actualizá la información de tu negocio cuando quieras."
@@ -2355,17 +2444,25 @@ export default function MiZona() {
   // favoritos (guardados en este dispositivo)
   const [favorites, setFavorites] = useState(() => getFavorites());
   const toggleFavorite = (bizId) => {
+    const yaEsFavorito = favorites.includes(bizId);
     setFavorites((prev) => {
-      const next = prev.includes(bizId) ? prev.filter((id) => id !== bizId) : [...prev, bizId];
+      const next = yaEsFavorito ? prev.filter((id) => id !== bizId) : [...prev, bizId];
       saveFavorites(next);
       return next;
     });
+    // actualizamos el contador optimistamente en memoria para que el ranking lo refleje al toque,
+    // y sincronizamos el número real con el servidor en segundo plano
+    setBusinesses((prev) => prev.map((b) => (
+      b.id === bizId ? { ...b, vecesFavorito: Math.max(0, (b.vecesFavorito || 0) + (yaEsFavorito ? -1 : 1)) } : b
+    )));
+    toggleFavoritoOnServer(bizId, yaEsFavorito ? -1 : 1);
   };
 
   // chat con el asistente de un negocio
   const [chatBiz, setChatBiz] = useState(null);
   const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
+  const [showFavoritos, setShowFavoritos] = useState(false);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -2578,6 +2675,24 @@ export default function MiZona() {
     );
   }
 
+  /* ---- vista de favoritos ---- */
+  if (showFavoritos) {
+    return (
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
+          <FavoritosScreen
+            businesses={businesses}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+            onBack={() => setShowFavoritos(false)}
+            onOpenBusiness={(id) => { setShowFavoritos(false); openDetail(id); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
@@ -2708,6 +2823,7 @@ export default function MiZona() {
             onEditBusiness={() => setShowEditOwnerBiz(true)}
             onOpenAsistenteCode={() => setShowAsistenteCode(true)}
             onOpenRanking={() => setShowRanking(true)}
+            onOpenFavoritos={() => setShowFavoritos(true)}
           />
         ) : (
         <>
@@ -2812,6 +2928,7 @@ export default function MiZona() {
                 key={biz.id} biz={biz} onOpen={openDetail} onOpenPhoto={setLightboxSrc}
                 distanceKm={sortBy === "cercanos" && userLoc && biz.lat && biz.lng ? haversineKm(userLoc.lat, userLoc.lng, biz.lat, biz.lng) : undefined}
                 rank={businessRankPosition(biz, businesses)}
+                isFavorite={favorites.includes(biz.id)} onToggleFavorite={toggleFavorite}
               />
             ))}
           </div>
