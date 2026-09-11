@@ -1437,22 +1437,17 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
     </button>
   );
 
-  // el dueño todavía no ingresó su código: pedimos acceso antes de mostrar las herramientas
+  // el dueño todavía no ingresó su código: mostramos las funciones disponibles para quien no tiene negocio vinculado
   if (!ownerBiz) {
     return (
       <div>
         <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
         <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Gestioná tu negocio fácilmente</p>
-        <div className="p-5 text-center" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
-          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#E8F0FE" }}>
-            <KeyRound size={22} color="#2F6FED" />
-          </span>
-          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Estas herramientas son para tu negocio</p>
-          <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Ingresá con el código de dueño que recibiste al registrarlo.</p>
-          <button onClick={onOpenOwner} className="text-sm font-semibold px-5 py-2.5" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
-            Ingresar código de dueño
-          </button>
-        </div>
+        <Tool
+          Icon={KeyRound} bg="#2F6FED" title="Ingresar código de dueño"
+          desc="¿Ya registraste tu negocio? Ingresá el código que recibiste para administrarlo."
+          onClick={onOpenOwner}
+        />
       </div>
     );
   }
@@ -1580,11 +1575,6 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
         <Row Icon={Lock} title="Seguridad" desc="Cambiar contraseña y opciones de seguridad" badge="Próximamente" disabled />
         <Row Icon={Mail} title="Notificaciones" desc="Elegí qué notificaciones querés recibir" badge="Próximamente" disabled />
         <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
-      </div>
-
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
-        <Row Icon={Building2} title="Mi negocio" desc="Administrá tu negocio con tu código de dueño" onClick={onOpenOwner} />
-        <Row Icon={Lock} title="Administrador" desc="Acceso al panel general de Mi Zona" onClick={onOpenAdmin} />
       </div>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
