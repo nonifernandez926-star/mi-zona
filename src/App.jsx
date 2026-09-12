@@ -249,6 +249,15 @@ function getLastSeen(bizId) {
 function setLastSeen(bizId, iso) {
   localStorage.setItem(`miZonaChatVisto_${bizId}`, iso);
 }
+function countUnreadChats() {
+  return getAllConversationIds().filter((id) => {
+    const mensajes = getConversation(id);
+    if (mensajes.length === 0) return false;
+    const ultimo = mensajes[mensajes.length - 1];
+    const visto = getLastSeen(id);
+    return ultimo.rol === "asistente" && (!visto || new Date(ultimo.hora) > new Date(visto));
+  }).length;
+}
 
 /* ---------- ubicación: geocodificar direcciones y calcular distancia ---------- */
 
@@ -1510,7 +1519,7 @@ function fmtChatTime(iso) {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
 }
 
-function ChatsScreen({ businesses, onOpenChat, onBack }) {
+function ChatsScreen({ businesses, onOpenChat }) {
   const conversaciones = useMemo(() => {
     return getAllConversationIds()
       .map((id) => {
@@ -1529,47 +1538,57 @@ function ChatsScreen({ businesses, onOpenChat, onBack }) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
-        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Chats</p>
-      </div>
-      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Tus conversaciones con negocios</p>
+      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 20, color: "#0B1220" }} className="mb-1">Chats</p>
+      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Tus conversaciones con negocios</p>
 
       {conversaciones.length === 0 ? (
-        <div className="text-center py-14">
-          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#E8F0FE" }}>
-            <MessageCircle size={22} color="#2F6FED" />
+        <div className="text-center py-16">
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#E8F0FE" }}>
+            <MessageCircle size={24} color="#2F6FED" />
           </span>
           <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés conversaciones</p>
-          <p className="text-xs" style={{ color: "#6B7280" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+          <p className="text-xs px-8" style={{ color: "#6B7280" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
         </div>
       ) : (
-        <div className="overflow-hidden" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+        <div className="flex flex-col">
           {conversaciones.map(({ biz, ultimo, noLeido }) => {
             const c = catInfo(biz.cat);
             return (
               <button
                 key={biz.id}
                 onClick={() => onOpenChat(biz)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
+                className="w-full flex items-center gap-3 py-3 text-left bg-white active:bg-gray-50"
                 style={{ borderBottom: "1px solid #EEF2F7" }}
               >
-                <div
-                  className="flex items-center justify-center shrink-0 text-sm font-bold"
-                  style={{ width: 44, height: 44, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff" }}
-                >
-                  {biz.name?.[0]?.toUpperCase()}
+                <div className="relative shrink-0">
+                  {biz.logo ? (
+                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 52, height: 52, borderRadius: "50%" }} />
+                  ) : (
+                    <div
+                      className="flex items-center justify-center text-base font-bold"
+                      style={{ width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff" }}
+                    >
+                      {biz.name?.[0]?.toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
-                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#94A3B8" }}>{fmtChatTime(ultimo.hora)}</span>
+                    <span className="text-sm truncate" style={{ color: "#0B1220", fontWeight: noLeido ? 700 : 500 }}>{biz.name}</span>
+                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#94A3B8", fontWeight: noLeido ? 600 : 400 }}>{fmtChatTime(ultimo.hora)}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs truncate" style={{ color: noLeido ? "#0B1220" : "#6B7280", fontWeight: noLeido ? 600 : 400 }}>
+                  <div className="flex items-center justify-between gap-2 mt-0.5">
+                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#6B7280", fontWeight: noLeido ? 600 : 400 }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
-                    {noLeido && <span className="shrink-0" style={{ width: 9, height: 9, borderRadius: "50%", background: "#2F6FED" }} />}
+                    {noLeido && (
+                      <span
+                        className="shrink-0 flex items-center justify-center text-[10px] font-bold"
+                        style={{ minWidth: 18, height: 18, borderRadius: 9, background: "#2F6FED", color: "#fff", padding: "0 5px" }}
+                      >
+                        1
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
@@ -1742,7 +1761,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos, onOpenChats }) {
+function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos }) {
   const [showQR, setShowQR] = useState(false);
 
   const Tool = ({ Icon, bg, title, desc, onClick }) => (
@@ -1774,11 +1793,6 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
           onClick={onOpenFavoritos}
         />
         <Tool
-          Icon={MessageCircle} bg="#2C9A5F" title="Chats"
-          desc="Tus conversaciones con negocios."
-          onClick={onOpenChats}
-        />
-        <Tool
           Icon={Trophy} bg="#F5A623" title="Ranking"
           desc="Los negocios más destacados de tu zona."
           onClick={onOpenRanking}
@@ -1800,11 +1814,6 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
         Icon={Heart} bg="#C1443A" title="Favoritos"
         desc="Los negocios que guardaste."
         onClick={onOpenFavoritos}
-      />
-      <Tool
-        Icon={MessageCircle} bg="#2C9A5F" title="Chats"
-        desc="Tus conversaciones con negocios."
-        onClick={onOpenChats}
       />
       <Tool
         Icon={Trophy} bg="#F5A623" title="Ranking"
@@ -1941,21 +1950,41 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
 }
 
 
-function BottomNav({ active, onInicio, onExplorar, onAdd, onHerramientas, onAjustes }) {
-  const Item = ({ id, label, Icon, onClick }) => (
-    <button onClick={onClick} className="flex flex-col items-center gap-1 py-1" style={{ minWidth: 56 }}>
-      <Icon size={20} color={active === id ? "#2F6FED" : "#94A3B8"} />
+function BottomNav({ active, onInicio, onExplorar, onChats, onAdd, onHerramientas, onAjustes, chatsSinLeer }) {
+  const Item = ({ id, label, Icon, onClick, badge }) => (
+    <button onClick={onClick} className="flex flex-col items-center gap-1 py-1 relative" style={{ flex: 1 }}>
+      <span className="relative">
+        <Icon size={20} color={active === id ? "#2F6FED" : "#94A3B8"} />
+        {badge > 0 && (
+          <span
+            className="absolute flex items-center justify-center text-[9px] font-bold"
+            style={{ top: -5, right: -8, minWidth: 15, height: 15, borderRadius: 8, background: "#C1443A", color: "#fff", padding: "0 3px" }}
+          >
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </span>
       <span className="text-[10px]" style={{ color: active === id ? "#2F6FED" : "#94A3B8", fontWeight: active === id ? 500 : 400 }}>{label}</span>
     </button>
   );
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderTop: "1px solid #E2E8F0" }}>
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-around" style={{ paddingTop: 8, paddingBottom: 8 }}>
+      {/* botón flotante "+", elevado por encima de la barra, centrado */}
+      <button
+        onClick={onAdd}
+        className="fixed flex items-center justify-center"
+        style={{
+          left: "50%", transform: "translateX(-50%)", bottom: 58, width: 50, height: 50, borderRadius: "50%",
+          background: "#2F6FED", boxShadow: "0 6px 16px rgba(47,111,237,0.45)", border: "4px solid #fff", zIndex: 41,
+        }}
+      >
+        <Plus size={21} color="#fff" />
+      </button>
+
+      <div className="max-w-6xl mx-auto px-2 flex items-center" style={{ paddingTop: 8, paddingBottom: 8 }}>
         <Item id="inicio" label="Inicio" Icon={Home} onClick={onInicio} />
         <Item id="explorar" label="Explorar" Icon={Grid3x3} onClick={onExplorar} />
-        <button onClick={onAdd} className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "#2F6FED", marginTop: -18 }}>
-          <Plus size={20} color="#fff" />
-        </button>
+        <Item id="chats" label="Chats" Icon={MessageCircle} onClick={onChats} badge={chatsSinLeer} />
         <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />
         <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
       </div>
@@ -2569,7 +2598,6 @@ export default function MiZona() {
   const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
-  const [showChats, setShowChats] = useState(false);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -2800,22 +2828,6 @@ export default function MiZona() {
     );
   }
 
-  /* ---- vista de chats ---- */
-  if (showChats) {
-    return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
-        {globalStyle}
-        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
-          <ChatsScreen
-            businesses={businesses}
-            onBack={() => setShowChats(false)}
-            onOpenChat={(biz) => { setShowChats(false); setChatBiz(biz); }}
-          />
-        </div>
-      </div>
-    );
-  }
-
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
@@ -2939,6 +2951,11 @@ export default function MiZona() {
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
         {activeTab === "ajustes" ? (
           <AjustesScreen onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))} onOpenOwner={() => setShowOwnerGate(true)} />
+        ) : activeTab === "chats" ? (
+          <ChatsScreen
+            businesses={businesses}
+            onOpenChat={(biz) => setChatBiz(biz)}
+          />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
             ownerBiz={ownerBiz}
@@ -2947,7 +2964,6 @@ export default function MiZona() {
             onOpenAsistenteCode={() => setShowAsistenteCode(true)}
             onOpenRanking={() => setShowRanking(true)}
             onOpenFavoritos={() => setShowFavoritos(true)}
-            onOpenChats={() => setShowChats(true)}
           />
         ) : (
         <>
@@ -3078,9 +3094,11 @@ export default function MiZona() {
         active={activeTab}
         onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); window.scrollTo(0, 0); }}
         onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
+        onChats={() => { setActiveTab("chats"); window.scrollTo(0, 0); }}
         onAdd={() => setShowAddSheet(true)}
         onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
         onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
+        chatsSinLeer={countUnreadChats()}
       />
 
       {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
