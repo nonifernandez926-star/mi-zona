@@ -243,6 +243,12 @@ function getAllConversationIds() {
   }
   return ids;
 }
+function getLastSeen(bizId) {
+  return localStorage.getItem(`miZonaChatVisto_${bizId}`) || null;
+}
+function setLastSeen(bizId, iso) {
+  localStorage.setItem(`miZonaChatVisto_${bizId}`, iso);
+}
 
 /* ---------- ubicación: geocodificar direcciones y calcular distancia ---------- */
 
@@ -664,7 +670,7 @@ function ChatScreen({ biz, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { saveConversation(biz.id, messages); }, [biz.id, messages]);
+  useEffect(() => { saveConversation(biz.id, messages); setLastSeen(biz.id, new Date().toISOString()); }, [biz.id, messages]);
 
   const enviar = async () => {
     const contenido = text.trim();
@@ -1297,12 +1303,19 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
 
           {/* acciones principales: chat con el asistente y cómo llegar */}
           <div className="flex flex-col gap-2" style={{ paddingBottom: 100 }}>
+            {biz.asistenteCodigo && (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-1" style={{ borderRadius: 10, background: "#F3ECFC", border: "1px solid #D8C4F0" }}>
+                <Sparkles size={15} color="#7A4F9E" />
+                <p className="text-xs" style={{ color: "#5B3A7A" }}>Este negocio tiene <b>Mi Asistente</b> — hablá directo con su asistente virtual.</p>
+              </div>
+            )}
             <button
               onClick={() => onOpenChat(biz)}
               className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
               style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
             >
-              <MessageCircle size={17} /> Abrir chat con el asistente
+              {biz.asistenteCodigo ? <Sparkles size={16} /> : <MessageCircle size={17} />}
+              {biz.asistenteCodigo ? "Hablar con el asistente" : "Abrir chat con el asistente"}
             </button>
             <a
               href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
@@ -1485,6 +1498,89 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
   );
 }
 
+function fmtChatTime(iso) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  const esHoy = d.toDateString() === hoy.toDateString();
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+  const esAyer = d.toDateString() === ayer.toDateString();
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  if (esHoy) return `Hoy · ${hora}`;
+  if (esAyer) return `Ayer · ${hora}`;
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+}
+
+function ChatsScreen({ businesses, onOpenChat, onBack }) {
+  const conversaciones = useMemo(() => {
+    return getAllConversationIds()
+      .map((id) => {
+        const biz = businesses.find((b) => b.id === id);
+        if (!biz) return null;
+        const mensajes = getConversation(id);
+        if (mensajes.length === 0) return null;
+        const ultimo = mensajes[mensajes.length - 1];
+        const visto = getLastSeen(id);
+        const noLeido = ultimo.rol === "asistente" && (!visto || new Date(ultimo.hora) > new Date(visto));
+        return { biz, ultimo, noLeido };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.ultimo.hora) - new Date(a.ultimo.hora));
+  }, [businesses]);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Chats</p>
+      </div>
+      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Tus conversaciones con negocios</p>
+
+      {conversaciones.length === 0 ? (
+        <div className="text-center py-14">
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#E8F0FE" }}>
+            <MessageCircle size={22} color="#2F6FED" />
+          </span>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés conversaciones</p>
+          <p className="text-xs" style={{ color: "#6B7280" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+          {conversaciones.map(({ biz, ultimo, noLeido }) => {
+            const c = catInfo(biz.cat);
+            return (
+              <button
+                key={biz.id}
+                onClick={() => onOpenChat(biz)}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
+                style={{ borderBottom: "1px solid #EEF2F7" }}
+              >
+                <div
+                  className="flex items-center justify-center shrink-0 text-sm font-bold"
+                  style={{ width: 44, height: 44, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff" }}
+                >
+                  {biz.name?.[0]?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
+                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#94A3B8" }}>{fmtChatTime(ultimo.hora)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs truncate" style={{ color: noLeido ? "#0B1220" : "#6B7280", fontWeight: noLeido ? 600 : 400 }}>
+                      {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
+                    </span>
+                    {noLeido && <span className="shrink-0" style={{ width: 9, height: 9, borderRadius: "50%", background: "#2F6FED" }} />}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusiness, onBack }) {
   const guardados = businesses.filter((b) => favorites.includes(b.id) && b.kind !== "job");
 
@@ -1646,7 +1742,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos }) {
+function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos, onOpenChats }) {
   const [showQR, setShowQR] = useState(false);
 
   const Tool = ({ Icon, bg, title, desc, onClick }) => (
@@ -1678,6 +1774,11 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
           onClick={onOpenFavoritos}
         />
         <Tool
+          Icon={MessageCircle} bg="#2C9A5F" title="Chats"
+          desc="Tus conversaciones con negocios."
+          onClick={onOpenChats}
+        />
+        <Tool
           Icon={Trophy} bg="#F5A623" title="Ranking"
           desc="Los negocios más destacados de tu zona."
           onClick={onOpenRanking}
@@ -1699,6 +1800,11 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
         Icon={Heart} bg="#C1443A" title="Favoritos"
         desc="Los negocios que guardaste."
         onClick={onOpenFavoritos}
+      />
+      <Tool
+        Icon={MessageCircle} bg="#2C9A5F" title="Chats"
+        desc="Tus conversaciones con negocios."
+        onClick={onOpenChats}
       />
       <Tool
         Icon={Trophy} bg="#F5A623" title="Ranking"
@@ -2463,6 +2569,7 @@ export default function MiZona() {
   const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
+  const [showChats, setShowChats] = useState(false);
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -2693,6 +2800,22 @@ export default function MiZona() {
     );
   }
 
+  /* ---- vista de chats ---- */
+  if (showChats) {
+    return (
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
+          <ChatsScreen
+            businesses={businesses}
+            onBack={() => setShowChats(false)}
+            onOpenChat={(biz) => { setShowChats(false); setChatBiz(biz); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
@@ -2824,6 +2947,7 @@ export default function MiZona() {
             onOpenAsistenteCode={() => setShowAsistenteCode(true)}
             onOpenRanking={() => setShowRanking(true)}
             onOpenFavoritos={() => setShowFavoritos(true)}
+            onOpenChats={() => setShowChats(true)}
           />
         ) : (
         <>
