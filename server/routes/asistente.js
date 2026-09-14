@@ -3,6 +3,57 @@ import Business from "../models/Business.js";
 
 const router = express.Router();
 
+// URL base del backend de Mi Asistente (Render). Se configura en .env — nunca hardcodeada,
+// porque puede cambiar de servicio o de plan.
+const MI_ASISTENTE_URL = process.env.MI_ASISTENTE_API_URL || "https://empleado-virtual-ia.onrender.com/api";
+
+// GET /api/asistente/vincular/:codigo
+// El dueño ingresa en Mi Zona el código de vinculación que le dio Mi Asistente.
+// Mi Zona (desde el servidor, nunca desde el navegador) le pregunta a Mi Asistente
+// si ese código es real y activo, y devuelve los datos públicos del negocio.
+router.get("/vincular/:codigo", async (req, res) => {
+  try {
+    const r = await fetch(`${MI_ASISTENTE_URL}/vinculacion/${encodeURIComponent(req.params.codigo)}`);
+    if (r.status === 404) {
+      return res.status(404).json({ error: "Ese código de vinculación no existe o no es válido." });
+    }
+    if (!r.ok) {
+      return res.status(502).json({ error: "No se pudo verificar el código con Mi Asistente en este momento." });
+    }
+    const datos = await r.json();
+    res.json(datos); // { codigoPublico, nombreNegocio, descripcion, logoUrl, fotosProducto, horarios, suscripcionActiva, ... }
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: "No se pudo conectar con Mi Asistente. Probá de nuevo en un momento." });
+  }
+});
+
+// POST /api/asistente/chat/:codigoPublico   { mensaje, sesionClienteId }
+// Reenvía el mensaje del cliente directo al asistente REAL de ese negocio en Mi Asistente,
+// y devuelve su respuesta (incluye pedidoCreado/turnoCreado si el asistente registró uno).
+router.post("/chat/:codigoPublico", async (req, res) => {
+  try {
+    const { mensaje, sesionClienteId } = req.body;
+    if (!mensaje || !sesionClienteId) {
+      return res.status(400).json({ error: "Faltan datos: mensaje y sesionClienteId son obligatorios" });
+    }
+    const r = await fetch(`${MI_ASISTENTE_URL}/chat/${encodeURIComponent(req.params.codigoPublico)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje, sesionClienteId }),
+    });
+    const datos = await r.json();
+    if (!r.ok) {
+      // ej: suscripción vencida, límite de prueba alcanzado, asistente no encontrado
+      return res.status(r.status).json(datos);
+    }
+    res.json(datos); // { respuesta, pedidoCreado, turnoCreado, imagenes }
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: "No se pudo conectar con el asistente de este negocio. Probá de nuevo en un momento." });
+  }
+});
+
 const CATEGORY_LABELS = {
   comida: "Gastronomía", salud: "Salud", servicios: "Servicios", hogar: "Hogar",
   moda: "Moda y retail", automotor: "Automotor", belleza: "Belleza y estética",
