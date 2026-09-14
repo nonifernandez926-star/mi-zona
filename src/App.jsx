@@ -312,7 +312,8 @@ function emptyBusiness() {
     createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
     views: 0, reviews: [], discounts: [], extra: {},
     ownerCode: uid().slice(0, 8).toUpperCase(),
-    asistenteCodigo: "",
+    asistenteCodigo: "", // código de vinculación que ingresó el dueño
+    asistenteCodigoPublico: "", // código real que devuelve Mi Asistente al verificar (el que se usa para el chat)
   };
 }
 
@@ -662,12 +663,16 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness }) {
 
 function ChatScreen({ biz, onBack }) {
   const c = catInfo(biz.cat);
+  const tieneAsistenteReal = !!biz.asistenteCodigoPublico;
   const [messages, setMessages] = useState(() => getConversation(biz.id));
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (messages.length === 0) {
+    // Si el negocio NO tiene un asistente real conectado, mostramos un saludo genérico local.
+    // Si SÍ lo tiene, dejamos que el propio asistente de Mi Asistente arranque la charla
+    // cuando el cliente escriba, en vez de simular un saludo que no es suyo.
+    if (messages.length === 0 && !tieneAsistenteReal) {
       const saludo = {
         id: uid(), rol: "asistente",
         texto: `¡Hola! Soy el asistente de ${biz.name}. ¿En qué puedo ayudarte?`,
@@ -688,29 +693,55 @@ function ChatScreen({ biz, onBack }) {
     const historial = [...messages, msgCliente];
     setMessages(historial);
     setText("");
-    setSending(true);
 
+    if (!tieneAsistenteReal) {
+      // Este negocio todavía no conectó Mi Asistente: no hay a quién preguntarle de verdad.
+      setSending(true);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, {
+          id: uid(), rol: "asistente",
+          texto: "Gracias por tu mensaje. Este negocio todavía no activó su asistente virtual — igual, tu consulta va a quedar guardada acá.",
+          hora: new Date().toISOString(),
+        }]);
+        setSending(false);
+      }, 400);
+      return;
+    }
+
+    setSending(true);
     try {
-      const res = await fetch(`${API_URL}/chat/${biz.id}`, {
+      const res = await fetch(`${API_URL}/asistente/chat/${biz.asistenteCodigoPublico}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensaje: contenido, sesionClienteId: sesionClienteId() }),
       });
-      if (!res.ok) throw new Error("sin respuesta del asistente");
       const data = await res.json();
-      const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, hora: new Date().toISOString() };
-      setMessages((prev) => [...prev, msgAsistente]);
+      if (!res.ok) {
+        const texto = data.error === "suscripcion_vencida"
+          ? "Este asistente está pausado temporalmente por el negocio."
+          : data.error === "limite_prueba_alcanzado"
+          ? "Este negocio alcanzó el límite de mensajes de su prueba gratuita de Mi Asistente."
+          : (data.mensaje || "No pude conectarme con el asistente en este momento.");
+        setMessages((prev) => [...prev, { id: uid(), rol: "asistente", texto, hora: new Date().toISOString() }]);
+        return;
+      }
+      setMessages((prev) => [...prev, {
+        id: uid(), rol: "asistente", texto: data.respuesta, hora: new Date().toISOString(),
+        imagenes: data.imagenes?.length ? data.imagenes : undefined,
+        pedidoCreado: data.pedidoCreado || undefined,
+        turnoCreado: data.turnoCreado || undefined,
+      }]);
     } catch {
-      const fallback = {
+      setMessages((prev) => [...prev, {
         id: uid(), rol: "asistente",
-        texto: "Gracias por tu mensaje. En este momento no puedo responder automáticamente, pero el negocio va a ver tu consulta apenas conecte su asistente.",
+        texto: "No pude conectarme con el asistente de este negocio en este momento. Probá de nuevo en un rato.",
         hora: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, fallback]);
+      }]);
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -722,14 +753,20 @@ function ChatScreen({ biz, onBack }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
-            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>Asistente virtual · {c?.label}</p>
+            <p className="text-[11px] flex items-center gap-1" style={{ color: "#BBD1FB" }}>
+              {tieneAsistenteReal ? "Asistente virtual" : c?.label}
+              <span className="inline-flex items-center gap-1 ml-1">
+                <span className="rounded-full" style={{ width: 5, height: 5, background: isOpenNow(biz.weekHours) ? "#2C9A5F" : "#C1443A" }} />
+                {isOpenNow(biz.weekHours) ? "Abierto" : "Cerrado"}
+              </span>
+            </p>
           </div>
         </div>
       </div>
 
       <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-4 flex flex-col gap-2.5 overflow-y-auto" style={{ paddingBottom: 90 }}>
         {messages.map((m) => (
-          <div key={m.id} className="flex" style={{ justifyContent: m.rol === "cliente" ? "flex-end" : "flex-start" }}>
+          <div key={m.id} className="flex flex-col" style={{ alignItems: m.rol === "cliente" ? "flex-end" : "flex-start" }}>
             <div
               className="px-3.5 py-2.5 text-sm"
               style={{
@@ -743,6 +780,21 @@ function ChatScreen({ biz, onBack }) {
             >
               {m.texto}
             </div>
+            {m.imagenes && (
+              <div className="flex gap-2 mt-1.5 overflow-x-auto" style={{ maxWidth: "78%" }}>
+                {m.imagenes.map((url, i) => (
+                  <img key={i} src={url} alt="" className="object-cover shrink-0" style={{ width: 100, height: 100, borderRadius: 10, border: "1px solid #E2E8F0" }} />
+                ))}
+              </div>
+            )}
+            {(m.pedidoCreado || m.turnoCreado) && (
+              <div className="flex items-center gap-2 mt-1.5 px-3 py-2" style={{ maxWidth: "78%", borderRadius: 10, background: "#E4F3EA", border: "1px solid #2C9A5F55" }}>
+                <Check size={14} color="#1E6B44" />
+                <span className="text-xs font-medium" style={{ color: "#1E6B44" }}>
+                  {m.pedidoCreado ? "Pedido registrado" : "Turno reservado"}
+                </span>
+              </div>
+            )}
           </div>
         ))}
         {sending && (
@@ -1312,7 +1364,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
 
           {/* acciones principales: chat con el asistente y cómo llegar */}
           <div className="flex flex-col gap-2" style={{ paddingBottom: 100 }}>
-            {biz.asistenteCodigo && (
+            {biz.asistenteCodigoPublico && (
               <div className="flex items-center gap-2 px-3.5 py-2.5 mb-1" style={{ borderRadius: 10, background: "#F3ECFC", border: "1px solid #D8C4F0" }}>
                 <Sparkles size={15} color="#7A4F9E" />
                 <p className="text-xs" style={{ color: "#5B3A7A" }}>Este negocio tiene <b>Mi Asistente</b> — hablá directo con su asistente virtual.</p>
@@ -1323,8 +1375,8 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
               className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
               style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
             >
-              {biz.asistenteCodigo ? <Sparkles size={16} /> : <MessageCircle size={17} />}
-              {biz.asistenteCodigo ? "Hablar con el asistente" : "Abrir chat con el asistente"}
+              {biz.asistenteCodigoPublico ? <Sparkles size={16} /> : <MessageCircle size={17} />}
+              {biz.asistenteCodigoPublico ? "Hablar con el asistente" : "Abrir chat con el asistente"}
             </button>
             <a
               href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
@@ -1847,7 +1899,7 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
       />
       <Tool
         Icon={KeyRound} bg="#0B2A54" title="Vincular Mi Asistente"
-        desc={ownerBiz.asistenteCodigo ? "Código vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
+        desc={ownerBiz.asistenteCodigoPublico ? "Vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
         onClick={onOpenAsistenteCode}
       />
 
@@ -2356,6 +2408,33 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
 
 function AsistenteCodeModal({ business, onSave, onClose }) {
   const [codigo, setCodigo] = useState(business.asistenteCodigo || "");
+  const [verificando, setVerificando] = useState(false);
+  const [error, setError] = useState(null);
+  const [ok, setOk] = useState(null); // { nombreNegocio }
+
+  const verificar = async () => {
+    if (!codigo.trim()) return;
+    setVerificando(true); setError(null); setOk(null);
+    try {
+      const res = await fetch(`${API_URL}/asistente/vincular/${encodeURIComponent(codigo.trim())}`);
+      const datos = await res.json();
+      if (!res.ok) {
+        setError(datos.error || "No se pudo verificar el código.");
+        return;
+      }
+      if (!datos.suscripcionActiva) {
+        setError("Ese código existe, pero la suscripción de Mi Asistente para ese negocio no está activa todavía.");
+        return;
+      }
+      setOk({ nombreNegocio: datos.nombreNegocio });
+      onSave({ asistenteCodigo: codigo.trim().toUpperCase(), asistenteCodigoPublico: datos.codigoPublico });
+    } catch {
+      setError("No se pudo conectar con Mi Asistente. Probá de nuevo en un momento.");
+    } finally {
+      setVerificando(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
@@ -2364,20 +2443,26 @@ function AsistenteCodeModal({ business, onSave, onClose }) {
           <button onClick={onClose}><X size={18} color="#6B7280" /></button>
         </div>
         <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
-          Si ya pagaste Mi Asistente pero te registraste ahí con una cuenta de Google distinta a la de acá, pegá el código que te dieron para que tu negocio muestre que tiene asistente.
+          Si ya pagaste Mi Asistente pero te registraste ahí con una cuenta de Google distinta a la de acá, pegá el código de vinculación que te dio Mi Asistente.
         </p>
         <input
           value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-          placeholder="Código de Mi Asistente"
-          className="w-full border px-3 py-2.5 text-sm font-mono mb-4" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+          placeholder="Código de vinculación"
+          className="w-full border px-3 py-2.5 text-sm font-mono mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
         />
+        {error && <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>{error}</p>}
+        {ok && (
+          <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#1E6B44" }}>
+            <Check size={13} /> Vinculado con éxito: {ok.nombreNegocio}
+          </p>
+        )}
         <button
-          onClick={() => codigo.trim() && onSave(codigo.trim())}
-          disabled={!codigo.trim()}
+          onClick={verificar}
+          disabled={!codigo.trim() || verificando}
           className="w-full text-sm font-semibold py-3"
-          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: codigo.trim() ? 1 : 0.5 }}
+          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: !codigo.trim() || verificando ? 0.5 : 1 }}
         >
-          Guardar código
+          {verificando ? "Verificando..." : "Verificar y vincular"}
         </button>
       </div>
     </div>
@@ -2891,7 +2976,7 @@ export default function MiZona() {
       {showAsistenteCode && ownerBiz && (
         <AsistenteCodeModal
           business={ownerBiz}
-          onSave={(codigo) => { persistOne(ownerBizId, { ...ownerBiz, asistenteCodigo: codigo }); setShowAsistenteCode(false); }}
+          onSave={(datos) => { persistOne(ownerBizId, { ...ownerBiz, ...datos }); setShowAsistenteCode(false); }}
           onClose={() => setShowAsistenteCode(false)}
         />
       )}
