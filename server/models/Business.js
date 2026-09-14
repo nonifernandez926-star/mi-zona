@@ -31,6 +31,7 @@ const businessSchema = new mongoose.Schema(
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
     ownerCode: String,
     asistenteCodigo: String,
+    asistenteCodigoPublico: String,
   },
   { timestamps: true, strict: false }
 );
