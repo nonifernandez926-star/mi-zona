@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Search, MapPin, Instagram, Clock, Eye, Plus, X, Lock, ArrowLeft,
   ChevronDown, MessageCircle, Grid3x3, Star, Pencil, Trash2, Power,
@@ -173,6 +175,40 @@ function fmtHours(range) {
   const [o, c] = range;
   return `${o}:00–${c === 0 ? "00" : c}:00`;
 }
+function busquedaEmpleoActiva(biz) {
+  const b = biz.busquedaEmpleo;
+  if (!b || !b.puesto) return false;
+  if (!b.fechaFin) return true;
+  return new Date() <= new Date(b.fechaFin);
+}
+function historiasActivas(biz) {
+  const hace24h = Date.now() - 24 * 60 * 60 * 1000;
+  return (biz.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace24h);
+}
+
+/* ---------- historial de búsquedas y negocios vistos recientemente (en este dispositivo) ---------- */
+
+function getSearchHistory() {
+  try { return JSON.parse(localStorage.getItem("miZonaHistorialBusqueda") || "[]"); } catch { return []; }
+}
+function addSearchHistory(q) {
+  const query = q.trim();
+  if (!query) return;
+  const actual = getSearchHistory().filter((s) => s.toLowerCase() !== query.toLowerCase());
+  localStorage.setItem("miZonaHistorialBusqueda", JSON.stringify([query, ...actual].slice(0, 8)));
+}
+function clearSearchHistory() {
+  localStorage.removeItem("miZonaHistorialBusqueda");
+}
+
+function getRecentlyViewed() {
+  try { return JSON.parse(localStorage.getItem("miZonaVistosRecientemente") || "[]"); } catch { return []; }
+}
+function addRecentlyViewed(bizId) {
+  const actual = getRecentlyViewed().filter((id) => id !== bizId);
+  localStorage.setItem("miZonaVistosRecientemente", JSON.stringify([bizId, ...actual].slice(0, 12)));
+}
+
 function avgRating(reviews) {
   if (!reviews || reviews.length === 0) return null;
   return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
@@ -258,6 +294,17 @@ function countUnreadChats() {
     return ultimo.rol === "asistente" && (!visto || new Date(ultimo.hora) > new Date(visto));
   }).length;
 }
+function getReviewsLastSeen(bizId) {
+  return localStorage.getItem(`miZonaResenasVistas_${bizId}`) || null;
+}
+function setReviewsLastSeen(bizId, iso) {
+  localStorage.setItem(`miZonaResenasVistas_${bizId}`, iso);
+}
+function countUnseenReviews(biz) {
+  const visto = getReviewsLastSeen(biz.id);
+  if (!visto) return biz.reviews?.length || 0;
+  return (biz.reviews || []).filter((r) => new Date(r.date) > new Date(visto)).length;
+}
 
 /* ---------- ubicación: geocodificar direcciones y calcular distancia ---------- */
 
@@ -312,8 +359,11 @@ function emptyBusiness() {
     createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
     views: 0, reviews: [], discounts: [], extra: {},
     ownerCode: uid().slice(0, 8).toUpperCase(),
+    colabCode: "", // se genera cuando el dueño invita a un colaborador
+    historias: [], // [{ id, url, subidaEn }] — se filtran a las de las últimas 24hs al mostrarlas
     asistenteCodigo: "", // código de vinculación que ingresó el dueño
     asistenteCodigoPublico: "", // código real que devuelve Mi Asistente al verificar (el que se usa para el chat)
+    busquedaEmpleo: null, // { puesto, descripcion, contactoTipo, contactoValor, fechaInicio, fechaFin }
   };
 }
 
@@ -1116,16 +1166,44 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
   );
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isFavorite, onToggleFavorite, rank }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const gallery = biz.photos?.length > 0 ? biz.photos : [null, null, null, null];
   const [showAllPhotos, setShowAllPhotos] = useState(false);
+  const [showEmpleoDetalle, setShowEmpleoDetalle] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewName, setReviewName] = useState("");
   const [tab, setTab] = useState("info"); // info | opiniones | fotos
+  const [replyingId, setReplyingId] = useState(null);
+  const [replyText, setReplyText] = useState("");
   const rating = avgRating(biz.reviews);
+
+  const historias = historiasActivas(biz);
+  const tieneHistorias = historias.length > 0;
+  const [showHistoriaViewer, setShowHistoriaViewer] = useState(false);
+  const pressTimer = useRef(null);
+  const longPressed = useRef(false);
+  const handlePressStart = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      if (biz.logo) onOpenPhoto(biz.logo);
+    }, 450);
+  };
+  const handlePressEnd = () => {
+    clearTimeout(pressTimer.current);
+    if (!longPressed.current) {
+      if (tieneHistorias) setShowHistoriaViewer(true);
+      else if (biz.logo) onOpenPhoto(biz.logo);
+    }
+  };
+  const cancelPress = () => clearTimeout(pressTimer.current);
+
+  useEffect(() => {
+    if (esDueño && tab === "opiniones") setReviewsLastSeen(biz.id, new Date().toISOString());
+  }, [esDueño, tab, biz.id]);
 
   const submitReview = () => {
     if (!reviewText.trim()) return;
@@ -1183,12 +1261,19 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
           {/* tarjeta de identidad del negocio */}
           <div className="bg-white -mt-6 relative p-4 mb-1" style={{ borderRadius: "14px 14px 0 0" }}>
             <div className="flex items-start gap-3">
-              <div
-                className="flex items-center justify-center shrink-0 text-lg font-bold"
-                style={{ width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", fontFamily: "'Poppins', sans-serif", marginTop: -34, border: "3px solid #fff" }}
+              <button
+                onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={cancelPress}
+                onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onTouchCancel={cancelPress}
+                className="flex items-center justify-center shrink-0 text-lg font-bold overflow-hidden"
+                style={{
+                  width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff",
+                  fontFamily: "'Poppins', sans-serif", marginTop: -34,
+                  border: tieneHistorias ? "3px solid #fff" : "3px solid #fff",
+                  boxShadow: tieneHistorias ? "0 0 0 3px #2F6FED, 0 0 0 6px #7FA8F5" : "none",
+                }}
               >
-                {biz.name?.[0]?.toUpperCase()}
-              </div>
+                {biz.logo ? <img src={biz.logo} alt="" className="w-full h-full object-cover" /> : biz.name?.[0]?.toUpperCase()}
+              </button>
               <div className="flex-1 min-w-0 pt-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{biz.name}</h1>
@@ -1214,6 +1299,22 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
               </div>
             </div>
           </div>
+
+          {busquedaEmpleoActiva(biz) && (
+            <button
+              onClick={() => setShowEmpleoDetalle(true)}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 mb-4 text-left"
+              style={{ borderRadius: 10, background: "#E8F0FE", border: "1px solid #BFD6FB" }}
+            >
+              <Briefcase size={16} color="#2F6FED" className="shrink-0" />
+              <span className="flex-1 text-xs" style={{ color: "#0B2A54" }}>
+                <b>Buscan personal:</b> {biz.busquedaEmpleo.puesto}
+              </span>
+              <ChevronDown size={13} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
+            </button>
+          )}
+          {showEmpleoDetalle && <EmpleoDetalleModal business={biz} onClose={() => setShowEmpleoDetalle(false)} />}
+          {showHistoriaViewer && <HistoriaViewerModal business={biz} historias={historias} onClose={() => setShowHistoriaViewer(false)} />}
 
           {/* pestañas */}
           <div className="flex items-center gap-6 mb-5" style={{ borderBottom: "1px solid #E2E8F0" }}>
@@ -1335,7 +1436,42 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onOpenChat, isF
                           <Star key={n} size={13} fill={n <= r.rating ? "#2F6FED" : "none"} color={n <= r.rating ? "#2F6FED" : "#D1D5DB"} />
                         ))}
                       </div>
-                      <p className="text-sm" style={{ color: "#1F2937" }}>{r.text}</p>
+                      <p className="text-sm mb-2" style={{ color: "#1F2937" }}>{r.text}</p>
+
+                      {r.respuesta ? (
+                        <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F6FB", borderLeft: "3px solid #2F6FED" }}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {r.respuesta.esDueño && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E8F0FE", color: "#2F6FED", borderRadius: 6 }}>Respuesta del dueño</span>
+                            )}
+                            <span className="text-[11px]" style={{ color: "#94A3B8" }}>{fmtDate(r.respuesta.fecha)}</span>
+                          </div>
+                          <p className="text-sm" style={{ color: "#1F2937" }}>{r.respuesta.texto}</p>
+                        </div>
+                      ) : replyingId === r.id ? (
+                        <div className="mt-2">
+                          <textarea
+                            value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={2}
+                            placeholder="Escribí una respuesta..."
+                            className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { if (replyText.trim()) { onReplyReview(biz.id, r.id, replyText.trim(), esDueño); setReplyingId(null); setReplyText(""); } }}
+                              className="text-xs font-semibold px-3 py-1.5" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 6 }}
+                            >
+                              Responder
+                            </button>
+                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#6B7280" }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setReplyingId(r.id); setReplyText(""); }} className="text-xs font-semibold" style={{ color: "#2F6FED" }}>
+                          Responder
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1398,6 +1534,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [historial, setHistorial] = useState(() => getSearchHistory());
   return (
     <>
       {/* barra superior estilo app */}
@@ -1442,11 +1579,27 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             <Search size={16} color="#6B7280" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
+              onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
               placeholder="Buscá un negocio, producto o servicio..."
               className="w-full outline-none text-sm" style={{ color: "#0B1220" }}
             />
             {query && <button onClick={() => setQuery("")}><X size={14} color="#6B7280" /></button>}
           </div>
+
+          {!query && historial.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+              {historial.map((h) => (
+                <button
+                  key={h} onClick={() => setQuery(h)}
+                  className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 shrink-0"
+                  style={{ borderRadius: 20, background: "#ffffff1f", color: "#DCE7FB" }}
+                >
+                  <Clock size={10} /> {h}
+                </button>
+              ))}
+            </div>
+          )}
 
           <button onClick={() => setShowZoneModal(true)} className="flex items-center gap-1.5 mt-2.5 text-xs font-medium" style={{ color: "#DCE7FB" }}>
             <MapPin size={13} color="#7FA8F5" /> {zone} <ChevronDown size={12} />
@@ -1548,6 +1701,12 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
           <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
           <Item Icon={Lock} label="Administrador" onClick={onOpenAdmin} />
           <div style={{ borderTop: "1px solid #EEF2F7", margin: "8px 0" }} />
+          <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
+            const data = { title: "Mi Zona", text: "Descubrí negocios de tu zona con Mi Zona", url: window.location.origin };
+            if (navigator.share) { try { await navigator.share(data); } catch {} }
+            else { try { await navigator.clipboard.writeText(window.location.origin); alert("Enlace copiado al portapapeles"); } catch {} }
+            onClose();
+          }} />
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onClose} />
           <Item Icon={Send} label="Soporte" onClick={onClose} />
         </div>
@@ -1714,6 +1873,63 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
   );
 }
 
+function MapaScreen({ businesses, zone, onOpenBusiness, onBack }) {
+  const mapDivRef = useRef(null);
+  const mapRef = useRef(null);
+  const conUbicacion = useMemo(
+    () => businesses.filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && b.lat && b.lng),
+    [businesses, zone]
+  );
+
+  useEffect(() => {
+    if (!mapDivRef.current || mapRef.current) return;
+    const centro = conUbicacion.length > 0
+      ? [conUbicacion.reduce((s, b) => s + b.lat, 0) / conUbicacion.length, conUbicacion.reduce((s, b) => s + b.lng, 0) / conUbicacion.length]
+      : [-26.8241, -65.2226]; // Tucumán como centro por defecto
+
+    const map = L.map(mapDivRef.current).setView(centro, conUbicacion.length > 0 ? 13 : 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; colaboradores de OpenStreetMap",
+    }).addTo(map);
+
+    const iconoNegocio = L.divIcon({
+      className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:#2F6FED;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`,
+      iconSize: [30, 30], iconAnchor: [15, 30],
+    });
+
+    conUbicacion.forEach((b) => {
+      const marker = L.marker([b.lat, b.lng], { icon: iconoNegocio }).addTo(map);
+      const c = catInfo(b.cat);
+      marker.bindPopup(`<b>${b.name}</b><br/><span style="color:#6B7280;font-size:12px">${c?.label || ""}</span>`);
+      marker.on("click", () => marker.openPopup());
+      marker.on("popupopen", () => {
+        const el = marker.getPopup().getElement();
+        if (el) el.style.cursor = "pointer";
+      });
+      // un segundo tap sobre el popup ya abierto lleva al perfil
+      marker.on("click", () => {
+        if (marker.isPopupOpen()) onOpenBusiness(b.id);
+      });
+    });
+
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  }, [conUbicacion, onOpenBusiness]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      <div className="flex items-center gap-2 px-4 py-3" style={{ backgroundColor: "#0B2A54" }}>
+        <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Mapa de {zone}</p>
+          <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{conUbicacion.length} negocio(s) en el mapa</p>
+        </div>
+      </div>
+      <div ref={mapDivRef} style={{ flex: 1, width: "100%" }} />
+    </div>
+  );
+}
+
 function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   const ranking = useMemo(() => rankedBusinesses(businesses.filter((b) => b.zone === zone)), [businesses, zone]);
   const podio = ranking.slice(0, 3);
@@ -1813,17 +2029,43 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos }) {
+function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, onViewProfile, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos, onOpenMapa, onGuardarEmpleo, onInvitarColab, onSubirHistoria }) {
   const [showQR, setShowQR] = useState(false);
+  const [showEmpleoForm, setShowEmpleoForm] = useState(false);
+  const [subiendoHistoria, setSubiendoHistoria] = useState(false);
+  const historiaInputRef = useRef(null);
 
-  const Tool = ({ Icon, bg, title, desc, onClick }) => (
+  const handleSubirHistoria = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setSubiendoHistoria(true);
+    try {
+      const url = await uploadImage(file);
+      onSubirHistoria(url);
+    } catch {
+      alert("No se pudo subir la imagen. Probá de nuevo.");
+    } finally {
+      setSubiendoHistoria(false);
+    }
+  };
+
+  const Tool = ({ Icon, bg, title, desc, onClick, badge }) => (
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3.5 p-4 text-left bg-white mb-3"
       style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: bg }}>
+      <span className="relative flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: bg }}>
         <Icon size={21} color="#fff" />
+        {badge > 0 && (
+          <span
+            className="absolute flex items-center justify-center text-[10px] font-bold"
+            style={{ top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, background: "#C1443A", color: "#fff", padding: "0 4px", border: "2px solid #fff" }}
+          >
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{title}</span>
@@ -1850,6 +2092,11 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
           onClick={onOpenRanking}
         />
         <Tool
+          Icon={MapPin} bg="#2F6FED" title="Mapa de mi zona"
+          desc="Mirá todos los negocios activos en un mapa."
+          onClick={onOpenMapa}
+        />
+        <Tool
           Icon={KeyRound} bg="#2F6FED" title="Ingresar código de dueño"
           desc="¿Ya registraste tu negocio? Ingresá el código que recibiste para administrarlo."
           onClick={onOpenOwner}
@@ -1873,14 +2120,20 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
         onClick={onOpenRanking}
       />
       <Tool
+        Icon={MapPin} bg="#2F6FED" title="Mapa de mi zona"
+        desc="Mirá todos los negocios activos en un mapa."
+        onClick={onOpenMapa}
+      />
+      <Tool
         Icon={Pencil} bg="#2F6FED" title="Editar mi negocio"
         desc="Actualizá la información de tu negocio cuando quieras."
         onClick={onEditBusiness}
       />
       <Tool
-        Icon={TrendingUp} bg="#2F6FED" title="Estadísticas"
+        Icon={TrendingUp} bg="#2F6FED" title="Ver mi negocio y reseñas"
         desc={`${fmtNum(ownerBiz.views)} vistas · ${ownerBiz.reviews?.length || 0} reseñas`}
-        onClick={onEditBusiness}
+        onClick={onViewProfile}
+        badge={countUnseenReviews(ownerBiz)}
       />
       <Tool
         Icon={QrCode} bg="#F5A623" title="Mi código de negocio"
@@ -1897,11 +2150,40 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
         desc="Conseguí tu asistente virtual con IA para atender a tus clientes."
         onClick={() => window.open(MI_ASISTENTE_URL, "_blank")}
       />
+      {ownerRole !== "colaborador" && (
+        <Tool
+          Icon={KeyRound} bg="#0B2A54" title="Vincular Mi Asistente"
+          desc={ownerBiz.asistenteCodigoPublico ? "Vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
+          onClick={onOpenAsistenteCode}
+        />
+      )}
       <Tool
-        Icon={KeyRound} bg="#0B2A54" title="Vincular Mi Asistente"
-        desc={ownerBiz.asistenteCodigoPublico ? "Vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
-        onClick={onOpenAsistenteCode}
+        Icon={Briefcase} bg="#C97B4A" title="Búsqueda de personal"
+        desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar personal a tu equipo."}
+        onClick={() => setShowEmpleoForm(true)}
       />
+      <Tool
+        Icon={PartyPopper} bg="#2C9A5F" title="Subir historia"
+        desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} historia(s) activa(s) ahora`}
+        onClick={() => !subiendoHistoria && historiaInputRef.current?.click()}
+      />
+      <input ref={historiaInputRef} type="file" accept="image/*" className="hidden" onChange={handleSubirHistoria} />
+      {ownerRole !== "colaborador" && (
+        <Tool
+          Icon={User} bg="#7A4F9E" title="Invitar un colaborador"
+          desc={ownerBiz.colabCode ? "Ya tenés un código de colaborador activo." : "Dale acceso limitado a tu encargado, sin compartir tu código de dueño."}
+          onClick={onInvitarColab}
+        />
+      )}
+
+      {showEmpleoForm && (
+        <EmpleoFormModal
+          business={ownerBiz}
+          onSave={(datos) => { onGuardarEmpleo(datos); setShowEmpleoForm(false); }}
+          onDelete={() => { onGuardarEmpleo(null); setShowEmpleoForm(false); }}
+          onClose={() => setShowEmpleoForm(false)}
+        />
+      )}
 
       {showQR && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowQR(false)}>
@@ -1931,8 +2213,9 @@ function HerramientasScreen({ ownerBiz, onOpenOwner, onEditBusiness, onOpenAsist
   );
 }
 
-function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
-  const [sub, setSub] = useState(null); // null | "acerca" | "ayuda" | "soporte"
+function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
+  const [sub, setSub] = useState(null); // null | "acerca" | "ayuda" | "soporte" | "privacidad"
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
 
   const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
     <button
@@ -1953,6 +2236,49 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
       <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
   );
+
+  if (sub === "privacidad") {
+    const favs = getFavorites().length;
+    const chats = getAllConversationIds().length;
+    return (
+      <div>
+        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+          <ArrowLeft size={15} /> Volver a Ajustes
+        </button>
+        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">Privacidad</h2>
+        <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
+          Como todavía no iniciás sesión con una cuenta, tus favoritos, conversaciones y preferencias se guardan <b>solo en este dispositivo</b> — no los vemos nosotros ni quedan asociados a vos en ningún servidor. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
+        </p>
+        <div className="p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span style={{ color: "#4B5563" }}>Negocios favoritos</span>
+            <span style={{ color: "#0B1220", fontWeight: 600 }}>{favs}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span style={{ color: "#4B5563" }}>Conversaciones guardadas</span>
+            <span style={{ color: "#0B1220", fontWeight: 600 }}>{chats}</span>
+          </div>
+        </div>
+        {!confirmarBorrado ? (
+          <button onClick={() => setConfirmarBorrado(true)} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 10, border: "1px solid #C1443A", color: "#9A3B34" }}>
+            Borrar todos mis datos de este dispositivo
+          </button>
+        ) : (
+          <div className="p-4" style={{ borderRadius: 10, background: "#F7E7E5" }}>
+            <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>Esto va a borrar tus favoritos y todas tus conversaciones de este dispositivo. No se puede deshacer.</p>
+            <div className="flex gap-2">
+              <button onClick={() => { onBorrarDatosLocales(); setConfirmarBorrado(false); }} className="flex-1 text-xs font-semibold py-2" style={{ backgroundColor: "#9A3B34", color: "#fff", borderRadius: 8 }}>
+                Sí, borrar todo
+              </button>
+              <button onClick={() => setConfirmarBorrado(false)} className="flex-1 text-xs font-medium py-2" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (sub) {
     const content = {
@@ -1990,6 +2316,7 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
         <Row Icon={Lock} title="Seguridad" desc="Cambiar contraseña y opciones de seguridad" badge="Próximamente" disabled />
         <Row Icon={Mail} title="Notificaciones" desc="Elegí qué notificaciones querés recibir" badge="Próximamente" disabled />
         <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
+        <Row Icon={Lock} title="Privacidad" desc="Qué datos guardamos y cómo borrarlos" onClick={() => setSub("privacidad")} />
       </div>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
@@ -2002,7 +2329,7 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin }) {
 }
 
 
-function BottomNav({ active, onInicio, onExplorar, onChats, onAdd, onHerramientas, onAjustes, chatsSinLeer }) {
+function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes, chatsSinLeer }) {
   const Item = ({ id, label, Icon, onClick, badge }) => (
     <button onClick={onClick} className="flex flex-col items-center gap-1 py-1 relative" style={{ flex: 1 }}>
       <span className="relative">
@@ -2035,7 +2362,6 @@ function BottomNav({ active, onInicio, onExplorar, onChats, onAdd, onHerramienta
 
       <div className="max-w-6xl mx-auto px-2 flex items-center" style={{ paddingTop: 8, paddingBottom: 8 }}>
         <Item id="inicio" label="Inicio" Icon={Home} onClick={onInicio} />
-        <Item id="explorar" label="Explorar" Icon={Grid3x3} onClick={onExplorar} />
         <Item id="chats" label="Chats" Icon={MessageCircle} onClick={onChats} badge={chatsSinLeer} />
         <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />
         <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
@@ -2406,6 +2732,236 @@ function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew,
 
 /* ---------- panel del dueño (acceso por código, solo su negocio) ---------- */
 
+const TIPOS_PUESTO = ["Cocina", "Chef", "Atención al cliente / Mozo", "Delivery / Repartidor", "Administrativo", "Ventas", "Otro"];
+const DURACIONES_BUSQUEDA = [
+  { dias: 7, label: "7 días" },
+  { dias: 15, label: "15 días" },
+  { dias: 30, label: "30 días" },
+  { dias: 60, label: "60 días" },
+];
+
+function contactoEmpleoLink(b) {
+  if (!b.busquedaEmpleo?.contactoValor) return "#";
+  if (b.busquedaEmpleo.contactoTipo === "whatsapp") {
+    return `https://wa.me/${b.busquedaEmpleo.contactoValor}?text=${encodeURIComponent(`Hola, te escribo por la búsqueda de personal (${b.busquedaEmpleo.puesto}) en Mi Zona.`)}`;
+  }
+  return b.busquedaEmpleo.contactoValor;
+}
+
+// Modal que ve el CLIENTE al tocar el aviso de "busca personal" en el perfil del negocio
+// Visor de historias a pantalla completa: tocar la mitad derecha avanza, la izquierda retrocede
+function HistoriaViewerModal({ business, historias, onClose }) {
+  const [i, setI] = useState(0);
+  const DURACION = 5000; // ms por historia, como cualquier red social
+
+  useEffect(() => {
+    if (i >= historias.length) { onClose(); return; }
+    const t = setTimeout(() => setI((v) => v + 1), DURACION);
+    return () => clearTimeout(t);
+  }, [i, historias.length, onClose]);
+
+  if (i >= historias.length) return null;
+  const actual = historias[i];
+
+  const tocar = (e) => {
+    const x = e.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
+    const mitad = window.innerWidth / 2;
+    if (x < mitad) setI((v) => Math.max(0, v - 1));
+    else setI((v) => (v + 1 >= historias.length ? historias.length : v + 1));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90]" style={{ background: "#000" }}>
+      <div className="absolute top-0 left-0 right-0 flex gap-1 px-2 pt-3 z-10">
+        {historias.map((h, idx) => (
+          <div key={h.id} className="flex-1 overflow-hidden" style={{ height: 3, borderRadius: 2, background: "#ffffff40" }}>
+            <div style={{ height: "100%", width: idx < i ? "100%" : idx === i ? "100%" : "0%", background: "#fff", transition: idx === i ? `width ${DURACION}ms linear` : "none" }} />
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute flex items-center gap-2 z-10" style={{ top: 20, left: 12, right: 12 }}>
+        <div className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 28, height: 28, borderRadius: "50%", background: "#2F6FED", color: "#fff" }}>
+          {business.name?.[0]?.toUpperCase()}
+        </div>
+        <span className="text-sm font-semibold" style={{ color: "#fff" }}>{business.name}</span>
+        <button onClick={onClose} className="ml-auto"><X size={22} color="#fff" /></button>
+      </div>
+
+      <div className="w-full h-full flex items-center justify-center" onClick={tocar}>
+        <img src={actual.url} alt="" className="max-w-full max-h-full object-contain" />
+      </div>
+    </div>
+  );
+}
+
+function EmpleoDetalleModal({ business, onClose }) {
+  const e = business.busquedaEmpleo;
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(ev) => ev.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="flex items-center gap-2" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+            <Briefcase size={17} color="#2F6FED" /> Buscan personal
+          </span>
+          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+        </div>
+        <p className="text-xs font-semibold mb-1" style={{ color: "#2F6FED" }}>{e.puesto}</p>
+        <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
+        <a
+          href={contactoEmpleoLink(business)} target="_blank" rel="noreferrer"
+          className="flex items-center justify-center gap-2 text-sm font-semibold py-3 w-full"
+          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+        >
+          {e.contactoTipo === "whatsapp" ? <MessageCircle size={16} /> : <Share2 size={16} />}
+          Contactar por esta búsqueda
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// Modal que usa el DUEÑO para crear, editar o eliminar su búsqueda de personal
+function EmpleoFormModal({ business, onSave, onDelete, onClose }) {
+  const existente = business.busquedaEmpleo;
+  const [puesto, setPuesto] = useState(existente?.puesto || TIPOS_PUESTO[0]);
+  const [otro, setOtro] = useState(existente?.puesto && !TIPOS_PUESTO.includes(existente.puesto) ? existente.puesto : "");
+  const [descripcion, setDescripcion] = useState(existente?.descripcion || "");
+  const [dias, setDias] = useState(30);
+  const [contactoTipo, setContactoTipo] = useState(existente?.contactoTipo || "whatsapp");
+  const [contactoValor, setContactoValor] = useState(existente?.contactoValor || "");
+
+  const guardar = () => {
+    const puestoFinal = puesto === "Otro" ? (otro.trim() || "Otro") : puesto;
+    if (!puestoFinal.trim() || !descripcion.trim() || !contactoValor.trim()) return;
+    const ahora = new Date();
+    const fin = new Date(ahora); fin.setDate(fin.getDate() + dias);
+    onSave({
+      puesto: puestoFinal.trim(), descripcion: descripcion.trim(),
+      contactoTipo, contactoValor: contactoValor.trim(),
+      fechaInicio: ahora.toISOString(), fechaFin: fin.toISOString(),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Búsqueda de personal</span>
+          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Tipo de puesto</p>
+            <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
+              {TIPOS_PUESTO.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          {puesto === "Otro" && (
+            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          )}
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Descripción del trabajo</p>
+            <textarea
+              value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3}
+              placeholder="Contá qué va a hacer la persona, horarios, requisitos..."
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>¿Cuánto tiempo va a estar publicada?</p>
+            <div className="flex gap-2 flex-wrap">
+              {DURACIONES_BUSQUEDA.map((d) => (
+                <button
+                  key={d.dias} onClick={() => setDias(d.dias)}
+                  className="text-xs font-medium px-3 py-1.5"
+                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#E2E8F0"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#4B5563" }}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>¿Cómo te van a contactar?</p>
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={() => setContactoTipo("whatsapp")}
+                className="flex-1 text-xs font-medium py-2"
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#4B5563" }}
+              >
+                WhatsApp
+              </button>
+              <button
+                onClick={() => setContactoTipo("red_social")}
+                className="flex-1 text-xs font-medium py-2"
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#4B5563" }}
+              >
+                Red social / link
+              </button>
+            </div>
+            <input
+              value={contactoValor} onChange={(e) => setContactoValor(e.target.value)}
+              placeholder={contactoTipo === "whatsapp" ? "Número con código de país, sin +" : "Link de Instagram, Facebook, etc."}
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+            />
+          </div>
+
+          <button onClick={guardar} className="text-sm font-semibold py-3 mt-1" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+            {existente ? "Guardar cambios" : "Publicar búsqueda"}
+          </button>
+          {existente && (
+            <button onClick={onDelete} className="text-sm font-semibold py-2.5" style={{ color: "#9A3B34" }}>
+              Eliminar búsqueda
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InvitarColabModal({ business, onSave, onRevoke, onClose }) {
+  const codigo = business.colabCode || uid().slice(0, 8).toUpperCase();
+  const yaGenerado = !!business.colabCode;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Invitar colaborador</span>
+          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+        </div>
+        <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
+          Compartí este código con tu encargado. Va a poder editar la información del negocio, responder reseñas y ver los pedidos — pero no va a poder vincular Mi Asistente ni invitar a otro colaborador.
+        </p>
+        <div className="p-3.5 mb-4 text-center" style={{ borderRadius: 10, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
+          <p className="text-lg font-mono font-bold" style={{ color: "#0B2A54" }}>{codigo}</p>
+        </div>
+        {!yaGenerado ? (
+          <button onClick={() => onSave(codigo)} className="w-full text-sm font-semibold py-3 mb-2" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+            Generar y activar código
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => shareBusiness({ ...business, name: `Acceso colaborador — ${business.name}` })}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mb-2"
+              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+            >
+              <Share2 size={15} /> Compartir
+            </button>
+            <button onClick={onRevoke} className="w-full text-sm font-semibold py-2.5" style={{ color: "#9A3B34" }}>
+              Revocar acceso
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AsistenteCodeModal({ business, onSave, onClose }) {
   const [codigo, setCodigo] = useState(business.asistenteCodigo || "");
   const [verificando, setVerificando] = useState(false);
@@ -2474,9 +3030,12 @@ function OwnerGate({ businesses, onSuccess, onClose }) {
   const [error, setError] = useState(false);
 
   const submit = () => {
-    const match = businesses.find((b) => b.ownerCode?.toUpperCase() === code.trim().toUpperCase());
-    if (match) onSuccess(match.id);
-    else { setError(true); }
+    const codigo = code.trim().toUpperCase();
+    const matchDueño = businesses.find((b) => b.ownerCode?.toUpperCase() === codigo);
+    if (matchDueño) { onSuccess(matchDueño.id, "dueño"); return; }
+    const matchColab = businesses.find((b) => b.colabCode && b.colabCode.toUpperCase() === codigo);
+    if (matchColab) { onSuccess(matchColab.id, "colaborador"); return; }
+    setError(true);
   };
 
   return (
@@ -2625,6 +3184,7 @@ export default function MiZona() {
   const [activeCat, setActiveCat] = useState(null);
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [onlyEmpleo, setOnlyEmpleo] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
@@ -2643,6 +3203,8 @@ export default function MiZona() {
   const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
   const [showAsistenteCode, setShowAsistenteCode] = useState(false);
   const [ownerBizId, setOwnerBizId] = useState(null);
+  const [ownerRole, setOwnerRole] = useState(null); // "dueño" | "colaborador"
+  const [showInvitarColab, setShowInvitarColab] = useState(false);
 
   // agregar mi local
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -2682,6 +3244,7 @@ export default function MiZona() {
   const [chatBiz, setChatBiz] = useState(null);
   const [showBusquedaAsistente, setShowBusquedaAsistente] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
+  const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
 
   // "más cercanos"
@@ -2741,8 +3304,9 @@ export default function MiZona() {
       const matchQ = q ? haystack.includes(q) : true;
       const matchOpen = onlyOpen ? isOpenNow(b.weekHours) : true;
       const matchFav = onlyFavorites ? favorites.includes(b.id) : true;
+      const matchEmpleo = onlyEmpleo ? busquedaEmpleoActiva(b) : true;
       const matchDiscount = sortBy === "descuentos" ? activeDiscounts(b).length > 0 : true;
-      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchDiscount;
+      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchEmpleo && matchDiscount;
     });
     list = [...list];
     if (sortBy === "vistas") {
@@ -2756,19 +3320,28 @@ export default function MiZona() {
       list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, sortBy, userLoc]);
+  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyEmpleo, sortBy, userLoc]);
 
   const selected = businesses.find((b) => b.id === selectedId);
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
 
   const openDetail = (id) => {
     persistOne(id, (b) => ({ ...b, views: b.views + 1 }));
+    addRecentlyViewed(id);
     setSelectedId(id);
     window.scrollTo(0, 0);
   };
 
   const addReview = (id, review) => {
     persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, review] }));
+  };
+  const replyToReview = (bizId, reviewId, texto, esDueño) => {
+    persistOne(bizId, (b) => ({
+      ...b,
+      reviews: b.reviews.map((r) => (
+        r.id === reviewId ? { ...r, respuesta: { texto, esDueño, fecha: todayISO() } } : r
+      )),
+    }));
   };
 
   // acciones de admin
@@ -2895,6 +3468,21 @@ export default function MiZona() {
     );
   }
 
+  /* ---- vista del mapa ---- */
+  if (showMapa) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <MapaScreen
+          businesses={businesses}
+          zone={zone}
+          onBack={() => setShowMapa(false)}
+          onOpenBusiness={(id) => { setShowMapa(false); openDetail(id); }}
+        />
+      </div>
+    );
+  }
+
   /* ---- vista de favoritos ---- */
   if (showFavoritos) {
     return (
@@ -2920,6 +3508,7 @@ export default function MiZona() {
         {globalStyle}
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
+          onReplyReview={replyToReview} esDueño={ownerBizId === selected.id}
           onOpenChat={setChatBiz} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
           rank={businessRankPosition(selected, businesses)}
         />
@@ -2959,7 +3548,7 @@ export default function MiZona() {
       {showOwnerGate && (
         <OwnerGate
           businesses={businesses}
-          onSuccess={(id) => { setOwnerBizId(id); setShowOwnerGate(false); }}
+          onSuccess={(id, rol) => { setOwnerBizId(id); setOwnerRole(rol); setShowOwnerGate(false); }}
           onClose={() => setShowOwnerGate(false)}
         />
       )}
@@ -2978,6 +3567,15 @@ export default function MiZona() {
           business={ownerBiz}
           onSave={(datos) => { persistOne(ownerBizId, { ...ownerBiz, ...datos }); setShowAsistenteCode(false); }}
           onClose={() => setShowAsistenteCode(false)}
+        />
+      )}
+
+      {showInvitarColab && ownerBiz && (
+        <InvitarColabModal
+          business={ownerBiz}
+          onSave={(codigo) => { persistOne(ownerBizId, { ...ownerBiz, colabCode: codigo }); }}
+          onRevoke={() => { persistOne(ownerBizId, { ...ownerBiz, colabCode: "" }); setShowInvitarColab(false); }}
+          onClose={() => setShowInvitarColab(false)}
         />
       )}
 
@@ -3035,7 +3633,15 @@ export default function MiZona() {
 
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
         {activeTab === "ajustes" ? (
-          <AjustesScreen onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))} onOpenOwner={() => setShowOwnerGate(true)} />
+          <AjustesScreen
+            onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))}
+            onOpenOwner={() => setShowOwnerGate(true)}
+            onBorrarDatosLocales={() => {
+              Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
+              setFavorites([]);
+              setOnlyFavorites(false);
+            }}
+          />
         ) : activeTab === "chats" ? (
           <ChatsScreen
             businesses={businesses}
@@ -3046,28 +3652,59 @@ export default function MiZona() {
             ownerBiz={ownerBiz}
             onOpenOwner={() => setShowOwnerGate(true)}
             onEditBusiness={() => setShowEditOwnerBiz(true)}
+            onViewProfile={() => openDetail(ownerBizId)}
             onOpenAsistenteCode={() => setShowAsistenteCode(true)}
             onOpenRanking={() => setShowRanking(true)}
+            onOpenMapa={() => setShowMapa(true)}
             onOpenFavoritos={() => setShowFavoritos(true)}
+            onGuardarEmpleo={(datos) => persistOne(ownerBizId, { ...ownerBiz, busquedaEmpleo: datos })}
+            ownerRole={ownerRole}
+            onInvitarColab={() => setShowInvitarColab(true)}
+            onSubirHistoria={(url) => {
+              const hace48h = Date.now() - 48 * 60 * 60 * 1000;
+              const historiasVigentes = (ownerBiz.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace48h);
+              persistOne(ownerBizId, { ...ownerBiz, historias: [...historiasVigentes, { id: uid(), url, subidaEn: new Date().toISOString() }] });
+            }}
           />
         ) : (
         <>
-        {activeTab === "explorar" && (
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Explorar</p>
-              <p className="text-xs" style={{ color: "#6B7280" }}>Descubrí negocios y servicios cerca tuyo</p>
-            </div>
-            <button
-              onClick={() => setShowAllCats(true)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-2"
-              style={{ borderRadius: 8, border: "1px solid #E2E8F0", color: "#0B1220" }}
-            >
-              <Grid3x3 size={13} /> Rubros
-            </button>
-          </div>
-        )}
-
+        {activeTab === "inicio" && !query && !activeCat && (() => {
+          const vistos = getRecentlyViewed().map((id) => businesses.find((b) => b.id === id)).filter(Boolean);
+          const hace7dias = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          const nuevos = businesses.filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && new Date(b.createdAt).getTime() > hace7dias);
+          const MiniCard = ({ biz }) => {
+            const c = catInfo(biz.cat);
+            return (
+              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden" style={{ width: 140, borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 10px rgba(11,42,84,0.06)" }}>
+                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={80} radius="12px 12px 0 0" iconSize={18} clickable={false} />
+                <div className="p-2">
+                  <p className="text-xs font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
+                  <p className="text-[10px] truncate" style={{ color: "#6B7280" }}>{c?.label}</p>
+                </div>
+              </button>
+            );
+          };
+          return (
+            <>
+              {vistos.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>VISTOS RECIENTEMENTE</p>
+                  <div className="flex gap-2.5 overflow-x-auto pb-1">
+                    {vistos.map((b) => <MiniCard key={b.id} biz={b} />)}
+                  </div>
+                </div>
+              )}
+              {nuevos.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>✨ NUEVOS ESTA SEMANA</p>
+                  <div className="flex gap-2.5 overflow-x-auto pb-1">
+                    {nuevos.map((b) => <MiniCard key={b.id} biz={b} />)}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#6B7280" }}>
             {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
@@ -3089,6 +3726,14 @@ export default function MiZona() {
             >
               <span className="rounded-full" style={{ width: 6, height: 6, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} />
               Solo abiertos ahora
+            </button>
+            <button
+              onClick={() => setOnlyEmpleo((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
+              style={{ borderRadius: 20, backgroundColor: onlyEmpleo ? "#E8F0FE" : "#fff", color: onlyEmpleo ? "#2F6FED" : "#4B5563", border: "1px solid " + (onlyEmpleo ? "#2F6FED" : "#E2E8F0") }}
+            >
+              <Briefcase size={12} />
+              Busca personal
             </button>
             <div className="relative">
               <select
@@ -3178,7 +3823,6 @@ export default function MiZona() {
       <BottomNav
         active={activeTab}
         onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); window.scrollTo(0, 0); }}
-        onExplorar={() => { setActiveTab("explorar"); window.scrollTo(0, 0); }}
         onChats={() => { setActiveTab("chats"); window.scrollTo(0, 0); }}
         onAdd={() => setShowAddSheet(true)}
         onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
