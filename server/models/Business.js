@@ -30,8 +30,11 @@ const businessSchema = new mongoose.Schema(
     reviews: { type: mongoose.Schema.Types.Mixed, default: [] },
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
     ownerCode: String,
+    colabCode: String,
+    historias: { type: mongoose.Schema.Types.Mixed, default: [] },
     asistenteCodigo: String,
     asistenteCodigoPublico: String,
+    busquedaEmpleo: { type: mongoose.Schema.Types.Mixed, default: null },
   },
   { timestamps: true, strict: false }
 );
