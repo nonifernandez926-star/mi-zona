@@ -1,3 +1,57 @@
+# Mi Zona — novedades de esta versión (LEER PRIMERO)
+
+Qué cambió: inicio de sesión con Google, suscripción por negocio (Mercado Pago), no pagar si ya pagó Mi Asistente,
+notificaciones push, avisos de vencimiento, mapa con logo/nombre/dirección, "Cerrar sesión" y se eliminaron los códigos.
+
+## A. Lo que tenés que configurar (una sola vez)
+
+**1. Servidor de Mi Zona en Render.** El servidor (`/server`) TIENE que estar publicado en Render (Web Service) y la web de
+Netlify tiene que apuntar a él con `VITE_API_URL=https://TU-SERVIDOR.onrender.com/api`. Si no está publicado, la web
+no puede guardar ni cargar negocios (es la causa más probable de que no te deje cargar uno). Para verificarlo, abrí
+`https://TU-SERVIDOR.onrender.com/api/businesses` en el navegador: tiene que mostrar una lista (vacía o con negocios).
+
+**2. Variables de entorno en Render** (mirá `server/.env.example`, están todas comentadas):
+`MONGODB_URI` (con I, no URL), `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `ANTHROPIC_API_KEY`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`,
+`BACKEND_URL`, `FRONTEND_URL`, `PRECIO_1_MES/3_MESES/6_MESES`, `VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT`,
+`INTEGRACION_KEY`, `MI_ASISTENTE_API_URL`, `CRON_KEY`.
+
+**3. Google (para que el botón funcione en Mi Zona).** Google Cloud Console → Credenciales → tu ID de cliente OAuth
+(el mismo de Mi Asistente) → **Orígenes autorizados de JavaScript** → agregá la dirección de Mi Zona (la de Netlify,
+y `http://localhost:5173` para probar). Sin esto Google rechaza el botón.
+
+**4. Mercado Pago.** Usá la misma cuenta que en Mi Asistente. En Webhooks poné
+`https://TU-SERVIDOR.onrender.com/api/suscripcion/webhook` y copiá la clave secreta en `MP_WEBHOOK_SECRET`.
+
+**5. Notificaciones push.** En la carpeta `server` corré `npx web-push generate-vapid-keys` (una sola vez) y pegá las dos
+claves en Render (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`). Los usuarios las activan en Ajustes → Notificaciones.
+
+**6. Que NO pague Mi Zona quien ya pagó Mi Asistente.** Poné la MISMA `INTEGRACION_KEY` en el servidor de Mi Zona y en el de
+Mi Asistente (los dos en Render) y volvé a publicar Mi Asistente (se le agregó la ruta `/api/integracion/cuenta`).
+Funciona por la cuenta de Google: si la persona se registró en Mi Asistente con el mismo Gmail y su suscripción está
+vigente, su primer negocio en Mi Zona se publica sin cobrar, hasta el mismo vencimiento (se extiende solo cuando renueva allá).
+
+**7. Avisos de vencimiento (Render gratis se duerme).** El servidor revisa cada 6 horas, pero solo si está despierto.
+Para que siempre avise, creá un cron gratis (por ejemplo en cron-job.org) que cada día haga un POST a
+`https://TU-SERVIDOR.onrender.com/api/suscripcion/revisar-vencimientos` con el header `x-cron-key: TU_CRON_KEY`.
+
+## B. Cómo funciona ahora
+
+- **Registro:** botón de Google → si es la primera vez, pide el nombre → se edita en Ajustes → Mi cuenta.
+- **Agregar negocio:** completa el formulario → **Aceptar** → elige 1 mes ($3.000), 3 meses ($8.100) o 6 meses ($14.400) →
+  paga en Mercado Pago → el negocio se publica solo al confirmarse el pago. Si no paga, queda guardado pero oculto.
+- **Renovar / agregar meses:** en Herramientas → "Mi suscripción". Los meses nuevos se suman al vencimiento actual.
+- **Avisos:** cartel dentro de la app y notificación push a los 7, 3 y 1 día, y al vencer. Al vencer, el negocio deja de mostrarse.
+- **Mapa:** logo y nombre del negocio en su dirección; al tocarlo se ve la dirección completa. Si una dirección no se puede
+  ubicar, el formulario avisa (conviene escribir calle y número).
+- **Cerrar sesión:** en Ajustes (y dentro de Mi cuenta).
+- **Administrador:** se eliminó por completo (contraseña, panel y rutas del servidor). Cada dueño maneja solo su negocio con su cuenta de Google.
+- **Negocios cargados antes de esta versión:** quedaron sin dueño y los códigos viejos ya no sirven. Si querés conservar alguno, en MongoDB Atlas
+  (Browse Collections → businesses) escribí en ese negocio el campo `ownerEmail` con el Gmail de su dueño: cuando esa persona entre con Google, el negocio pasa a su cuenta.
+- **Inicio:** la portada muestra solo "Visto recientemente"; "Recién agregados" es un filtro más, junto a "Solo abiertos ahora" y los demás.
+- **Ranking:** podio con los 3 primeros, filtro por categoría, puntaje, barras de comparación y explicación de cómo se calcula.
+
+---
+
 # Mi Zona — guía completa desde cero (MongoDB + Cloudinary)
 
 Este proyecto ahora tiene DOS partes que hay que poner en marcha:
@@ -107,7 +161,7 @@ npm install
 ## 8. Cómo probar que los negocios se guardan correctamente
 
 1. Con ambos servidores corriendo (paso 6), entrá a `http://localhost:5173`
-2. Tocá "Administrador", contraseña `padre`, agregá un negocio de prueba
+2. Iniciá sesión con Google, tocá el botón "+" y cargá un negocio de prueba (al pagar con Mercado Pago se publica)
 3. Andá a MongoDB Atlas → tu cluster → **"Browse Collections"** → deberías ver la base `mizona` con una colección `businesses` y tu negocio adentro
 4. Recargá la página de tu navegador (F5) — el negocio tiene que seguir apareciendo (si desaparece, el guardado no está funcionando)
 

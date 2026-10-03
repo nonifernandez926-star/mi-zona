@@ -10,13 +10,17 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
+  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal,
 } from "lucide-react";
+import {
+  API_URL, authHeaders, setToken, traerMiSesion,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush,
+} from "./api.js";
+import {
+  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen,
+  PlanesModal, TarjetaSuscripcion, infoSuscripcion,
+} from "./cuenta.jsx";
 
-const ADMIN_PASSWORD = "padre";
-
-// URL del backend (servidor Express + MongoDB). En desarrollo local usa localhost;
-// en producción se configura con la variable de entorno VITE_API_URL (ver LEEME.md).
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const CATEGORIES = [
   { id: "comida", label: "Gastronomía", icon: UtensilsCrossed, color: "#C1443A", quick: true },
@@ -100,6 +104,8 @@ const GEOREF_API = "https://apis.datos.gob.ar/georef/api";
 
 // TODO: reemplazar por la URL real donde está publicado Mi Asistente
 const MI_ASISTENTE_URL = "https://nonifernandez926-star.github.io/empleado-virtual-ia/registro.html";
+// Panel de administración de Mi Asistente (misma web que el registro, pero admin.html)
+const MI_ASISTENTE_ADMIN_URL = MI_ASISTENTE_URL.replace("registro.html", "admin.html");
 let provinciasCache = null;
 const localidadesCache = {};
 
@@ -306,19 +312,301 @@ function countUnseenReviews(biz) {
   return (biz.reviews || []).filter((r) => new Date(r.date) > new Date(visto)).length;
 }
 
+/* ---------- identidad anónima del cliente en este dispositivo ---------- */
+// Un identificador aleatorio y persistente por dispositivo. Es lo que liga los puntos, los canjes y los
+// avisos del cliente con cada negocio (sin cuentas ni contraseñas). NUNCA se publica: no se guarda dentro
+// de reseñas ni de ningún dato público del negocio.
+function randomHex(bytes = 16) {
+  try {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+}
+let clienteIdEnMemoria = null;
+function getClienteId() {
+  if (clienteIdEnMemoria) return clienteIdEnMemoria;
+  try {
+    let id = localStorage.getItem("miZonaClienteId");
+    if (!id) {
+      // si la versión anterior ya había creado un id de sesión, lo conservamos para no perder la memoria del asistente
+      id = sessionStorage.getItem("miZonaSesionCliente") || "sesion-" + randomHex(16);
+      localStorage.setItem("miZonaClienteId", id);
+    }
+    clienteIdEnMemoria = id;
+  } catch {
+    clienteIdEnMemoria = "sesion-" + randomHex(16); // navegador sin almacenamiento: id solo para esta visita
+  }
+  return clienteIdEnMemoria;
+}
+// Id aparte, solo para reconocer "mis" reseñas. Es DISTINTO del anterior a propósito: las reseñas son públicas
+// y el id del cliente da acceso a sus puntos y canjes, así que jamás debe quedar dentro de una reseña.
+function getAutorResenasId() {
+  try {
+    let id = localStorage.getItem("miZonaAutorResenas");
+    if (!id) { id = "autor-" + randomHex(12); localStorage.setItem("miZonaAutorResenas", id); }
+    return id;
+  } catch {
+    return "autor-anonimo";
+  }
+}
+
+/* ---------- negocios nuevos ---------- */
+
+const NUEVO_DIAS = 30; // un negocio es "nuevo en Mi Zona" durante sus primeros 30 días
+function esNegocioNuevo(biz) {
+  if (!biz.createdAt) return false;
+  const t = new Date(biz.createdAt).getTime();
+  return !isNaN(t) && Date.now() - t <= NUEVO_DIAS * 24 * 60 * 60 * 1000;
+}
+
+/* ---------- estadísticas privadas del dueño: registro de acciones de los clientes ---------- */
+// Se manda en segundo plano al servidor. El dueño ve los totales SOLO desde su panel de Mi Asistente;
+// nada de esto se muestra en pantallas públicas. tipo: "visita" | "ubicacion" | "guardado" | "contacto"
+function trackEvento(bizId, tipo) {
+  try {
+    fetch(`${API_URL}/eventos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bizId, tipo, clienteId: getClienteId() }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch { /* sin conexión: no pasa nada */ }
+}
+
+/* ---------- puntos, recompensas y actividad (vía el servidor de Mi Zona → Mi Asistente) ---------- */
+
+async function fetchActividad() {
+  const res = await fetch(`${API_URL}/asistente/cliente/actividad`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sesionClienteId: getClienteId() }),
+  });
+  if (!res.ok) throw new Error("No se pudo cargar la actividad");
+  return res.json(); // { pedidos, turnos, puntos, canjes }
+}
+
+async function fetchMisPuntos() {
+  const res = await fetch(`${API_URL}/asistente/puntos/mis-puntos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sesionClienteId: getClienteId() }),
+  });
+  if (!res.ok) throw new Error("No se pudieron cargar tus puntos");
+  return res.json(); // { negocios: [...], canjes: [...] }
+}
+
+async function fetchPuntosNegocio(codigoPublico) {
+  const res = await fetch(`${API_URL}/asistente/puntos/negocio/${encodeURIComponent(codigoPublico)}?sesionClienteId=${encodeURIComponent(getClienteId())}`);
+  if (!res.ok) throw new Error("No se pudo cargar el programa de puntos");
+  return res.json(); // { activo: false } o { activo: true, saldo, pesosPorPunto, recompensas, proxima, ... }
+}
+
+async function canjearRecompensaApi(codigoPublico, recompensaId, claveUnica) {
+  const res = await fetch(`${API_URL}/asistente/puntos/canjear`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ codigoPublico, sesionClienteId: getClienteId(), recompensaId, claveUnica }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.mensaje || "No se pudo completar el canje. Probá de nuevo.");
+  return data; // { canje, saldo }
+}
+
+function fmtPesos(n) {
+  return `$${fmtNum(n)}`;
+}
+function fmtFechaAR(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
+}
+
+/* ---------- centro de notificaciones del cliente ---------- */
+// Las notificaciones NO se inventan: cada una sale de un dato real (un pedido, un turno, puntos, un canje,
+// una promoción o historia de un negocio que seguís, la respuesta a una reseña tuya). Lo único que se guarda
+// en este dispositivo es cuáles ya leíste y cuáles eliminaste.
+
+const NOTIF_LEIDAS_KEY = "miZonaNotifLeidas";
+const NOTIF_ELIMINADAS_KEY = "miZonaNotifEliminadas";
+
+function getIdSet(key) {
+  try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); }
+}
+function saveIdSet(key, set) {
+  try { localStorage.setItem(key, JSON.stringify([...set].slice(-600))); } catch { /* sin almacenamiento */ }
+}
+
+const NOTIF_TIPOS = {
+  pedido: { Icon: Package, color: "#2F6FED", bg: "#E8F0FE" },
+  turno: { Icon: CalendarCheck, color: "#0B2A54", bg: "#E4EAF5" },
+  promo: { Icon: Tag, color: "#B8703F", bg: "#FBEBD1" },
+  historia: { Icon: PartyPopper, color: "#2C9A5F", bg: "#E4F3EA" },
+  resena: { Icon: Star, color: "#F5A623", bg: "#FDF3DC" },
+  puntos: { Icon: Coins, color: "#B7791F", bg: "#FDF3DC" },
+  canje: { Icon: Gift, color: "#7A4F9E", bg: "#F3ECFC" },
+  suscripcion: { Icon: Bell, color: "#B8703F", bg: "#FBEBD1" },
+};
+
+const PEDIDO_TEXTOS = {
+  pendiente: "Pedido enviado — esperando confirmación",
+  confirmado: "Tu pedido fue confirmado",
+  en_preparacion: "Tu pedido está en preparación",
+  listo: "Tu pedido está listo",
+  entregado: "Pedido entregado",
+};
+const TURNO_TEXTOS = {
+  pendiente: "Turno solicitado — esperando confirmación",
+  confirmado: "Tu turno fue confirmado",
+  rechazado: "Tu turno no fue aprobado",
+  cancelado: "Tu turno fue cancelado",
+};
+
+function buildNotificaciones({ actividad, businesses, favorites, autorId, ownerBizs = [] }) {
+  const out = [];
+  const bizDe = (codigoPublico) => businesses.find((b) => b.asistenteCodigoPublico === codigoPublico);
+  const hace30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  // avisos de la suscripción de mis negocios (días que quedan). El id cambia solo al pasar de 7 → 3 → 1 → vencida,
+  // así el aviso reaparece como "sin leer" únicamente en esos momentos y no todos los días.
+  ownerBizs.forEach((b) => {
+    const inf = infoSuscripcion(b);
+    if (!inf || inf.estado === "activa") return;
+    const base = { tipo: "suscripcion", destino: "suscripcion", bizId: b.id, fecha: new Date().toISOString() };
+    if (inf.estado === "pendiente") {
+      out.push({ ...base, id: `susc:${b.id}:pendiente`, titulo: "Falta pagar la suscripción", descripcion: `${b.name} todavía no se muestra en Mi Zona. Elegí un plan para publicarlo.` });
+    } else if (inf.estado === "vencida") {
+      out.push({ ...base, id: `susc:${b.id}:${b.expiresAt}:0`, titulo: "Tu suscripción venció", descripcion: `${b.name} ya no se muestra en Mi Zona. Renová para volver a aparecer.` });
+    } else {
+      const umbral = inf.dias <= 1 ? 1 : inf.dias <= 3 ? 3 : 7;
+      out.push({
+        ...base, id: `susc:${b.id}:${b.expiresAt}:${umbral}`,
+        titulo: inf.dias === 0 ? "Tu suscripción vence hoy" : inf.dias === 1 ? "Tu suscripción vence mañana" : `Tu suscripción vence en ${inf.dias} días`,
+        descripcion: `${b.name}. Podés agregar meses cuando quieras: se suman al tiempo que te queda.`,
+      });
+    }
+  });
+
+  (actividad?.pedidos || []).forEach((p) => {
+    out.push({
+      id: `pedido:${p.id}:${p.estado}`, tipo: "pedido", titulo: PEDIDO_TEXTOS[p.estado] || "Actualización de tu pedido",
+      descripcion: `${p.negocio}${p.total ? ` · ${fmtPesos(p.total)}` : ""}`,
+      fecha: p.actualizadoEn, bizId: bizDe(p.codigoPublico)?.id, codigoPublico: p.codigoPublico,
+    });
+  });
+
+  (actividad?.turnos || []).forEach((t) => {
+    out.push({
+      id: `turno:${t.id}:${t.estado}`, tipo: "turno", titulo: TURNO_TEXTOS[t.estado] || "Actualización de tu turno",
+      descripcion: `${t.negocio} · ${fmtDate(t.fecha)} ${t.hora} hs${t.motivo ? ` · ${t.motivo}` : ""}`,
+      fecha: t.actualizadoEn, bizId: bizDe(t.codigoPublico)?.id, codigoPublico: t.codigoPublico,
+    });
+  });
+
+  (actividad?.puntos || []).forEach((m) => {
+    if (m.puntos <= 0) return;
+    out.push({
+      id: `puntos:${m.id}`, tipo: "puntos", titulo: `Sumaste ${fmtNum(m.puntos)} ${m.puntos === 1 ? "punto" : "puntos"}`,
+      descripcion: `${m.negocio}${m.detalle ? ` · ${m.detalle}` : ""}`,
+      fecha: m.creadoEn, destino: "puntos", codigoPublico: m.codigoPublico,
+    });
+  });
+
+  (actividad?.canjes || []).forEach((c) => {
+    out.push({
+      id: `canje:${c.id}:pendiente`, tipo: "canje", titulo: "Canje listo para usar",
+      descripcion: `${c.recompensa} · ${c.negocio} · código ${c.codigo}`,
+      fecha: c.creadoEn, destino: "puntos", codigoPublico: c.codigoPublico,
+    });
+    if (c.estado === "utilizado") {
+      out.push({
+        id: `canje:${c.id}:utilizado`, tipo: "canje", titulo: "Canje utilizado",
+        descripcion: `${c.recompensa} · ${c.negocio}`,
+        fecha: c.utilizadoEn || c.creadoEn, destino: "puntos", codigoPublico: c.codigoPublico,
+      });
+    }
+  });
+
+  // respuestas del dueño a reseñas que escribí en este dispositivo
+  businesses.forEach((b) => {
+    (b.reviews || []).forEach((r) => {
+      if (r.autorId && r.autorId === autorId && r.respuesta?.esDueño) {
+        out.push({
+          id: `resena:${b.id}:${r.id}`, tipo: "resena", titulo: `${b.name} respondió tu reseña`,
+          descripcion: r.respuesta.texto.length > 90 ? `${r.respuesta.texto.slice(0, 90)}…` : r.respuesta.texto,
+          fecha: `${r.respuesta.fecha}T12:00:00`, soloFecha: true, bizId: b.id,
+        });
+      }
+    });
+  });
+
+  // novedades de los negocios que sigo (favoritos): promociones vigentes y historias activas
+  businesses.filter((b) => favorites.includes(b.id) && b.kind !== "job" && b.status === "active").forEach((b) => {
+    activeDiscounts(b).forEach((d) => {
+      if (!d.startDate || new Date(`${d.startDate}T12:00:00`).getTime() < hace30d) return;
+      out.push({
+        id: `promo:${b.id}:${d.id}`, tipo: "promo", titulo: `Nueva promoción en ${b.name}`,
+        descripcion: `${d.title}${d.percent ? ` · ${d.percent} OFF` : ""} · hasta el ${fmtDate(d.endDate)}`,
+        fecha: `${d.startDate}T12:00:00`, soloFecha: true, bizId: b.id,
+      });
+    });
+    historiasActivas(b).forEach((h) => {
+      out.push({
+        id: `historia:${b.id}:${h.id}`, tipo: "historia", titulo: `${b.name} subió una historia`,
+        descripcion: "Está disponible por 24 horas.", fecha: h.subidaEn, bizId: b.id,
+      });
+    });
+  });
+
+  return out.filter((n) => n.fecha).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
+
+function fmtNotifTime(iso, soloFecha) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === hoy.toDateString()) return soloFecha ? "Hoy" : `Hoy · ${hora}`;
+  if (d.toDateString() === ayer.toDateString()) return soloFecha ? "Ayer" : `Ayer · ${hora}`;
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) + (soloFecha ? "" : ` · ${hora}`);
+}
+
+function escapeHtml(str) {
+  return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ---------- filtros del mapa ---------- */
+// Solo negocios REGISTRADOS en Mi Zona (nada de negocios externos), activos y de la zona elegida.
+function filtrarParaMapa(businesses, zone, f, favorites) {
+  return businesses.filter((b) => {
+    if (b.kind === "job" || b.status !== "active") return false;
+    if (b.zone !== zone) return false;
+    if (f.cat && b.cat !== f.cat) return false;
+    if (f.abiertos && !isOpenNow(b.weekHours)) return false;
+    if (f.delivery && !b.delivery) return false;
+    if (f.promos && activeDiscounts(b).length === 0) return false;
+    if (f.asistente && !b.asistenteCodigoPublico) return false;
+    if (f.nuevos && !esNegocioNuevo(b)) return false;
+    if (f.favoritos && !favorites.includes(b.id)) return false;
+    return true;
+  });
+}
+
 /* ---------- ubicación: geocodificar direcciones y calcular distancia ---------- */
 
 async function geocodeAddress(loc, zone) {
-  try {
-    const query = encodeURIComponent(`${loc}, ${zone}, Tucumán, Argentina`);
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${query}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data?.[0]) return null;
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {
-    return null;
+  // Primero con la zona; si no aparece, un segundo intento solo con la dirección (Nominatim es sensible al formato)
+  const intentos = [`${loc}, ${zone}, Tucumán, Argentina`, `${loc}, Tucumán, Argentina`];
+  for (const texto of intentos) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(texto)}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    } catch { /* probamos con el siguiente formato */ }
   }
+  return null;
 }
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -358,11 +646,8 @@ function emptyBusiness() {
     featured: false, status: "active",
     createdAt: todayISO(), expiresAt: addDays(todayISO(), 30), lastRenewal: todayISO(),
     views: 0, reviews: [], discounts: [], extra: {},
-    ownerCode: uid().slice(0, 8).toUpperCase(),
-    colabCode: "", // se genera cuando el dueño invita a un colaborador
     historias: [], // [{ id, url, subidaEn }] — se filtran a las de las últimas 24hs al mostrarlas
-    asistenteCodigo: "", // código de vinculación que ingresó el dueño
-    asistenteCodigoPublico: "", // código real que devuelve Mi Asistente al verificar (el que se usa para el chat)
+    asistenteCodigoPublico: "", // lo conecta el servidor solo, cuando la cuenta de Google tiene Mi Asistente
     busquedaEmpleo: null, // { puesto, descripcion, contactoTipo, contactoValor, fechaInicio, fechaFin }
   };
 }
@@ -373,13 +658,12 @@ function normalizeBusiness(b) {
   return {
     kind: "business",
     lat: null, lng: null, discounts: [],
-    ownerCode: uid().slice(0, 8).toUpperCase(),
     ...b,
   };
 }
 
 async function loadBusinesses() {
-  const res = await fetch(`${API_URL}/businesses`);
+  const res = await fetch(`${API_URL}/businesses`, { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar los negocios");
   const list = await res.json();
   return list.map(normalizeBusiness);
@@ -395,20 +679,10 @@ async function buscarConAsistente(mensaje, historial) {
   return res.json(); // { respuesta, negocios: [ids] }
 }
 
-async function createBusinessOnServer(biz) {
-  const res = await fetch(`${API_URL}/businesses`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(biz),
-  });
-  if (!res.ok) throw new Error("No se pudo crear el negocio");
-  return res.json();
-}
-
 async function updateBusinessOnServer(id, biz) {
   const res = await fetch(`${API_URL}/businesses/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(biz),
   });
   if (!res.ok) throw new Error("No se pudo guardar el negocio");
@@ -425,11 +699,6 @@ async function toggleFavoritoOnServer(id, delta) {
   } catch {
     // si falla la sincronización del contador, el favorito local igual queda guardado
   }
-}
-
-async function deleteBusinessOnServer(id) {
-  const res = await fetch(`${API_URL}/businesses/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("No se pudo eliminar el negocio");
 }
 
 const CLOUDINARY_CLOUD_NAME = "hiyaxxdk";
@@ -878,13 +1147,10 @@ function ChatScreen({ biz, onBack }) {
   );
 }
 
+// Id anónimo que identifica a este cliente ante Mi Asistente (chat, puntos, canjes, avisos).
+// Ahora es persistente por dispositivo (antes duraba solo la sesión del navegador).
 function sesionClienteId() {
-  let id = sessionStorage.getItem("miZonaSesionCliente");
-  if (!id) {
-    id = "sesion-" + Math.random().toString(36).slice(2) + Date.now();
-    sessionStorage.setItem("miZonaSesionCliente", id);
-  }
-  return id;
+  return getClienteId();
 }
 
 function TagInput({ values, onChange, placeholder }) {
@@ -1006,38 +1272,6 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
   );
 }
 
-function PasswordGate({ onSuccess, onClose }) {
-  const [pw, setPw] = useState("");
-  const [error, setError] = useState(false);
-  const submit = () => {
-    if (pw === ADMIN_PASSWORD) onSuccess();
-    else { setError(true); setPw(""); }
-  };
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 mb-4">
-          <Lock size={18} color="#0B2A54" />
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }}>Acceso administrador</h2>
-        </div>
-        <input
-          type="password" autoFocus value={pw}
-          onChange={(e) => { setPw(e.target.value); setError(false); }}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Contraseña"
-          className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E2E8F0" }}
-        />
-        {error && <p className="text-xs mb-3" style={{ color: "#C1443A" }}>Contraseña incorrecta.</p>}
-        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
-          Ingresar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- semana de horarios (editor) ---------- */
-
 function WeekHoursEditor({ value, onChange }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -1078,95 +1312,101 @@ function WeekHoursEditor({ value, onChange }) {
 
 /* ---------- ficha pública del negocio ---------- */
 
-function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, onToggleFavorite }) {
+function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, onToggleFavorite, onTrack }) {
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
-  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#94A3B8" : rank === 3 ? "#C97B4A" : "#0B2A54";
+  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B2A54";
   return (
     <div
       role="button" tabIndex={0}
       onClick={() => onOpen(biz.id)}
       onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
-      className="bg-white flex flex-col overflow-hidden transition-shadow hover:shadow-lg text-left cursor-pointer"
-      style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 4px 16px rgba(11,42,84,0.08)" }}
+      className="bg-white flex flex-col overflow-hidden text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl"
+      style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 8px 26px rgba(11,42,84,0.08)" }}
     >
       <div className="relative">
-        <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} clickable={false} />
-        {discounts.length > 0 && (
-          <span
-            className="absolute top-2 left-2 flex items-center gap-1 text-[11px] font-semibold px-2 py-1"
-            style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}
-          >
-            <Tag size={11} /> {discounts[0].percent ? `${discounts[0].percent} OFF` : "Tiene descuentos"}
+        <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={176} radius="0px" iconSize={42} clickable={false} />
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: 84, background: "linear-gradient(to top, rgba(8,18,38,0.62), rgba(8,18,38,0))" }} />
+
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1" style={{ background: "#ffffffee", color: "#0B1220", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,.15)" }}>
+            <span className="rounded-full" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label}
           </span>
-        )}
+          {discounts.length > 0 && (
+            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1" style={{ background: "linear-gradient(135deg,#E5484D,#F2766B)", color: "#fff", borderRadius: 20, boxShadow: "0 3px 10px rgba(229,72,77,.4)" }}>
+              <Tag size={11} /> {discounts[0].percent ? `${discounts[0].percent} OFF` : "Promo"}
+            </span>
+          )}
+        </div>
+
         {rank && (
-          <span
-            className="absolute top-2 right-2 flex items-center gap-1 text-[11px] font-bold px-2 py-1"
-            style={{ background: rankColor, color: "#fff", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
-          >
-            <Trophy size={11} /> #{rank}
+          <span className="absolute top-3 right-3 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1" style={{ background: rankColor, color: "#fff", borderRadius: 20, boxShadow: "0 3px 10px rgba(0,0,0,0.3)" }}>
+            <Trophy size={11} /> Top {rank}
           </span>
         )}
+
+        {rating && (
+          <span className="absolute bottom-3 left-3 flex items-center gap-1 text-xs font-semibold px-2.5 py-1" style={{ background: "#0B1220b3", color: "#fff", borderRadius: 20, backdropFilter: "blur(4px)" }}>
+            <Star size={12} fill="#F5B83D" color="#F5B83D" /> {rating} <span style={{ opacity: 0.7, fontWeight: 500 }}>({biz.reviews.length})</span>
+          </span>
+        )}
+
         {onToggleFavorite && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(biz.id); }}
-            className="absolute bottom-2 right-2 flex items-center justify-center"
-            style={{
-              width: 32, height: 32, borderRadius: "50%", background: "#fff",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.2)", transition: "transform 0.15s ease",
-              transform: isFavorite ? "scale(1.08)" : "scale(1)",
-            }}
+            aria-label={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}
+            className="absolute bottom-3 right-3 flex items-center justify-center"
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.25)", transition: "transform 0.15s ease", transform: isFavorite ? "scale(1.1)" : "scale(1)" }}
           >
-            <Heart size={16} color={isFavorite ? "#C1443A" : "#94A3B8"} fill={isFavorite ? "#C1443A" : "none"} />
+            <Heart size={17} color={isFavorite ? "#E5484D" : "#94A3B8"} fill={isFavorite ? "#E5484D" : "none"} />
           </button>
         )}
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-[11px] uppercase tracking-wide font-medium" style={{ color: c?.color, fontFamily: "'IBM Plex Mono', monospace" }}>
-            {c?.label}
-          </span>
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: "#6B7280" }}>
+
+      <div className="px-4 pt-3.5 pb-3.5 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-2">
+          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
+          {biz.featured && (
+            <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 shrink-0" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
+              <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
+            </span>
+          )}
+        </div>
+        <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#5B6677", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
+
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <OpenBadge weekHours={biz.weekHours} />
+          {esNegocioNuevo(biz) && (
+            <span className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1" style={{ borderRadius: 20, background: "#E4F3EA", color: "#1E6B44" }}>
+              <Sparkles size={11} /> Nuevo
+            </span>
+          )}
+          {typeof distanceKm === "number" && (
+            <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#0B2A54" }}>
+              <Navigation size={12} /> {fmtDistance(distanceKm)}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EEF2F7" }}>
+          <a
+            href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
+            onClick={(e) => { e.stopPropagation(); onTrack && onTrack(biz.id, "ubicacion"); }}
+            className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#5B6677" }}
+          >
+            <MapPin size={13} color="#2F6FED" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
+          </a>
+          <span className="flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#94A3B8" }}>
             <Eye size={12} /> {fmtNum(biz.views)}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>{biz.name}</h3>
-          {biz.featured && (
-            <span className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
-              <Star size={10} fill="#8A5B12" /> Destacado
-            </span>
-          )}
-        </div>
-        {rating && (
-          <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: "#4B5563" }}>
-            <Star size={12} fill="#2F6FED" color="#2F6FED" /> {rating} ({biz.reviews.length})
-          </span>
-        )}
-        <p className="text-sm mt-1 mb-2 flex-1" style={{ color: "#4B5563" }}>{biz.desc}</p>
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <OpenBadge weekHours={biz.weekHours} />
-          {typeof distanceKm === "number" && (
-            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#0B2A54" }}>
-              <Navigation size={12} /> A {fmtDistance(distanceKm)} de vos
-            </span>
-          )}
-        </div>
-        <a
-          href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-xs w-fit hover:underline" style={{ color: "#6B7280" }}
-        >
-          <MapPin size={12} /> {biz.loc} · {biz.zone}
-        </a>
       </div>
     </div>
   );
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const gallery = biz.photos?.length > 0 ? biz.photos : [null, null, null, null];
@@ -1179,6 +1419,18 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   const [replyingId, setReplyingId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const rating = avgRating(biz.reviews);
+
+  // programa de puntos del negocio (solo si tiene Mi Asistente conectado y el dueño lo activó)
+  const [puntos, setPuntos] = useState(null);
+  useEffect(() => {
+    setPuntos(null);
+    if (!biz.asistenteCodigoPublico) return;
+    let cancelado = false;
+    fetchPuntosNegocio(biz.asistenteCodigoPublico)
+      .then((d) => { if (!cancelado && d.activo) setPuntos(d); })
+      .catch(() => {}); // si Mi Asistente no responde, simplemente no se muestra la tarjeta
+    return () => { cancelado = true; };
+  }, [biz.id, biz.asistenteCodigoPublico]);
 
   const historias = historiasActivas(biz);
   const tieneHistorias = historias.length > 0;
@@ -1207,7 +1459,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
   const submitReview = () => {
     if (!reviewText.trim()) return;
-    onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO() });
+    onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO(), autorId: getAutorResenasId() });
     setReviewText(""); setReviewName(""); setReviewRating(5);
   };
 
@@ -1354,6 +1606,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               {biz.ig && (
                 <div className="flex gap-2 mb-5">
                   <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
+                    onClick={() => onTrack && onTrack(biz.id, "contacto")}
                     className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
                     style={{ border: "1px solid #E2E8F0", color: "#0B1220", borderRadius: 10 }}
                   >
@@ -1362,9 +1615,34 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 </div>
               )}
 
-              <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
+              <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" onClick={() => onTrack && onTrack(biz.id, "ubicacion")} className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
                 <MapPin size={15} /> {biz.loc} <span style={{ color: "#6B7280" }}>· ver en el mapa</span>
               </a>
+
+              {puntos && (
+                <div className="mb-6 p-4" style={{ borderRadius: 12, background: "#FDF3DC", border: "1px solid #F5D9A0" }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Coins size={17} color="#B7791F" />
+                    <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Puntos y recompensas</h2>
+                  </div>
+                  <p className="text-xs" style={{ color: "#5B4A1E" }}>
+                    Ganás <b>1 punto</b> por cada <b>{fmtPesos(puntos.pesosPorPunto)}</b> que gastás en {biz.name}.
+                    {puntos.saldo > 0 && <> Tenés <b>{fmtNum(puntos.saldo)} {puntos.saldo === 1 ? "punto" : "puntos"}</b>.</>}
+                  </p>
+                  {puntos.proxima && (
+                    <p className="text-xs mt-1" style={{ color: "#5B4A1E" }}>
+                      Te {puntos.proxima.faltan === 1 ? "falta" : "faltan"} {fmtNum(puntos.proxima.faltan)} para "{puntos.proxima.nombre}".
+                    </p>
+                  )}
+                  <button
+                    onClick={() => onOpenPuntos && onOpenPuntos(biz.asistenteCodigoPublico)}
+                    className="w-full text-sm font-semibold py-2.5 mt-3"
+                    style={{ borderRadius: 10, backgroundColor: "#0B2A54", color: "#fff" }}
+                  >
+                    Ver recompensas
+                  </button>
+                </div>
+              )}
 
               {activeDiscounts(biz).length > 0 && (
                 <div className="mb-6">
@@ -1516,6 +1794,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             </button>
             <a
               href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
+              onClick={() => onTrack && onTrack(biz.id, "ubicacion")}
               className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
               style={{ backgroundColor: "#E8F0FE", color: "#0B2A54", borderRadius: 10 }}
             >
@@ -1530,70 +1809,82 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenAdmin, onOpenOwner, onHerramientas, onAjustes }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, notifSinLeer = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
   const [historial, setHistorial] = useState(() => getSearchHistory());
   return (
     <>
-      {/* barra superior estilo app */}
-      <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54" }}>
-        <div className="max-w-6xl mx-auto px-4 pt-4 pb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => setShowDrawer(true)}
-                className="flex items-center justify-center shrink-0"
-                style={{ width: 34, height: 34, borderRadius: 10, background: "#ffffff1f" }}
-              >
-                <Menu size={17} color="#fff" />
-              </button>
-              <div className="flex items-center gap-1">
-                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Mi</span>
-                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#7FA8F5" }}>Zona</span>
-              </div>
-            </div>
+      {/* barra superior fija: menú, logo y notificaciones */}
+      <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowDrawer(true)} aria-label="Menú"
+              className="flex items-center justify-center shrink-0"
+              style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}
+            >
+              <Menu size={18} color="#fff" />
+            </button>
             <div className="flex items-center gap-2">
-              <button
-                className="flex items-center justify-center shrink-0"
-                style={{ width: 34, height: 34, borderRadius: 10, background: "#ffffff1f" }}
-              >
-                <Bell size={16} color="#fff" />
-              </button>
-              <div
-                className="flex items-center justify-center shrink-0 overflow-hidden"
-                style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)", border: "2px solid #ffffff30" }}
-              >
-                <User size={16} color="#fff" />
-              </div>
+              <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2F6FED,#7FA8F5)", boxShadow: "0 4px 12px rgba(47,111,237,.5)" }}>
+                <MapPin size={16} color="#fff" />
+              </span>
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
+                Mi<span style={{ color: "#7FA8F5" }}>Zona</span>
+              </span>
             </div>
           </div>
+          <button
+            onClick={onOpenNotificaciones} aria-label="Notificaciones"
+            className="relative flex items-center justify-center shrink-0"
+            style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}
+          >
+            <Bell size={17} color="#fff" />
+            {notifSinLeer > 0 && (
+              <span
+                className="absolute flex items-center justify-center text-[9px] font-bold"
+                style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B2A54" }}
+              >
+                {notifSinLeer > 9 ? "9+" : notifSinLeer}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
 
-          <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 17, color: "#fff" }}>¡Descubrí tu zona!</p>
-          <p className="text-xs mt-1 mb-3" style={{ color: "#C9D6F3", maxWidth: 420 }}>
-            Encontrá negocios, productos y servicios cerca tuyo.
+      {/* portada: saludo, buscador y zona */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 58%,#1F55B3 125%)" }}>
+        <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
+        <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
+        <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
+          <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
+            Descubrí lo mejor<br />de tu zona
+          </p>
+          <p className="text-sm mt-1.5 mb-4" style={{ color: "#B8C9EA", maxWidth: 380 }}>
+            Negocios, productos y servicios cerca tuyo, con reseñas reales.
           </p>
 
-          <div className="flex items-center gap-2 bg-white px-3.5 py-2.5" style={{ borderRadius: 10, boxShadow: "0 2px 10px #00000022" }}>
-            <Search size={16} color="#6B7280" />
+          <div className="flex items-center gap-2.5 bg-white px-4 py-3" style={{ borderRadius: 16, boxShadow: "0 10px 28px rgba(5,20,45,0.35)" }}>
+            <Search size={18} color="#2F6FED" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
               onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
               placeholder="Buscá un negocio, producto o servicio..."
-              className="w-full outline-none text-sm" style={{ color: "#0B1220" }}
+              className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1220" }}
             />
-            {query && <button onClick={() => setQuery("")}><X size={14} color="#6B7280" /></button>}
+            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#6B7280" /></button>}
           </div>
 
           {!query && historial.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+            <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto">
               {historial.map((h) => (
                 <button
                   key={h} onClick={() => setQuery(h)}
                   className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 shrink-0"
-                  style={{ borderRadius: 20, background: "#ffffff1f", color: "#DCE7FB" }}
+                  style={{ borderRadius: 20, background: "#ffffff1a", color: "#DCE7FB" }}
                 >
                   <Clock size={10} /> {h}
                 </button>
@@ -1601,7 +1892,11 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             </div>
           )}
 
-          <button onClick={() => setShowZoneModal(true)} className="flex items-center gap-1.5 mt-2.5 text-xs font-medium" style={{ color: "#DCE7FB" }}>
+          <button
+            onClick={() => setShowZoneModal(true)}
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold px-3 py-1.5"
+            style={{ color: "#fff", borderRadius: 20, background: "#ffffff1a", border: "1px solid #ffffff26" }}
+          >
             <MapPin size={13} color="#7FA8F5" /> {zone} <ChevronDown size={12} />
           </button>
         </div>
@@ -1613,7 +1908,6 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           onHerramientas={() => { setShowDrawer(false); onHerramientas(); }}
           onAjustes={() => { setShowDrawer(false); onAjustes(); }}
           onOpenOwner={() => { setShowDrawer(false); onOpenOwner(); }}
-          onOpenAdmin={() => { setShowDrawer(false); onOpenAdmin(); }}
         />
       )}
 
@@ -1637,29 +1931,29 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         </div>
       )}
 
-      {/* categorías, en íconos circulares */}
-      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E2E8F0", boxShadow: "0 4px 14px #0b2a5410" }}>
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      {/* categorías: tarjeta flotante que se superpone a la portada */}
+      <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
+        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E6ECF5", boxShadow: "0 12px 32px rgba(11,42,84,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 14, color: "#0B1220" }}>Categorías</span>
-            <button onClick={onOpenAllCats} className="text-xs font-medium" style={{ color: "#2F6FED" }}>Ver todas</button>
+            <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Categorías</span>
+            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2F6FED", background: "#E8F0FE", borderRadius: 20 }}>Ver todas</button>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-1">
-            <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 60 }}>
-              <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: activeCat === null ? "#2F6FED" : "#E8F0FE", boxShadow: activeCat === null ? "0 4px 10px #2F6FED44" : "none" }}>
-                <Grid3x3 size={18} color={activeCat === null ? "#fff" : "#2F6FED"} />
+          <div className="flex gap-3.5 overflow-x-auto pb-1">
+            <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2F6FED,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2F6FED55" : "none", transition: "all .2s" }}>
+                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2F6FED"} />
               </span>
-              <span className="text-[11px] text-center" style={{ color: "#4B5563" }}>Todos</span>
+              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#4B5563" }}>Todos</span>
             </button>
             {QUICK_CATEGORIES.map((c) => {
               const Icon = c.icon;
               const active = activeCat === c.id;
               return (
-                <button key={c.id} onClick={() => setActiveCat(active ? null : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 60 }}>
-                  <span className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: active ? c.color : `${c.color}1A`, boxShadow: active ? `0 4px 10px ${c.color}55` : "none" }}>
-                    <Icon size={18} color={active ? "#fff" : c.color} />
+                <button key={c.id} onClick={() => setActiveCat(active ? null : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+                  <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: active ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
+                    <Icon size={21} color={active ? "#fff" : c.color} />
                   </span>
-                  <span className="text-[11px] text-center leading-tight" style={{ color: "#4B5563" }}>{c.label.split(" ")[0]}</span>
+                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#4B5563" }}>{c.label.split(" ")[0]}</span>
                 </button>
               );
             })}
@@ -1670,7 +1964,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   );
 }
 
-function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdmin }) {
+function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
   const Item = ({ Icon, label, onClick, danger }) => (
     <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>
       <Icon size={18} color={danger ? "#9A3B34" : "#0B2A54"} />
@@ -1685,21 +1979,20 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner, onOpenAdm
         style={{ width: "min(78vw, 300px)", boxShadow: "6px 0 30px #00000033" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5" style={{ background: "linear-gradient(135deg, #0B2A54, #17407F)" }}>
+        <div className="p-5 pt-7" style={{ background: "linear-gradient(160deg, #0B2A54, #1F55B3)" }}>
           <div
             className="flex items-center justify-center mb-3"
-            style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)" }}
+            style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, #2F6FED, #7FA8F5)", boxShadow: "0 8px 20px rgba(47,111,237,.45)" }}
           >
-            <User size={24} color="#fff" />
+            <MapPin size={26} color="#fff" />
           </div>
-          <p className="text-sm font-semibold" style={{ color: "#fff" }}>Explorá tu zona</p>
-          <p className="text-xs" style={{ color: "#BBD1FB" }}>Mi Zona</p>
+          <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi<span style={{ color: "#9BBBF7" }}>Zona</span></p>
+          <p className="text-xs mt-0.5" style={{ color: "#BBD1FB" }}>Explorá los negocios de tu zona</p>
         </div>
         <div className="py-2 flex-1 overflow-y-auto">
           <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
           <Item Icon={Settings} label="Ajustes" onClick={onAjustes} />
           <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
-          <Item Icon={Lock} label="Administrador" onClick={onOpenAdmin} />
           <div style={{ borderTop: "1px solid #EEF2F7", margin: "8px 0" }} />
           <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
             const data = { title: "Mi Zona", text: "Descubrí negocios de tu zona con Mi Zona", url: window.location.origin };
@@ -1873,163 +2166,1153 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
   );
 }
 
-function MapaScreen({ businesses, zone, onOpenBusiness, onBack }) {
+/* ---------- mapa profesional de Mi Zona (solo negocios registrados) ---------- */
+
+// Marcador con el LOGO del negocio (o su inicial sobre el color del rubro si todavía no cargó logo)
+function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
+  const c = catInfo(b.cat);
+  const color = c?.color || "#2F6FED";
+  const size = seleccionado ? 54 : 42;
+  const inicial = escapeHtml((b.name || "?").trim().charAt(0).toUpperCase());
+  const logo = b.logo || b.photos?.[0];
+  const img = logo
+    ? `<img src="${escapeHtml(logo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;background:#fff" onerror="this.style.display='none'" />`
+    : "";
+  const nombre = escapeHtml((b.name || "").length > 22 ? `${b.name.slice(0, 21)}…` : b.name || "");
+  const etiqueta = mostrarNombre || seleccionado
+    ? `<div style="position:absolute;left:50%;top:${size + 12}px;transform:translateX(-50%);white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;
+        background:#fff;color:#0B1220;font:600 11px 'Work Sans',sans-serif;padding:3px 8px;border-radius:10px;
+        box-shadow:0 2px 8px rgba(11,42,84,.28);border:1px solid #E2E8F0">${nombre}</div>`
+    : "";
+  const html = `
+    <div style="position:relative;width:${size}px;height:${size + 10}px">
+      <div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid #fff;
+        box-shadow:0 4px 12px rgba(11,42,84,.4)${seleccionado ? `,0 0 0 4px ${color}55` : ""};overflow:hidden;
+        display:flex;align-items:center;justify-content:center;color:#fff;font:700 ${Math.round(size * 0.4)}px Poppins,sans-serif">
+        ${inicial}${img}
+      </div>
+      <div style="position:absolute;left:50%;top:${size - 3}px;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;
+        border-right:7px solid transparent;border-top:11px solid #fff;filter:drop-shadow(0 2px 2px rgba(11,42,84,.25))"></div>
+      ${etiqueta}
+    </div>`;
+  return L.divIcon({ className: "", html, iconSize: [size, size + 10], iconAnchor: [size / 2, size + 10] });
+}
+
+function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusiness, onBack, userLoc, locStatus, onRequestLocation, initialFilters, onTrack }) {
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
-  const conUbicacion = useMemo(
-    () => businesses.filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && b.lat && b.lng),
-    [businesses, zone]
-  );
+  const markersRef = useRef({});
+  const userMarkerRef = useRef(null);
+  const [vista, setVista] = useState("mapa"); // mapa | lista
+  const [filtros, setFiltros] = useState({
+    cat: null, abiertos: false, delivery: false, promos: false, asistente: false, nuevos: false, favoritos: false,
+    ...(initialFilters || {}),
+  });
+  const [showCats, setShowCats] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [quiereUbicarme, setQuiereUbicarme] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const [zoom, setZoom] = useState(12);
+  const verNombres = zoom >= 14; // con el mapa muy alejado solo se ven los círculos, para que no se amontonen los nombres
 
+  const setFiltro = (k, v) => setFiltros((f) => ({ ...f, [k]: v }));
+  const hayFiltros = Object.values(filtros).some(Boolean);
+  const limpiarFiltros = () => setFiltros({ cat: null, abiertos: false, delivery: false, promos: false, asistente: false, nuevos: false, favoritos: false });
+
+  const lista = useMemo(() => {
+    const base = filtrarParaMapa(businesses, zone, filtros, favorites);
+    if (userLoc) {
+      const d = (b) => (b.lat && b.lng ? haversineKm(userLoc.lat, userLoc.lng, b.lat, b.lng) : Infinity);
+      return [...base].sort((a, b) => d(a) - d(b));
+    }
+    return [...base].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  }, [businesses, zone, filtros, favorites, userLoc]);
+  const conUbicacion = useMemo(() => lista.filter((b) => b.lat && b.lng), [lista]);
+  const sinUbicacion = lista.length - conUbicacion.length;
+  const selected = lista.find((b) => b.id === selectedId) || null;
+  const distanciaDe = (b) => (userLoc && b.lat && b.lng ? haversineKm(userLoc.lat, userLoc.lng, b.lat, b.lng) : null);
+
+  // crear el mapa una sola vez
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
-    const centro = conUbicacion.length > 0
-      ? [conUbicacion.reduce((s, b) => s + b.lat, 0) / conUbicacion.length, conUbicacion.reduce((s, b) => s + b.lng, 0) / conUbicacion.length]
-      : [-26.8241, -65.2226]; // Tucumán como centro por defecto
-
-    const map = L.map(mapDivRef.current).setView(centro, conUbicacion.length > 0 ? 13 : 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; colaboradores de OpenStreetMap",
+    const map = L.map(mapDivRef.current, { zoomControl: false, attributionControl: false, zoomSnap: 0.5, wheelPxPerZoomLevel: 90 }).setView([-26.8241, -65.2226], 12); // Tucumán por defecto
+    // Estilo "Voyager" (calles con nombres y colores suaves, muy parecido a Google Maps). Se carga en alta resolución en celulares.
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19, subdomains: "abcd", detectRetina: true,
     }).addTo(map);
-
-    const iconoNegocio = L.divIcon({
-      className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:#2F6FED;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`,
-      iconSize: [30, 30], iconAnchor: [15, 30],
-    });
-
-    conUbicacion.forEach((b) => {
-      const marker = L.marker([b.lat, b.lng], { icon: iconoNegocio }).addTo(map);
-      const c = catInfo(b.cat);
-      marker.bindPopup(`<b>${b.name}</b><br/><span style="color:#6B7280;font-size:12px">${c?.label || ""}</span>`);
-      marker.on("click", () => marker.openPopup());
-      marker.on("popupopen", () => {
-        const el = marker.getPopup().getElement();
-        if (el) el.style.cursor = "pointer";
-      });
-      // un segundo tap sobre el popup ya abierto lleva al perfil
-      marker.on("click", () => {
-        if (marker.isPopupOpen()) onOpenBusiness(b.id);
-      });
-    });
-
+    map.on("zoomend", () => setZoom(map.getZoom()));
+    L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
+    map.on("click", () => setSelectedId(null));
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-  }, [conUbicacion, onOpenBusiness]);
+    return () => { map.remove(); mapRef.current = null; markersRef.current = {}; userMarkerRef.current = null; };
+  }, []);
+
+  // marcadores: se agregan/quitan/actualizan según los filtros y la selección
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const vivos = new Set(conUbicacion.map((b) => b.id));
+    Object.keys(markersRef.current).forEach((id) => {
+      if (!vivos.has(id)) { markersRef.current[id].remove(); delete markersRef.current[id]; }
+    });
+    conUbicacion.forEach((b) => {
+      const sel = b.id === selectedId;
+      let m = markersRef.current[b.id];
+      if (!m) {
+        m = L.marker([b.lat, b.lng], { icon: crearIconoNegocio(b, sel, verNombres), riseOnHover: true }).addTo(map);
+        m.on("click", (e) => { L.DomEvent.stopPropagation(e); setSelectedId(b.id); });
+        m._sel = sel; m._nom = verNombres; m._logo = b.logo; m._name = b.name;
+        markersRef.current[b.id] = m;
+      } else if (m._sel !== sel || m._nom !== verNombres || m._logo !== b.logo || m._name !== b.name) {
+        m.setIcon(crearIconoNegocio(b, sel, verNombres));
+        m._sel = sel; m._nom = verNombres; m._logo = b.logo; m._name = b.name;
+      }
+      m.setZIndexOffset(sel ? 1000 : 0);
+    });
+  }, [conUbicacion, selectedId, verNombres]);
+
+  // encuadrar el mapa cuando cambia el conjunto de negocios visibles (filtros)
+  const idsKey = conUbicacion.map((b) => b.id).join(",");
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || conUbicacion.length === 0) return;
+    if (conUbicacion.length === 1) map.setView([conUbicacion[0].lat, conUbicacion[0].lng], 15);
+    else map.fitBounds(L.latLngBounds(conUbicacion.map((b) => [b.lat, b.lng])), { padding: [60, 60], maxZoom: 16 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
+
+  // al elegir un negocio, lo centramos un poco más arriba para que la tarjeta flotante no lo tape
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selected || !selected.lat) return;
+    const z = Math.max(map.getZoom(), 15);
+    const p = map.project([selected.lat, selected.lng], z);
+    p.y += 110;
+    map.flyTo(map.unproject(p, z), z, { duration: 0.5 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // si el negocio elegido ya no está entre los resultados, cerramos su tarjeta
+  useEffect(() => { if (selectedId && !selected) setSelectedId(null); }, [selectedId, selected]);
+
+  // al volver a la vista de mapa, Leaflet necesita recalcular su tamaño
+  useEffect(() => {
+    if (vista === "mapa" && mapRef.current) setTimeout(() => mapRef.current && mapRef.current.invalidateSize(), 50);
+  }, [vista]);
+
+  // punto azul de "estás acá" + centrar cuando el usuario lo pidió
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLoc) return;
+    const icono = L.divIcon({
+      className: "",
+      html: `<div style="position:relative;width:22px;height:22px"><span style="position:absolute;inset:0;border-radius:50%;background:#2F6FED55;animation:mzPulse 1.8s ease-out infinite"></span><span style="position:absolute;inset:4px;border-radius:50%;background:#2F6FED;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span></div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11],
+    });
+    if (userMarkerRef.current) userMarkerRef.current.setLatLng([userLoc.lat, userLoc.lng]);
+    else userMarkerRef.current = L.marker([userLoc.lat, userLoc.lng], { icon: icono, interactive: false, zIndexOffset: -100 }).addTo(map);
+    if (quiereUbicarme) {
+      map.flyTo([userLoc.lat, userLoc.lng], 15, { duration: 0.6 });
+      setQuiereUbicarme(false);
+    }
+  }, [userLoc, quiereUbicarme]);
+
+  useEffect(() => {
+    if (quiereUbicarme && (locStatus === "denied" || locStatus === "error")) {
+      setQuiereUbicarme(false);
+      setAviso(locStatus === "denied"
+        ? "No pudimos acceder a tu ubicación. Habilitá el permiso desde el candado de la barra del navegador y probá de nuevo."
+        : "Tu navegador no permite obtener la ubicación.");
+      setTimeout(() => setAviso(null), 5000);
+    }
+  }, [locStatus, quiereUbicarme]);
+
+  const irAMiUbicacion = () => {
+    if (userLoc && mapRef.current) {
+      mapRef.current.flyTo([userLoc.lat, userLoc.lng], 15, { duration: 0.6 });
+    } else {
+      setQuiereUbicarme(true);
+      onRequestLocation();
+    }
+  };
+
+  const Chip = ({ label, Icon, active, onClick, activeBg = "#E8F0FE", activeColor = "#2F6FED", activeBorder = "#2F6FED" }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0"
+      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#4B5563", border: "1px solid " + (active ? activeBorder : "#E2E8F0") }}
+    >
+      {Icon && <Icon size={12} />} {label}
+    </button>
+  );
+
+  const catActual = filtros.cat ? catInfo(filtros.cat) : null;
+  const CtrlBtn = ({ onClick, children, label }) => (
+    <button
+      onClick={onClick} aria-label={label}
+      className="flex items-center justify-center"
+      style={{ width: 40, height: 40, background: "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+    >
+      {children}
+    </button>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ backgroundColor: "#0B2A54" }}>
-        <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Mapa de {zone}</p>
-          <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{conUbicacion.length} negocio(s) en el mapa</p>
+    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
+      <style>{`@keyframes mzPulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.2); opacity: 0; } }
+        .leaflet-container { font-family: 'Work Sans', sans-serif; }`}</style>
+
+      {/* encabezado */}
+      <div style={{ backgroundColor: "#0B2A54" }}>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Mapa de {zone}</p>
+            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>
+              {conUbicacion.length} {conUbicacion.length === 1 ? "negocio" : "negocios"} en el mapa
+              {sinUbicacion > 0 ? ` · ${sinUbicacion} sin ubicación exacta` : ""}
+            </p>
+          </div>
+          <div className="flex items-center p-0.5 shrink-0" style={{ borderRadius: 10, background: "#ffffff1f" }}>
+            {[{ id: "mapa", label: "Mapa", Icon: MapIcon }, { id: "lista", label: "Lista", Icon: List }].map(({ id, label, Icon }) => (
+              <button
+                key={id} onClick={() => setVista(id)}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
+                style={{ borderRadius: 8, background: vista === id ? "#fff" : "transparent", color: vista === id ? "#0B2A54" : "#DCE7FB" }}
+              >
+                <Icon size={13} /> {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div ref={mapDivRef} style={{ flex: 1, width: "100%" }} />
+
+      {/* filtros */}
+      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E2E8F0" }}>
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setShowCats(true)}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0"
+            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#4B5563", border: "1px solid " + (catActual ? catActual.color : "#E2E8F0") }}
+          >
+            {catActual ? <catActual.icon size={12} /> : <Grid3x3 size={12} />} {catActual ? catActual.label : "Rubro"}
+            {catActual ? <X size={11} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={11} />}
+          </button>
+          <Chip label="Abiertos ahora" active={filtros.abiertos} onClick={() => setFiltro("abiertos", !filtros.abiertos)} activeBg="#E4F3EA" activeColor="#1E6B44" activeBorder="#2C9A5F" />
+          <Chip label="Delivery" Icon={Truck} active={filtros.delivery} onClick={() => setFiltro("delivery", !filtros.delivery)} />
+          <Chip label="Promociones" Icon={Tag} active={filtros.promos} onClick={() => setFiltro("promos", !filtros.promos)} />
+          <Chip label="Con asistente" Icon={Sparkles} active={filtros.asistente} onClick={() => setFiltro("asistente", !filtros.asistente)} activeBg="#F3ECFC" activeColor="#7A4F9E" activeBorder="#7A4F9E" />
+          <Chip label="Nuevos" Icon={Sparkles} active={filtros.nuevos} onClick={() => setFiltro("nuevos", !filtros.nuevos)} />
+          <Chip label="Favoritos" Icon={Heart} active={filtros.favoritos} onClick={() => setFiltro("favoritos", !filtros.favoritos)} activeBg="#F7E7E5" activeColor="#9A3B34" activeBorder="#C1443A" />
+        </div>
+      </div>
+
+      {/* contenido */}
+      <div className="relative flex-1 min-h-0">
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, isolation: "isolate", visibility: vista === "mapa" ? "visible" : "hidden" }}>
+          <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
+        </div>
+
+        {vista === "mapa" && (
+          <>
+            {/* controles: zoom y mi ubicación */}
+            <div className="absolute flex flex-col gap-2" style={{ right: 12, top: 12, zIndex: 20 }}>
+              <div className="flex flex-col overflow-hidden" style={{ borderRadius: 12, boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}>
+                <CtrlBtn onClick={() => mapRef.current?.zoomIn()} label="Acercar"><Plus size={18} color="#0B2A54" /></CtrlBtn>
+                <div style={{ height: 1, background: "#E2E8F0" }} />
+                <CtrlBtn onClick={() => mapRef.current?.zoomOut()} label="Alejar"><Minus size={18} color="#0B2A54" /></CtrlBtn>
+              </div>
+              <button
+                onClick={irAMiUbicacion} aria-label="Mi ubicación"
+                className="flex items-center justify-center"
+                style={{ width: 40, height: 40, borderRadius: 12, background: userLoc ? "#2F6FED" : "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+              >
+                <LocateFixed size={18} color={userLoc ? "#fff" : "#0B2A54"} className={locStatus === "loading" ? "animate-pulse" : ""} />
+              </button>
+            </div>
+
+            {aviso && (
+              <div className="absolute left-3 right-3 px-4 py-2.5 text-xs" style={{ top: 12, zIndex: 25, maxWidth: 420, margin: "0 auto", borderRadius: 10, background: "#F7E7E5", color: "#9A3B34", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", paddingRight: 60 }}>
+                {aviso}
+              </div>
+            )}
+
+            {lista.length === 0 && (
+              <div className="absolute left-4 right-4 text-center p-5" style={{ top: "30%", zIndex: 15, maxWidth: 340, margin: "0 auto", borderRadius: 14, background: "#fff", boxShadow: "0 8px 24px rgba(11,42,84,0.2)" }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
+                <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                {hayFiltros && (
+                  <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>
+                )}
+              </div>
+            )}
+
+            {/* tarjeta flotante del negocio elegido */}
+            {selected && (() => {
+              const c = catInfo(selected.cat);
+              const rating = avgRating(selected.reviews);
+              const km = distanciaDe(selected);
+              const promos = activeDiscounts(selected);
+              const esFav = favorites.includes(selected.id);
+              const etiquetas = [
+                selected.delivery && { t: "Delivery", Icon: Truck, bg: "#E8F0FE", color: "#0B2A54" },
+                selected.asistenteCodigoPublico && { t: "Asistente disponible", Icon: Sparkles, bg: "#F3ECFC", color: "#7A4F9E" },
+                promos.length > 0 && { t: promos[0].percent ? `${promos[0].percent} OFF` : "Promoción", Icon: Tag, bg: "#FBEBD1", color: "#8A5B12" },
+                esNegocioNuevo(selected) && { t: "Nuevo", Icon: Sparkles, bg: "#E4F3EA", color: "#1E6B44" },
+              ].filter(Boolean);
+              return (
+                <div className="absolute left-3 right-3" style={{ bottom: 14, zIndex: 20, maxWidth: 440, margin: "0 auto" }}>
+                  <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #E2E8F0", boxShadow: "0 10px 30px rgba(11,42,84,0.28)" }}>
+                    <button onClick={() => setSelectedId(null)} className="absolute" style={{ top: 10, right: 10 }} aria-label="Cerrar"><X size={16} color="#94A3B8" /></button>
+                    <div className="flex items-start gap-3 pr-5">
+                      <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #E2E8F0" }}>
+                        <Photo cat={selected.cat} src={selected.logo || selected.photos?.[0]} height={58} radius="14px" iconSize={22} clickable={false} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="truncate" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>{selected.name}</h3>
+                        <p className="text-xs truncate" style={{ color: "#6B7280" }}>
+                          <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>
+                          {km !== null ? ` · A ${fmtDistance(km)} de vos` : ""}
+                        </p>
+                        {selected.loc && (
+                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#4B5563" }}>
+                            <MapPin size={11} className="shrink-0" /> <span className="truncate">{selected.loc}</span>
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {rating ? (
+                            <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}>
+                              <Star size={12} fill="#F5A623" color="#F5A623" /> {rating} ({selected.reviews.length})
+                            </span>
+                          ) : (
+                            <span className="text-[11px]" style={{ color: "#94A3B8" }}>Sin reseñas</span>
+                          )}
+                          <OpenBadge weekHours={selected.weekHours} />
+                        </div>
+                      </div>
+                    </div>
+                    {etiquetas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {etiquetas.map(({ t, Icon, bg, color }) => (
+                          <span key={t} className="flex items-center gap-1 text-[11px] font-medium px-2 py-1" style={{ borderRadius: 20, background: bg, color }}>
+                            <Icon size={11} /> {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-3.5">
+                      <button
+                        onClick={() => onOpenBusiness(selected.id)}
+                        className="flex-1 text-sm font-semibold py-2.5"
+                        style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+                      >
+                        Ver perfil
+                      </button>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`} target="_blank" rel="noreferrer"
+                        onClick={() => onTrack && onTrack(selected.id, "ubicacion")}
+                        className="flex items-center justify-center gap-1.5 text-sm font-semibold px-3.5 py-2.5"
+                        style={{ backgroundColor: "#E8F0FE", color: "#0B2A54", borderRadius: 10 }}
+                      >
+                        <Navigation size={15} /> Cómo llegar
+                      </a>
+                      <button
+                        onClick={() => onToggleFavorite(selected.id)} aria-label="Guardar"
+                        className="flex items-center justify-center shrink-0"
+                        style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#F7E7E5" : "#F3F6FB" }}
+                      >
+                        <Heart size={17} color={esFav ? "#C1443A" : "#94A3B8"} fill={esFav ? "#C1443A" : "none"} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
+
+        {/* vista de lista */}
+        {vista === "lista" && (
+          <div className="absolute inset-0 overflow-y-auto" style={{ backgroundColor: "#F3F6FB", zIndex: 10 }}>
+            <div className="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3" style={{ paddingBottom: 40 }}>
+              {lista.length === 0 ? (
+                <div className="text-center py-14">
+                  <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
+                  <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                  {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>}
+                </div>
+              ) : lista.map((biz) => {
+                const c = catInfo(biz.cat);
+                const rating = avgRating(biz.reviews);
+                const km = distanciaDe(biz);
+                return (
+                  <div
+                    key={biz.id} role="button" tabIndex={0}
+                    onClick={() => onOpenBusiness(biz.id)}
+                    onKeyDown={(e) => (e.key === "Enter" ? onOpenBusiness(biz.id) : null)}
+                    className="w-full flex items-center gap-3 p-3 text-left bg-white cursor-pointer"
+                    style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+                  >
+                    <div className="shrink-0 overflow-hidden" style={{ width: 54, height: 54, borderRadius: 12 }}>
+                      <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={54} radius="12px" iconSize={22} clickable={false} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
+                        {esNegocioNuevo(biz) && <span className="text-[10px] font-semibold px-1.5 py-0.5 shrink-0" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>Nuevo</span>}
+                      </div>
+                      <p className="text-xs truncate" style={{ color: "#6B7280" }}>
+                        <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>{km !== null ? ` · A ${fmtDistance(km)}` : ""}
+                      </p>
+                      {biz.loc && <p className="text-[11px] truncate mb-1" style={{ color: "#94A3B8" }}>{biz.loc}</p>}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#4B5563" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
+                        <OpenBadge weekHours={biz.weekHours} />
+                        {biz.delivery && <Truck size={13} color="#0B2A54" />}
+                        {biz.asistenteCodigoPublico && <Sparkles size={13} color="#7A4F9E" />}
+                        {activeDiscounts(biz).length > 0 && <Tag size={13} color="#B8703F" />}
+                      </div>
+                    </div>
+                    {biz.lat && biz.lng && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setVista("mapa"); setSelectedId(biz.id); }}
+                        className="flex items-center justify-center shrink-0" aria-label="Ver en el mapa"
+                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#E8F0FE" }}
+                      >
+                        <MapPin size={16} color="#2F6FED" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showCats && <CategoryModal activeCat={filtros.cat} onSelect={(id) => { setFiltro("cat", id); setShowCats(false); }} onClose={() => setShowCats(false)} />}
+    </div>
+  );
+}
+
+/* ---------- centro de notificaciones ---------- */
+
+// Fila de notificación: se elimina deslizándola hacia la derecha (como en las apps móviles modernas)
+function SwipeableNotification({ n, leida, onOpen, onDelete }) {
+  const [dx, setDx] = useState(0);
+  const [arrastrando, setArrastrando] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
+  const inicio = useRef(null);
+  const seMovio = useRef(false);
+  const t = NOTIF_TIPOS[n.tipo] || NOTIF_TIPOS.pedido;
+  const Icon = t.Icon;
+  const UMBRAL = 90; // px que hay que deslizar para eliminar
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    inicio.current = { x: e.clientX, y: e.clientY, eje: null };
+    seMovio.current = false;
+  };
+  const onPointerMove = (e) => {
+    const s = inicio.current;
+    if (!s) return;
+    const ddx = e.clientX - s.x;
+    const ddy = e.clientY - s.y;
+    if (s.eje === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) {
+      s.eje = Math.abs(ddx) > Math.abs(ddy) ? "h" : "v";
+      if (s.eje === "h") {
+        setArrastrando(true);
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* no crítico */ }
+      }
+    }
+    if (s.eje === "h") {
+      seMovio.current = true;
+      setDx(Math.max(0, ddx)); // solo hacia la derecha
+    }
+  };
+  const terminar = () => {
+    const s = inicio.current;
+    inicio.current = null;
+    if (!s) return;
+    setArrastrando(false);
+    if (s.eje === "h" && dx > UMBRAL) {
+      setSaliendo(true);
+      setDx(window.innerWidth);
+      setTimeout(onDelete, 400); // espera a que termine la animación de salida
+    } else {
+      setDx(0);
+    }
+    setTimeout(() => { seMovio.current = false; }, 50);
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EEF2F7" }}
+    >
+      {/* fondo que se descubre al deslizar */}
+      <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#C1443A" }}>
+        <Trash2 size={18} color="#fff" />
+        <span className="text-xs font-semibold" style={{ color: "#fff" }}>Eliminar</span>
+      </div>
+      <div
+        role="button" tabIndex={0}
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={terminar} onPointerCancel={terminar}
+        onClick={() => { if (!seMovio.current) onOpen(); }}
+        onKeyDown={(e) => (e.key === "Enter" ? onOpen() : null)}
+        className="relative flex items-start gap-3 px-4 py-3.5 cursor-pointer"
+        style={{
+          background: leida ? "#fff" : "#F3F8FF", transform: `translateX(${dx}px)`,
+          transition: arrastrando ? "none" : "transform 0.25s ease", touchAction: "pan-y", userSelect: "none",
+        }}
+      >
+        <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: "50%", background: t.bg }}>
+          <Icon size={19} color={t.color} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm" style={{ color: "#0B1220", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
+            {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2F6FED" }} />}
+          </div>
+          <p className="text-xs mt-0.5" style={{ color: "#4B5563", wordBreak: "break-word" }}>{n.descripcion}</p>
+          <p className="text-[11px] mt-1" style={{ color: leida ? "#94A3B8" : "#2F6FED", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMarkAllRead, onBack }) {
+  const sinLeer = notificaciones.filter((n) => !leidas.has(n.id)).length;
+  const hoy = new Date().toDateString();
+  const ayer = new Date(Date.now() - 86400000).toDateString();
+  const grupos = [
+    { label: "Hoy", items: notificaciones.filter((n) => new Date(n.fecha).toDateString() === hoy) },
+    { label: "Ayer", items: notificaciones.filter((n) => new Date(n.fecha).toDateString() === ayer) },
+    { label: "Anteriores", items: notificaciones.filter((n) => ![hoy, ayer].includes(new Date(n.fecha).toDateString())) },
+  ].filter((g) => g.items.length > 0);
+
+  return (
+    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Notificaciones</p>
+            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
+          </div>
+          <button
+            onClick={onMarkAllRead} disabled={sinLeer === 0}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0"
+            style={{ borderRadius: 8, background: "#ffffff1f", color: "#fff", opacity: sinLeer === 0 ? 0.45 : 1 }}
+          >
+            <CheckCheck size={14} /> Marcar todas como leídas
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto" style={{ paddingBottom: 40 }}>
+        {notificaciones.length === 0 ? (
+          <div className="text-center py-20 px-8">
+            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#E8F0FE" }}>
+              <BellOff size={24} color="#2F6FED" />
+            </span>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No tenés notificaciones</p>
+            <p className="text-xs" style={{ color: "#6B7280" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#94A3B8" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
+            {grupos.map((g) => (
+              <div key={g.label}>
+                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#6B7280", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
+                <div style={{ borderTop: "1px solid #EEF2F7" }}>
+                  {g.items.map((n) => (
+                    <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- puntos y recompensas (cliente) ---------- */
+// Cada negocio tiene su propio programa: los puntos de un negocio solo sirven en ese negocio.
+
+function RecompensaCard({ r, onCanjear, canjeando }) {
+  const progreso = Math.min(100, Math.round(((r.puntos - r.faltan) / r.puntos) * 100));
+  const bloqueoTexto = r.bloqueo === "agotada" ? "Agotada" : r.bloqueo === "limite" ? "Ya canjeaste el máximo permitido" : null;
+  return (
+    <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
+      <div className="flex items-start gap-3">
+        {r.imagen ? (
+          <img src={r.imagen} alt="" className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 12 }} />
+        ) : (
+          <span className="flex items-center justify-center shrink-0" style={{ width: 56, height: 56, borderRadius: 12, background: "#F3ECFC" }}>
+            <Gift size={24} color="#7A4F9E" />
+          </span>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>{r.nombre}</p>
+            <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 20, background: "#FDF3DC", color: "#8A5B12" }}>
+              <Coins size={11} /> {fmtNum(r.puntos)}
+            </span>
+          </div>
+          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>{r.descripcion}</p>}
+        </div>
+      </div>
+
+      {(r.compraMinima > 0 || r.fechaVencimiento || r.cantidadDisponible !== null || r.limitePorCliente || r.condiciones) && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
+          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
+          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
+          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Máx. {r.limitePorCliente} por persona</span>}
+        </div>
+      )}
+      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#6B7280" }}>Condiciones: {r.condiciones}</p>}
+
+      <div className="mt-3.5">
+        {bloqueoTexto ? (
+          <p className="text-xs font-semibold" style={{ color: "#9A3B34" }}>{bloqueoTexto}</p>
+        ) : r.puedeCanjear ? (
+          <button
+            onClick={() => onCanjear(r)} disabled={canjeando}
+            className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
+            style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: canjeando ? 0.6 : 1 }}
+          >
+            <Ticket size={16} /> Canjear por {fmtNum(r.puntos)} puntos
+          </button>
+        ) : (
+          <>
+            <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
+              <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)", borderRadius: 4 }} />
+            </div>
+            <p className="text-xs mt-1.5" style={{ color: "#4B5563" }}>
+              Te {r.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(r.faltan)} {r.faltan === 1 ? "punto" : "puntos"}</b>.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Cupón de un canje: código único + QR para mostrarle al negocio
+function CanjeModal({ canje, onClose }) {
+  const usado = canje.estado === "utilizado";
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Tu canje</span>
+          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#6B7280" : "#1E6B44" }}>
+          {usado ? <Check size={12} /> : <Ticket size={12} />} {usado ? "Ya utilizado" : "Listo para usar"}
+        </span>
+        <p className="text-base font-semibold" style={{ color: "#0B1220" }}>{canje.recompensa}</p>
+        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#6B7280" }}>{canje.negocio}</p>}
+        {!usado && (
+          <img
+            alt="Código QR del canje" className="mx-auto mb-3"
+            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #E2E8F0" }}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(canje.codigo)}`}
+          />
+        )}
+        <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#94A3B8" : "#0B2A54", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
+        {usado ? (
+          <p className="text-xs" style={{ color: "#6B7280" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
+        ) : (
+          <p className="text-xs" style={{ color: "#6B7280" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
+        )}
+        {(canje.condiciones || canje.compraMinima > 0) && (
+          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#4B5563" }}>
+            {canje.compraMinima > 0 && <>Compra mínima: {fmtPesos(canje.compraMinima)}. </>}
+            {canje.condiciones && <>Condiciones: {canje.condiciones}</>}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
+  const [data, setData] = useState(null); // { negocios, canjes }
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tab, setTab] = useState("puntos"); // puntos | canjes
+  const [codigo, setCodigo] = useState(initialCodigo || null); // negocio cuyo detalle de recompensas se está viendo
+  const [detalle, setDetalle] = useState(null);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [aCanjear, setACanjear] = useState(null); // recompensa pendiente de confirmar
+  const [canjeando, setCanjeando] = useState(false);
+  const [errorCanje, setErrorCanje] = useState(null);
+  const [cupon, setCupon] = useState(null);
+  const claveCanje = useRef(null);
+
+  const bizDe = (cp) => businesses.find((b) => b.asistenteCodigoPublico === cp);
+
+  const cargarLista = async () => {
+    try {
+      setError(null);
+      setData(await fetchMisPuntos());
+    } catch {
+      setError("No pudimos cargar tus puntos en este momento. Probá de nuevo en un rato.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const cargarDetalle = async (cp) => {
+    setLoadingDetalle(true);
+    try {
+      setError(null);
+      setDetalle(await fetchPuntosNegocio(cp));
+    } catch {
+      setError("No pudimos cargar las recompensas de este negocio. Probá de nuevo en un rato.");
+    } finally {
+      setLoadingDetalle(false);
+    }
+  };
+
+  useEffect(() => { cargarLista(); }, []);
+  useEffect(() => { if (codigo) cargarDetalle(codigo); else setDetalle(null); }, [codigo]);
+
+  const confirmarCanje = async () => {
+    if (!aCanjear || canjeando) return;
+    setCanjeando(true);
+    setErrorCanje(null);
+    if (!claveCanje.current) claveCanje.current = randomHex(12); // misma clave si se reintenta: nunca descuenta dos veces
+    try {
+      const { canje } = await canjearRecompensaApi(codigo, aCanjear.id, claveCanje.current);
+      claveCanje.current = null;
+      setACanjear(null);
+      setCupon(canje);
+      await Promise.all([cargarDetalle(codigo), cargarLista()]);
+    } catch (e) {
+      setErrorCanje(e.message);
+      setACanjear(null);
+      cargarDetalle(codigo); // el estado pudo haber cambiado (se agotó, cambió el saldo...)
+    } finally {
+      setCanjeando(false);
+    }
+  };
+
+  const Logo = ({ nombre, logoUrl, cp, size = 46 }) => {
+    const biz = bizDe(cp);
+    const src = biz?.logo || logoUrl;
+    return src ? (
+      <img src={src} alt="" className="object-cover shrink-0" style={{ width: size, height: size, borderRadius: "50%" }} />
+    ) : (
+      <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "#2F6FED", color: "#fff" }}>
+        {(nombre || "?")[0].toUpperCase()}
+      </span>
+    );
+  };
+
+  const cabecera = (titulo, subtitulo, atras) => (
+    <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+        <button onClick={atras}><ArrowLeft size={19} color="#fff" /></button>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{titulo}</p>
+          {subtitulo && <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{subtitulo}</p>}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* --- detalle de un negocio: todas sus recompensas --- */
+  if (codigo) {
+    const biz = bizDe(codigo);
+    return (
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+        {cabecera("Recompensas", detalle?.nombreNegocio || biz?.name || "", () => (initialCodigo ? onBack() : setCodigo(null)))}
+        <div className="max-w-3xl mx-auto px-4 py-5" style={{ paddingBottom: 60 }}>
+          {loadingDetalle && !detalle ? (
+            <p className="text-sm text-center py-16" style={{ color: "#6B7280" }}>Cargando...</p>
+          ) : error && !detalle ? (
+            <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
+          ) : detalle && !detalle.activo ? (
+            <div className="text-center py-16 px-6">
+              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Este negocio no tiene programa de puntos</p>
+              <p className="text-xs" style={{ color: "#6B7280" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
+            </div>
+          ) : detalle && (
+            <>
+              <div className="p-4 mb-4 flex items-center gap-3" style={{ borderRadius: 14, background: "linear-gradient(135deg, #0B2A54, #17407F)" }}>
+                <Logo nombre={detalle.nombreNegocio} logoUrl={detalle.logoUrl} cp={codigo} size={50} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs" style={{ color: "#BBD1FB" }}>Tus puntos en {detalle.nombreNegocio}</p>
+                  <p className="flex items-center gap-1.5" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 24 }}>
+                    <Coins size={20} color="#F5C85A" /> {fmtNum(detalle.saldo)}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs mb-4 px-1" style={{ color: "#4B5563" }}>
+                Ganás <b>1 punto</b> por cada <b>{fmtPesos(detalle.pesosPorPunto)}</b> que gastás. Los puntos se suman cuando tu pedido se entrega y solo sirven en este negocio.
+              </p>
+              {errorCanje && (
+                <p className="text-xs mb-3 px-3 py-2.5" style={{ borderRadius: 10, background: "#F7E7E5", color: "#9A3B34" }}>{errorCanje}</p>
+              )}
+              {detalle.recompensas.length === 0 ? (
+                <p className="text-sm text-center py-10" style={{ color: "#6B7280" }}>Este negocio todavía no cargó recompensas.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {detalle.recompensas.map((r) => (
+                    <RecompensaCard key={r.id} r={r} canjeando={canjeando} onCanjear={(rec) => { setErrorCanje(null); claveCanje.current = null; setACanjear(rec); }} />
+                  ))}
+                </div>
+              )}
+              {biz && (
+                <button onClick={() => onOpenBusiness(biz.id)} className="w-full text-sm font-semibold py-3 mt-5" style={{ borderRadius: 10, backgroundColor: "#E8F0FE", color: "#0B2A54" }}>
+                  Ver perfil del negocio
+                </button>
+              )}
+            </>
+          )}
+        </div>
+        {aCanjear && (
+          <ConfirmModal
+            title="¿Canjear esta recompensa?"
+            message={`Vas a usar ${fmtNum(aCanjear.puntos)} puntos para canjear "${aCanjear.nombre}". Se genera un código único para mostrarle al negocio.`}
+            confirmLabel={canjeando ? "Canjeando..." : "Confirmar canje"}
+            onConfirm={confirmarCanje} onCancel={() => !canjeando && setACanjear(null)}
+          />
+        )}
+        {cupon && <CanjeModal canje={cupon} onClose={() => setCupon(null)} />}
+      </div>
+    );
+  }
+
+  /* --- lista: mis puntos por negocio + mis canjes --- */
+  const negocios = data?.negocios || [];
+  const canjes = data?.canjes || [];
+  const pendientes = canjes.filter((c) => c.estado === "pendiente").length;
+
+  return (
+    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+      {cabecera("Mis puntos", "Cada negocio tiene sus propios puntos", onBack)}
+      <div className="max-w-3xl mx-auto px-4 py-4" style={{ paddingBottom: 60 }}>
+        <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+          {[{ id: "puntos", label: "Mis puntos" }, { id: "canjes", label: `Mis canjes${pendientes ? ` (${pendientes})` : ""}` }].map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#6B7280" }}>
+              {t.label}
+              {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-center py-16" style={{ color: "#6B7280" }}>Cargando...</p>
+        ) : error ? (
+          <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
+        ) : tab === "puntos" ? (
+          negocios.length === 0 ? (
+            <div className="text-center py-14 px-6">
+              <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#FDF3DC" }}>
+                <Coins size={24} color="#B7791F" />
+              </span>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés puntos</p>
+              <p className="text-xs" style={{ color: "#6B7280" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {negocios.map((n) => (
+                <div key={n.codigoPublico} className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+                  <div className="flex items-center gap-3">
+                    <Logo nombre={n.nombreNegocio} logoUrl={n.logoUrl} cp={n.codigoPublico} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombreNegocio}</p>
+                      <p className="flex items-center gap-1 text-sm font-bold" style={{ color: "#8A5B12" }}><Coins size={13} /> {fmtNum(n.saldo)} puntos</p>
+                    </div>
+                  </div>
+                  {n.proxima ? (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#4B5563" }}>
+                        <span className="truncate pr-2">{n.proxima.nombre} · {fmtNum(n.proxima.puntos)} puntos</span>
+                      </div>
+                      <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)" }} />
+                      </div>
+                      <p className="text-xs mt-1.5" style={{ color: "#4B5563" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
+                    </div>
+                  ) : n.recompensas.some((r) => r.puedeCanjear) ? (
+                    <p className="text-xs mt-3 font-medium" style={{ color: "#1E6B44" }}>¡Ya podés canjear una recompensa!</p>
+                  ) : null}
+                  <button
+                    onClick={() => { setErrorCanje(null); setCodigo(n.codigoPublico); }}
+                    className="w-full text-sm font-semibold py-2.5 mt-3.5"
+                    style={{ borderRadius: 10, backgroundColor: "#E8F0FE", color: "#0B2A54" }}
+                  >
+                    Ver recompensas
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        ) : canjes.length === 0 ? (
+          <div className="text-center py-14 px-6">
+            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#F3ECFC" }}>
+              <Ticket size={24} color="#7A4F9E" />
+            </span>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no canjeaste nada</p>
+            <p className="text-xs" style={{ color: "#6B7280" }}>Tus cupones aparecen acá, con su código y su estado.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {canjes.map((c) => {
+              const usado = c.estado === "utilizado";
+              return (
+                <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: usado ? 0.7 : 1 }}>
+                  <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: usado ? "#EEEDE7" : "#F3ECFC" }}>
+                    {usado ? <Check size={19} color="#6B7280" /> : <Ticket size={19} color="#7A4F9E" />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{c.recompensa}</span>
+                    <span className="block text-xs truncate" style={{ color: "#6B7280" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
+                    <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#94A3B8" : "#0B2A54", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
+                  </span>
+                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#6B7280" : "#1E6B44" }}>
+                    {usado ? "Utilizado" : "Pendiente de uso"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {cupon && <CanjeModal canje={cupon} onClose={() => setCupon(null)} />}
     </div>
   );
 }
 
 function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
-  const ranking = useMemo(() => rankedBusinesses(businesses.filter((b) => b.zone === zone)), [businesses, zone]);
-  const podio = ranking.slice(0, 3);
-  const resto = ranking.slice(3, 20);
-  const [oro, plata, bronce] = podio;
+  const [catFiltro, setCatFiltro] = useState(null);
+  const enZona = useMemo(() => rankedBusinesses(businesses.filter((b) => b.zone === zone)), [businesses, zone]);
+  const categoriasPresentes = useMemo(() => {
+    const ids = [...new Set(enZona.map((b) => b.cat))];
+    return ids.map((id) => catInfo(id)).filter(Boolean);
+  }, [enZona]);
+  const ranking = useMemo(() => (catFiltro ? enZona.filter((b) => b.cat === catFiltro) : enZona).slice(0, 20), [enZona, catFiltro]);
+  const [oro, plata, bronce] = ranking;
+  const resto = ranking.slice(3);
+  const topScore = Math.max(1, ...ranking.map((b) => rankingScore(b)));
+  const totalResenas = enZona.reduce((s, b) => s + (b.reviews?.length || 0), 0);
+  const [verComo, setVerComo] = useState(false);
 
-  const PODIO_STYLE = {
-    1: { alto: 132, color: "#F5A623", claro: "#FDF3DC", label: "#1" },
-    2: { alto: 96, color: "#94A3B8", claro: "#EEF1F5", label: "#2" },
-    3: { alto: 76, color: "#C97B4A", claro: "#FBEAE0", label: "#3" },
+  const PODIO = {
+    1: { alto: 118, color: "#F5B83D", aro: "linear-gradient(135deg,#FFE08A,#F5A623)", avatar: 78 },
+    2: { alto: 84, color: "#C9D3E3", aro: "linear-gradient(135deg,#F1F5FA,#A9B6CB)", avatar: 64 },
+    3: { alto: 66, color: "#E0975F", aro: "linear-gradient(135deg,#F6C9A2,#C97B4A)", avatar: 64 },
   };
 
   const Puesto = ({ biz, puesto }) => {
-    if (!biz) return <div style={{ width: 96 }} />;
-    const st = PODIO_STYLE[puesto];
+    if (!biz) return <div style={{ flex: 1 }} />;
+    const st = PODIO[puesto];
     const rating = avgRating(biz.reviews);
+    const c = catInfo(biz.cat);
     return (
-      <button onClick={() => onOpenBusiness(biz.id)} className="flex flex-col items-center" style={{ width: 104 }}>
-        <div className="relative mb-2">
-          <div
-            className="flex items-center justify-center overflow-hidden"
-            style={{ width: puesto === 1 ? 68 : 56, height: puesto === 1 ? 68 : 56, borderRadius: "50%", border: `3px solid ${st.color}`, background: "#fff" }}
-          >
-            <Photo cat={biz.cat} src={biz.logo} height={puesto === 1 ? 68 : 56} radius="50%" iconSize={puesto === 1 ? 26 : 20} clickable={false} />
+      <button onClick={() => onOpenBusiness(biz.id)} className="flex flex-col items-center" style={{ flex: 1, minWidth: 0 }}>
+        {puesto === 1 && <Crown size={24} color={st.color} fill={st.color} style={{ marginBottom: 4, filter: "drop-shadow(0 2px 6px rgba(245,184,61,.6))" }} />}
+        <div className="relative" style={{ marginBottom: 8 }}>
+          <div style={{ width: st.avatar + 8, height: st.avatar + 8, borderRadius: "50%", padding: 4, background: st.aro, boxShadow: `0 8px 22px ${st.color}66` }}>
+            <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: "#fff" }}>
+              <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={st.avatar} radius="50%" iconSize={st.avatar / 3} clickable={false} />
+            </div>
           </div>
-          <span
-            className="absolute flex items-center justify-center text-[11px] font-bold"
-            style={{ bottom: -6, right: -2, width: 22, height: 22, borderRadius: "50%", background: st.color, color: "#fff", border: "2px solid #fff" }}
-          >
+          <span className="absolute flex items-center justify-center text-[11px] font-bold" style={{ bottom: -4, right: -2, width: 24, height: 24, borderRadius: "50%", background: st.aro, color: "#0B1220", border: "2px solid #0B2A54" }}>
             {puesto}
           </span>
         </div>
-        <p className="text-xs font-semibold text-center leading-tight mb-1" style={{ color: "#0B1220" }}>{biz.name}</p>
-        {rating && (
-          <span className="flex items-center gap-0.5 text-[11px]" style={{ color: "#4B5563" }}>
-            <Star size={10} fill="#F5A623" color="#F5A623" /> {rating}
-          </span>
-        )}
-        <div className="w-full mt-2" style={{ height: st.alto, borderRadius: "10px 10px 0 0", background: `linear-gradient(180deg, ${st.claro}, ${st.color}22)`, border: `1px solid ${st.color}55`, borderBottom: "none" }} />
+        <p className="text-xs font-semibold text-center leading-tight px-1" style={{ color: "#fff", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", maxWidth: "100%" }}>{biz.name}</p>
+        <p className="text-[10px] mt-0.5 truncate" style={{ color: "#B8C9EA", maxWidth: "100%" }}>{c?.label}</p>
+        <div className="flex items-center gap-2 mt-1.5 mb-2">
+          {rating && (
+            <span className="flex items-center gap-0.5 text-[11px] font-semibold" style={{ color: "#fff" }}>
+              <Star size={10} fill="#F5B83D" color="#F5B83D" /> {rating}
+            </span>
+          )}
+          <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 8, background: "#ffffff22", color: st.color }}>{Math.round(rankingScore(biz))} pts</span>
+        </div>
+        <div className="w-full flex items-start justify-center" style={{ height: st.alto, borderRadius: "16px 16px 0 0", background: `linear-gradient(180deg, ${st.color}55, ${st.color}08)`, border: `1px solid ${st.color}66`, borderBottom: "none", paddingTop: 10 }}>
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: puesto === 1 ? 40 : 32, lineHeight: 1, color: st.color, opacity: 0.9 }}>{puesto}</span>
+        </div>
       </button>
     );
   };
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
-        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ranking</p>
-      </div>
-      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Los negocios más destacados en {zone}</p>
+      {/* portada oscura con título y podio */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 0" }}>
+        <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
+        <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "#7FA8F51a" }} />
+        <div className="relative max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <button onClick={onBack} className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#ffffff1f" }} aria-label="Volver">
+              <ArrowLeft size={17} color="#fff" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff", lineHeight: 1.15 }}>Ranking de la zona</p>
+              <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#B8C9EA" }}><MapPin size={11} /> {zone}</p>
+            </div>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 14, background: "linear-gradient(135deg,#FFE08A,#F5A623)", boxShadow: "0 6px 16px rgba(245,166,35,.45)" }}>
+              <Trophy size={20} color="#7A4B00" />
+            </span>
+          </div>
 
-      {ranking.length === 0 ? (
-        <p className="text-sm text-center py-10" style={{ color: "#6B7280" }}>Todavía no hay suficientes datos para armar el ranking de tu zona.</p>
-      ) : (
-        <>
-          {podio.length > 0 && (
-            <div className="flex items-end justify-center gap-3 mb-6 px-2">
+          {enZona.length > 0 && (
+            <div className="flex gap-2 mb-5">
+              {[
+                { Icon: Trophy, valor: enZona.length, etiqueta: enZona.length === 1 ? "negocio" : "negocios" },
+                { Icon: Star, valor: totalResenas, etiqueta: totalResenas === 1 ? "reseña" : "reseñas" },
+                { Icon: Eye, valor: fmtNum(enZona.reduce((s, b) => s + (b.views || 0), 0)), etiqueta: "visitas" },
+              ].map(({ Icon, valor, etiqueta }) => (
+                <div key={etiqueta} className="flex-1 flex items-center gap-2 px-3 py-2" style={{ borderRadius: 14, background: "#ffffff14", border: "1px solid #ffffff1f" }}>
+                  <Icon size={14} color="#7FA8F5" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold leading-none" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{valor}</span>
+                    <span className="block text-[10px] mt-0.5" style={{ color: "#B8C9EA" }}>{etiqueta}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {ranking.length > 0 && (
+            <div className="flex items-end justify-center gap-2" style={{ paddingTop: 6 }}>
               <Puesto biz={plata} puesto={2} />
               <Puesto biz={oro} puesto={1} />
               <Puesto biz={bronce} puesto={3} />
             </div>
           )}
+        </div>
+      </div>
 
-          {resto.length > 0 && (
-            <div className="overflow-hidden" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
-              {resto.map((biz, i) => {
-                const rating = avgRating(biz.reviews);
-                const c = catInfo(biz.cat);
+      {/* cuerpo claro */}
+      <div style={{ background: "#F4F7FB", borderRadius: "24px 24px 0 0", marginTop: ranking.length ? -2 : 0, position: "relative", padding: "18px 16px 24px" }}>
+        <div className="max-w-3xl mx-auto">
+          {categoriasPresentes.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-3 [&>*]:shrink-0" style={{ marginBottom: 6 }}>
+              <button
+                onClick={() => setCatFiltro(null)}
+                className="text-xs font-semibold px-3.5 py-2"
+                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#4B5563", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#E2E8F0") }}
+              >
+                Todas
+              </button>
+              {categoriasPresentes.map((c) => {
+                const Icon = c.icon;
+                const act = catFiltro === c.id;
                 return (
                   <button
-                    key={biz.id}
-                    onClick={() => onOpenBusiness(biz.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white"
-                    style={{ borderBottom: "1px solid #EEF2F7" }}
+                    key={c.id} onClick={() => setCatFiltro(act ? null : c.id)}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2"
+                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#4B5563", border: "1px solid " + (act ? c.color : "#E2E8F0") }}
                   >
-                    <span className="text-sm font-bold shrink-0" style={{ width: 22, color: "#94A3B8" }}>{i + 4}</span>
-                    <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden" }}>
-                      <Photo cat={biz.cat} src={biz.logo} height={36} radius="9px" iconSize={16} clickable={false} />
-                    </div>
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-medium truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
-                      <span className="block text-[11px] truncate" style={{ color: "#6B7280" }}>{c?.label}</span>
-                    </span>
-                    {rating && (
-                      <span className="flex items-center gap-0.5 text-xs shrink-0" style={{ color: "#4B5563" }}>
-                        <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
-                      </span>
-                    )}
+                    <Icon size={13} color={act ? "#fff" : c.color} /> {c.label}
                   </button>
                 );
               })}
             </div>
           )}
-        </>
-      )}
+
+          {ranking.length === 0 ? (
+            <div className="text-center py-14 px-6">
+              <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "#E8F0FE" }}>
+                <Trophy size={32} color="#2F6FED" />
+              </span>
+              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>Todavía no hay ranking</p>
+              <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+                {catFiltro ? "No hay negocios de esta categoría en tu zona." : "Cuando los negocios de tu zona reciban visitas, reseñas y favoritos, van a aparecer acá."}
+              </p>
+            </div>
+          ) : (
+            <>
+              {resto.length > 0 && (
+                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#6B7280", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
+              )}
+              <div className="flex flex-col gap-2.5">
+                {resto.map((biz, i) => {
+                  const puesto = i + 4;
+                  const rating = avgRating(biz.reviews);
+                  const c = catInfo(biz.cat);
+                  const pts = Math.round(rankingScore(biz));
+                  const pct = Math.max(6, Math.round((rankingScore(biz) / topScore) * 100));
+                  const destacado = puesto <= 10;
+                  return (
+                    <button
+                      key={biz.id} onClick={() => onOpenBusiness(biz.id)}
+                      className="w-full flex items-center gap-3 p-3 text-left bg-white transition-shadow hover:shadow-lg"
+                      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+                    >
+                      <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B2A54" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "'Poppins', sans-serif" }}>
+                        {puesto}
+                      </span>
+                      <div className="shrink-0 overflow-hidden" style={{ width: 48, height: 48, borderRadius: 14 }}>
+                        <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={48} radius="14px" iconSize={20} clickable={false} />
+                      </div>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</span>
+                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#6B7280" }}>
+                          <span className="font-medium truncate" style={{ color: c?.color }}>{c?.label}</span>
+                          {rating && <span className="flex items-center gap-0.5 shrink-0"><Star size={10} fill="#F5A623" color="#F5A623" /> {rating}</span>}
+                          <span className="flex items-center gap-0.5 shrink-0"><Eye size={10} /> {fmtNum(biz.views || 0)}</span>
+                          {(biz.vecesFavorito || 0) > 0 && <span className="flex items-center gap-0.5 shrink-0"><Heart size={10} color="#C1443A" fill="#C1443A" /> {biz.vecesFavorito}</span>}
+                        </span>
+                        <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EEF2F7", overflow: "hidden" }}>
+                          <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "#2F6FED"}, ${c?.color || "#2F6FED"}aa)` }} />
+                        </span>
+                      </span>
+                      <span className="text-right shrink-0" style={{ minWidth: 38 }}>
+                        <span className="block text-base font-bold leading-none" style={{ color: "#0B2A54", fontFamily: "'Poppins', sans-serif" }}>{pts}</span>
+                        <span className="block text-[10px] mt-0.5" style={{ color: "#94A3B8" }}>pts</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setVerComo((v) => !v)}
+                className="w-full flex items-center justify-between mt-5 px-4 py-3 bg-white"
+                style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B2A54" }}><Medal size={16} color="#2F6FED" /> ¿Cómo se calcula el ranking?</span>
+                <ChevronDown size={16} color="#6B7280" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+              </button>
+              {verComo && (
+                <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}>
+                  {[
+                    { Icon: Eye, color: "#2F6FED", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
+                    { Icon: Star, color: "#F5A623", titulo: "Reseñas y valoración", texto: "Más reseñas y mejores estrellas suman más puntos." },
+                    { Icon: Heart, color: "#C1443A", titulo: "Favoritos", texto: "Cada persona que guarda el negocio suma el doble que una visita." },
+                  ].map(({ Icon, color, titulo, texto }) => (
+                    <div key={titulo} className="flex items-start gap-3 mb-3 last:mb-0">
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
+                      <span>
+                        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
+                        <span className="block text-xs" style={{ color: "#6B7280" }}>{texto}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, onViewProfile, onOpenAsistenteCode, onOpenRanking, onOpenFavoritos, onOpenMapa, onGuardarEmpleo, onInvitarColab, onSubirHistoria }) {
+function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenRanking, onOpenFavoritos, onOpenMapa, onOpenPuntos, onGuardarEmpleo, onSubirHistoria }) {
   const [showQR, setShowQR] = useState(false);
   const [showEmpleoForm, setShowEmpleoForm] = useState(false);
   const [subiendoHistoria, setSubiendoHistoria] = useState(false);
@@ -2075,7 +3358,7 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
     </button>
   );
 
-  // el dueño todavía no ingresó su código: mostramos las funciones disponibles para quien no tiene negocio vinculado
+  // todavía no tiene un negocio en su cuenta: mostramos las funciones disponibles para cualquier persona
   if (!ownerBiz) {
     return (
       <div>
@@ -2087,6 +3370,11 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
           onClick={onOpenFavoritos}
         />
         <Tool
+          Icon={Coins} bg="#B7791F" title="Mis puntos"
+          desc="Tus puntos por negocio, recompensas y canjes."
+          onClick={onOpenPuntos}
+        />
+        <Tool
           Icon={Trophy} bg="#F5A623" title="Ranking"
           desc="Los negocios más destacados de tu zona."
           onClick={onOpenRanking}
@@ -2096,11 +3384,19 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
           desc="Mirá todos los negocios activos en un mapa."
           onClick={onOpenMapa}
         />
-        <Tool
-          Icon={KeyRound} bg="#2F6FED" title="Ingresar código de dueño"
-          desc="¿Ya registraste tu negocio? Ingresá el código que recibiste para administrarlo."
-          onClick={onOpenOwner}
-        />
+        {!usuario ? (
+          <Tool
+            Icon={User} bg="#2F6FED" title="Iniciar sesión con Google"
+            desc="¿Tenés un negocio? Entrá con tu cuenta para administrarlo."
+            onClick={onLogin}
+          />
+        ) : (
+          <Tool
+            Icon={Building2} bg="#2F6FED" title="Agregar mi negocio"
+            desc="Sumá tu negocio a Mi Zona y empezá a recibir clientes."
+            onClick={onAddBusiness}
+          />
+        )}
       </div>
     );
   }
@@ -2109,10 +3405,16 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
     <div>
       <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
       <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
+      <TarjetaSuscripcion negocio={ownerBiz} onAgregar={onAgregarMeses} />
       <Tool
         Icon={Heart} bg="#C1443A" title="Favoritos"
         desc="Los negocios que guardaste."
         onClick={onOpenFavoritos}
+      />
+      <Tool
+        Icon={Coins} bg="#B7791F" title="Mis puntos"
+        desc="Tus puntos por negocio, recompensas y canjes."
+        onClick={onOpenPuntos}
       />
       <Tool
         Icon={Trophy} bg="#F5A623" title="Ranking"
@@ -2145,18 +3447,18 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
         desc="Compartí tu negocio en redes sociales o con tus contactos."
         onClick={() => shareBusiness(ownerBiz)}
       />
+      {ownerBiz.asistenteCodigoPublico && (
+        <Tool
+          Icon={Sparkles} bg="#7A4F9E" title="Administrar mi negocio"
+          desc="Clientes, estadísticas, puntos, recompensas y tu asistente, en Mi Asistente."
+          onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")}
+        />
+      )}
       <Tool
         Icon={Download} bg="#2C9A5F" title="Descargar Mi Asistente"
         desc="Conseguí tu asistente virtual con IA para atender a tus clientes."
         onClick={() => window.open(MI_ASISTENTE_URL, "_blank")}
       />
-      {ownerRole !== "colaborador" && (
-        <Tool
-          Icon={KeyRound} bg="#0B2A54" title="Vincular Mi Asistente"
-          desc={ownerBiz.asistenteCodigoPublico ? "Vinculado ✓" : "¿Ya pagaste Mi Asistente con otra cuenta? Ingresá tu código."}
-          onClick={onOpenAsistenteCode}
-        />
-      )}
       <Tool
         Icon={Briefcase} bg="#C97B4A" title="Búsqueda de personal"
         desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar personal a tu equipo."}
@@ -2168,14 +3470,6 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
         onClick={() => !subiendoHistoria && historiaInputRef.current?.click()}
       />
       <input ref={historiaInputRef} type="file" accept="image/*" className="hidden" onChange={handleSubirHistoria} />
-      {ownerRole !== "colaborador" && (
-        <Tool
-          Icon={User} bg="#7A4F9E" title="Invitar un colaborador"
-          desc={ownerBiz.colabCode ? "Ya tenés un código de colaborador activo." : "Dale acceso limitado a tu encargado, sin compartir tu código de dueño."}
-          onClick={onInvitarColab}
-        />
-      )}
-
       {showEmpleoForm && (
         <EmpleoFormModal
           business={ownerBiz}
@@ -2213,8 +3507,8 @@ function HerramientasScreen({ ownerBiz, ownerRole, onOpenOwner, onEditBusiness, 
   );
 }
 
-function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
-  const [sub, setSub] = useState(null); // null | "acerca" | "ayuda" | "soporte" | "privacidad"
+function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales }) {
+  const [sub, setSub] = useState(null); // null | "cuenta" | "notificaciones" | "acerca" | "ayuda" | "soporte" | "privacidad"
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
 
   const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
@@ -2237,6 +3531,19 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
     </button>
   );
 
+  if (sub === "cuenta") {
+    return (
+      <MiCuentaScreen
+        usuario={usuario} onBack={() => setSub(null)} onLogged={onLogged}
+        onUsuarioActualizado={onUsuarioActualizado}
+        onCerrarSesion={() => { onCerrarSesion(); setSub(null); }}
+      />
+    );
+  }
+  if (sub === "notificaciones") {
+    return <NotificacionesPushScreen usuario={usuario} onBack={() => setSub(null)} onLogin={onLogin} />;
+  }
+
   if (sub === "privacidad") {
     const favs = getFavorites().length;
     const chats = getAllConversationIds().length;
@@ -2247,7 +3554,7 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
         </button>
         <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">Privacidad</h2>
         <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
-          Como todavía no iniciás sesión con una cuenta, tus favoritos, conversaciones y preferencias se guardan <b>solo en este dispositivo</b> — no los vemos nosotros ni quedan asociados a vos en ningún servidor. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
+          Tus favoritos, conversaciones y preferencias se guardan <b>solo en este dispositivo</b> — no los vemos nosotros ni quedan asociados a vos en ningún servidor. Si iniciás sesión con Google, guardamos tu nombre y tu email para reconocerte como dueño de tu negocio. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
         </p>
         <div className="p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
           <div className="flex items-center justify-between text-sm mb-2">
@@ -2265,7 +3572,7 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
           </button>
         ) : (
           <div className="p-4" style={{ borderRadius: 10, background: "#F7E7E5" }}>
-            <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>Esto va a borrar tus favoritos y todas tus conversaciones de este dispositivo. No se puede deshacer.</p>
+            <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>Esto va a borrar tus favoritos, conversaciones y notificaciones de este dispositivo, y también el identificador que vincula tus puntos y canjes con este dispositivo: vas a perder el acceso a los puntos que tengas acumulados. No se puede deshacer.</p>
             <div className="flex gap-2">
               <button onClick={() => { onBorrarDatosLocales(); setConfirmarBorrado(false); }} className="flex-1 text-xs font-semibold py-2" style={{ backgroundColor: "#9A3B34", color: "#fff", borderRadius: 8 }}>
                 Sí, borrar todo
@@ -2288,7 +3595,7 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
       },
       ayuda: {
         title: "Centro de ayuda",
-        body: "¿Sos cliente? Buscá el negocio que te interesa y abrí el chat con su asistente para consultar. ¿Sos dueño de un negocio? Tocá \"+\" para registrarlo, o entrá a Herramientas con tu código de dueño para administrarlo.",
+        body: "¿Sos cliente? Buscá el negocio que te interesa y abrí el chat con su asistente para consultar. ¿Sos dueño de un negocio? Iniciá sesión con Google, tocá \"+\" para registrarlo y administralo desde Herramientas.",
       },
       soporte: {
         title: "Soporte",
@@ -2312,11 +3619,12 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
-        <Row Icon={User} title="Mi cuenta" desc="Iniciá sesión con Google para acceder" badge="Próximamente" disabled />
-        <Row Icon={Lock} title="Seguridad" desc="Cambiar contraseña y opciones de seguridad" badge="Próximamente" disabled />
-        <Row Icon={Mail} title="Notificaciones" desc="Elegí qué notificaciones querés recibir" badge="Próximamente" disabled />
+        <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
+        <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
+        <Row Icon={Lock} title="Seguridad" desc="Tu cuenta se protege con Google" badge="Próximamente" disabled />
         <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
         <Row Icon={Lock} title="Privacidad" desc="Qué datos guardamos y cómo borrarlos" onClick={() => setSub("privacidad")} />
+        {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
@@ -2330,39 +3638,43 @@ function AjustesScreen({ onOpenOwner, onOpenAdmin, onBorrarDatosLocales }) {
 
 
 function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes, chatsSinLeer }) {
-  const Item = ({ id, label, Icon, onClick, badge }) => (
-    <button onClick={onClick} className="flex flex-col items-center gap-1 py-1 relative" style={{ flex: 1 }}>
-      <span className="relative">
-        <Icon size={20} color={active === id ? "#2F6FED" : "#94A3B8"} />
-        {badge > 0 && (
-          <span
-            className="absolute flex items-center justify-center text-[9px] font-bold"
-            style={{ top: -5, right: -8, minWidth: 15, height: 15, borderRadius: 8, background: "#C1443A", color: "#fff", padding: "0 3px" }}
-          >
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
-      </span>
-      <span className="text-[10px]" style={{ color: active === id ? "#2F6FED" : "#94A3B8", fontWeight: active === id ? 500 : 400 }}>{label}</span>
-    </button>
-  );
+  const Item = ({ id, label, Icon, onClick, badge }) => {
+    const on = active === id;
+    return (
+      <button onClick={onClick} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
+        <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 14, background: on ? "#E8F0FE" : "transparent", transition: "background .2s" }}>
+          <Icon size={20} color={on ? "#2F6FED" : "#8A97AB"} strokeWidth={on ? 2.3 : 1.9} />
+          {badge > 0 && (
+            <span
+              className="absolute flex items-center justify-center text-[9px] font-bold"
+              style={{ top: -4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #fff" }}
+            >
+              {badge > 9 ? "9+" : badge}
+            </span>
+          )}
+        </span>
+        <span className="text-[10px]" style={{ color: on ? "#2F6FED" : "#8A97AB", fontWeight: on ? 700 : 500 }}>{label}</span>
+      </button>
+    );
+  };
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderTop: "1px solid #E2E8F0" }}>
+    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "0 -10px 30px rgba(11,42,84,0.12)", borderTop: "1px solid #EEF2F7" }}>
       {/* botón flotante "+", elevado por encima de la barra, centrado */}
       <button
-        onClick={onAdd}
+        onClick={onAdd} aria-label="Agregar mi negocio"
         className="fixed flex items-center justify-center"
         style={{
-          left: "50%", transform: "translateX(-50%)", bottom: 58, width: 50, height: 50, borderRadius: "50%",
-          background: "#2F6FED", boxShadow: "0 6px 16px rgba(47,111,237,0.45)", border: "4px solid #fff", zIndex: 41,
+          left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(135deg,#2F6FED,#5B91F7)", boxShadow: "0 10px 24px rgba(47,111,237,0.5)", border: "4px solid #fff", zIndex: 41,
         }}
       >
-        <Plus size={21} color="#fff" />
+        <Plus size={24} color="#fff" strokeWidth={2.6} />
       </button>
 
-      <div className="max-w-6xl mx-auto px-2 flex items-center" style={{ paddingTop: 8, paddingBottom: 8 }}>
+      <div className="max-w-6xl mx-auto px-3 flex items-center" style={{ paddingTop: 8, paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
         <Item id="inicio" label="Inicio" Icon={Home} onClick={onInicio} />
         <Item id="chats" label="Chats" Icon={MessageCircle} onClick={onChats} badge={chatsSinLeer} />
+        <div style={{ width: 62 }} />
         <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />
         <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
       </div>
@@ -2434,7 +3746,9 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
       if (geo) coords = geo;
     }
     setSaving(false);
-    onSave({ ...form, lat: coords.lat, lng: coords.lng, status: publicMode ? "inactive" : form.status });
+    // Si la dirección no se pudo ubicar, el negocio no va a aparecer en el mapa: se le avisa antes de seguir
+    if (form.loc?.trim() && !coords.lat && !window.confirm("No pudimos ubicar esa dirección en el mapa. Si seguís, tu negocio se va a ver en la lista pero no en el mapa. ¿Querés continuar igual? (Podés volver y escribir la dirección con calle y número.)")) return;
+    onSave({ ...form, lat: coords.lat, lng: coords.lng, status: publicMode && !initial.name ? "inactive" : form.status });
   };
 
   return (
@@ -2555,21 +3869,17 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
             {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
 
-          <input placeholder="Dirección" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
             <p className="text-xs font-medium mb-1.5" style={{ color: "#4B5563" }}>Horarios de la semana</p>
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
-          {!publicMode && (
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={setBool("featured")} /> Marcar como destacado</label>
-          )}
-
           <div className="flex gap-2 mt-2">
             <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
             <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
-              {saving ? "Ubicando dirección..." : "Guardar"}
+              {saving ? "Ubicando dirección..." : publicMode && !initial.name ? "Aceptar" : "Guardar"}
             </button>
           </div>
         </div>
@@ -2580,157 +3890,6 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
 /* ---------- empleos ---------- */
 
-
-function ReviewsModal({ business, onDeleteReview, onClose }) {
-  return (
-    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-md max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }}>Reseñas · {business.name}</h2>
-          <button onClick={onClose}><X size={20} /></button>
-        </div>
-        {business.reviews.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6B7280" }}>Todavía no tiene reseñas.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {business.reviews.map((r) => (
-              <div key={r.id} className="p-3 flex items-start justify-between gap-2" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
-                <div>
-                  <div className="flex items-center gap-1 mb-1">
-                    {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={12} fill={n <= r.rating ? "#2F6FED" : "none"} color={n <= r.rating ? "#2F6FED" : "#D1D5DB"} />)}
-                    <span className="text-xs font-medium ml-1">{r.name}</span>
-                  </div>
-                  <p className="text-xs" style={{ color: "#1F2937" }}>{r.text}</p>
-                  <p className="text-[11px] mt-1" style={{ color: "#6B7280" }}>{fmtDate(r.date)}</p>
-                </div>
-                <button onClick={() => onDeleteReview(business.id, r.id)} style={{ color: "#C1443A" }}><Trash2 size={15} /></button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AdminDashboard({ businesses, onAddNew, onEdit, onToggleStatus, onRenew, onDelete, onOpenReviews, onLogout }) {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("todos");
-  const [confirmDelete, setConfirmDelete] = useState(null);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return businesses.filter((b) => {
-      const matchQ = q ? b.name.toLowerCase().includes(q) : true;
-      const du = daysUntil(b.expiresAt);
-      let matchFilter = true;
-      if (filter === "activos") matchFilter = b.status === "active";
-      else if (filter === "inactivos") matchFilter = b.status === "inactive";
-      else if (filter === "por_vencer") matchFilter = du !== null && du >= 0 && du <= 7;
-      else if (filter === "vencidos") matchFilter = du !== null && du < 0;
-      else if (filter === "negocios") matchFilter = b.kind !== "job";
-      return matchQ && matchFilter;
-    });
-  }, [businesses, search, filter]);
-
-  const FILTERS = [
-    { id: "todos", label: "Todos" },
-    { id: "negocios", label: "Negocios" },
-    { id: "activos", label: "Activos" },
-    { id: "inactivos", label: "Inactivos" },
-    { id: "por_vencer", label: "Por vencer" },
-    { id: "vencidos", label: "Vencidos" },
-  ];
-
-  return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
-      <header className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
-          <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff" }}>Panel de administración</h1>
-          <div className="flex gap-2 relative">
-            <button onClick={onAddNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, backgroundColor: "#2F6FED", color: "#0B1220" }}>
-              <Plus size={14} /> Agregar negocio
-            </button>
-            <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
-              <LogOut size={14} /> Salir
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-2 bg-white px-3 py-2 mb-3" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
-          <Search size={16} color="#6B7280" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre..." className="w-full outline-none text-sm" />
-        </div>
-
-        <div className="flex gap-2 mb-5 overflow-x-auto">
-          {FILTERS.map((f) => (
-            <button key={f.id} onClick={() => setFilter(f.id)}
-              className="px-3 py-1.5 text-xs font-medium whitespace-nowrap"
-              style={{ borderRadius: 20, backgroundColor: filter === f.id ? "#0B2A54" : "#fff", color: filter === f.id ? "#fff" : "#0B1220", border: "1px solid " + (filter === f.id ? "#0B2A54" : "#E2E8F0") }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <p className="text-sm text-center py-10" style={{ color: "#6B7280" }}>No hay resultados que coincidan.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((b) => {
-              const isJob = b.kind === "job";
-              const du = daysUntil(b.expiresAt);
-              const expiringSoon = du !== null && du >= 0 && du <= 7;
-              const expired = du !== null && du < 0;
-              return (
-                <div key={b.id} className="bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      {isJob && <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E4F3EA", color: "#1E6B44", borderRadius: 6 }}><Briefcase size={10} /> Empleo</span>}
-                      <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15 }}>{b.name}</h3>
-                      <StatusBadge status={b.status} />
-                      {!isJob && b.featured && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>Destacado</span>}
-                    </div>
-                    <p className="text-xs" style={{ color: "#6B7280" }}>
-                      {isJob ? "Empleo" : catInfo(b.cat)?.label} · {b.zone}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: "#4B5563" }}>
-                      Alta: {fmtDate(b.createdAt)} · Renovación: {fmtDate(b.lastRenewal)} ·{" "}
-                      <span style={{ color: expired ? "#C1443A" : expiringSoon ? "#B8703F" : "#4B5563", fontWeight: expired || expiringSoon ? 600 : 400 }}>
-                        Vence: {fmtDate(b.expiresAt)}{expired ? " (vencido)" : expiringSoon ? " (por vencer)" : ""}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 shrink-0">
-                    <button onClick={() => onEdit(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><Pencil size={12} /> Editar</button>
-                    <button onClick={() => onToggleStatus(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><Power size={12} /> {b.status === "active" ? "Desactivar" : "Reactivar"}</button>
-                    <button onClick={() => onRenew(b.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><RefreshCw size={12} /> Renovar</button>
-                    {!isJob && <button onClick={() => onOpenReviews(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><Star size={12} /> Reseñas ({b.reviews.length})</button>}
-                    <button onClick={() => setConfirmDelete(b)} className="flex items-center gap-1 text-xs px-2.5 py-1.5" style={{ borderRadius: 6, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={12} /> Eliminar</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      {confirmDelete && (
-        <ConfirmModal
-          title="Eliminar negocio"
-          message={`¿Eliminar definitivamente "${confirmDelete.name}"? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar" danger
-          onCancel={() => setConfirmDelete(null)}
-          onConfirm={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ---------- panel del dueño (acceso por código, solo su negocio) ---------- */
 
 const TIPOS_PUESTO = ["Cocina", "Chef", "Atención al cliente / Mozo", "Delivery / Repartidor", "Administrativo", "Ventas", "Otro"];
 const DURACIONES_BUSQUEDA = [
@@ -2922,148 +4081,6 @@ function EmpleoFormModal({ business, onSave, onDelete, onClose }) {
   );
 }
 
-function InvitarColabModal({ business, onSave, onRevoke, onClose }) {
-  const codigo = business.colabCode || uid().slice(0, 8).toUpperCase();
-  const yaGenerado = !!business.colabCode;
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Invitar colaborador</span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
-        </div>
-        <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
-          Compartí este código con tu encargado. Va a poder editar la información del negocio, responder reseñas y ver los pedidos — pero no va a poder vincular Mi Asistente ni invitar a otro colaborador.
-        </p>
-        <div className="p-3.5 mb-4 text-center" style={{ borderRadius: 10, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
-          <p className="text-lg font-mono font-bold" style={{ color: "#0B2A54" }}>{codigo}</p>
-        </div>
-        {!yaGenerado ? (
-          <button onClick={() => onSave(codigo)} className="w-full text-sm font-semibold py-3 mb-2" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
-            Generar y activar código
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => shareBusiness({ ...business, name: `Acceso colaborador — ${business.name}` })}
-              className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mb-2"
-              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
-            >
-              <Share2 size={15} /> Compartir
-            </button>
-            <button onClick={onRevoke} className="w-full text-sm font-semibold py-2.5" style={{ color: "#9A3B34" }}>
-              Revocar acceso
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AsistenteCodeModal({ business, onSave, onClose }) {
-  const [codigo, setCodigo] = useState(business.asistenteCodigo || "");
-  const [verificando, setVerificando] = useState(false);
-  const [error, setError] = useState(null);
-  const [ok, setOk] = useState(null); // { nombreNegocio }
-
-  const verificar = async () => {
-    if (!codigo.trim()) return;
-    setVerificando(true); setError(null); setOk(null);
-    try {
-      const res = await fetch(`${API_URL}/asistente/vincular/${encodeURIComponent(codigo.trim())}`);
-      const datos = await res.json();
-      if (!res.ok) {
-        setError(datos.error || "No se pudo verificar el código.");
-        return;
-      }
-      if (!datos.suscripcionActiva) {
-        setError("Ese código existe, pero la suscripción de Mi Asistente para ese negocio no está activa todavía.");
-        return;
-      }
-      setOk({ nombreNegocio: datos.nombreNegocio });
-      onSave({ asistenteCodigo: codigo.trim().toUpperCase(), asistenteCodigoPublico: datos.codigoPublico });
-    } catch {
-      setError("No se pudo conectar con Mi Asistente. Probá de nuevo en un momento.");
-    } finally {
-      setVerificando(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Vincular Mi Asistente</span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
-        </div>
-        <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
-          Si ya pagaste Mi Asistente pero te registraste ahí con una cuenta de Google distinta a la de acá, pegá el código de vinculación que te dio Mi Asistente.
-        </p>
-        <input
-          value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-          placeholder="Código de vinculación"
-          className="w-full border px-3 py-2.5 text-sm font-mono mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
-        />
-        {error && <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>{error}</p>}
-        {ok && (
-          <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#1E6B44" }}>
-            <Check size={13} /> Vinculado con éxito: {ok.nombreNegocio}
-          </p>
-        )}
-        <button
-          onClick={verificar}
-          disabled={!codigo.trim() || verificando}
-          className="w-full text-sm font-semibold py-3"
-          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: !codigo.trim() || verificando ? 0.5 : 1 }}
-        >
-          {verificando ? "Verificando..." : "Verificar y vincular"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function OwnerGate({ businesses, onSuccess, onClose }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState(false);
-
-  const submit = () => {
-    const codigo = code.trim().toUpperCase();
-    const matchDueño = businesses.find((b) => b.ownerCode?.toUpperCase() === codigo);
-    if (matchDueño) { onSuccess(matchDueño.id, "dueño"); return; }
-    const matchColab = businesses.find((b) => b.colabCode && b.colabCode.toUpperCase() === codigo);
-    if (matchColab) { onSuccess(matchColab.id, "colaborador"); return; }
-    setError(true);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 mb-4">
-          <User size={18} color="#0B2A54" />
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }}>Mi negocio</h2>
-        </div>
-        <p className="text-xs mb-3" style={{ color: "#4B5563" }}>
-          Ingresá el código de dueño que te dieron al registrar tu negocio en Mi Zona.
-        </p>
-        <input
-          autoFocus value={code}
-          onChange={(e) => { setCode(e.target.value); setError(false); }}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Código de dueño"
-          className="w-full border px-3 py-2 text-sm mb-2 font-mono" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E2E8F0" }}
-        />
-        {error && <p className="text-xs mb-3" style={{ color: "#C1443A" }}>No encontramos ningún negocio con ese código.</p>}
-        <button onClick={submit} className="w-full py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
-          Ingresar
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function DiscountForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -3185,39 +4202,99 @@ export default function MiZona() {
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [onlyEmpleo, setOnlyEmpleo] = useState(false);
+  const [onlyNuevos, setOnlyNuevos] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
-  // administración
-  const [showPasswordGate, setShowPasswordGate] = useState(false);
-  const [adminAuthed, setAdminAuthed] = useState(false);
-  const [adminView, setAdminView] = useState(false); // true = viendo el panel
-  const [editingBiz, setEditingBiz] = useState(null); // objeto en edición/creación
-  const [reviewsBiz, setReviewsBiz] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // panel del dueño
-  const [showOwnerGate, setShowOwnerGate] = useState(false);
-  const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
-  const [showAsistenteCode, setShowAsistenteCode] = useState(false);
-  const [ownerBizId, setOwnerBizId] = useState(null);
-  const [ownerRole, setOwnerRole] = useState(null); // "dueño" | "colaborador"
-  const [showInvitarColab, setShowInvitarColab] = useState(false);
+  // cuenta de Google
+  const [usuario, setUsuario] = useState(null);
+  const [showLogin, setShowLogin] = useState(null); // null | { motivo, despues }
+  const [nombrePendiente, setNombrePendiente] = useState(null); // { sugerido, despues } mientras se le pide el nombre
+  const [misNegocios, setMisNegocios] = useState([]); // negocios de esta cuenta (incluye los que esperan el pago)
+  const misNegociosRef = useRef([]);
+  const [confirmandoPago, setConfirmandoPago] = useState(false);
+  const [avisoOk, setAvisoOk] = useState(null);
+  const ownerBizId = misNegocios[0]?.id || null;
+  const misIds = useMemo(() => new Set(misNegocios.map((m) => m.id)), [misNegocios]);
 
-  // agregar mi local
+  // panel del dueño
+  const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
+
+  // agregar mi local + suscripción
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
-  const [addBusinessDone, setAddBusinessDone] = useState(null); // guarda el código de dueño tras enviar
-  const submitPublicBusiness = async (data) => {
+  const [borrador, setBorrador] = useState(null); // negocio recién completado, esperando que elija el plan
+  const [planesModal, setPlanesModal] = useState(null); // { modo: "nuevo" | "renovar", gratis, hasta, vencimiento }
+  const [addBusinessDone, setAddBusinessDone] = useState(null); // { hasta } cuando se publicó sin pagar (ya pagó Mi Asistente)
+
+  const recargarMisNegocios = async () => {
     try {
-      await createBusinessOnServer(data);
-      setShowAddBusiness(false);
-      setAddBusinessDone(data.ownerCode);
-    } catch {
-      alert("No se pudo enviar tu negocio. Probá de nuevo en un momento.");
+      const r = await traerMisNegocios();
+      const mios = (r.negocios || []).map(normalizeBusiness);
+      misNegociosRef.current = mios;
+      setMisNegocios(mios);
+      // los negocios propios (incluso los que esperan el pago) reemplazan a la versión pública dentro de la lista
+      setBusinesses((prev) => [...mios, ...prev.filter((b) => !mios.some((m) => m.id === b.id))]);
+      return mios;
+    } catch (e) {
+      console.error(e);
+      return null;
     }
+  };
+
+  const abrirLogin = (motivo, despues = null) => setShowLogin({ motivo, despues });
+  const continuarDespues = (despues) => { if (despues === "agregar") setShowAddBusiness(true); };
+  const alIniciarSesion = (r) => {
+    const despues = showLogin?.despues || null;
+    setUsuario(r.usuario);
+    setShowLogin(null);
+    if (r.requiereNombre) setNombrePendiente({ sugerido: r.nombreGoogle, despues });
+    else continuarDespues(despues);
+  };
+  const cerrarSesion = async () => {
+    try { await desactivarPush(); } catch { /* no había push activo */ }
+    setToken(null);
+    setUsuario(null);
+    misNegociosRef.current = [];
+    setMisNegocios([]);
+    setShowEditOwnerBiz(false);
+    try { setBusinesses(await loadBusinesses()); } catch { /* se queda la lista que ya estaba */ }
+  };
+  const abrirAgregarNegocio = () => {
+    if (!usuario) abrirLogin("Para agregar tu negocio iniciá sesión con Google.", "agregar");
+    else setShowAddBusiness(true);
+  };
+
+  // Al completar el formulario y tocar "Aceptar": se ve cuánto tiene que pagar (o que no paga, si ya pagó Mi Asistente)
+  const submitPublicBusiness = async (data) => {
+    let gratis = false, hasta = null;
+    try {
+      const c = await traerCobertura();
+      gratis = !!c.cubierto && !misNegocios.some((n) => n.suscripcion?.origen === "asistente");
+      hasta = c.hasta;
+    } catch { /* si no se puede consultar, se cobra normalmente */ }
+    setBorrador(data);
+    setPlanesModal({ modo: "nuevo", gratis, hasta });
+  };
+  const confirmarPlan = async (plan) => {
+    const cuerpo = planesModal.modo === "nuevo" ? { plan, business: borrador } : { plan, bizId: ownerBizId };
+    const r = await iniciarPago(cuerpo);
+    if (r.cubiertoPorAsistente) {
+      setPlanesModal(null); setBorrador(null); setShowAddBusiness(false);
+      await recargarMisNegocios();
+      setAddBusinessDone({ hasta: r.expiresAt });
+      return;
+    }
+    if (r.initPoint) { window.location.href = r.initPoint; return; } // sigue en Mercado Pago
+    throw new Error("No se pudo generar el link de pago.");
+  };
+  const abrirAgregarMeses = () => {
+    const b = businesses.find((x) => x.id === ownerBizId);
+    setPlanesModal({ modo: "renovar", vencimiento: b && !b.pendientePago ? b.expiresAt : null });
   };
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
@@ -3238,6 +4315,7 @@ export default function MiZona() {
       b.id === bizId ? { ...b, vecesFavorito: Math.max(0, (b.vecesFavorito || 0) + (yaEsFavorito ? -1 : 1)) } : b
     )));
     toggleFavoritoOnServer(bizId, yaEsFavorito ? -1 : 1);
+    if (!yaEsFavorito && !misIds.has(bizId)) trackEvento(bizId, "guardado"); // estadística privada del dueño
   };
 
   // chat con el asistente de un negocio
@@ -3246,6 +4324,14 @@ export default function MiZona() {
   const [showRanking, setShowRanking] = useState(false);
   const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
+  const [mapaFiltros, setMapaFiltros] = useState(null); // filtros con los que se abre el mapa (null = mapa cerrado)
+
+  // centro de notificaciones y puntos del cliente
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const [puntosView, setPuntosView] = useState(null); // null | { codigoPublico?: string }
+  const [actividad, setActividad] = useState({ pedidos: [], turnos: [], puntos: [], canjes: [] });
+  const [notifLeidas, setNotifLeidas] = useState(() => getIdSet(NOTIF_LEIDAS_KEY));
+  const [notifEliminadas, setNotifEliminadas] = useState(() => getIdSet(NOTIF_ELIMINADAS_KEY));
 
   // "más cercanos"
   const [userLoc, setUserLoc] = useState(null); // { lat, lng } — solo en memoria, nunca se guarda
@@ -3264,11 +4350,66 @@ export default function MiZona() {
     );
   };
 
+  // Restaura la sesión de Google guardada en este dispositivo
+  useEffect(() => {
+    (async () => {
+      const u = await traerMiSesion();
+      if (!u) return;
+      setUsuario(u);
+      if (!u.nombre) setNombrePendiente({ sugerido: "", despues: null });
+    })();
+  }, []);
+
+  // Cuando hay sesión, trae los negocios de la cuenta (y ahí se verifica si ya pagó Mi Asistente)
+  useEffect(() => {
+    if (usuario) recargarMisNegocios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario?.id]);
+
+  // Al volver de Mercado Pago (?pago=exito|pendiente|fallo) esperamos a que el aviso del pago llegue al servidor
+  useEffect(() => {
+    const resultado = new URLSearchParams(window.location.search).get("pago");
+    if (!resultado) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    setActiveTab("herramientas");
+    if (resultado === "fallo") {
+      setErrorMsg("El pago no se completó. Podés intentarlo de nuevo desde Herramientas → Mi suscripción.");
+      return;
+    }
+    setConfirmandoPago(true);
+  }, []);
+  useEffect(() => {
+    if (!confirmandoPago || !usuario) return;
+    let cancelado = false;
+    (async () => {
+      const antes = Object.fromEntries((misNegociosRef.current || []).map((m) => [m.id, m]));
+      for (let i = 0; i < 12 && !cancelado; i++) {
+        const mios = await recargarMisNegocios();
+        const confirmado = mios && mios.some((m) => {
+          const previo = antes[m.id];
+          return !m.pendientePago && (!previo || previo.pendientePago || (m.expiresAt || "") > (previo.expiresAt || ""));
+        });
+        if (confirmado) {
+          if (!cancelado) { setAvisoOk("¡Pago confirmado! Tu suscripción ya está activa."); setConfirmandoPago(false); }
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+      if (!cancelado) {
+        setConfirmandoPago(false);
+        setAvisoOk("Todavía no vemos tu pago. Puede tardar unos minutos en acreditarse: apenas llegue, tu negocio se activa solo.");
+      }
+    })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmandoPago, usuario?.id]);
+
   useEffect(() => {
     (async () => {
       try {
         const list = await loadBusinesses();
-        setBusinesses(list);
+        const propios = misNegociosRef.current;
+        setBusinesses([...propios, ...list.filter((b) => !propios.some((m) => m.id === b.id))]);
       } catch (e) {
         console.error(e);
         setErrorMsg("No se pudieron cargar los negocios. Revisá que el servidor esté encendido y VITE_API_URL apunte a él.");
@@ -3277,6 +4418,39 @@ export default function MiZona() {
       }
     })();
   }, []);
+
+  // Actividad del cliente (pedidos, turnos, puntos, canjes) para el centro de notificaciones:
+  // al abrir la app, al volver a ella y cada 2 minutos mientras está visible.
+  useEffect(() => {
+    let cancelado = false;
+    const cargar = async () => {
+      try {
+        const a = await fetchActividad();
+        if (!cancelado) setActividad(a);
+      } catch { /* sin conexión con Mi Asistente: se muestran solo los avisos locales */ }
+    };
+    cargar();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") cargar(); }, 120000);
+    const alVolver = () => { if (document.visibilityState === "visible") cargar(); };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => { cancelado = true; clearInterval(timer); document.removeEventListener("visibilitychange", alVolver); };
+  }, []);
+
+  const ownerBiz = businesses.find((b) => b.id === ownerBizId);
+  const notificaciones = useMemo(
+    () => buildNotificaciones({ actividad, businesses, favorites, autorId: getAutorResenasId(), ownerBizs: misNegocios.map((m) => businesses.find((b) => b.id === m.id) || m) }).filter((n) => !notifEliminadas.has(n.id)),
+    [actividad, businesses, favorites, notifEliminadas, misNegocios]
+  );
+  const notifSinLeer = notificaciones.filter((n) => !notifLeidas.has(n.id)).length;
+  const marcarNotifLeida = (id) => {
+    setNotifLeidas((prev) => { if (prev.has(id)) return prev; const next = new Set(prev); next.add(id); saveIdSet(NOTIF_LEIDAS_KEY, next); return next; });
+  };
+  const marcarTodasLeidas = () => {
+    setNotifLeidas((prev) => { const next = new Set(prev); notificaciones.forEach((n) => next.add(n.id)); saveIdSet(NOTIF_LEIDAS_KEY, next); return next; });
+  };
+  const eliminarNotif = (id) => {
+    setNotifEliminadas((prev) => { const next = new Set(prev); next.add(id); saveIdSet(NOTIF_ELIMINADAS_KEY, next); return next; });
+  };
 
   // Actualiza UN negocio en el estado local y lo guarda en el servidor
   const persistOne = (id, updaterOrObj) => {
@@ -3305,11 +4479,14 @@ export default function MiZona() {
       const matchOpen = onlyOpen ? isOpenNow(b.weekHours) : true;
       const matchFav = onlyFavorites ? favorites.includes(b.id) : true;
       const matchEmpleo = onlyEmpleo ? busquedaEmpleoActiva(b) : true;
+      const matchNuevo = onlyNuevos ? esNegocioNuevo(b) : true;
       const matchDiscount = sortBy === "descuentos" ? activeDiscounts(b).length > 0 : true;
-      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchEmpleo && matchDiscount;
+      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchEmpleo && matchNuevo && matchDiscount;
     });
     list = [...list];
-    if (sortBy === "vistas") {
+    if (onlyNuevos) {
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // los más recientes primero
+    } else if (sortBy === "vistas") {
       list.sort((a, b) => b.views - a.views);
     } else if (sortBy === "cercanos" && userLoc) {
       const withCoords = list.filter((b) => b.lat && b.lng);
@@ -3320,13 +4497,13 @@ export default function MiZona() {
       list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyEmpleo, sortBy, userLoc]);
+  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyEmpleo, onlyNuevos, sortBy, userLoc]);
 
   const selected = businesses.find((b) => b.id === selectedId);
-  const ownerBiz = businesses.find((b) => b.id === ownerBizId);
 
   const openDetail = (id) => {
     persistOne(id, (b) => ({ ...b, views: b.views + 1 }));
+    if (!misIds.has(id)) trackEvento(id, "visita"); // estadística privada del dueño (no cuenta cuando mira su propio perfil)
     addRecentlyViewed(id);
     setSelectedId(id);
     window.scrollTo(0, 0);
@@ -3342,38 +4519,6 @@ export default function MiZona() {
         r.id === reviewId ? { ...r, respuesta: { texto, esDueño, fecha: todayISO() } } : r
       )),
     }));
-  };
-
-  // acciones de admin
-  const saveBusiness = (biz) => {
-    const exists = businesses.some((b) => b.id === biz.id);
-    if (exists) {
-      persistOne(biz.id, biz);
-    } else {
-      setBusinesses((prev) => [biz, ...prev]);
-      createBusinessOnServer(biz).catch((e) => {
-        console.error(e);
-        setErrorMsg("No se pudo crear el negocio. Revisá que el servidor y MongoDB estén andando.");
-      });
-    }
-    setEditingBiz(null);
-  };
-  const toggleStatus = (id) => {
-    persistOne(id, (b) => ({ ...b, status: b.status === "active" ? "inactive" : "active" }));
-  };
-  const renewSubscription = (id) => {
-    persistOne(id, (b) => ({ ...b, status: "active", lastRenewal: todayISO(), expiresAt: addDays(todayISO(), 30) }));
-  };
-  const deleteBusiness = (id) => {
-    setBusinesses((prev) => prev.filter((b) => b.id !== id));
-    deleteBusinessOnServer(id).catch((e) => {
-      console.error(e);
-      setErrorMsg("No se pudo eliminar el negocio del servidor.");
-    });
-  };
-  const deleteReview = (bizId, reviewId) => {
-    persistOne(bizId, (b) => ({ ...b, reviews: b.reviews.filter((r) => r.id !== reviewId) }));
-    setReviewsBiz((prev) => (prev ? { ...prev, reviews: prev.reviews.filter((r) => r.id !== reviewId) } : prev));
   };
 
   // acciones del dueño (solo afectan su propio negocio, nunca otros)
@@ -3399,34 +4544,6 @@ export default function MiZona() {
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
   );
 
-  /* ---- vista administración ---- */
-  if (adminView && adminAuthed) {
-    return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
-        {globalStyle}
-        {errorMsg && (
-          <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#F7E7E5", color: "#9A3B34" }}>
-            {errorMsg} <button onClick={() => setErrorMsg(null)} className="underline ml-2">cerrar</button>
-          </div>
-        )}
-        <AdminDashboard
-          businesses={businesses}
-          onAddNew={() => setEditingBiz(emptyBusiness())}
-          onEdit={(b) => setEditingBiz(b)}
-          onToggleStatus={toggleStatus}
-          onRenew={renewSubscription}
-          onDelete={deleteBusiness}
-          onOpenReviews={(b) => setReviewsBiz(b)}
-          onLogout={() => { setAdminView(false); setAdminAuthed(false); }}
-        />
-        {editingBiz && (
-          <BusinessForm initial={editingBiz} onSave={saveBusiness} onCancel={() => setEditingBiz(null)} />
-        )}
-        {reviewsBiz && <ReviewsModal business={reviewsBiz} onDeleteReview={deleteReview} onClose={() => setReviewsBiz(null)} />}
-      </div>
-    );
-  }
-
   /* ---- vista chat con el asistente ---- */
   if (chatBiz) {
     return (
@@ -3451,19 +4568,54 @@ export default function MiZona() {
     );
   }
 
+  /* ---- centro de notificaciones ---- */
+  if (showNotificaciones) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <NotificacionesScreen
+          notificaciones={notificaciones}
+          leidas={notifLeidas}
+          onBack={() => setShowNotificaciones(false)}
+          onMarkAllRead={marcarTodasLeidas}
+          onDelete={eliminarNotif}
+          onOpen={(n) => {
+            marcarNotifLeida(n.id);
+            if (n.destino === "puntos") { setShowNotificaciones(false); setPuntosView({}); return; }
+            if (n.destino === "suscripcion") { setShowNotificaciones(false); setActiveTab("herramientas"); window.scrollTo(0, 0); return; }
+            if (n.bizId) { setShowNotificaciones(false); openDetail(n.bizId); }
+          }}
+        />
+      </div>
+    );
+  }
+
+  /* ---- mis puntos y recompensas ---- */
+  if (puntosView) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <PuntosScreen
+          businesses={businesses}
+          initialCodigo={puntosView.codigoPublico}
+          onBack={() => setPuntosView(null)}
+          onOpenBusiness={(id) => { setPuntosView(null); openDetail(id); }}
+        />
+      </div>
+    );
+  }
+
   /* ---- vista del ranking ---- */
   if (showRanking) {
     return (
       <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
-        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
-          <RankingScreen
-            businesses={businesses}
-            zone={zone}
-            onBack={() => setShowRanking(false)}
-            onOpenBusiness={(id) => { setShowRanking(false); openDetail(id); }}
-          />
-        </div>
+        <RankingScreen
+          businesses={businesses}
+          zone={zone}
+          onBack={() => setShowRanking(false)}
+          onOpenBusiness={(id) => { setShowRanking(false); openDetail(id); }}
+        />
       </div>
     );
   }
@@ -3476,6 +4628,13 @@ export default function MiZona() {
         <MapaScreen
           businesses={businesses}
           zone={zone}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+          userLoc={userLoc}
+          locStatus={locStatus}
+          onRequestLocation={requestLocation}
+          initialFilters={mapaFiltros}
+          onTrack={trackEvento}
           onBack={() => setShowMapa(false)}
           onOpenBusiness={(id) => { setShowMapa(false); openDetail(id); }}
         />
@@ -3508,9 +4667,11 @@ export default function MiZona() {
         {globalStyle}
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
-          onReplyReview={replyToReview} esDueño={ownerBizId === selected.id}
+          onReplyReview={replyToReview} esDueño={misIds.has(selected.id)}
           onOpenChat={setChatBiz} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
           rank={businessRankPosition(selected, businesses)}
+          onTrack={trackEvento}
+          onOpenPuntos={(codigoPublico) => setPuntosView({ codigoPublico })}
         />
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       </div>
@@ -3528,28 +4689,60 @@ export default function MiZona() {
         </div>
       )}
 
+      {avisoOk && (
+        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#E4F3EA", color: "#1E6B44" }}>
+          {avisoOk} <button onClick={() => setAvisoOk(null)} className="underline ml-2">cerrar</button>
+        </div>
+      )}
+      {confirmandoPago && (
+        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#E8F0FE", color: "#0B2A54" }}>
+          Confirmando tu pago con Mercado Pago...
+        </div>
+      )}
+      {(() => {
+        // aviso fijo cuando falta pagar, quedan 7 días o menos, o ya venció
+        const inf = infoSuscripcion(ownerBiz);
+        if (!inf || inf.estado === "activa") return null;
+        const texto = inf.estado === "pendiente" ? "Tu negocio todavía no se muestra: falta pagar la suscripción."
+          : inf.estado === "vencida" ? "Tu suscripción venció y tu negocio ya no se muestra."
+          : inf.dias === 0 ? "Tu suscripción vence hoy." : inf.dias === 1 ? "Tu suscripción vence mañana." : `Tu suscripción vence en ${inf.dias} días.`;
+        const urgente = inf.estado === "vencida" || (inf.dias !== null && inf.dias <= 3);
+        return (
+          <div className="px-4 py-2 flex items-center justify-center gap-3 flex-wrap text-sm font-medium" style={{ background: urgente ? "#F7E7E5" : "#FBEBD1", color: urgente ? "#9A3B34" : "#8A5B12" }}>
+            <span>{texto}</span>
+            <button onClick={abrirAgregarMeses} className="text-xs font-semibold px-3 py-1" style={{ borderRadius: 20, background: urgente ? "#9A3B34" : "#8A5B12", color: "#fff" }}>
+              {inf.estado === "pendiente" ? "Pagar ahora" : inf.estado === "vencida" ? "Renovar" : "Agregar meses"}
+            </button>
+          </div>
+        );
+      })()}
+
       <PublicHeader
         zone={zone} setZone={setZone} query={query} setQuery={setQuery}
         activeCat={activeCat} setActiveCat={setActiveCat}
         onOpenAllCats={() => setShowAllCats(true)}
-        onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))}
-        onOpenOwner={() => setShowOwnerGate(true)}
+        onOpenOwner={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
         onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
         onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
+        notifSinLeer={notifSinLeer}
+        onOpenNotificaciones={() => setShowNotificaciones(true)}
       />
 
       {showAllCats && <CategoryModal activeCat={activeCat} onSelect={(id) => { setActiveCat(id); setShowAllCats(false); }} onClose={() => setShowAllCats(false)} />}
-      {showPasswordGate && (
-        <PasswordGate
-          onSuccess={() => { setAdminAuthed(true); setShowPasswordGate(false); setAdminView(true); }}
-          onClose={() => setShowPasswordGate(false)}
+      {showLogin && <LoginModal motivo={showLogin.motivo} onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
+      {nombrePendiente && (
+        <NombreModal
+          sugerido={nombrePendiente.sugerido}
+          onGuardado={(u) => { const d = nombrePendiente.despues; setUsuario(u); setNombrePendiente(null); continuarDespues(d); }}
         />
       )}
-      {showOwnerGate && (
-        <OwnerGate
-          businesses={businesses}
-          onSuccess={(id, rol) => { setOwnerBizId(id); setOwnerRole(rol); setShowOwnerGate(false); }}
-          onClose={() => setShowOwnerGate(false)}
+      {planesModal && (
+        <PlanesModal
+          nombreNegocio={planesModal.modo === "nuevo" ? borrador?.name : ownerBiz?.name}
+          gratis={!!planesModal.gratis} hastaGratis={planesModal.hasta}
+          vencimientoActual={planesModal.vencimiento}
+          onClose={() => setPlanesModal(null)}
+          onConfirmar={confirmarPlan}
         />
       )}
 
@@ -3562,23 +4755,6 @@ export default function MiZona() {
         />
       )}
 
-      {showAsistenteCode && ownerBiz && (
-        <AsistenteCodeModal
-          business={ownerBiz}
-          onSave={(datos) => { persistOne(ownerBizId, { ...ownerBiz, ...datos }); setShowAsistenteCode(false); }}
-          onClose={() => setShowAsistenteCode(false)}
-        />
-      )}
-
-      {showInvitarColab && ownerBiz && (
-        <InvitarColabModal
-          business={ownerBiz}
-          onSave={(codigo) => { persistOne(ownerBizId, { ...ownerBiz, colabCode: codigo }); }}
-          onRevoke={() => { persistOne(ownerBizId, { ...ownerBiz, colabCode: "" }); setShowInvitarColab(false); }}
-          onClose={() => setShowInvitarColab(false)}
-        />
-      )}
-
       {showAddSheet && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={() => setShowAddSheet(false)}>
           <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 30px #00000022" }} onClick={(e) => e.stopPropagation()}>
@@ -3588,7 +4764,7 @@ export default function MiZona() {
               <button onClick={() => setShowAddSheet(false)}><X size={18} color="#6B7280" /></button>
             </div>
             <button
-              onClick={() => { setShowAddSheet(false); setShowAddBusiness(true); }}
+              onClick={() => { setShowAddSheet(false); abrirAgregarNegocio(); }}
               className="w-full flex items-center gap-3 p-3.5 text-left"
               style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px #0000000d" }}
             >
@@ -3609,7 +4785,7 @@ export default function MiZona() {
           publicMode
           initial={emptyBusiness()}
           onSave={submitPublicBusiness}
-          onCancel={() => setShowAddBusiness(false)}
+          onCancel={() => { setShowAddBusiness(false); setBorrador(null); }}
         />
       )}
 
@@ -3619,12 +4795,11 @@ export default function MiZona() {
             <div className="flex items-center justify-center mx-auto mb-3" style={{ width: 48, height: 48, borderRadius: "50%", background: "#E4F3EA" }}>
               <Check size={24} color="#1E6B44" />
             </div>
-            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Negocio enviado!</h2>
-            <p className="text-sm mb-4" style={{ color: "#4B5563" }}>
-              En breve el equipo de Mi Zona lo va a revisar y activar. Guardá este código, lo vas a necesitar para administrar tu negocio:
+            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
+            <p className="text-sm mb-5" style={{ color: "#4B5563" }}>
+              Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
-            <p className="text-lg font-mono font-bold mb-5" style={{ color: "#0B2A54" }}>{addBusinessDone}</p>
-            <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
               Entendido
             </button>
           </div>
@@ -3634,12 +4809,17 @@ export default function MiZona() {
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
         {activeTab === "ajustes" ? (
           <AjustesScreen
-            onOpenAdmin={() => (adminAuthed ? setAdminView(true) : setShowPasswordGate(true))}
-            onOpenOwner={() => setShowOwnerGate(true)}
+            usuario={usuario}
+            onLogin={() => abrirLogin()}
+            onLogged={alIniciarSesion}
+            onUsuarioActualizado={setUsuario}
+            onCerrarSesion={cerrarSesion}
             onBorrarDatosLocales={() => {
               Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
               setFavorites([]);
               setOnlyFavorites(false);
+              setNotifLeidas(new Set());
+              setNotifEliminadas(new Set());
             }}
           />
         ) : activeTab === "chats" ? (
@@ -3649,17 +4829,18 @@ export default function MiZona() {
           />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
+            usuario={usuario}
             ownerBiz={ownerBiz}
-            onOpenOwner={() => setShowOwnerGate(true)}
+            onLogin={() => abrirLogin("Entrá con tu cuenta de Google para administrar tu negocio.")}
+            onAddBusiness={abrirAgregarNegocio}
+            onAgregarMeses={abrirAgregarMeses}
             onEditBusiness={() => setShowEditOwnerBiz(true)}
             onViewProfile={() => openDetail(ownerBizId)}
-            onOpenAsistenteCode={() => setShowAsistenteCode(true)}
             onOpenRanking={() => setShowRanking(true)}
-            onOpenMapa={() => setShowMapa(true)}
+            onOpenMapa={() => { setMapaFiltros(null); setShowMapa(true); }}
+            onOpenPuntos={() => setPuntosView({})}
             onOpenFavoritos={() => setShowFavoritos(true)}
             onGuardarEmpleo={(datos) => persistOne(ownerBizId, { ...ownerBiz, busquedaEmpleo: datos })}
-            ownerRole={ownerRole}
-            onInvitarColab={() => setShowInvitarColab(true)}
             onSubirHistoria={(url) => {
               const hace48h = Date.now() - 48 * 60 * 60 * 1000;
               const historiasVigentes = (ownerBiz.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace48h);
@@ -3670,16 +4851,16 @@ export default function MiZona() {
         <>
         {activeTab === "inicio" && !query && !activeCat && (() => {
           const vistos = getRecentlyViewed().map((id) => businesses.find((b) => b.id === id)).filter(Boolean);
-          const hace7dias = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          const nuevos = businesses.filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && new Date(b.createdAt).getTime() > hace7dias);
           const MiniCard = ({ biz }) => {
             const c = catInfo(biz.cat);
             return (
-              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden" style={{ width: 140, borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 10px rgba(11,42,84,0.06)" }}>
-                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={80} radius="12px 12px 0 0" iconSize={18} clickable={false} />
-                <div className="p-2">
-                  <p className="text-xs font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
-                  <p className="text-[10px] truncate" style={{ color: "#6B7280" }}>{c?.label}</p>
+              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden transition-transform hover:-translate-y-0.5" style={{ width: 150, borderRadius: 16, border: "1px solid #E6ECF5", boxShadow: "0 6px 18px rgba(11,42,84,0.08)" }}>
+                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={92} radius="0px" iconSize={22} clickable={false} />
+                <div className="px-3 py-2.5">
+                  <p className="text-xs font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
+                  <p className="text-[10px] truncate mt-0.5 flex items-center gap-1" style={{ color: "#6B7280" }}>
+                    <span className="rounded-full inline-block" style={{ width: 6, height: 6, background: c?.color }} /> {c?.label}
+                  </p>
                 </div>
               </button>
             );
@@ -3688,28 +4869,35 @@ export default function MiZona() {
             <>
               {vistos.length > 0 && (
                 <div className="mb-5">
-                  <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>VISTOS RECIENTEMENTE</p>
-                  <div className="flex gap-2.5 overflow-x-auto pb-1">
+                  <p className="flex items-center gap-1.5 mb-2.5" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
+                    <Clock size={15} color="#2F6FED" /> Visto recientemente
+                  </p>
+                  <div className="flex gap-3 overflow-x-auto pb-2">
                     {vistos.map((b) => <MiniCard key={b.id} biz={b} />)}
-                  </div>
-                </div>
-              )}
-              {nuevos.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-xs font-semibold mb-2" style={{ color: "#6B7280" }}>✨ NUEVOS ESTA SEMANA</p>
-                  <div className="flex gap-2.5 overflow-x-auto pb-1">
-                    {nuevos.map((b) => <MiniCard key={b.id} biz={b} />)}
                   </div>
                 </div>
               )}
             </>
           );
         })()}
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#6B7280" }}>
-            {filtered.length} {filtered.length === 1 ? "negocio en" : "negocios en"} {zone}
-          </p>
-          <div className="flex items-center gap-2">
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
+              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#6B7280" }}>en {zone}</span>
+            </p>
+            <button
+              onClick={() => {
+                // el mapa se abre con los mismos filtros que ya elegiste acá
+                setMapaFiltros({ cat: activeCat, abiertos: onlyOpen, favoritos: onlyFavorites, nuevos: onlyNuevos, promos: sortBy === "descuentos" });
+                setShowMapa(true);
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 shrink-0"
+              style={{ borderRadius: 20, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", color: "#fff", boxShadow: "0 6px 14px rgba(11,42,84,.28)" }}
+            >
+              <MapIcon size={13} /> Ver en el mapa
+            </button>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
             {onlyFavorites && (
               <button
                 onClick={() => setOnlyFavorites(false)}
@@ -3734,6 +4922,14 @@ export default function MiZona() {
             >
               <Briefcase size={12} />
               Busca personal
+            </button>
+            <button
+              onClick={() => setOnlyNuevos((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
+              style={{ borderRadius: 20, backgroundColor: onlyNuevos ? "#E4F3EA" : "#fff", color: onlyNuevos ? "#1E6B44" : "#4B5563", border: "1px solid " + (onlyNuevos ? "#2C9A5F" : "#E2E8F0") }}
+            >
+              <Sparkles size={12} />
+              Recién agregados
             </button>
             <div className="relative">
               <select
@@ -3788,7 +4984,7 @@ export default function MiZona() {
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">
-              {businesses.length === 0 ? "Ingresá al modo Administrador para agregar el primero." : "Probá con otra categoría, otra búsqueda, o cambiá de zona."}
+              {businesses.length === 0 ? "Sé el primero: tocá el botón \"+\" para agregar tu negocio." : "Probá con otra categoría, otra búsqueda, o cambiá de zona."}
             </p>
           </div>
         ) : (
@@ -3799,6 +4995,7 @@ export default function MiZona() {
                 distanceKm={sortBy === "cercanos" && userLoc && biz.lat && biz.lng ? haversineKm(userLoc.lat, userLoc.lng, biz.lat, biz.lng) : undefined}
                 rank={businessRankPosition(biz, businesses)}
                 isFavorite={favorites.includes(biz.id)} onToggleFavorite={toggleFavorite}
+                onTrack={trackEvento}
               />
             ))}
           </div>

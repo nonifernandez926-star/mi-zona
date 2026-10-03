@@ -7,26 +7,25 @@ const router = express.Router();
 // porque puede cambiar de servicio o de plan.
 const MI_ASISTENTE_URL = process.env.MI_ASISTENTE_API_URL || "https://empleado-virtual-ia.onrender.com/api";
 
-// GET /api/asistente/vincular/:codigo
-// El dueño ingresa en Mi Zona el código de vinculación que le dio Mi Asistente.
-// Mi Zona (desde el servidor, nunca desde el navegador) le pregunta a Mi Asistente
-// si ese código es real y activo, y devuelve los datos públicos del negocio.
-router.get("/vincular/:codigo", async (req, res) => {
+// Clave compartida con Mi Asistente: le avisa que el pedido viene de este servidor (y le da un límite más alto,
+// porque acá pasan las consultas de todos los clientes de Mi Zona).
+function cabecerasAsistente() {
+  const h = { "Content-Type": "application/json" };
+  if (process.env.INTEGRACION_KEY) h["x-integracion-key"] = process.env.INTEGRACION_KEY;
+  return h;
+}
+
+// Reenvía un pedido a Mi Asistente y devuelve su respuesta tal cual (con su código de estado).
+async function reenviar(res, ruta, opciones = {}) {
   try {
-    const r = await fetch(`${MI_ASISTENTE_URL}/vinculacion/${encodeURIComponent(req.params.codigo)}`);
-    if (r.status === 404) {
-      return res.status(404).json({ error: "Ese código de vinculación no existe o no es válido." });
-    }
-    if (!r.ok) {
-      return res.status(502).json({ error: "No se pudo verificar el código con Mi Asistente en este momento." });
-    }
-    const datos = await r.json();
-    res.json(datos); // { codigoPublico, nombreNegocio, descripcion, logoUrl, fotosProducto, horarios, suscripcionActiva, ... }
+    const r = await fetch(`${MI_ASISTENTE_URL}${ruta}`, { ...opciones, headers: cabecerasAsistente() });
+    const datos = await r.json().catch(() => ({}));
+    res.status(r.status).json(datos);
   } catch (e) {
     console.error(e);
-    res.status(502).json({ error: "No se pudo conectar con Mi Asistente. Probá de nuevo en un momento." });
+    res.status(502).json({ error: "sin_conexion", mensaje: "No se pudo conectar con Mi Asistente. Probá de nuevo en un momento." });
   }
-});
+}
 
 // POST /api/asistente/chat/:codigoPublico   { mensaje, sesionClienteId }
 // Reenvía el mensaje del cliente directo al asistente REAL de ese negocio en Mi Asistente,
@@ -39,8 +38,9 @@ router.post("/chat/:codigoPublico", async (req, res) => {
     }
     const r = await fetch(`${MI_ASISTENTE_URL}/chat/${encodeURIComponent(req.params.codigoPublico)}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mensaje, sesionClienteId }),
+      headers: cabecerasAsistente(),
+      // origen: "mizona" le avisa a Mi Asistente que este chat nació en Mi Zona (para sus estadísticas)
+      body: JSON.stringify({ mensaje, sesionClienteId, origen: "mizona" }),
     });
     const datos = await r.json();
     if (!r.ok) {
@@ -52,6 +52,29 @@ router.post("/chat/:codigoPublico", async (req, res) => {
     console.error(e);
     res.status(502).json({ error: "No se pudo conectar con el asistente de este negocio. Probá de nuevo en un momento." });
   }
+});
+
+// POST /api/asistente/cliente/actividad   { sesionClienteId }
+// Pedidos, turnos, puntos y canjes del cliente: con esto la web arma su centro de notificaciones.
+router.post("/cliente/actividad", (req, res) =>
+  reenviar(res, "/cliente/actividad", { method: "POST", body: JSON.stringify({ sesionClienteId: req.body?.sesionClienteId }) })
+);
+
+// GET /api/asistente/puntos/negocio/:codigoPublico?sesionClienteId=...
+// Programa de puntos de un negocio y recompensas, con el saldo del cliente.
+router.get("/puntos/negocio/:codigoPublico", (req, res) =>
+  reenviar(res, `/puntos/publico/${encodeURIComponent(req.params.codigoPublico)}?sesionClienteId=${encodeURIComponent(req.query.sesionClienteId || "")}`)
+);
+
+// POST /api/asistente/puntos/mis-puntos   { sesionClienteId }
+router.post("/puntos/mis-puntos", (req, res) =>
+  reenviar(res, "/puntos/mis-puntos", { method: "POST", body: JSON.stringify({ sesionClienteId: req.body?.sesionClienteId }) })
+);
+
+// POST /api/asistente/puntos/canjear   { codigoPublico, sesionClienteId, recompensaId, claveUnica }
+router.post("/puntos/canjear", (req, res) => {
+  const { codigoPublico, sesionClienteId, recompensaId, claveUnica } = req.body || {};
+  reenviar(res, "/puntos/canjear", { method: "POST", body: JSON.stringify({ codigoPublico, sesionClienteId, recompensaId, claveUnica }) });
 });
 
 const CATEGORY_LABELS = {

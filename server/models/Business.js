@@ -29,8 +29,12 @@ const businessSchema = new mongoose.Schema(
     vecesFavorito: { type: Number, default: 0 },
     reviews: { type: mongoose.Schema.Types.Mixed, default: [] },
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
-    ownerCode: String,
-    colabCode: String,
+    // Dueño: se identifica por su cuenta de Google (ya no hay códigos de dueño ni de colaborador)
+    ownerId: { type: String, index: true },
+    ownerEmail: { type: String, index: true }, // permite que el admin asigne un negocio viejo a una cuenta de Google
+    // Suscripción del negocio en Mi Zona. expiresAt (YYYY-MM-DD) es la fecha de vencimiento real.
+    pendientePago: { type: Boolean, default: false }, // cargado pero todavía sin pagar → no se muestra al público
+    suscripcion: { type: mongoose.Schema.Types.Mixed, default: {} }, // { plan, origen, ultimoPagoId, pagosProcesados, ultimoAviso... }
     historias: { type: mongoose.Schema.Types.Mixed, default: [] },
     asistenteCodigo: String,
     asistenteCodigoPublico: String,
