@@ -8,7 +8,9 @@ import eventosRoutes from "./routes/eventos.js";
 import authRoutes from "./routes/auth.js";
 import suscripcionRoutes from "./routes/suscripcion.js";
 import pushRoutes from "./routes/push.js";
+import agendaRoutes from "./routes/agenda.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
+import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 
 dotenv.config();
 
@@ -29,6 +31,7 @@ app.use("/api/eventos", eventosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suscripcion", suscripcionRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/agenda", agendaRoutes);
 
 if (!process.env.JWT_SECRET) console.warn("⚠️  Falta JWT_SECRET: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("⚠️  Falta GOOGLE_CLIENT_ID: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
@@ -42,3 +45,4 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en el puerto ${PORT}`));
 programarRevisionDeVencimientos();
+programarRecordatoriosDeAgenda();

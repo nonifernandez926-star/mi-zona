@@ -29,6 +29,9 @@ const businessSchema = new mongoose.Schema(
     vecesFavorito: { type: Number, default: 0 },
     reviews: { type: mongoose.Schema.Types.Mixed, default: [] },
     discounts: { type: mongoose.Schema.Types.Mixed, default: [] },
+    geoIntentos: { type: Number, default: 0 }, // cuántas veces se intentó ubicar la dirección en el mapa sin éxito
+    // El chat con el asistente solo se muestra a los clientes si el negocio tiene Mi Asistente PAGO (lo actualiza el servidor)
+    asistenteActivo: { type: Boolean, default: false },
     // Dueño: se identifica por su cuenta de Google (ya no hay códigos de dueño ni de colaborador)
     ownerId: { type: String, index: true },
     ownerEmail: { type: String, index: true }, // permite que el admin asigne un negocio viejo a una cuenta de Google

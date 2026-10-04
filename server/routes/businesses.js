@@ -13,7 +13,7 @@ const SECRETOS = ["ownerId", "ownerEmail", "ownerCode", "colabCode", "suscripcio
 // Campos que el dueño NO puede cambiar por su cuenta (los maneja el servidor: pagos, vencimiento, destacado, etc.)
 const BLOQUEADOS_PARA_DUENO = [
   ...SECRETOS, "_id", "__v", "id", "kind", "status", "expiresAt", "lastRenewal",
-  "createdAt", "updatedAt", "featured", "vecesFavorito",
+  "createdAt", "updatedAt", "featured", "vecesFavorito", "asistenteActivo", "asistenteCodigoPublico",
 ];
 
 function limpiarSalida(doc, { completo = false } = {}) {
@@ -76,6 +76,8 @@ router.get("/mios", requiereUsuario, async (req, res) => {
       { ownerEmail: usuario.email, $or: [{ ownerId: { $exists: false } }, { ownerId: "" }, { ownerId: null }] },
       { $set: { ownerId: String(usuario._id) } }
     );
+    // Si la cuenta tiene Mi Asistente, sus negocios viejos conectados a ese asistente pasan a ser suyos (ver sincronizarCobertura)
+    await sincronizarCobertura(null, usuario);
     const negocios = await Business.find({ ownerId: String(usuario._id) });
     let cobertura = { consultado: false, cubierto: false, hasta: null };
     if (negocios.length) {
@@ -111,7 +113,8 @@ router.put("/:id", async (req, res) => {
     else delete cambios.views;
     // reseñas: solo agregar una nueva; la respuesta a una reseña la puede escribir únicamente el dueño
     if (body.reviews !== undefined) {
-      if (reseñasValidas(biz.reviews || [], body.reviews, esDueno)) cambios.reviews = body.reviews;
+      // dejar una reseña (o responderla) requiere cuenta de Google
+      if (actor?.tipo === "usuario" && reseñasValidas(biz.reviews || [], body.reviews, esDueno)) cambios.reviews = body.reviews;
       else delete cambios.reviews;
     }
 

@@ -1,6 +1,8 @@
 import Business from "../models/Business.js";
 import { diasHasta } from "./fechas.js";
 import { enviarPushAUsuario } from "./push.js";
+import { refrescarAsistentes } from "./asistente.js";
+import { geocodificarPendientes } from "./geocodificar.js";
 
 // Avisos de suscripción: 7, 3 y 1 día antes de vencer, y cuando venció. Cada aviso se manda UNA sola vez
 // (queda anotado en el negocio) y se vuelve a habilitar solo cuando el dueño renueva y cambia la fecha.
@@ -21,6 +23,8 @@ function umbralPara(dias) {
 
 export async function revisarVencimientos() {
   const resumen = { revisados: 0, desactivados: 0, avisos: 0 };
+  resumen.asistentes = await refrescarAsistentes();
+  resumen.mapa = await geocodificarPendientes();
   const negocios = await Business.find({
     ownerId: { $exists: true, $ne: "" },
     expiresAt: { $exists: true, $nin: [null, ""] },

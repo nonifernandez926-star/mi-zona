@@ -47,6 +47,17 @@ Para que siempre avise, creá un cron gratis (por ejemplo en cron-job.org) que c
 - **Administrador:** se eliminó por completo (contraseña, panel y rutas del servidor). Cada dueño maneja solo su negocio con su cuenta de Google.
 - **Negocios cargados antes de esta versión:** quedaron sin dueño y los códigos viejos ya no sirven. Si querés conservar alguno, en MongoDB Atlas
   (Browse Collections → businesses) escribí en ese negocio el campo `ownerEmail` con el Gmail de su dueño: cuando esa persona entre con Google, el negocio pasa a su cuenta.
+- **Entrar con Google y ver el negocio de antes:** al iniciar sesión, si la cuenta tiene Mi Asistente y ese asistente ya estaba conectado a un negocio de Mi Zona, el negocio pasa solo a su cuenta. Los negocios sin conexión con Mi Asistente se asignan escribiendo el campo `ownerEmail` en MongoDB Atlas (ver más abajo).
+- **Chat con el asistente:** solo aparece para los clientes si el negocio tiene Mi Asistente PAGO. El servidor lo revisa cada 6 horas (y cuando el dueño entra); si vence, el chat, los puntos y el filtro "con asistente" se ocultan solos.
+- **Herramientas (dueños):** panel "Mi negocio" con estado, suscripción, visitas, favoritos y reseñas, y accesos a editar datos, promociones, reseñas, historias, búsqueda de personal, QR, compartir y Mi Asistente. Los clientes solo ven favoritos, puntos, ranking y mapa.
+- **Registrarme / Iniciar sesión:** son dos opciones separadas. "Registrarme" crea la cuenta (con Google) y pide el nombre; "Iniciar sesión" solo entra si la cuenta ya existe (si no, avisa y te lleva a Registrarme). Registrar un negocio, dejar una reseña y chatear con el asistente piden registrarse primero.
+- **Chats que vuelven:** los chats de cada cliente quedan ligados a su cuenta de Google. Aunque un negocio venza Mi Asistente, los chats no se borran: al renovar, reaparecen y el asistente retoma lo que ya hablaron.
+- **Mapa:** se quitó de Herramientas (queda "Ver en el mapa" en Inicio). Los negocios cargados sin coordenadas se ubican solos (el servidor lo hace cada 6 horas y la web lo hace al abrir el mapa).
+- **Si falla el inicio de sesión:** abrí `https://TU-SERVIDOR.onrender.com/api/auth/estado` en el navegador. Muestra qué está configurado (sí/no, sin valores). Si `googleClientId` o `jwtSecret` dicen `false`, falta cargar esa variable en Render. Si todo dice `true`, revisá en Google Cloud que la dirección de Netlify esté en "Orígenes autorizados de JavaScript".
+- **Agenda del dueño (solo para quienes tienen un negocio en su cuenta):** Herramientas → "Mi agenda". Vista Hoy, Semana y Tareas; eventos con hora, duración, persona, notas y recordatorio; tareas sugeridas según el rubro; importar desde una foto de agenda de papel o desde un mensaje (la IA propone y la persona revisa y confirma antes de guardar); "Organizar mi día" y preguntarle a la agenda. No incluye pedidos. Las funciones con IA usan `ANTHROPIC_API_KEY` y solo se habilitan si el negocio tiene la suscripción activa (tope de 40 usos por hora). La foto no se guarda: se analiza y se descarta. Opcional: `CLAUDE_MODEL_AGENDA` para cambiar el modelo.
+- **Avisos de la agenda:** dentro de la app (cada minuto mientras está abierta) y por notificación al celular. Como Render gratis se duerme, para que SIEMPRE avise creá un cron (cron-job.org) que cada 5 minutos haga un POST a `https://TU-SERVIDOR.onrender.com/api/agenda/enviar-recordatorios` con el header `x-cron-key: TU_CRON_KEY`.
+- **Mapa con capas (gratis):** botón de capas con Mapa (calles), Relieve (cerros, vegetación, ríos) y Satélite (fotos aéreas con nombres de calles). Solo se marcan los negocios registrados en Mi Zona. Usa mapas públicos de CARTO y Esri sin clave; si algún día tenés mucho tráfico, conviene pasar a un proveedor con clave gratuita (MapTiler, Stadia o una cuenta de Esri).
+- **Búsqueda con asistente:** usa siempre la ubicación del cliente (el navegador le pide permiso) y sus últimos chats; no hay botón para desactivarla.
 - **Inicio:** la portada muestra solo "Visto recientemente"; "Recién agregados" es un filtro más, junto a "Solo abiertos ahora" y los demás.
 - **Ranking:** podio con los 3 primeros, filtro por categoría, puntaje, barras de comparación y explicación de cómo se calcula.
 
@@ -212,3 +223,19 @@ Ahora hay un botón explícito **"Activar ubicación"** que aparece al elegir "M
 - La web ahora habla con ese servidor por HTTP (`fetch`), no con Firebase
 - El número de WhatsApp de contacto ya está cargado: +54 381 6265332
 - La subida de fotos sigue siendo con Cloudinary (no cambió)
+
+
+## Cómo asignar un negocio viejo a una cuenta de Google (MongoDB Atlas)
+
+1. Entrá a cloud.mongodb.com → tu proyecto → **Browse Collections**.
+2. Elegí la base de datos de Mi Zona → colección **businesses**.
+3. Buscá el negocio (por ejemplo filtrando `{ "name": "Nombre del negocio" }`) y tocá el lápiz para editarlo.
+4. Agregá un campo nuevo: nombre `ownerEmail`, tipo **String**, valor el Gmail del dueño **en minúsculas**.
+5. Guardá con **Update**. Cuando esa persona entre a Mi Zona con ese Gmail, el negocio aparece en su cuenta.
+
+## Cómo publicar los cambios en Render
+
+1. Subí el código nuevo a GitHub (el mismo repositorio de Mi Zona).
+2. Render lo detecta y vuelve a publicar solo (si no, entrá al servicio → **Manual Deploy → Deploy latest commit**).
+3. Mi Asistente también cambió (ruta nueva `/api/integracion/estado-asistentes`): subilo y publicalo igual.
+4. Netlify: con subir a GitHub se actualiza solo la web.

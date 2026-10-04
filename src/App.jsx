@@ -10,12 +10,13 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal,
+  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers,
 } from "lucide-react";
 import {
-  API_URL, authHeaders, setToken, traerMiSesion,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush,
+  API_URL, authHeaders, userHeaders, setToken, traerMiSesion,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, vincularSesionCliente, traerMisConversaciones,
 } from "./api.js";
+import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import {
   LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen,
   PlanesModal, TarjetaSuscripcion, infoSuscripcion,
@@ -586,7 +587,7 @@ function filtrarParaMapa(businesses, zone, f, favorites) {
     if (f.abiertos && !isOpenNow(b.weekHours)) return false;
     if (f.delivery && !b.delivery) return false;
     if (f.promos && activeDiscounts(b).length === 0) return false;
-    if (f.asistente && !b.asistenteCodigoPublico) return false;
+    if (f.asistente && !(b.asistenteActivo && b.asistenteCodigoPublico)) return false;
     if (f.nuevos && !esNegocioNuevo(b)) return false;
     if (f.favoritos && !favorites.includes(b.id)) return false;
     return true;
@@ -669,11 +670,11 @@ async function loadBusinesses() {
   return list.map(normalizeBusiness);
 }
 
-async function buscarConAsistente(mensaje, historial) {
+async function buscarConAsistente(mensaje, historial, contexto = {}) {
   const res = await fetch(`${API_URL}/asistente/buscar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mensaje, historial }),
+    body: JSON.stringify({ mensaje, historial, ubicacion: contexto.ubicacion, chats: contexto.chats }),
   });
   if (!res.ok) throw new Error("No se pudo consultar al asistente");
   return res.json(); // { respuesta, negocios: [ids] }
@@ -864,7 +865,18 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
 
 /* ---------- chat con el asistente del negocio ---------- */
 
-function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness }) {
+function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, onUbicacion }) {
+  // La búsqueda usa la ubicación de la persona (el navegador le pide permiso) y un resumen de sus últimos chats con negocios
+  const usarContexto = true;
+  const obtenerUbicacion = () => new Promise((resolve) => {
+    if (userLoc) return resolve(userLoc);
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; onUbicacion && onUbicacion(loc); resolve(loc); },
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
+  });
   const [messages, setMessages] = useState([
     { id: uid(), rol: "asistente", texto: "¡Hola! Contame qué estás buscando y te ayudo a encontrarlo en Mi Zona.", negocios: [] },
   ]);
@@ -880,7 +892,9 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness }) {
     setText("");
     setSending(true);
     try {
-      const data = await buscarConAsistente(contenido, historialActual);
+      const ubicacion = usarContexto ? await obtenerUbicacion() : null;
+      const chats = usarContexto ? contextoDeChats(businesses) : [];
+      const data = await buscarConAsistente(contenido, historialActual, { ubicacion, chats });
       const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, negocios: data.negocios || [] };
       setMessages((prev) => [...prev, msgAsistente]);
     } catch {
@@ -1031,12 +1045,14 @@ function ChatScreen({ biz, onBack }) {
     try {
       const res = await fetch(`${API_URL}/asistente/chat/${biz.asistenteCodigoPublico}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: userHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ mensaje: contenido, sesionClienteId: sesionClienteId() }),
       });
       const data = await res.json();
       if (!res.ok) {
-        const texto = data.error === "suscripcion_vencida"
+        const texto = res.status === 401
+          ? "Tu sesión venció. Iniciá sesión con Google de nuevo para seguir chateando."
+          : data.error === "suscripcion_vencida"
           ? "Este asistente está pausado temporalmente por el negocio."
           : data.error === "limite_prueba_alcanzado"
           ? "Este negocio alcanzó el límite de mensajes de su prueba gratuita de Mi Asistente."
@@ -1145,6 +1161,33 @@ function ChatScreen({ biz, onBack }) {
       </div>
     </div>
   );
+}
+
+// Cuando la cuenta ya tiene un id de cliente (de otro dispositivo), este dispositivo lo adopta: así el historial,
+// la memoria del asistente y los puntos la siguen.
+function adoptarClienteId(id) {
+  try { localStorage.setItem("miZonaClienteId", id); } catch { /* sin almacenamiento */ }
+  clienteIdEnMemoria = id;
+}
+
+// Resumen de las últimas charlas con negocios, para que la búsqueda con asistente conozca lo que la persona necesita
+function contextoDeChats(businesses) {
+  return getAllConversationIds()
+    .map((id) => {
+      const biz = businesses.find((b) => b.id === id);
+      const mensajes = getConversation(id);
+      if (!biz || !mensajes.length) return null;
+      return {
+        negocio: biz.name,
+        categoria: catInfo(biz.cat)?.label || "",
+        ultima: new Date(mensajes[mensajes.length - 1].hora).getTime() || 0,
+        mensajes: mensajes.filter((m) => m.rol === "cliente").slice(-3).map((m) => m.texto),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.ultima - a.ultima)
+    .slice(0, 6)
+    .map(({ ultima, ...resto }) => resto);
 }
 
 // Id anónimo que identifica a este cliente ante Mi Asistente (chat, puntos, canjes, avisos).
@@ -1406,6 +1449,16 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
   );
 }
 
+function soloDigitos(t) { return String(t || "").replace(/\D/g, ""); }
+// Número para WhatsApp (formato Argentina: 549 + código de área + número, sin 0 ni 15)
+function numeroWhatsapp(t) {
+  let d = soloDigitos(t);
+  if (!d) return "";
+  if (d.startsWith("54")) return d.startsWith("549") ? d : `549${d.slice(2)}`;
+  if (d.startsWith("0")) d = d.slice(1);
+  return `549${d}`;
+}
+
 function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
@@ -1424,13 +1477,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   const [puntos, setPuntos] = useState(null);
   useEffect(() => {
     setPuntos(null);
-    if (!biz.asistenteCodigoPublico) return;
+    if (!biz.asistenteCodigoPublico || !biz.asistenteActivo) return;
     let cancelado = false;
     fetchPuntosNegocio(biz.asistenteCodigoPublico)
       .then((d) => { if (!cancelado && d.activo) setPuntos(d); })
       .catch(() => {}); // si Mi Asistente no responde, simplemente no se muestra la tarjeta
     return () => { cancelado = true; };
-  }, [biz.id, biz.asistenteCodigoPublico]);
+  }, [biz.id, biz.asistenteCodigoPublico, biz.asistenteActivo]);
+  const tieneAsistente = !!biz.asistenteCodigoPublico && !!biz.asistenteActivo;
 
   const historias = historiasActivas(biz);
   const tieneHistorias = historias.length > 0;
@@ -1459,49 +1513,48 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
   const submitReview = () => {
     if (!reviewText.trim()) return;
-    onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO(), autorId: getAutorResenasId() });
+    const ok = onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO(), autorId: getAutorResenasId() });
+    if (ok === false) return; // todavía no se registró: no perdemos lo que escribió
     setReviewText(""); setReviewName(""); setReviewRating(5);
   };
 
   const TabButton = ({ id, label }) => (
     <button
       onClick={() => setTab(id)}
-      className="px-1 pb-3 text-sm font-medium relative shrink-0"
-      style={{ color: tab === id ? "#2F6FED" : "#6B7280" }}
+      className="flex-1 py-2 text-sm font-semibold transition-all"
+      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#6B7280", boxShadow: tab === id ? "0 3px 10px rgba(11,42,84,.12)" : "none" }}
     >
       {label}
-      {tab === id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
     </button>
   );
 
   return (
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
-      {/* header con volver / compartir / favorito */}
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <button onClick={onBack} className="flex items-center justify-center" style={{ width: 32, height: 32 }}>
-            <ArrowLeft size={19} color="#fff" />
-          </button>
-          <div className="flex items-center gap-4">
-            <button onClick={() => shareBusiness(biz)}><Share2 size={17} color="#fff" /></button>
-            <button onClick={() => onToggleFavorite(biz.id)}>
-              <Heart size={19} color="#fff" fill={isFavorite ? "#fff" : "none"} />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-3xl mx-auto">
-        {/* foto principal con badge de abierto/cerrado */}
+        {/* foto principal con botones flotantes */}
         <div style={{ position: "relative" }}>
-          <Photo cat={biz.cat} src={gallery[0]} height={220} radius="0" iconSize={48} onOpen={onOpenPhoto} />
-          <div className="absolute" style={{ top: 12, left: 16 }}><OpenBadge weekHours={biz.weekHours} /></div>
+          <Photo cat={biz.cat} src={gallery[0]} height={270} radius="0" iconSize={52} onOpen={onOpenPhoto} />
+          <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height: 110, background: "linear-gradient(to bottom, rgba(8,18,38,0.55), rgba(8,18,38,0))" }} />
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3" style={{ zIndex: 5 }}>
+            <button onClick={onBack} aria-label="Volver" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+              <ArrowLeft size={19} color="#0B2A54" />
+            </button>
+            <div className="flex items-center gap-2.5">
+              <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+                <Share2 size={17} color="#0B2A54" />
+              </button>
+              <button onClick={() => onToggleFavorite(biz.id)} aria-label="Favorito" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+                <Heart size={18} color={isFavorite ? "#E5484D" : "#0B2A54"} fill={isFavorite ? "#E5484D" : "none"} />
+              </button>
+            </div>
+          </div>
+          <div className="absolute flex items-center gap-2" style={{ bottom: 40, left: 16 }}><OpenBadge weekHours={biz.weekHours} /></div>
           {rank && (
             <div
               className="absolute flex items-center gap-1 text-xs font-bold px-2.5 py-1.5"
               style={{
-                top: 12, right: 16, borderRadius: 20, color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-                background: rank === 1 ? "#F5A623" : rank === 2 ? "#94A3B8" : rank === 3 ? "#C97B4A" : "#0B2A54",
+                bottom: 40, right: 16, borderRadius: 20, color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
+                background: rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B2A54",
               }}
             >
               <Trophy size={13} /> Top #{rank} en tu zona
@@ -1511,45 +1564,74 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
         <div className="px-4">
           {/* tarjeta de identidad del negocio */}
-          <div className="bg-white -mt-6 relative p-4 mb-1" style={{ borderRadius: "14px 14px 0 0" }}>
-            <div className="flex items-start gap-3">
+          <div className="bg-white relative p-4 mb-4" style={{ borderRadius: 24, marginTop: -30, boxShadow: "0 12px 32px rgba(11,42,84,0.12)", border: "1px solid #E6ECF5" }}>
+            <div className="flex items-start gap-3.5">
               <button
                 onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={cancelPress}
                 onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onTouchCancel={cancelPress}
-                className="flex items-center justify-center shrink-0 text-lg font-bold overflow-hidden"
+                className="flex items-center justify-center shrink-0 text-xl font-bold overflow-hidden"
                 style={{
-                  width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff",
-                  fontFamily: "'Poppins', sans-serif", marginTop: -34,
-                  border: tieneHistorias ? "3px solid #fff" : "3px solid #fff",
-                  boxShadow: tieneHistorias ? "0 0 0 3px #2F6FED, 0 0 0 6px #7FA8F5" : "none",
+                  width: 66, height: 66, borderRadius: 22, background: c?.color || "#2F6FED", color: "#fff",
+                  fontFamily: "'Poppins', sans-serif", marginTop: -36, border: "4px solid #fff",
+                  boxShadow: tieneHistorias ? "0 0 0 3px #2F6FED, 0 8px 18px rgba(11,42,84,.25)" : "0 8px 18px rgba(11,42,84,.25)",
                 }}
               >
                 {biz.logo ? <img src={biz.logo} alt="" className="w-full h-full object-cover" /> : biz.name?.[0]?.toUpperCase()}
               </button>
-              <div className="flex-1 min-w-0 pt-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{biz.name}</h1>
+                  <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 21, color: "#0B1220", lineHeight: 1.2 }}>{biz.name}</h1>
                   {biz.featured && (
-                    <span className="flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5" style={{ background: "#FBEBD1", color: "#8A5B12", borderRadius: 6 }}>
-                      <Star size={11} fill="#8A5B12" /> Destacado
+                    <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
+                      <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
                     </span>
                   )}
                 </div>
-                <p className="text-xs" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  {rating ? (
-                    <span className="flex items-center gap-1 text-sm" style={{ color: "#4B5563" }}>
-                      <Star size={14} fill="#2F6FED" color="#2F6FED" /> {rating} ({biz.reviews.length})
-                    </span>
-                  ) : (
-                    <span className="text-xs" style={{ color: "#6B7280" }}>Sin reseñas</span>
-                  )}
-                  <span className="flex items-center gap-1 text-xs" style={{ color: "#6B7280" }}>
-                    <Eye size={13} /> {fmtNum(biz.views)}
-                  </span>
-                </div>
+                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#6B7280" }}>
+                  <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
+                </p>
               </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              {[
+                { Icon: Star, color: "#F5A623", valor: rating || "—", etiqueta: biz.reviews?.length ? `${biz.reviews.length} reseñas` : "Sin reseñas" },
+                { Icon: Eye, color: "#2F6FED", valor: fmtNum(biz.views), etiqueta: "visitas" },
+                { Icon: Heart, color: "#E5484D", valor: fmtNum(biz.vecesFavorito || 0), etiqueta: "guardados" },
+              ].map(({ Icon, color, valor, etiqueta }) => (
+                <div key={etiqueta} className="text-center py-2" style={{ borderRadius: 14, background: "#F6F9FD" }}>
+                  <span className="flex items-center justify-center gap-1" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>
+                    <Icon size={13} color={color} fill={Icon === Star || Icon === Heart ? color : "none"} /> {valor}
+                  </span>
+                  <span className="block text-[10px] mt-0.5" style={{ color: "#6B7280" }}>{etiqueta}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* acciones rápidas */}
+            {(() => {
+              const acciones = [
+                biz.phone && { Icon: Phone, label: "Llamar", color: "#2C9A5F", href: `tel:${soloDigitos(biz.phone)}`, track: "contacto" },
+                biz.phone && biz.acceptsWhatsapp && { Icon: MessageCircle, label: "WhatsApp", color: "#25A06A", href: `https://wa.me/${numeroWhatsapp(biz.phone)}`, track: "contacto" },
+                biz.ig && { Icon: Instagram, label: "Instagram", color: "#C13584", href: `https://instagram.com/${biz.ig}`, track: "contacto" },
+                { Icon: Navigation, label: "Cómo llegar", color: "#2F6FED", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" },
+              ].filter(Boolean);
+              return (
+                <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: `repeat(${acciones.length}, minmax(0, 1fr))` }}>
+                  {acciones.map(({ Icon, label, color, href, track }) => (
+                    <a
+                      key={label} href={href} target="_blank" rel="noreferrer"
+                      onClick={() => onTrack && onTrack(biz.id, track)}
+                      className="flex flex-col items-center gap-1 py-2.5"
+                      style={{ borderRadius: 14, background: `${color}14` }}
+                    >
+                      <Icon size={18} color={color} />
+                      <span className="text-[11px] font-semibold" style={{ color: "#0B1220" }}>{label}</span>
+                    </a>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {busquedaEmpleoActiva(biz) && (
@@ -1569,7 +1651,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
           {showHistoriaViewer && <HistoriaViewerModal business={biz} historias={historias} onClose={() => setShowHistoriaViewer(false)} />}
 
           {/* pestañas */}
-          <div className="flex items-center gap-6 mb-5" style={{ borderBottom: "1px solid #E2E8F0" }}>
+          <div className="flex items-center gap-1 p-1 mb-5" style={{ borderRadius: 16, background: "#E8EEF7" }}>
             <TabButton id="info" label="Información" />
             <TabButton id="opiniones" label={`Opiniones${biz.reviews?.length ? ` (${biz.reviews.length})` : ""}`} />
             <TabButton id="fotos" label="Fotos" />
@@ -1620,7 +1702,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               </a>
 
               {puntos && (
-                <div className="mb-6 p-4" style={{ borderRadius: 12, background: "#FDF3DC", border: "1px solid #F5D9A0" }}>
+                <div className="mb-6 p-4" style={{ borderRadius: 18, background: "linear-gradient(135deg,#FFF6E0,#FDEBC4)", border: "1px solid #F5D9A0" }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <Coins size={17} color="#B7791F" />
                     <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Puntos y recompensas</h2>
@@ -1651,7 +1733,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   </h2>
                   <div className="flex flex-col gap-2">
                     {activeDiscounts(biz).map((d) => (
-                      <div key={d.id} className="p-4" style={{ borderRadius: 10, border: "1px solid #2F6FED", background: "#FBEBD1" }}>
+                      <div key={d.id} className="p-4" style={{ borderRadius: 18, border: "1px solid #F2C98E", background: "linear-gradient(135deg,#FFF3DC,#FBE3BC)" }}>
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
                           {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}>{d.percent} OFF</span>}
@@ -1669,7 +1751,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
                   <Clock size={16} /> Horarios de atención
                 </h2>
-                <div className="bg-white overflow-hidden" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
                   {DAYS.map((day, i) => (
                     <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
                       style={{ borderTop: i === 0 ? "none" : "1px solid #EEF2F7", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
@@ -1685,8 +1767,8 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
           {tab === "opiniones" && (
             <div className="pb-6">
-              <div className="bg-white p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-                <p className="text-xs font-medium mb-2" style={{ color: "#4B5563" }}>Dejá tu opinión</p>
+              <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+                <p className="text-sm font-semibold mb-2" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 <input
                   value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
@@ -1704,7 +1786,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               {biz.reviews?.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {[...biz.reviews].reverse().map((r) => (
-                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{r.name}</span>
                         <span className="text-xs" style={{ color: "#6B7280" }}>{fmtDate(r.date)}</span>
@@ -1778,20 +1860,15 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
           {/* acciones principales: chat con el asistente y cómo llegar */}
           <div className="flex flex-col gap-2" style={{ paddingBottom: 100 }}>
-            {biz.asistenteCodigoPublico && (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-1" style={{ borderRadius: 10, background: "#F3ECFC", border: "1px solid #D8C4F0" }}>
-                <Sparkles size={15} color="#7A4F9E" />
-                <p className="text-xs" style={{ color: "#5B3A7A" }}>Este negocio tiene <b>Mi Asistente</b> — hablá directo con su asistente virtual.</p>
-              </div>
+            {tieneAsistente && (
+              <button
+                onClick={() => onOpenChat(biz)}
+                className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
+                style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(47,111,237,.35)" }}
+              >
+                <Sparkles size={16} /> Hablar con el asistente
+              </button>
             )}
-            <button
-              onClick={() => onOpenChat(biz)}
-              className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
-              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
-            >
-              {biz.asistenteCodigoPublico ? <Sparkles size={16} /> : <MessageCircle size={17} />}
-              {biz.asistenteCodigoPublico ? "Hablar con el asistente" : "Abrir chat con el asistente"}
-            </button>
             <a
               href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
               onClick={() => onTrack && onTrack(biz.id, "ubicacion")}
@@ -2028,7 +2105,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
     return getAllConversationIds()
       .map((id) => {
         const biz = businesses.find((b) => b.id === id);
-        if (!biz) return null;
+        if (!biz || !(biz.asistenteCodigoPublico && biz.asistenteActivo)) return null; // sin Mi Asistente pago no hay chat
         const mensajes = getConversation(id);
         if (mensajes.length === 0) return null;
         const ultimo = mensajes[mensajes.length - 1];
@@ -2169,6 +2246,30 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
 /* ---------- mapa profesional de Mi Zona (solo negocios registrados) ---------- */
 
 // Marcador con el LOGO del negocio (o su inicial sobre el color del rubro si todavía no cargó logo)
+// Capas del mapa, todas gratuitas y sin clave. Solo se dibujan los negocios registrados en Mi Zona (marcadores propios).
+//  · Mapa: calles claras al estilo Google Maps  · Relieve: sombreado de cerros, vegetación, ríos  · Satélite: fotos aéreas + nombres de calles
+const CAPAS_MAPA = {
+  mapa: {
+    label: "Mapa", muestra: "linear-gradient(135deg,#EAF1E4 0%,#F6F1E6 45%,#CFE3F5 100%)",
+    atribucion: "© OpenStreetMap · © CARTO",
+    capas: [{ url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", opciones: { maxZoom: 19, subdomains: "abcd", detectRetina: true } }],
+  },
+  relieve: {
+    label: "Relieve", muestra: "linear-gradient(135deg,#BFD8A2 0%,#E4D9B0 45%,#9CBFA0 100%)",
+    atribucion: "Tiles © Esri — Esri, USGS, NOAA, HERE, Garmin, OpenStreetMap contributors",
+    capas: [{ url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17 } }],
+  },
+  satelite: {
+    label: "Satélite", muestra: "linear-gradient(135deg,#27402B 0%,#5D5A3A 45%,#2F4A5E 100%)",
+    atribucion: "Imágenes © Esri, Maxar, Earthstar Geographics · Nombres © Esri",
+    capas: [
+      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 18 } },
+      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17, opacity: 0.9 } },
+      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17 } },
+    ],
+  },
+};
+
 function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const c = catInfo(b.cat);
   const color = c?.color || "#2F6FED";
@@ -2213,20 +2314,64 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   const [quiereUbicarme, setQuiereUbicarme] = useState(false);
   const [aviso, setAviso] = useState(null);
   const [zoom, setZoom] = useState(12);
+  const [capa, setCapa] = useState(() => { try { const c = localStorage.getItem("miZonaCapaMapa"); return CAPAS_MAPA[c] ? c : "mapa"; } catch { return "mapa"; } });
+  const [capasAbierto, setCapasAbierto] = useState(false);
+  const capasRef = useRef([]);
   const verNombres = zoom >= 14; // con el mapa muy alejado solo se ven los círculos, para que no se amontonen los nombres
 
   const setFiltro = (k, v) => setFiltros((f) => ({ ...f, [k]: v }));
   const hayFiltros = Object.values(filtros).some(Boolean);
   const limpiarFiltros = () => setFiltros({ cat: null, abiertos: false, delivery: false, promos: false, asistente: false, nuevos: false, favoritos: false });
 
+  // Negocios sin coordenadas (cargados antes del mapa): los ubicamos en segundo plano, de a uno (límite del servicio gratuito
+  // de direcciones) y guardamos el resultado en este dispositivo para no repetir la consulta.
+  const [coordsExtra, setCoordsExtra] = useState({});
+  useEffect(() => {
+    let cancelado = false;
+    const pendientes = businesses
+      .filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && b.loc && !(b.lat && b.lng) && !coordsExtra[b.id])
+      .slice(0, 25);
+    if (!pendientes.length) return;
+    (async () => {
+      for (const b of pendientes) {
+        if (cancelado) return;
+        const clave = `miZonaGeo_${b.id}_${b.loc}`;
+        let punto = null;
+        try { punto = JSON.parse(localStorage.getItem(clave) || "null"); } catch { punto = null; }
+        if (!punto) {
+          punto = await geocodeAddress(b.loc, b.zone);
+          if (punto) { try { localStorage.setItem(clave, JSON.stringify(punto)); } catch { /* sin almacenamiento */ } }
+          await new Promise((r) => setTimeout(r, 1100));
+        }
+        if (punto && !cancelado) setCoordsExtra((prev) => ({ ...prev, [b.id]: punto }));
+      }
+    })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businesses, zone]);
+
+  // Dibuja la capa elegida (y saca la anterior). Se vuelve a ejecutar cada vez que la persona cambia de capa.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return undefined;
+    capasRef.current.forEach((l) => map.removeLayer(l));
+    capasRef.current = CAPAS_MAPA[capa].capas.map((c, i) => {
+      const l = L.tileLayer(c.url, c.opciones).addTo(map);
+      if (i > 0) l.bringToFront();
+      return l;
+    });
+    try { localStorage.setItem("miZonaCapaMapa", capa); } catch { /* sin almacenamiento */ }
+    return undefined;
+  }, [capa]);
+
   const lista = useMemo(() => {
-    const base = filtrarParaMapa(businesses, zone, filtros, favorites);
+    const base = filtrarParaMapa(businesses, zone, filtros, favorites).map((b) => (b.lat && b.lng ? b : (coordsExtra[b.id] ? { ...b, ...coordsExtra[b.id] } : b)));
     if (userLoc) {
       const d = (b) => (b.lat && b.lng ? haversineKm(userLoc.lat, userLoc.lng, b.lat, b.lng) : Infinity);
       return [...base].sort((a, b) => d(a) - d(b));
     }
     return [...base].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-  }, [businesses, zone, filtros, favorites, userLoc]);
+  }, [businesses, zone, filtros, favorites, userLoc, coordsExtra]);
   const conUbicacion = useMemo(() => lista.filter((b) => b.lat && b.lng), [lista]);
   const sinUbicacion = lista.length - conUbicacion.length;
   const selected = lista.find((b) => b.id === selectedId) || null;
@@ -2235,16 +2380,18 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   // crear el mapa una sola vez
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
-    const map = L.map(mapDivRef.current, { zoomControl: false, attributionControl: false, zoomSnap: 0.5, wheelPxPerZoomLevel: 90 }).setView([-26.8241, -65.2226], 12); // Tucumán por defecto
-    // Estilo "Voyager" (calles con nombres y colores suaves, muy parecido a Google Maps). Se carga en alta resolución en celulares.
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19, subdomains: "abcd", detectRetina: true,
-    }).addTo(map);
+    const map = L.map(mapDivRef.current, { zoomControl: false, attributionControl: false, zoomSnap: 0.5, wheelPxPerZoomLevel: 90, maxZoom: 19 }).setView([-26.8241, -65.2226], 12); // Tucumán por defecto
     map.on("zoomend", () => setZoom(map.getZoom()));
     L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
     map.on("click", () => setSelectedId(null));
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; markersRef.current = {}; userMarkerRef.current = null; };
+    // Leaflet calcula mal su tamaño si el contenedor todavía no terminó de acomodarse: sin esto el mapa puede verse en blanco
+    const recalcular = () => { if (mapRef.current) map.invalidateSize(); };
+    const t1 = setTimeout(recalcular, 120);
+    const t2 = setTimeout(recalcular, 500);
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") { ro = new ResizeObserver(recalcular); ro.observe(mapDivRef.current); }
+    return () => { clearTimeout(t1); clearTimeout(t2); ro && ro.disconnect(); map.remove(); mapRef.current = null; markersRef.current = {}; userMarkerRef.current = null; };
   }, []);
 
   // marcadores: se agregan/quitan/actualizan según los filtros y la selección
@@ -2414,6 +2561,25 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
         </div>
 
         {vista === "mapa" && (
+          <div className="absolute pointer-events-none" style={{ left: 8, top: 6, zIndex: 12, maxWidth: "70%", fontSize: 9, lineHeight: 1.2, color: capa === "satelite" ? "#fff" : "#475569", textShadow: capa === "satelite" ? "0 1px 2px rgba(0,0,0,.8)" : "0 0 3px #fff", opacity: 0.85 }}>
+            {CAPAS_MAPA[capa].atribucion}
+          </div>
+        )}
+
+        {vista === "mapa" && lista.length > 0 && conUbicacion.length === 0 && (
+          <div className="absolute inset-x-4 flex justify-center" style={{ top: 80, zIndex: 15 }}>
+            <div className="bg-white px-4 py-3 text-center" style={{ borderRadius: 16, boxShadow: "0 8px 24px rgba(11,42,84,0.18)", maxWidth: 320 }}>
+              <p className="text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>
+                Ubicando los negocios...
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+                Estamos buscando sus direcciones en el mapa, puede tardar unos segundos.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {vista === "mapa" && (
           <>
             {/* controles: zoom y mi ubicación */}
             <div className="absolute flex flex-col gap-2" style={{ right: 12, top: 12, zIndex: 20 }}>
@@ -2421,6 +2587,25 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                 <CtrlBtn onClick={() => mapRef.current?.zoomIn()} label="Acercar"><Plus size={18} color="#0B2A54" /></CtrlBtn>
                 <div style={{ height: 1, background: "#E2E8F0" }} />
                 <CtrlBtn onClick={() => mapRef.current?.zoomOut()} label="Alejar"><Minus size={18} color="#0B2A54" /></CtrlBtn>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setCapasAbierto((v) => !v)} aria-label="Cambiar tipo de mapa"
+                  className="flex items-center justify-center"
+                  style={{ width: 40, height: 40, borderRadius: 12, background: capasAbierto ? "#2F6FED" : "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+                >
+                  <Layers size={18} color={capasAbierto ? "#fff" : "#0B2A54"} />
+                </button>
+                {capasAbierto && (
+                  <div className="absolute flex gap-2 p-2" style={{ right: 48, top: 0, borderRadius: 16, background: "#fff", boxShadow: "0 10px 28px rgba(11,42,84,0.28)" }}>
+                    {Object.entries(CAPAS_MAPA).map(([id, c]) => (
+                      <button key={id} onClick={() => { setCapa(id); setCapasAbierto(false); }} className="flex flex-col items-center gap-1">
+                        <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2F6FED" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
+                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#4B5563" }}>{c.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button
                 onClick={irAMiUbicacion} aria-label="Mi ubicación"
@@ -2456,7 +2641,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               const esFav = favorites.includes(selected.id);
               const etiquetas = [
                 selected.delivery && { t: "Delivery", Icon: Truck, bg: "#E8F0FE", color: "#0B2A54" },
-                selected.asistenteCodigoPublico && { t: "Asistente disponible", Icon: Sparkles, bg: "#F3ECFC", color: "#7A4F9E" },
+                (selected.asistenteCodigoPublico && selected.asistenteActivo) && { t: "Asistente disponible", Icon: Sparkles, bg: "#F3ECFC", color: "#7A4F9E" },
                 promos.length > 0 && { t: promos[0].percent ? `${promos[0].percent} OFF` : "Promoción", Icon: Tag, bg: "#FBEBD1", color: "#8A5B12" },
                 esNegocioNuevo(selected) && { t: "Nuevo", Icon: Sparkles, bg: "#E4F3EA", color: "#1E6B44" },
               ].filter(Boolean);
@@ -2569,7 +2754,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#4B5563" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                         <OpenBadge weekHours={biz.weekHours} />
                         {biz.delivery && <Truck size={13} color="#0B2A54" />}
-                        {biz.asistenteCodigoPublico && <Sparkles size={13} color="#7A4F9E" />}
+                        {biz.asistenteCodigoPublico && biz.asistenteActivo && <Sparkles size={13} color="#7A4F9E" />}
                         {activeDiscounts(biz).length > 0 && <Tag size={13} color="#B8703F" />}
                       </div>
                     </div>
@@ -3312,9 +3497,10 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenRanking, onOpenFavoritos, onOpenMapa, onOpenPuntos, onGuardarEmpleo, onSubirHistoria }) {
+function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
   const [showQR, setShowQR] = useState(false);
   const [showEmpleoForm, setShowEmpleoForm] = useState(false);
+  const [showPromos, setShowPromos] = useState(false);
   const [subiendoHistoria, setSubiendoHistoria] = useState(false);
   const historiaInputRef = useRef(null);
 
@@ -3333,143 +3519,166 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
     }
   };
 
-  const Tool = ({ Icon, bg, title, desc, onClick, badge }) => (
+  // fila de herramienta (para todos)
+  const Tool = ({ Icon, bg, title, desc, onClick }) => (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3.5 p-4 text-left bg-white mb-3"
-      style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+      className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
+      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
     >
-      <span className="relative flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 12, background: bg }}>
-        <Icon size={21} color="#fff" />
-        {badge > 0 && (
-          <span
-            className="absolute flex items-center justify-center text-[10px] font-bold"
-            style={{ top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, background: "#C1443A", color: "#fff", padding: "0 4px", border: "2px solid #fff" }}
-          >
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
+      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `0 6px 14px ${bg}55` }}>
+        <Icon size={20} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{title}</span>
+        <span className="block text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{title}</span>
         <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>
       </span>
       <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
   );
 
-  // todavía no tiene un negocio en su cuenta: mostramos las funciones disponibles para cualquier persona
+  // mosaico de gestión (solo dueños)
+  const Mosaico = ({ Icon, color, title, desc, onClick, badge }) => (
+    <button
+      onClick={onClick}
+      className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+    >
+      <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: `${color}1A` }}>
+        <Icon size={19} color={color} />
+      </span>
+      {badge > 0 && (
+        <span className="absolute flex items-center justify-center text-[10px] font-bold" style={{ top: 10, right: 10, minWidth: 20, height: 20, borderRadius: 10, background: "#E5484D", color: "#fff", padding: "0 5px" }}>
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{title}</span>
+      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#6B7280" }}>{desc}</span>
+    </button>
+  );
+
+  const Titulo = ({ children, sub }) => (
+    <div className="mb-3 mt-6">
+      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{children}</p>
+      {sub && <p className="text-xs" style={{ color: "#6B7280" }}>{sub}</p>}
+    </div>
+  );
+
+  const herramientasDeTodos = (
+    <>
+      <Tool Icon={Heart} bg="#E5484D" title="Favoritos" desc="Los negocios que guardaste." onClick={onOpenFavoritos} />
+      <Tool Icon={Coins} bg="#C98A14" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
+      <Tool Icon={Trophy} bg="#F5A623" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
+    </>
+  );
+
+  // ---------- sin negocio: solo herramientas para clientes ----------
   if (!ownerBiz) {
     return (
       <div>
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
+        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 22, color: "#0B1220" }}>Herramientas</p>
         <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
-        <Tool
-          Icon={Heart} bg="#C1443A" title="Favoritos"
-          desc="Los negocios que guardaste."
-          onClick={onOpenFavoritos}
-        />
-        <Tool
-          Icon={Coins} bg="#B7791F" title="Mis puntos"
-          desc="Tus puntos por negocio, recompensas y canjes."
-          onClick={onOpenPuntos}
-        />
-        <Tool
-          Icon={Trophy} bg="#F5A623" title="Ranking"
-          desc="Los negocios más destacados de tu zona."
-          onClick={onOpenRanking}
-        />
-        <Tool
-          Icon={MapPin} bg="#2F6FED" title="Mapa de mi zona"
-          desc="Mirá todos los negocios activos en un mapa."
-          onClick={onOpenMapa}
-        />
-        {!usuario ? (
-          <Tool
-            Icon={User} bg="#2F6FED" title="Iniciar sesión con Google"
-            desc="¿Tenés un negocio? Entrá con tu cuenta para administrarlo."
-            onClick={onLogin}
-          />
-        ) : (
-          <Tool
-            Icon={Building2} bg="#2F6FED" title="Agregar mi negocio"
-            desc="Sumá tu negocio a Mi Zona y empezá a recibir clientes."
-            onClick={onAddBusiness}
-          />
-        )}
+
+        <div className="relative overflow-hidden p-5 mb-5" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
+          <div style={{ position: "absolute", top: -40, right: -30, width: 130, height: 130, borderRadius: "50%", background: "#ffffff12" }} />
+          <p className="relative" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 17, color: "#fff" }}>¿Tenés un negocio?</p>
+          <p className="relative text-xs mt-1 mb-4" style={{ color: "#BBD1FB", maxWidth: 260 }}>Sumalo a Mi Zona y recibí más clientes. Si ya tenías uno registrado, entrá con tu cuenta de Google y te aparece solo.</p>
+          {!usuario ? (
+            <div className="relative flex gap-2 flex-wrap">
+              <button onClick={() => onLogin("registro")} className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#fff", color: "#0B2A54" }}>
+                <User size={15} /> Registrarme
+              </button>
+              <button onClick={() => onLogin("login")} className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#ffffff1f", color: "#fff", border: "1px solid #ffffff44" }}>
+                Iniciar sesión
+              </button>
+            </div>
+          ) : (
+            <button onClick={onAddBusiness} className="relative flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#fff", color: "#0B2A54" }}>
+              <Building2 size={15} /> Agregar mi negocio
+            </button>
+          )}
+        </div>
+
+        {herramientasDeTodos}
       </div>
     );
   }
 
+  // ---------- dueños: panel de control del negocio ----------
+  const c = catInfo(ownerBiz.cat);
+  const inf = infoSuscripcion(ownerBiz);
+  const estadoTexto = !inf ? "Activo" : inf.estado === "pendiente" ? "Falta pagar" : inf.estado === "vencida" ? "Vencida" : inf.estado === "por_vencer" ? "Por vencer" : "Activo";
+  const estadoColor = !inf || inf.estado === "activa" ? { bg: "#E4F3EA", fg: "#1E6B44" } : inf.estado === "por_vencer" || inf.estado === "pendiente" ? { bg: "#FBEBD1", fg: "#8A5B12" } : { bg: "#F7E7E5", fg: "#9A3B34" };
+  const rating = avgRating(ownerBiz.reviews);
+  const promosVigentes = activeDiscounts(ownerBiz).length;
+  const resenasSinVer = countUnseenReviews(ownerBiz);
+  const tieneAsistente = !!ownerBiz.asistenteCodigoPublico && !!ownerBiz.asistenteActivo;
+
+  const Estadistica = ({ Icon, color, valor, etiqueta }) => (
+    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+      <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
+      <span className="block leading-none" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{valor}</span>
+      <span className="block text-[11px] mt-1" style={{ color: "#6B7280" }}>{etiqueta}</span>
+    </div>
+  );
+
   return (
     <div>
-      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Herramientas</p>
-      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
+      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 22, color: "#0B1220" }}>Mi negocio</p>
+      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Controlá y mejorá tu negocio en Mi Zona</p>
+
+      {/* tarjeta de identidad */}
+      <div className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
+        <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
+        <div className="relative flex items-center gap-3.5">
+          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2F6FED", color: "#fff", border: "3px solid #ffffff55", fontFamily: "'Poppins', sans-serif" }}>
+            {ownerBiz.logo ? <img src={ownerBiz.logo} alt="" className="w-full h-full object-cover" /> : ownerBiz.name?.[0]?.toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="truncate" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>{ownerBiz.name}</p>
+            <p className="text-xs truncate" style={{ color: "#BBD1FB" }}>{c?.label} · {ownerBiz.zone}</p>
+            <span className="inline-block text-[10px] font-bold px-2 py-0.5 mt-1.5" style={{ borderRadius: 10, background: estadoColor.bg, color: estadoColor.fg }}>{estadoTexto}</span>
+          </div>
+        </div>
+        <button onClick={onViewProfile} className="relative w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 mt-4" style={{ borderRadius: 14, background: "#ffffff1f", color: "#fff", border: "1px solid #ffffff33" }}>
+          <Eye size={15} /> Ver cómo lo ven mis clientes
+        </button>
+      </div>
+
       <TarjetaSuscripcion negocio={ownerBiz} onAgregar={onAgregarMeses} />
-      <Tool
-        Icon={Heart} bg="#C1443A" title="Favoritos"
-        desc="Los negocios que guardaste."
-        onClick={onOpenFavoritos}
-      />
-      <Tool
-        Icon={Coins} bg="#B7791F" title="Mis puntos"
-        desc="Tus puntos por negocio, recompensas y canjes."
-        onClick={onOpenPuntos}
-      />
-      <Tool
-        Icon={Trophy} bg="#F5A623" title="Ranking"
-        desc="Los negocios más destacados de tu zona."
-        onClick={onOpenRanking}
-      />
-      <Tool
-        Icon={MapPin} bg="#2F6FED" title="Mapa de mi zona"
-        desc="Mirá todos los negocios activos en un mapa."
-        onClick={onOpenMapa}
-      />
-      <Tool
-        Icon={Pencil} bg="#2F6FED" title="Editar mi negocio"
-        desc="Actualizá la información de tu negocio cuando quieras."
-        onClick={onEditBusiness}
-      />
-      <Tool
-        Icon={TrendingUp} bg="#2F6FED" title="Ver mi negocio y reseñas"
-        desc={`${fmtNum(ownerBiz.views)} vistas · ${ownerBiz.reviews?.length || 0} reseñas`}
-        onClick={onViewProfile}
-        badge={countUnseenReviews(ownerBiz)}
-      />
-      <Tool
-        Icon={QrCode} bg="#F5A623" title="Mi código de negocio"
-        desc="Mostrá tu código QR para que los clientes te encuentren fácilmente."
-        onClick={() => setShowQR(true)}
-      />
-      <Tool
-        Icon={Share2} bg="#7A4F9E" title="Compartir mi negocio"
-        desc="Compartí tu negocio en redes sociales o con tus contactos."
-        onClick={() => shareBusiness(ownerBiz)}
-      />
-      {ownerBiz.asistenteCodigoPublico && (
-        <Tool
-          Icon={Sparkles} bg="#7A4F9E" title="Administrar mi negocio"
-          desc="Clientes, estadísticas, puntos, recompensas y tu asistente, en Mi Asistente."
-          onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")}
-        />
-      )}
-      <Tool
-        Icon={Download} bg="#2C9A5F" title="Descargar Mi Asistente"
-        desc="Conseguí tu asistente virtual con IA para atender a tus clientes."
-        onClick={() => window.open(MI_ASISTENTE_URL, "_blank")}
-      />
-      <Tool
-        Icon={Briefcase} bg="#C97B4A" title="Búsqueda de personal"
-        desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar personal a tu equipo."}
-        onClick={() => setShowEmpleoForm(true)}
-      />
-      <Tool
-        Icon={PartyPopper} bg="#2C9A5F" title="Subir historia"
-        desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} historia(s) activa(s) ahora`}
-        onClick={() => !subiendoHistoria && historiaInputRef.current?.click()}
-      />
+
+      {/* números del negocio */}
+      <div className="grid grid-cols-2 gap-2.5 mb-1">
+        <Estadistica Icon={Eye} color="#2F6FED" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
+        <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(ownerBiz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
+        <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${ownerBiz.reviews?.length || 0} ${(ownerBiz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
+        <Estadistica Icon={Tag} color="#B8703F" valor={promosVigentes} etiqueta={promosVigentes === 1 ? "promoción vigente" : "promociones vigentes"} />
+      </div>
+
+      <Titulo sub="Todo para controlar los datos de tu negocio">Gestionar mi negocio</Titulo>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Mosaico Icon={CalendarCheck} color="#0B2A54" title="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onOpenAgenda} />
+        <Mosaico Icon={Pencil} color="#2F6FED" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditBusiness} />
+        <Mosaico Icon={Tag} color="#B8703F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setShowPromos(true)} />
+        <Mosaico Icon={MessageCircle} color="#F5A623" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
+        <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
+        <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setShowEmpleoForm(true)} />
+        <Mosaico Icon={QrCode} color="#0B2A54" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setShowQR(true)} />
+        <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(ownerBiz)} />
+        {tieneAsistente ? (
+          <Mosaico Icon={Sparkles} color="#7A4F9E" title="Mi Asistente" desc="Clientes, pedidos, puntos y tu asistente virtual." onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")} />
+        ) : (
+          <Mosaico Icon={Download} color="#2C9A5F" title="Conseguir Mi Asistente" desc="Un asistente con IA que atiende a tus clientes." onClick={() => window.open(MI_ASISTENTE_URL, "_blank")} />
+        )}
+      </div>
       <input ref={historiaInputRef} type="file" accept="image/*" className="hidden" onChange={handleSubirHistoria} />
+
+      <Titulo>Para explorar</Titulo>
+      {herramientasDeTodos}
+
+      {showPromos && (
+        <PromosSheet business={ownerBiz} onSave={onSaveDiscount} onToggle={onToggleDiscount} onDelete={onDeleteDiscount} onClose={() => setShowPromos(false)} />
+      )}
       {showEmpleoForm && (
         <EmpleoFormModal
           business={ownerBiz}
@@ -3480,24 +3689,20 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
       )}
 
       {showQR && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowQR(false)}>
-          <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122099" }} onClick={() => setShowQR(false)}>
+          <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 24 }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Mi código de negocio</span>
-              <button onClick={() => setShowQR(false)}><X size={18} color="#6B7280" /></button>
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Mi código QR</span>
+              <button onClick={() => setShowQR(false)} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
             </div>
             <img
               alt="Código QR de tu negocio"
               className="mx-auto mb-4"
-              style={{ width: 200, height: 200, borderRadius: 10, border: "1px solid #E2E8F0" }}
+              style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E2E8F0" }}
               src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
             />
             <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
-            <button
-              onClick={() => shareBusiness(ownerBiz)}
-              className="w-full text-sm font-semibold py-2.5"
-              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
-            >
+            <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
               Compartir enlace
             </button>
           </div>
@@ -3514,11 +3719,11 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
   const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
     <button
       onClick={onClick} disabled={disabled}
-      className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
+      className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white"
       style={{ borderBottom: "1px solid #EEF2F7", opacity: disabled ? 0.55 : 1 }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: danger ? "#F7E7E5" : "#E8F0FE" }}>
-        <Icon size={16} color={danger ? "#9A3B34" : "#2F6FED"} />
+      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: danger ? "#F7E7E5" : "#E8F0FE" }}>
+        <Icon size={17} color={danger ? "#9A3B34" : "#2F6FED"} />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2">
@@ -3554,7 +3759,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
         </button>
         <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">Privacidad</h2>
         <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
-          Tus favoritos, conversaciones y preferencias se guardan <b>solo en este dispositivo</b> — no los vemos nosotros ni quedan asociados a vos en ningún servidor. Si iniciás sesión con Google, guardamos tu nombre y tu email para reconocerte como dueño de tu negocio. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
+          Tus favoritos y preferencias se guardan <b>solo en este dispositivo</b>. Si te registrás con Google, guardamos tu nombre y tu email para reconocerte (por ejemplo como dueño de tu negocio), y tus chats con los asistentes de los negocios quedan ligados a tu cuenta para que reaparezcan en otros dispositivos. En la búsqueda con asistente podés elegir si se usa tu ubicación y un resumen de tus últimos chats para recomendarte negocios cercanos: la ubicación no se guarda. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
         </p>
         <div className="p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
           <div className="flex items-center justify-between text-sm mb-2">
@@ -3618,7 +3823,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
       <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ajustes</p>
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
         <Row Icon={Lock} title="Seguridad" desc="Tu cuenta se protege con Google" badge="Próximamente" disabled />
@@ -3627,7 +3832,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Información de la aplicación" onClick={() => setSub("acerca")} />
         <Row Icon={MessageCircle} title="Centro de ayuda" desc="Preguntas frecuentes y asistencia" onClick={() => setSub("ayuda")} />
         <Row Icon={Send} title="Soporte" desc="Contactar al equipo de Mi Zona" onClick={() => setSub("soporte")} />
@@ -4121,75 +4326,67 @@ function DiscountForm({ initial, onSave, onCancel }) {
   );
 }
 
-function OwnerPanel({ business, onSaveDiscount, onToggleDiscount, onDeleteDiscount, onLogout }) {
-  const [editing, setEditing] = useState(null); // null = cerrado, {} = nuevo, {..} = editar
-
+function PromosSheet({ business, onSave, onToggle, onDelete, onClose }) {
+  const [editing, setEditing] = useState(null); // null = cerrado, objeto = nuevo o editando
   const emptyDiscount = () => ({ id: uid(), title: "", item: "", percent: "", desc: "", startDate: todayISO(), endDate: addDays(todayISO(), 30), active: true });
+  const lista = business.discounts || [];
 
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');`}</style>
-      <header className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi negocio</h1>
-          <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2" style={{ borderRadius: 8, border: "1px solid #ffffff30", color: "#fff" }}>
-            <LogOut size={13} /> Salir
-          </button>
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" style={{ background: "#0B122099" }} onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md flex flex-col" style={{ borderRadius: "24px 24px 0 0", maxHeight: "88vh" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div>
+            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#0B1220" }}>Mis promociones</h2>
+            <p className="text-xs" style={{ color: "#6B7280" }}>Aparecen en tu perfil y destacan tu negocio en la lista.</p>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 12, background: "#F1F5F9" }}><X size={16} color="#475569" /></button>
         </div>
-      </header>
-
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 22, color: "#0B1220" }} className="mb-1">{business.name}</h2>
-        <p className="text-sm mb-6" style={{ color: "#6B7280" }}>{catInfo(business.cat)?.label} · {business.zone}</p>
-
-        <div className="flex items-center justify-between mb-4">
-          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16 }}>Mis descuentos</h3>
-          <button onClick={() => setEditing(emptyDiscount())} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>
-            <Plus size={13} /> Crear descuento
+        <div className="px-5 pb-5 overflow-y-auto">
+          <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", boxShadow: "0 8px 18px rgba(47,111,237,.3)" }}>
+            <Plus size={16} /> Crear promoción
           </button>
-        </div>
-
-        {(business.discounts || []).length === 0 ? (
-          <p className="text-sm" style={{ color: "#6B7280" }}>Todavía no creaste ningún descuento.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {business.discounts.map((d) => {
-              const active = isDiscountActive(d);
-              return (
-                <div key={d.id} className="p-4 flex items-start justify-between gap-3" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15 }}>{d.title}</h4>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5" style={{ borderRadius: 10, background: active ? "#E4F3EA" : "#EEEDE7", color: active ? "#1E6B44" : "#7A7D87" }}>
-                        {d.active ? (active ? "Vigente" : "Fuera de fecha") : "Desactivado"}
+          {lista.length === 0 ? (
+            <div className="text-center py-8">
+              <span className="inline-flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 18, background: "#FBEBD1" }}><Tag size={22} color="#B8703F" /></span>
+              <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Todavía no creaste promociones</p>
+              <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>Un descuento atrae más clientes a tu negocio.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {lista.map((d) => {
+                const vigente = isDiscountActive(d);
+                return (
+                  <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E6ECF5", background: vigente ? "#FFFBF2" : "#fff" }}>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>{d.title}</h4>
+                      {d.percent && <span className="text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>{d.percent} OFF</span>}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 mr-2" style={{ borderRadius: 8, background: vigente ? "#E4F3EA" : "#EEEDE7", color: vigente ? "#1E6B44" : "#7A7D87" }}>
+                          {d.active ? (vigente ? "Vigente" : "Fuera de fecha") : "Pausada"}
+                        </span>
+                        <span className="text-[11px]" style={{ color: "#6B7280" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
+                      </span>
+                      <span className="flex gap-1.5 shrink-0">
+                        <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}><Pencil size={13} /></button>
+                        <button onClick={() => onToggle(d.id)} aria-label="Pausar o activar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}><Power size={13} /></button>
+                        <button onClick={() => { if (window.confirm("¿Eliminar esta promoción?")) onDelete(d.id); }} aria-label="Eliminar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={13} /></button>
                       </span>
                     </div>
-                    <p className="text-xs" style={{ color: "#4B5563" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</p>
                   </div>
-                  <div className="flex gap-1.5 shrink-0">
-                    <button onClick={() => setEditing(d)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><Pencil size={13} /></button>
-                    <button onClick={() => onToggleDiscount(d.id)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #E2E8F0" }}><Power size={13} /></button>
-                    <button onClick={() => onDeleteDiscount(d.id)} className="p-1.5" style={{ borderRadius: 6, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={13} /></button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
       {editing && (
-        <DiscountForm
-          initial={editing}
-          onCancel={() => setEditing(null)}
-          onSave={(d) => { onSaveDiscount(d); setEditing(null); }}
-        />
+        <DiscountForm initial={editing} onCancel={() => setEditing(null)} onSave={(d) => { onSave(d); setEditing(null); }} />
       )}
     </div>
   );
 }
-
-
 
 export default function MiZona() {
   const [businesses, setBusinesses] = useState([]);
@@ -4221,6 +4418,21 @@ export default function MiZona() {
   const ownerBizId = misNegocios[0]?.id || null;
   const misIds = useMemo(() => new Set(misNegocios.map((m) => m.id)), [misNegocios]);
 
+  // agenda del dueño (solo quienes tienen un negocio en su cuenta)
+  const [showAgenda, setShowAgenda] = useState(false);
+  const [recordatoriosAgenda, setRecordatoriosAgenda] = useState([]);
+  useRecordatoriosAgenda(!!ownerBizId, (nuevos) => setRecordatoriosAgenda((prev) => [...nuevos.filter((n) => !prev.some((p) => p.id === n.id)), ...prev]));
+  // al tocar una notificación push de la agenda la web abre con ?ir=agenda
+  const irAAgenda = useRef(new URLSearchParams(window.location.search).get("ir") === "agenda");
+  useEffect(() => {
+    if (!irAAgenda.current) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    if (!ownerBizId) { irAAgenda.current = false; return; }
+    irAAgenda.current = false;
+    setShowAgenda(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerBizId]);
+
   // panel del dueño
   const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
 
@@ -4246,12 +4458,26 @@ export default function MiZona() {
     }
   };
 
-  const abrirLogin = (motivo, despues = null) => setShowLogin({ motivo, despues });
-  const continuarDespues = (despues) => { if (despues === "agregar") setShowAddBusiness(true); };
+  // modo: "registro" (primera vez) | "login" (ya tiene cuenta)
+  const abrirLogin = (motivo, despues = null, modo = "registro") => setShowLogin({ motivo, despues, modo });
+  const continuarDespues = (despues) => {
+    if (despues === "agregar") setShowAddBusiness(true);
+    else if (despues?.tipo === "chat") setChatBiz(despues.biz);
+  };
+  // Funciones importantes (registrar un negocio, dejar una reseña, chatear con el asistente) piden registrarse con Google primero
+  const requerirSesion = (motivo, despues = null) => {
+    if (usuario) return true;
+    abrirLogin(motivo, despues);
+    return false;
+  };
+  const abrirChat = (biz) => {
+    if (requerirSesion("Para chatear con el asistente de este negocio, registrate o iniciá sesión con Google.", { tipo: "chat", biz })) setChatBiz(biz);
+  };
   const alIniciarSesion = (r) => {
     const despues = showLogin?.despues || null;
     setUsuario(r.usuario);
     setShowLogin(null);
+    if (r.yaExistia && showLogin && showLogin.modo !== "login") setAvisoOk("Ya estabas registrado con esa cuenta: te iniciamos sesión.");
     if (r.requiereNombre) setNombrePendiente({ sugerido: r.nombreGoogle, despues });
     else continuarDespues(despues);
   };
@@ -4265,8 +4491,7 @@ export default function MiZona() {
     try { setBusinesses(await loadBusinesses()); } catch { /* se queda la lista que ya estaba */ }
   };
   const abrirAgregarNegocio = () => {
-    if (!usuario) abrirLogin("Para agregar tu negocio iniciá sesión con Google.", "agregar");
-    else setShowAddBusiness(true);
+    if (requerirSesion("Para registrar tu negocio primero tenés que registrarte con Google. Es rápido y gratis.", "agregar")) setShowAddBusiness(true);
   };
 
   // Al completar el formulario y tocar "Aceptar": se ve cuánto tiene que pagar (o que no paga, si ya pagó Mi Asistente)
@@ -4359,6 +4584,30 @@ export default function MiZona() {
       if (!u.nombre) setNombrePendiente({ sugerido: "", despues: null });
     })();
   }, []);
+
+  // Con sesión: el id de cliente queda ligado a la cuenta y los chats que tuvo con los negocios se recuperan
+  // (incluidos los de negocios que renovaron Mi Asistente después de vencer). Se hace una vez que los negocios cargaron.
+  const chatsSincronizados = useRef(null);
+  useEffect(() => {
+    if (!usuario?.id || businesses.length === 0 || chatsSincronizados.current === usuario.id) return;
+    chatsSincronizados.current = usuario.id;
+    (async () => {
+      try {
+        const r = await vincularSesionCliente(getClienteId());
+        if (r.sesionClienteId && r.sesionClienteId !== getClienteId()) adoptarClienteId(r.sesionClienteId);
+        const { conversaciones = [] } = await traerMisConversaciones();
+        conversaciones.forEach((c) => {
+          const biz = businesses.find((b) => b.asistenteCodigoPublico === c.codigoPublico);
+          if (!biz || !c.mensajes?.length) return;
+          const locales = getConversation(biz.id);
+          if (c.mensajes.length > locales.length) {
+            saveConversation(biz.id, c.mensajes.map((m) => ({ id: uid(), rol: m.rol, texto: m.contenido, hora: m.fecha })));
+          }
+        });
+        setBusinesses((lista) => [...lista]); // refresca las pantallas que leen los chats guardados
+      } catch { /* sin conexión: quedan los chats de este dispositivo */ }
+    })();
+  }, [usuario?.id, businesses.length]);
 
   // Cuando hay sesión, trae los negocios de la cuenta (y ahí se verifica si ya pagó Mi Asistente)
   useEffect(() => {
@@ -4510,7 +4759,10 @@ export default function MiZona() {
   };
 
   const addReview = (id, review) => {
-    persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, review] }));
+    if (!requerirSesion("Para dejar una reseña, registrate o iniciá sesión con Google.")) return false;
+    const nombre = review.name && review.name !== "Anónimo" ? review.name : (usuario.nombre || "Anónimo");
+    persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, { ...review, name: nombre }] }));
+    return true;
   };
   const replyToReview = (bizId, reviewId, texto, esDueño) => {
     persistOne(bizId, (b) => ({
@@ -4560,6 +4812,8 @@ export default function MiZona() {
       <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
         {globalStyle}
         <BusquedaAsistenteScreen
+          userLoc={userLoc}
+          onUbicacion={(loc) => { setUserLoc(loc); setLocStatus("ok"); }}
           businesses={businesses}
           onBack={() => setShowBusquedaAsistente(false)}
           onOpenBusiness={(id) => { setShowBusquedaAsistente(false); openDetail(id); }}
@@ -4601,6 +4855,17 @@ export default function MiZona() {
           onBack={() => setPuntosView(null)}
           onOpenBusiness={(id) => { setPuntosView(null); openDetail(id); }}
         />
+      </div>
+    );
+  }
+
+  /* ---- vista de la agenda del dueño ---- */
+  if (showAgenda && ownerBizId) {
+    return (
+      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {globalStyle}
+        <RecordatoriosToast lista={recordatoriosAgenda} onCerrar={(id) => setRecordatoriosAgenda((l) => l.filter((r) => r.id !== id))} onAbrir={(r) => setRecordatoriosAgenda((l) => l.filter((x) => x.id !== r.id))} />
+        <AgendaScreen negocioNombre={ownerBiz?.name} onBack={() => setShowAgenda(false)} />
       </div>
     );
   }
@@ -4668,7 +4933,7 @@ export default function MiZona() {
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
           onReplyReview={replyToReview} esDueño={misIds.has(selected.id)}
-          onOpenChat={setChatBiz} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
+          onOpenChat={abrirChat} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
           rank={businessRankPosition(selected, businesses)}
           onTrack={trackEvento}
           onOpenPuntos={(codigoPublico) => setPuntosView({ codigoPublico })}
@@ -4689,6 +4954,11 @@ export default function MiZona() {
         </div>
       )}
 
+      <RecordatoriosToast
+        lista={recordatoriosAgenda}
+        onCerrar={(id) => setRecordatoriosAgenda((l) => l.filter((r) => r.id !== id))}
+        onAbrir={(r) => { setRecordatoriosAgenda((l) => l.filter((x) => x.id !== r.id)); setShowAgenda(true); }}
+      />
       {avisoOk && (
         <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#E4F3EA", color: "#1E6B44" }}>
           {avisoOk} <button onClick={() => setAvisoOk(null)} className="underline ml-2">cerrar</button>
@@ -4729,7 +4999,7 @@ export default function MiZona() {
       />
 
       {showAllCats && <CategoryModal activeCat={activeCat} onSelect={(id) => { setActiveCat(id); setShowAllCats(false); }} onClose={() => setShowAllCats(false)} />}
-      {showLogin && <LoginModal motivo={showLogin.motivo} onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
+      {showLogin && <LoginModal motivo={showLogin.motivo} modoInicial={showLogin.modo || "registro"} onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
       {nombrePendiente && (
         <NombreModal
           sugerido={nombrePendiente.sugerido}
@@ -4810,7 +5080,7 @@ export default function MiZona() {
         {activeTab === "ajustes" ? (
           <AjustesScreen
             usuario={usuario}
-            onLogin={() => abrirLogin()}
+            onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}
             onCerrarSesion={cerrarSesion}
@@ -4825,21 +5095,24 @@ export default function MiZona() {
         ) : activeTab === "chats" ? (
           <ChatsScreen
             businesses={businesses}
-            onOpenChat={(biz) => setChatBiz(biz)}
+            onOpenChat={abrirChat}
           />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
             usuario={usuario}
             ownerBiz={ownerBiz}
-            onLogin={() => abrirLogin("Entrá con tu cuenta de Google para administrar tu negocio.")}
+            onLogin={(modo) => abrirLogin("Entrá con tu cuenta de Google para administrar tu negocio.", null, modo)}
             onAddBusiness={abrirAgregarNegocio}
             onAgregarMeses={abrirAgregarMeses}
             onEditBusiness={() => setShowEditOwnerBiz(true)}
             onViewProfile={() => openDetail(ownerBizId)}
             onOpenRanking={() => setShowRanking(true)}
-            onOpenMapa={() => { setMapaFiltros(null); setShowMapa(true); }}
             onOpenPuntos={() => setPuntosView({})}
             onOpenFavoritos={() => setShowFavoritos(true)}
+            onOpenAgenda={() => { setShowAgenda(true); window.scrollTo(0, 0); }}
+            onSaveDiscount={saveOwnerDiscount}
+            onToggleDiscount={toggleOwnerDiscount}
+            onDeleteDiscount={deleteOwnerDiscount}
             onGuardarEmpleo={(datos) => persistOne(ownerBizId, { ...ownerBiz, busquedaEmpleo: datos })}
             onSubirHistoria={(url) => {
               const hace48h = Date.now() - 48 * 60 * 60 * 1000;

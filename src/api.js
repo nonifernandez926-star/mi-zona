@@ -63,7 +63,7 @@ export function cargarGoogle() {
 }
 
 // Dibuja el botón oficial de "Continuar con Google" dentro de `contenedor` y llama a `alRecibir(idToken)`.
-export async function dibujarBotonGoogle(contenedor, alRecibir, { texto = "continue_with", ancho = 280 } = {}) {
+export async function dibujarBotonGoogle(contenedor, alRecibir, { texto = "continue_with", ancho = 280 } = {}) { // texto: "signup_with" | "signin_with" | "continue_with"
   const google = await cargarGoogle();
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
@@ -76,8 +76,15 @@ export async function dibujarBotonGoogle(contenedor, alRecibir, { texto = "conti
 
 /* ---------- sesión ---------- */
 
-export async function loginConGoogle(idToken) {
-  const r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ idToken }) }, { "Content-Type": "application/json" });
+export async function loginConGoogle(idToken, modo = "registro") {
+  let r;
+  try {
+    r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ idToken, modo }) }, { "Content-Type": "application/json" });
+  } catch (e) {
+    if (e.status === undefined) e.message = "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo."; // fetch falló (sin conexión, CORS o servidor caído)
+    else if (e.datos?.detalle) e.message = `${e.message} (${e.datos.detalle})`;
+    throw e;
+  }
   setToken(r.token);
   return r; // { token, usuario, nombreGoogle, requiereNombre }
 }
@@ -92,6 +99,10 @@ export async function traerMiSesion() {
   }
 }
 
+// Liga el id de cliente de este dispositivo a la cuenta (devuelve el de la cuenta si ya tenía uno) y trae sus chats
+export const vincularSesionCliente = (sesionClienteId) => enviarUsuarioJSON("/auth/sesion-cliente", "POST", { sesionClienteId });
+export const traerMisConversaciones = () => enviarUsuarioJSON("/asistente/mis-conversaciones", "POST", {});
+
 export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT", { nombre }).then((r) => r.usuario);
 
 /* ---------- negocios propios y suscripción ---------- */
@@ -100,6 +111,25 @@ export const traerMisNegocios = () => getUsuarioJSON("/businesses/mios"); // { n
 export const traerPlanes = () => pedirJSON("/suscripcion/planes", {}, {});
 export const traerCobertura = () => getUsuarioJSON("/suscripcion/cobertura"); // { consultado, cubierto, hasta }
 export const iniciarPago = (cuerpo) => enviarUsuarioJSON("/suscripcion/iniciar", "POST", cuerpo);
+
+/* ---------- agenda del dueño ---------- */
+
+export const agendaApi = {
+  perfil: () => getUsuarioJSON("/agenda/perfil"),
+  hoy: () => getUsuarioJSON("/agenda/hoy"),
+  semana: () => getUsuarioJSON("/agenda/semana"),
+  tareas: () => getUsuarioJSON("/agenda/tareas"),
+  crear: (datos) => enviarUsuarioJSON("/agenda", "POST", datos),
+  editar: (id, datos) => enviarUsuarioJSON(`/agenda/${id}`, "PUT", datos),
+  completar: (id, completada) => enviarUsuarioJSON(`/agenda/${id}/completar`, "PUT", { completada }),
+  eliminar: (id) => enviarUsuarioJSON(`/agenda/${id}`, "DELETE", {}),
+  recordatorios: () => getUsuarioJSON("/agenda/recordatorios"),
+  interpretar: (texto) => enviarUsuarioJSON("/agenda/interpretar", "POST", { texto }),
+  interpretarFoto: (imagen, mediaType) => enviarUsuarioJSON("/agenda/interpretar-foto", "POST", { imagen, mediaType }),
+  guardarPropuestas: (items, origen) => enviarUsuarioJSON("/agenda/guardar-propuestas", "POST", { items, origen }),
+  organizarDia: (fecha) => enviarUsuarioJSON("/agenda/organizar-dia", "POST", { fecha }),
+  preguntar: (pregunta) => enviarUsuarioJSON("/agenda/preguntar", "POST", { pregunta }),
+};
 
 /* ---------- notificaciones push ---------- */
 

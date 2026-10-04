@@ -38,50 +38,90 @@ export function infoSuscripcion(negocio) {
 
 /* ---------- botón de Google ---------- */
 
-function BotonGoogle({ onLogged }) {
+// modo: "registro" (primera vez) | "login" (ya tiene cuenta). Cambia el texto del botón de Google y lo que hace el servidor.
+function BotonGoogle({ onLogged, modo = "registro", onSinCuenta }) {
   const ref = useRef(null);
   const alLoguear = useRef(onLogged);
+  const alSinCuenta = useRef(onSinCuenta);
   alLoguear.current = onLogged;
+  alSinCuenta.current = onSinCuenta;
   const [error, setError] = useState(null);
   const [entrando, setEntrando] = useState(false);
 
   useEffect(() => {
     let vivo = true;
+    setError(null);
     dibujarBotonGoogle(ref.current, async (idToken) => {
       setEntrando(true); setError(null);
-      try { alLoguear.current(await loginConGoogle(idToken)); }
-      catch (e) { if (vivo) setError(e.message || "No se pudo iniciar sesión con Google."); }
+      try { alLoguear.current(await loginConGoogle(idToken, modo)); }
+      catch (e) {
+        if (!vivo) return;
+        if (e.datos?.error === "cuenta_inexistente") { setError(e.datos.mensaje); alSinCuenta.current && alSinCuenta.current(); }
+        else setError(e.message || "No se pudo iniciar sesión con Google.");
+      }
       finally { if (vivo) setEntrando(false); }
-    }).catch((e) => vivo && setError(e.message));
+    }, { texto: modo === "login" ? "signin_with" : "signup_with" }).catch((e) => vivo && setError(e.message));
     return () => { vivo = false; };
-  }, []);
+  }, [modo]);
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div ref={ref} style={{ minHeight: 44 }} />
       {entrando && <p className="text-xs" style={{ color: "#4B5563" }}>Entrando...</p>}
-      {error && <p className="text-xs text-center" style={{ color: "#C1443A" }}>{error}</p>}
+      {error && <p className="text-xs text-center" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
     </div>
+  );
+}
+
+// Dos opciones bien separadas: "Registrarme" (primera vez) e "Iniciar sesión" (ya tiene cuenta)
+function SelectorAcceso({ modo, onCambiar }) {
+  return (
+    <div className="flex p-1 mb-4" style={{ borderRadius: 14, background: "#EEF2F8" }}>
+      {[{ id: "registro", label: "Registrarme" }, { id: "login", label: "Iniciar sesión" }].map((o) => (
+        <button
+          key={o.id} onClick={() => onCambiar(o.id)}
+          className="flex-1 py-2 text-sm font-semibold transition-all"
+          style={{ borderRadius: 11, background: modo === o.id ? "#fff" : "transparent", color: modo === o.id ? "#0B2A54" : "#6B7280", boxShadow: modo === o.id ? "0 2px 8px rgba(11,42,84,.12)" : "none" }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PanelAcceso({ modo, onCambiar, onLogged }) {
+  return (
+    <>
+      <SelectorAcceso modo={modo} onCambiar={onCambiar} />
+      <p className="text-xs mb-4 text-center" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+        {modo === "registro"
+          ? "¿Primera vez en Mi Zona? Creá tu cuenta con Google en un toque."
+          : "¿Ya te registraste? Entrá con la misma cuenta de Google que usaste."}
+      </p>
+      <BotonGoogle modo={modo} onLogged={onLogged} onSinCuenta={() => onCambiar("registro")} />
+      <p className="text-[11px] text-center mt-4" style={{ color: "#94A3B8", lineHeight: 1.5 }}>
+        {modo === "registro"
+          ? "Si ya pagaste Mi Asistente, registrate con la misma cuenta de Google: no vas a pagar Mi Zona."
+          : "¿No tenés cuenta todavía? Tocá \"Registrarme\"."}
+      </p>
+    </>
   );
 }
 
 /* ---------- iniciar sesión ---------- */
 
-export function LoginModal({ motivo, onClose, onLogged }) {
+export function LoginModal({ motivo, modoInicial = "registro", onClose, onLogged }) {
+  const [modo, setModo] = useState(modoInicial);
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 20 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-2">
-          <h2 style={{ ...TITULO, fontSize: 18 }}>Iniciá sesión</h2>
+          <h2 style={{ ...TITULO, fontSize: 18 }}>{modo === "registro" ? "Crear mi cuenta" : "Iniciar sesión"}</h2>
           <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
         </div>
-        <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>
-          {motivo || "Entrá con tu cuenta de Google para administrar tu negocio y recibir avisos."}
-        </p>
-        <BotonGoogle onLogged={onLogged} />
-        <p className="text-[11px] text-center mt-4" style={{ color: "#94A3B8" }}>
-          Si ya pagaste Mi Asistente, entrá con la misma cuenta de Google: no vas a pagar Mi Zona.
-        </p>
+        {motivo && <p className="text-sm mb-4" style={{ color: "#4B5563", lineHeight: 1.5 }}>{motivo}</p>}
+        <PanelAcceso modo={modo} onCambiar={setModo} onLogged={onLogged} />
       </div>
     </div>
   );
@@ -128,6 +168,7 @@ export function NombreModal({ sugerido, onGuardado }) {
 /* ---------- Ajustes → Mi cuenta ---------- */
 
 export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado, onCerrarSesion }) {
+  const [modoAcceso, setModoAcceso] = useState("registro");
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
@@ -150,11 +191,8 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-4">Mi cuenta</h2>
 
       {!usuario ? (
-        <div className="p-5" style={{ borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff" }}>
-          <p className="text-sm mb-4" style={{ color: "#4B5563", lineHeight: 1.5 }}>
-            Iniciá sesión con Google para agregar tu negocio, administrarlo y recibir avisos de tu suscripción.
-          </p>
-          <BotonGoogle onLogged={onLogged} />
+        <div className="p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+          <PanelAcceso modo={modoAcceso} onCambiar={setModoAcceso} onLogged={onLogged} />
         </div>
       ) : (
         <>
