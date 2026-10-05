@@ -641,7 +641,7 @@ function emptyBusiness() {
     id: uid(), kind: "business",
     name: "", desc: "", cat: "comida", zone: ZONES[0],
     services: [], specialties: [], paymentMethods: [], delivery: false, acceptsWhatsapp: true,
-    phone: "", ig: "", tiktok: "", facebook: "", logo: "", photos: [], loc: "",
+    phone: "", ig: "", tiktok: "", facebook: "", logo: "", portada: "", photos: [], loc: "",
     lat: null, lng: null,
     weekHours: DAYS.map(() => [9, 20]),
     featured: false, status: "active",
@@ -1369,7 +1369,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
       style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 8px 26px rgba(11,42,84,0.08)" }}
     >
       <div className="relative">
-        <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={176} radius="0px" iconSize={42} clickable={false} />
+        <Photo cat={biz.cat} src={biz.portada || biz.logo || null} height={176} radius="0px" iconSize={42} clickable={false} />
         <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: 84, background: "linear-gradient(to top, rgba(8,18,38,0.62), rgba(8,18,38,0))" }} />
 
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
@@ -1462,7 +1462,6 @@ function numeroWhatsapp(t) {
 function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
-  const gallery = biz.photos?.length > 0 ? biz.photos : [null, null, null, null];
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showEmpleoDetalle, setShowEmpleoDetalle] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -1533,7 +1532,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
       <div className="max-w-3xl mx-auto">
         {/* foto principal con botones flotantes */}
         <div style={{ position: "relative" }}>
-          <Photo cat={biz.cat} src={gallery[0]} height={270} radius="0" iconSize={52} onOpen={onOpenPhoto} />
+          <Photo cat={biz.cat} src={biz.portada || null} height={270} radius="0" iconSize={52} onOpen={onOpenPhoto} />
           <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height: 110, background: "linear-gradient(to bottom, rgba(8,18,38,0.55), rgba(8,18,38,0))" }} />
           <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3" style={{ zIndex: 5 }}>
             <button onClick={onBack} aria-label="Volver" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
@@ -1891,6 +1890,36 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   );
 }
 
+/* ---------- pantallas con botón de retroceder ---------- */
+
+// Subpantalla dentro de una pestaña (Herramientas, Ajustes...): "← Volver a ..." y su título
+function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children }) {
+  return (
+    <div>
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+        <ArrowLeft size={15} /> Volver a {volverA}
+      </button>
+      <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
+      {desc && <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</p>}
+      <div className="mt-4">{children}</div>
+    </div>
+  );
+}
+
+// Barra de arriba de Chats, Herramientas y Ajustes: flecha para volver al Inicio y el título de la pantalla
+function BarraTitulo({ titulo, onBack }) {
+  return (
+    <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+        <button onClick={onBack} aria-label="Volver al inicio" className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
+          <ArrowLeft size={18} color="#fff" />
+        </button>
+        <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>{titulo}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- header público ---------- */
 
 function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, notifSinLeer = 0, onOpenNotificaciones }) {
@@ -2126,7 +2155,6 @@ function ChatsScreen({ businesses, onOpenChat }) {
 
   return (
     <div>
-      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 20, color: "#0B1220" }} className="mb-1">Chats</p>
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Tus conversaciones con negocios</p>
 
       {conversaciones.length === 0 ? (
@@ -3504,10 +3532,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
-  const [showQR, setShowQR] = useState(false);
-  const [showEmpleoForm, setShowEmpleoForm] = useState(false);
-  const [showPromos, setShowPromos] = useState(false);
+function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
   const [subiendoHistoria, setSubiendoHistoria] = useState(false);
   const historiaInputRef = useRef(null);
 
@@ -3583,7 +3608,6 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
   if (!ownerBiz) {
     return (
       <div>
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 22, color: "#0B1220" }}>Herramientas</p>
         <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
 
         {herramientasDeTodos}
@@ -3609,9 +3633,46 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
     </div>
   );
 
+  // ---------- subpantallas del dueño (cada una con su botón de volver) ----------
+  if (sub === "promos") {
+    return (
+      <SubPantalla titulo="Mis promociones" desc="Aparecen en tu perfil y destacan tu negocio en la lista." onBack={() => setSub(null)}>
+        <PromosSheet business={ownerBiz} onSave={onSaveDiscount} onToggle={onToggleDiscount} onDelete={onDeleteDiscount} />
+      </SubPantalla>
+    );
+  }
+  if (sub === "empleo") {
+    return (
+      <SubPantalla titulo="Búsqueda de personal" onBack={() => setSub(null)}>
+        <EmpleoFormModal
+          business={ownerBiz}
+          onSave={(datos) => { onGuardarEmpleo(datos); setSub(null); }}
+          onDelete={() => { onGuardarEmpleo(null); setSub(null); }}
+        />
+      </SubPantalla>
+    );
+  }
+  if (sub === "qr") {
+    return (
+      <SubPantalla titulo="Mi código QR" onBack={() => setSub(null)}>
+        <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E6ECF5" }}>
+          <img
+            alt="Código QR de tu negocio"
+            className="mx-auto mb-4"
+            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E2E8F0" }}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
+          />
+          <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
+          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
+            Compartir enlace
+          </button>
+        </div>
+      </SubPantalla>
+    );
+  }
+
   return (
     <div>
-      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 22, color: "#0B1220" }}>Mi negocio</p>
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Controlá y mejorá tu negocio en Mi Zona</p>
 
       {/* tarjeta de identidad */}
@@ -3646,11 +3707,11 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
       <div className="grid grid-cols-2 gap-2.5">
         <Mosaico Icon={CalendarCheck} color="#0B2A54" title="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onOpenAgenda} />
         <Mosaico Icon={Pencil} color="#2F6FED" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditBusiness} />
-        <Mosaico Icon={Tag} color="#B8703F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setShowPromos(true)} />
+        <Mosaico Icon={Tag} color="#B8703F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setSub("promos")} />
         <Mosaico Icon={MessageCircle} color="#F5A623" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
         <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
-        <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setShowEmpleoForm(true)} />
-        <Mosaico Icon={QrCode} color="#0B2A54" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setShowQR(true)} />
+        <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
+        <Mosaico Icon={QrCode} color="#0B2A54" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
         <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(ownerBiz)} />
         {tieneAsistente ? (
           <Mosaico Icon={Sparkles} color="#7A4F9E" title="Mi Asistente" desc="Clientes, pedidos, puntos y tu asistente virtual." onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")} />
@@ -3663,38 +3724,6 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
       <Titulo>Para explorar</Titulo>
       {herramientasDeTodos}
 
-      {showPromos && (
-        <PromosSheet business={ownerBiz} onSave={onSaveDiscount} onToggle={onToggleDiscount} onDelete={onDeleteDiscount} onClose={() => setShowPromos(false)} />
-      )}
-      {showEmpleoForm && (
-        <EmpleoFormModal
-          business={ownerBiz}
-          onSave={(datos) => { onGuardarEmpleo(datos); setShowEmpleoForm(false); }}
-          onDelete={() => { onGuardarEmpleo(null); setShowEmpleoForm(false); }}
-          onClose={() => setShowEmpleoForm(false)}
-        />
-      )}
-
-      {showQR && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122099" }} onClick={() => setShowQR(false)}>
-          <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 24 }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Mi código QR</span>
-              <button onClick={() => setShowQR(false)} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
-            </div>
-            <img
-              alt="Código QR de tu negocio"
-              className="mx-auto mb-4"
-              style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E2E8F0" }}
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
-            />
-            <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
-            <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
-              Compartir enlace
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -3807,7 +3836,6 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
 
   return (
     <div>
-      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Ajustes</p>
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
@@ -3879,6 +3907,7 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
 function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   const [form, setForm] = useState(initial);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingPortada, setUploadingPortada] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -3905,6 +3934,24 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
       setUploadError("No se pudo subir el logo. Revisá la configuración de Cloudinary.");
     } finally {
       setUploadingLogo(false);
+      e.target.value = "";
+    }
+  };
+
+  // Foto de fondo del perfil: una sola, la elige el dueño (no se toma de las fotos de productos)
+  const handlePortadaUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPortada(true);
+    setUploadError(null);
+    try {
+      const url = await uploadImage(file);
+      setForm((f) => ({ ...f, portada: url }));
+    } catch (err) {
+      console.error(err);
+      setUploadError("No se pudo subir la foto de fondo. Revisá la configuración de Cloudinary.");
+    } finally {
+      setUploadingPortada(false);
       e.target.value = "";
     }
   };
@@ -3944,14 +3991,15 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[75] flex items-start sm:items-center justify-center p-4 overflow-y-auto" style={{ background: "#0B1220cc" }}>
-      <div className="bg-white w-full max-w-lg p-6 my-6" style={{ borderRadius: 12 }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 20 }}>
-            {initial.name ? "Editar negocio" : "Nuevo negocio"}
-          </h2>
-          <button onClick={onCancel}><X size={20} /></button>
-        </div>
+    <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F6FB" }}>
+      <div className="w-full max-w-lg p-5 pb-10">
+        <button onClick={onCancel} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+          <ArrowLeft size={15} /> Volver
+        </button>
+        <h2 className="mb-4" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
+          {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
+        </h2>
+        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
 
         <div className="flex flex-col gap-3">
           <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
@@ -4043,6 +4091,20 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Foto de fondo de tu perfil (opcional, una sola)</p>
+            {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                {uploadingPortada ? "Subiendo..." : form.portada ? "Cambiar" : "Elegir foto"}
+                <input type="file" accept="image/*" className="hidden" onChange={handlePortadaUpload} disabled={uploadingPortada} />
+              </label>
+              {form.portada && !uploadingPortada && (
+                <button type="button" onClick={() => setForm({ ...form, portada: "" })} className="text-xs" style={{ color: "#C1443A" }}>Quitar</button>
+              )}
+            </div>
+          </div>
+
+          <div>
             <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
@@ -4076,6 +4138,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
               {saving ? "Ubicando dirección..." : publicMode && !initial.name ? "Aceptar" : "Guardar"}
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -4175,7 +4238,7 @@ function EmpleoDetalleModal({ business, onClose }) {
 }
 
 // Modal que usa el DUEÑO para crear, editar o eliminar su búsqueda de personal
-function EmpleoFormModal({ business, onSave, onDelete, onClose }) {
+function EmpleoFormModal({ business, onSave, onDelete }) {
   const existente = business.busquedaEmpleo;
   const [puesto, setPuesto] = useState(existente?.puesto || TIPOS_PUESTO[0]);
   const [otro, setOtro] = useState(existente?.puesto && !TIPOS_PUESTO.includes(existente.puesto) ? existente.puesto : "");
@@ -4197,12 +4260,8 @@ function EmpleoFormModal({ business, onSave, onDelete, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Búsqueda de personal</span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
-        </div>
+    <div>
+      <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
 
         <div className="flex flex-col gap-3">
           <div>
@@ -4315,22 +4374,14 @@ function DiscountForm({ initial, onSave, onCancel }) {
   );
 }
 
-function PromosSheet({ business, onSave, onToggle, onDelete, onClose }) {
+function PromosSheet({ business, onSave, onToggle, onDelete }) {
   const [editing, setEditing] = useState(null); // null = cerrado, objeto = nuevo o editando
   const emptyDiscount = () => ({ id: uid(), title: "", item: "", percent: "", desc: "", startDate: todayISO(), endDate: addDays(todayISO(), 30), active: true });
   const lista = business.discounts || [];
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" style={{ background: "#0B122099" }} onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md flex flex-col" style={{ borderRadius: "24px 24px 0 0", maxHeight: "88vh" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <div>
-            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#0B1220" }}>Mis promociones</h2>
-            <p className="text-xs" style={{ color: "#6B7280" }}>Aparecen en tu perfil y destacan tu negocio en la lista.</p>
-          </div>
-          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 12, background: "#F1F5F9" }}><X size={16} color="#475569" /></button>
-        </div>
-        <div className="px-5 pb-5 overflow-y-auto">
+    <div>
+      <div>
           <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", boxShadow: "0 8px 18px rgba(47,111,237,.3)" }}>
             <Plus size={16} /> Crear promoción
           </button>
@@ -4369,7 +4420,6 @@ function PromosSheet({ business, onSave, onToggle, onDelete, onClose }) {
             </div>
           )}
         </div>
-      </div>
       {editing && (
         <DiscountForm initial={editing} onCancel={() => setEditing(null)} onSave={(d) => { onSave(d); setEditing(null); }} />
       )}
@@ -4466,7 +4516,7 @@ export default function MiZona() {
     const despues = showLogin?.despues || null;
     setUsuario(r.usuario);
     setShowLogin(null);
-    if (r.yaExistia && showLogin && showLogin.modo !== "login") setAvisoOk("Ya estabas registrado con esa cuenta: te iniciamos sesión.");
+    if (r.yaExistia && r.desdeRegistro) setAvisoOk("Ya estabas registrado con esa cuenta: te iniciamos sesión.");
     if (r.requiereNombre) setNombrePendiente({ sugerido: r.nombreGoogle, despues });
     else continuarDespues(despues);
   };
@@ -4513,6 +4563,8 @@ export default function MiZona() {
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
   const [activeTab, setActiveTab] = useState("inicio");
+  const [subHerramientas, setSubHerramientas] = useState(null); // null | "promos" | "empleo" | "qr"
+  const irATab = (tab) => { setSubHerramientas(null); setActiveTab(tab); window.scrollTo(0, 0); };
 
   // favoritos (guardados en este dispositivo)
   const [favorites, setFavorites] = useState(() => getFavorites());
@@ -4958,7 +5010,7 @@ export default function MiZona() {
           Confirmando tu pago con Mercado Pago...
         </div>
       )}
-      {(() => {
+      {activeTab === "inicio" && (() => {
         // aviso fijo cuando falta pagar, quedan 7 días o menos, o ya venció
         const inf = infoSuscripcion(ownerBiz);
         if (!inf || inf.estado === "activa") return null;
@@ -4976,19 +5028,27 @@ export default function MiZona() {
         );
       })()}
 
-      <PublicHeader
-        zone={zone} setZone={setZone} query={query} setQuery={setQuery}
-        activeCat={activeCat} setActiveCat={setActiveCat}
-        onOpenAllCats={() => setShowAllCats(true)}
-        onOpenOwner={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
-        onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
-        onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
-        notifSinLeer={notifSinLeer}
-        onOpenNotificaciones={() => setShowNotificaciones(true)}
-      />
+      {/* la cabecera (menú, buscador, zona y categorías) se ve solo en Inicio */}
+      {activeTab === "inicio" ? (
+        <PublicHeader
+          zone={zone} setZone={setZone} query={query} setQuery={setQuery}
+          activeCat={activeCat} setActiveCat={setActiveCat}
+          onOpenAllCats={() => setShowAllCats(true)}
+          onOpenOwner={() => irATab("herramientas")}
+          onHerramientas={() => irATab("herramientas")}
+          onAjustes={() => irATab("ajustes")}
+          notifSinLeer={notifSinLeer}
+          onOpenNotificaciones={() => setShowNotificaciones(true)}
+        />
+      ) : (
+        <BarraTitulo
+          titulo={activeTab === "chats" ? "Chats" : activeTab === "herramientas" ? (ownerBiz ? "Mi negocio" : "Herramientas") : "Ajustes"}
+          onBack={() => irATab("inicio")}
+        />
+      )}
 
       {showAllCats && <CategoryModal activeCat={activeCat} onSelect={(id) => { setActiveCat(id); setShowAllCats(false); }} onClose={() => setShowAllCats(false)} />}
-      {showLogin && <LoginModal motivo={showLogin.motivo} modoInicial={showLogin.modo || "registro"} onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
+      {showLogin && <LoginModal onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
       {nombrePendiente && (
         <NombreModal
           sugerido={nombrePendiente.sugerido}
@@ -5088,6 +5148,7 @@ export default function MiZona() {
           />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
+            sub={subHerramientas} setSub={setSubHerramientas}
             usuario={usuario}
             ownerBiz={ownerBiz}
             onLogin={(modo) => abrirLogin("Entrá con tu cuenta de Google para administrar tu negocio.", null, modo)}
@@ -5124,7 +5185,7 @@ export default function MiZona() {
             <MapIcon size={13} /> Ver en el mapa
           </button>
         </div>
-        {activeTab === "inicio" && !query && !activeCat && (() => {
+        {activeTab === "inicio" && !activeCat && (() => {
           const vistos = getRecentlyViewed().map((id) => businesses.find((b) => b.id === id)).filter(Boolean);
           const MiniCard = ({ biz }) => {
             const c = catInfo(biz.cat);
@@ -5283,11 +5344,11 @@ export default function MiZona() {
 
       <BottomNav
         active={activeTab}
-        onInicio={() => { setActiveTab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); window.scrollTo(0, 0); }}
-        onChats={() => { setActiveTab("chats"); window.scrollTo(0, 0); }}
+        onInicio={() => { irATab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); }}
+        onChats={() => irATab("chats")}
         onAdd={() => setShowAddSheet(true)}
-        onHerramientas={() => { setActiveTab("herramientas"); window.scrollTo(0, 0); }}
-        onAjustes={() => { setActiveTab("ajustes"); window.scrollTo(0, 0); }}
+        onHerramientas={() => irATab("herramientas")}
+        onAjustes={() => irATab("ajustes")}
         chatsSinLeer={countUnreadChats()}
       />
 

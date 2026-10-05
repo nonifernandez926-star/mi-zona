@@ -17,6 +17,7 @@ const businessSchema = new mongoose.Schema(
     tiktok: String,
     facebook: String,
     logo: String,
+    portada: String, // foto de fondo del perfil: la elige el dueño (una sola)
     photos: [String],
     loc: String,
     lat: Number,

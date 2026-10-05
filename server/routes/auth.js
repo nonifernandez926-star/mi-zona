@@ -2,7 +2,7 @@ import express from "express";
 import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
 import {
-  verificarIdTokenGoogle, firmarTokenUsuario,
+  verificarIdTokenGoogle, verificarAccessTokenGoogle, firmarTokenUsuario,
   identificar, requiereUsuario,
 } from "../utils/auth.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
@@ -20,18 +20,21 @@ async function vincularNegociosPorEmail(usuario) {
   );
 }
 
-// POST /api/auth/google   { idToken }
+// POST /api/auth/google   { accessToken | idToken, modo }
 // Verifica el token que entrega Google en el navegador, crea la cuenta si es la primera vez y devuelve la sesión.
 // Si todavía no tiene nombre, la web se lo pide (requiereNombre) y lo guarda con PUT /api/auth/perfil.
 //   modo "registro": crea la cuenta (si ya existía, simplemente inicia sesión y avisa con yaExistia)
 //   modo "login":    solo entra si la cuenta ya está registrada; si no, responde cuenta_inexistente
 router.post("/google", async (req, res) => {
   try {
-    const { idToken } = req.body || {};
+    const { idToken, accessToken } = req.body || {};
     const modo = req.body?.modo === "login" ? "login" : "registro";
-    if (!idToken) return res.status(400).json({ error: "Falta el token de Google" });
+    if (!idToken && !accessToken) return res.status(400).json({ error: "Falta el token de Google" });
 
-    const { googleId, email, nombreGoogle } = await verificarIdTokenGoogle(idToken);
+    // la web usa el access token de la ventana "elegir cuenta"; el idToken sigue aceptándose por compatibilidad
+    const { googleId, email, nombreGoogle } = accessToken
+      ? await verificarAccessTokenGoogle(accessToken)
+      : await verificarIdTokenGoogle(idToken);
 
     let usuario = await Usuario.findOne({ googleId });
     let yaExistia = !!usuario;
@@ -72,6 +75,21 @@ router.post("/google", async (req, res) => {
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const normalizarCorreo = (v) => String(v || "").trim().toLowerCase();
 const ip = (req) => req.ip || "sin-ip";
+
+// POST /api/auth/correo   { email }  → paso 1 del ingreso con correo: dice qué hacer después (pedir contraseña, crear cuenta o usar Google)
+router.post("/correo", async (req, res) => {
+  try {
+    if (!permitir(`correo|${ip(req)}`, 30, 15 * 60 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
+    const email = normalizarCorreo(req.body?.email);
+    if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
+    const usuario = await Usuario.findOne({ email });
+    if (!usuario) return res.json({ paso: "crear" });
+    res.json({ paso: usuario.passwordHash ? "clave" : "google" });
+  } catch (e) {
+    console.error("Error al revisar el correo:", e.message);
+    res.status(500).json({ error: "No se pudo continuar. Probá de nuevo." });
+  }
+});
 
 // POST /api/auth/registro   { nombre, email, password }  → crea una cuenta con correo y contraseña
 router.post("/registro", async (req, res) => {

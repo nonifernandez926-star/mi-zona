@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Check, LogOut, User, Bell, BellOff, ArrowLeft, Mail, Clock, Sparkles } from "lucide-react";
 import {
-  dibujarBotonGoogle, loginConGoogle, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
+  cargarGoogle, pedirCuentaGoogle, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
   estadoPush, activarPush, desactivarPush,
 } from "./api.js";
 
@@ -36,133 +36,151 @@ export function infoSuscripcion(negocio) {
   return { estado: dias <= 7 ? "por_vencer" : "activa", dias };
 }
 
-/* ---------- botón de Google ---------- */
+/* ---------- Google: elegir cuenta ---------- */
 
-// modo: "registro" (primera vez) | "login" (ya tiene cuenta). Cambia el texto del botón de Google y lo que hace el servidor.
-function BotonGoogle({ onLogged, modo = "registro", onSinCuenta }) {
-  const ref = useRef(null);
-  const alLoguear = useRef(onLogged);
-  const alSinCuenta = useRef(onSinCuenta);
-  alLoguear.current = onLogged;
-  alSinCuenta.current = onSinCuenta;
-  const [error, setError] = useState(null);
-  const [entrando, setEntrando] = useState(false);
+const LogoG = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
+    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z" />
+    <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.1z" />
+    <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+  </svg>
+);
 
-  useEffect(() => {
-    let vivo = true;
-    setError(null);
-    dibujarBotonGoogle(ref.current, async (idToken) => {
-      setEntrando(true); setError(null);
-      try { alLoguear.current(await loginConGoogle(idToken, modo)); }
-      catch (e) {
-        if (!vivo) return;
-        if (e.datos?.error === "cuenta_inexistente") { setError(e.datos.mensaje); alSinCuenta.current && alSinCuenta.current(); }
-        else setError(e.message || "No se pudo iniciar sesión con Google.");
-      }
-      finally { if (vivo) setEntrando(false); }
-    }, { texto: modo === "login" ? "signin_with" : "signup_with" }).catch((e) => vivo && setError(e.message));
-    return () => { vivo = false; };
-  }, [modo]);
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div ref={ref} style={{ minHeight: 44 }} />
-      {entrando && <p className="text-xs" style={{ color: "#4B5563" }}>Entrando...</p>}
-      {error && <p className="text-xs text-center" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
-    </div>
-  );
-}
-
-// Formulario con correo y contraseña. En "registro" también pide el nombre.
-function FormularioCorreo({ modo, onLogged }) {
+// Formulario con correo y contraseña, en pasos: primero el correo y recién después aparece la contraseña
+// (o, si ese correo no tiene cuenta, el nombre y la contraseña para crearla).
+function FormularioCorreo({ onLogged }) {
+  const [paso, setPaso] = useState("correo"); // "correo" | "clave" | "crear"
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [clave, setClave] = useState("");
   const [ver, setVer] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const esRegistro = modo === "registro";
+  const campo = { borderRadius: 12, borderColor: "#E2E8F0", background: "#fff" };
+  const boton = (activo) => ({ borderRadius: 14, background: "#2F6FED", color: "#fff", opacity: activo ? 1 : 0.55, boxShadow: "0 8px 18px rgba(47,111,237,.3)" });
 
-  useEffect(() => { setError(null); }, [modo]);
-
+  const continuar = async () => {
+    if (enviando || !correo.trim()) return;
+    setEnviando(true); setError(null);
+    try {
+      const r = await revisarCorreo(correo);
+      if (r.paso === "google") setError("Ese correo se registró con Google. Tocá \"Acceder con Google\".");
+      else { setPaso(r.paso); setClave(""); }
+    } catch (e) {
+      setError(e.status === undefined ? "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo." : (e.message || "No se pudo continuar. Probá de nuevo."));
+    }
+    setEnviando(false);
+  };
   const enviar = async () => {
     if (enviando) return;
     setEnviando(true); setError(null);
     try {
-      onLogged(esRegistro ? await registrarConCorreo(nombre, correo, clave) : await entrarConCorreo(correo, clave));
+      onLogged(paso === "crear" ? await registrarConCorreo(nombre, correo, clave) : await entrarConCorreo(correo, clave));
     } catch (e) { setError(e.message || "No se pudo completar. Probá de nuevo."); setEnviando(false); }
   };
-  const listo = correo.trim() && clave && (!esRegistro || nombre.trim().length >= 2);
-  const campo = { borderRadius: 12, borderColor: "#E2E8F0", background: "#fff" };
+  const volver = () => { setPaso("correo"); setClave(""); setError(null); };
 
+  if (paso === "correo") {
+    const listo = !!correo.trim();
+    return (
+      <div className="flex flex-col gap-2.5">
+        <input
+          value={correo} onChange={(e) => { setCorreo(e.target.value); setError(null); }} type="email" inputMode="email" autoComplete="email"
+          onKeyDown={(e) => e.key === "Enter" && listo && continuar()}
+          placeholder="Correo electrónico" className="w-full border px-3.5 py-3 text-sm" style={campo}
+        />
+        {error && <p className="text-xs" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
+        <button onClick={continuar} disabled={!listo || enviando} className="w-full text-sm font-semibold py-3.5" style={boton(listo && !enviando)}>
+          {enviando ? "Un momento..." : "Continuar"}
+        </button>
+      </div>
+    );
+  }
+
+  const esCrear = paso === "crear";
+  const listo = clave && (!esCrear || nombre.trim().length >= 2);
   return (
     <div className="flex flex-col gap-2.5">
-      {esRegistro && (
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} autoComplete="name" placeholder="Tu nombre" className="w-full border px-3.5 py-3 text-sm" style={campo} />
+      <div className="flex items-center justify-between gap-2 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#F3F6FB" }}>
+        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1220" }}><Mail size={14} color="#6B7280" /><span className="truncate">{correo.trim()}</span></span>
+        <button type="button" onClick={volver} className="text-xs font-semibold shrink-0" style={{ color: "#2F6FED" }}>Cambiar</button>
+      </div>
+      {esCrear && (
+        <input autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} autoComplete="name" placeholder="Tu nombre" className="w-full border px-3.5 py-3 text-sm" style={campo} />
       )}
-      <input value={correo} onChange={(e) => setCorreo(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="Correo electrónico" className="w-full border px-3.5 py-3 text-sm" style={campo} />
       <div className="relative">
         <input
-          value={clave} onChange={(e) => setClave(e.target.value)} type={ver ? "text" : "password"} maxLength={100}
-          autoComplete={esRegistro ? "new-password" : "current-password"}
+          autoFocus={!esCrear}
+          value={clave} onChange={(e) => { setClave(e.target.value); setError(null); }} type={ver ? "text" : "password"} maxLength={100}
+          autoComplete={esCrear ? "new-password" : "current-password"}
           onKeyDown={(e) => e.key === "Enter" && listo && enviar()}
-          placeholder={esRegistro ? "Contraseña (mínimo 8 caracteres)" : "Contraseña"} className="w-full border px-3.5 py-3 text-sm" style={{ ...campo, paddingRight: 64 }}
+          placeholder={esCrear ? "Contraseña (mínimo 8 caracteres)" : "Contraseña"} className="w-full border px-3.5 py-3 text-sm" style={{ ...campo, paddingRight: 64 }}
         />
         <button type="button" onClick={() => setVer((v) => !v)} className="absolute text-xs font-semibold" style={{ right: 14, top: "50%", transform: "translateY(-50%)", color: "#2F6FED" }}>
           {ver ? "Ocultar" : "Ver"}
         </button>
       </div>
       {error && <p className="text-xs" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
-      <button
-        onClick={enviar} disabled={!listo || enviando}
-        className="w-full text-sm font-semibold py-3.5"
-        style={{ borderRadius: 14, background: "#2F6FED", color: "#fff", opacity: !listo || enviando ? 0.55 : 1, boxShadow: "0 8px 18px rgba(47,111,237,.3)" }}
-      >
-        {enviando ? "Un momento..." : esRegistro ? "Registrarme" : "Iniciar sesión"}
+      <button onClick={enviar} disabled={!listo || enviando} className="w-full text-sm font-semibold py-3.5" style={boton(listo && !enviando)}>
+        {enviando ? "Un momento..." : esCrear ? "Crear cuenta" : "Iniciar sesión"}
       </button>
     </div>
   );
 }
 
-// Pantalla de acceso como en las apps: botón de Google (elige con qué cuenta), correo y contraseña, y abajo un enlace
-// chico en azul para pasar de "Iniciar sesión" a "Registrarme" (y al revés).
-function PanelAcceso({ modo, onCambiar, onLogged }) {
-  const esRegistro = modo === "registro";
+// Pantalla de acceso: "Acceder con Google" es para iniciar sesión. Tocar "Registrarme" abre directo la lista de cuentas de Google.
+function PanelAcceso({ onLogged }) {
+  const [error, setError] = useState(null);
+  const [entrando, setEntrando] = useState(false);
+  useEffect(() => { cargarGoogle().catch(() => {}); }, []); // así la ventana de Google abre al instante al tocar
+
+  const conGoogle = async (modo) => {
+    if (entrando) return;
+    setError(null);
+    let token;
+    try { token = await pedirCuentaGoogle(); }
+    catch (e) { if (!e.cancelado) setError(e.message); return; }
+    setEntrando(true);
+    try { onLogged({ ...(await loginConGoogle(token, modo)), desdeRegistro: modo === "registro" }); }
+    catch (e) { setError(e.datos?.error === "cuenta_inexistente" ? e.datos.mensaje : (e.message || "No se pudo entrar con Google.")); setEntrando(false); }
+  };
+
   return (
     <>
-      <BotonGoogle modo={modo} onLogged={onLogged} onSinCuenta={() => onCambiar("registro")} />
+      <button
+        onClick={() => conGoogle("login")} disabled={entrando}
+        className="w-full flex items-center justify-center gap-2.5 text-sm font-semibold py-3.5"
+        style={{ borderRadius: 14, background: "#fff", border: "1px solid #DADCE0", color: "#1F2937", opacity: entrando ? 0.6 : 1 }}
+      >
+        <LogoG /> {entrando ? "Entrando..." : "Acceder con Google"}
+      </button>
+      {error && <p className="text-xs text-center mt-2" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
       <div className="flex items-center gap-3 my-4">
         <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
         <span className="text-xs" style={{ color: "#94A3B8" }}>o con tu correo</span>
         <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
       </div>
-      <FormularioCorreo modo={modo} onLogged={onLogged} />
+      <FormularioCorreo onLogged={onLogged} />
       <p className="text-center mt-4" style={{ fontSize: 12, color: "#6B7280" }}>
-        {esRegistro ? "¿Ya tenés cuenta? " : "¿No tenés cuenta? "}
-        <button onClick={() => onCambiar(esRegistro ? "login" : "registro")} className="font-semibold" style={{ color: "#2F6FED" }}>
-          {esRegistro ? "Iniciar sesión" : "Registrarme"}
-        </button>
-      </p>
-      <p className="text-center mt-3" style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.5 }}>
-        Si ya pagaste Mi Asistente, entrá con Google usando la misma cuenta: así no pagás Mi Zona.
+        ¿No tenés cuenta?{" "}
+        <button onClick={() => conGoogle("registro")} disabled={entrando} className="font-semibold" style={{ color: "#2F6FED" }}>Registrarme</button>
       </p>
     </>
   );
 }
 
-/* ---------- iniciar sesión / registrarse (ventana) ---------- */
+/* ---------- iniciar sesión (ventana) ---------- */
 
-export function LoginModal({ motivo, modoInicial = "login", onClose, onLogged }) {
-  const [modo, setModo] = useState(modoInicial);
+export function LoginModal({ onClose, onLogged }) {
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6 overflow-y-auto" style={{ borderRadius: 20, maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-2">
-          <h2 style={{ ...TITULO, fontSize: 20 }}>{modo === "registro" ? "Crear mi cuenta" : "Iniciar sesión"}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 style={{ ...TITULO, fontSize: 20 }}>Iniciar sesión</h2>
           <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
         </div>
-        {motivo && <p className="text-sm mb-4" style={{ color: "#4B5563", lineHeight: 1.5 }}>{motivo}</p>}
-        <PanelAcceso modo={modo} onCambiar={setModo} onLogged={onLogged} />
+        <PanelAcceso onLogged={onLogged} />
       </div>
     </div>
   );
@@ -209,7 +227,6 @@ export function NombreModal({ sugerido, onGuardado }) {
 /* ---------- Ajustes → Mi cuenta ---------- */
 
 export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado, onCerrarSesion }) {
-  const [modoAcceso, setModoAcceso] = useState("login");
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
@@ -233,7 +250,7 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
 
       {!usuario ? (
         <div className="p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
-          <PanelAcceso modo={modoAcceso} onCambiar={setModoAcceso} onLogged={onLogged} />
+          <PanelAcceso onLogged={onLogged} />
         </div>
       ) : (
         <>

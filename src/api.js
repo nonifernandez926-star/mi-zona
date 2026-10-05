@@ -62,24 +62,37 @@ export function cargarGoogle() {
   return googleCargado;
 }
 
-// Dibuja el botón oficial de "Continuar con Google" dentro de `contenedor` y llama a `alRecibir(idToken)`.
-export async function dibujarBotonGoogle(contenedor, alRecibir, { texto = "continue_with", ancho = 280 } = {}) { // texto: "signup_with" | "signin_with" | "continue_with"
-  const google = await cargarGoogle();
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: (r) => alRecibir(r.credential),
-    ux_mode: "popup",
+// Abre la ventana de Google para ELEGIR la cuenta (siempre muestra las cuentas del dispositivo) y devuelve un access token.
+// Tiene que llamarse directo desde un toque del usuario (si no, el navegador bloquea la ventana).
+// Antes hay que haber llamado a cargarGoogle() para que el script ya esté listo.
+export function pedirCuentaGoogle() {
+  return new Promise((resolve, reject) => {
+    const oauth2 = window.google?.accounts?.oauth2;
+    if (!oauth2) { reject(new Error("Google todavía está cargando. Esperá un segundo y probá de nuevo.")); return; }
+    const cliente = oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: "openid email profile",
+      prompt: "select_account",
+      callback: (r) => {
+        if (r?.access_token) resolve(r.access_token);
+        else reject(Object.assign(new Error(r?.error_description || r?.error || "No se pudo entrar con Google."), { cancelado: r?.error === "access_denied" }));
+      },
+      error_callback: (e) => {
+        if (e?.type === "popup_closed") reject(Object.assign(new Error("cancelado"), { cancelado: true }));
+        else if (e?.type === "popup_failed_to_open") reject(new Error("Tu navegador bloqueó la ventana de Google. Permití las ventanas emergentes y probá de nuevo."));
+        else reject(new Error("No se pudo abrir Google. Probá de nuevo."));
+      },
+    });
+    cliente.requestAccessToken();
   });
-  contenedor.innerHTML = "";
-  google.accounts.id.renderButton(contenedor, { theme: "outline", size: "large", text: texto, shape: "pill", width: ancho });
 }
 
 /* ---------- sesión ---------- */
 
-export async function loginConGoogle(idToken, modo = "registro") {
+export async function loginConGoogle(accessToken, modo = "registro") {
   let r;
   try {
-    r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ idToken, modo }) }, { "Content-Type": "application/json" });
+    r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ accessToken, modo }) }, { "Content-Type": "application/json" });
   } catch (e) {
     if (e.status === undefined) e.message = "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo."; // fetch falló (sin conexión, CORS o servidor caído)
     else if (e.datos?.detalle) e.message = `${e.message} (${e.datos.detalle})`;
@@ -101,6 +114,8 @@ async function accesoConCorreo(ruta, cuerpo) {
   setToken(r.token);
   return r;
 }
+// Paso 1 del ingreso con correo: { paso: "clave" | "crear" | "google" }
+export const revisarCorreo = (email) => pedirJSON("/auth/correo", { method: "POST", body: JSON.stringify({ email }) }, { "Content-Type": "application/json" });
 export const registrarConCorreo = (nombre, email, password) => accesoConCorreo("/auth/registro", { nombre, email, password });
 export const entrarConCorreo = (email, password) => accesoConCorreo("/auth/login", { email, password });
 
