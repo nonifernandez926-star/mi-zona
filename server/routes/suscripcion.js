@@ -13,7 +13,7 @@ const router = express.Router();
 // Campos que un dueño puede mandar al cargar su negocio (el resto se ignora: estado, vencimiento, dueño, etc. los pone el servidor)
 const CAMPOS_NEGOCIO = [
   "name", "desc", "cat", "zone", "services", "specialties", "paymentMethods", "delivery", "acceptsWhatsapp",
-  "phone", "ig", "logo", "photos", "loc", "lat", "lng", "weekHours", "extra",
+  "phone", "ig", "tiktok", "facebook", "logo", "photos", "loc", "lat", "lng", "weekHours", "extra",
 ];
 
 function armarNegocioNuevo(datos, usuario) {

@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, X, Check, Clock, User, Bell, Camera, MessageSquare, Sparkles, Send,
   AlertTriangle, CalendarDays, ListChecks, Lock,
 } from "lucide-react";
-import { agendaApi, estadoPush, activarPush, pushSoportado } from "./api.js";
+import { agendaApi, estadoPush, activarPush, pushSoportado, PLAY_STORE_URL } from "./api.js";
 
 const TITULO = { fontFamily: "'Poppins', sans-serif", fontWeight: 600, color: "#0B1220" };
 const CARD = { borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)", background: "#fff" };
@@ -297,6 +297,35 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
   );
 }
 
+/* ---------- antes de subir una foto: límite diario y, si no tiene Mi Asistente, enlace para descargarlo ---------- */
+function FotoPrevia({ perfil, onElegir, onClose }) {
+  const restantes = perfil?.fotosRestantesHoy ?? 0;
+  const porDia = perfil?.fotosPorDia ?? 2;
+  const sinCupo = restantes <= 0;
+  return (
+    <Sheet titulo="Importar desde foto" onClose={onClose}>
+      <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+        Sacale una foto a tu agenda de papel y la IA arma los eventos y tareas. Podés importar hasta {porDia} fotos por día.
+      </p>
+      <p className="text-sm font-semibold mt-3" style={{ color: sinCupo ? "#B42318" : "#0B2A54" }}>
+        {sinCupo ? `Ya usaste tus ${porDia} fotos de hoy. Mañana podés importar más.` : `Te ${restantes === 1 ? "queda 1 foto" : `quedan ${restantes} fotos`} hoy.`}
+      </p>
+      {!perfil?.tieneAsistente && (
+        <div className="mt-4 p-3.5" style={{ borderRadius: 16, background: "#F3ECFC", border: "1px solid #D8C4F0" }}>
+          <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: "#5B3A7A" }}><Sparkles size={15} /> ¿Todavía no tenés Mi Asistente?</p>
+          <p className="text-xs mt-1" style={{ color: "#5B3A7A", lineHeight: 1.5 }}>Descargalo desde Play Store y sumá un asistente con IA que atiende a los clientes de tu negocio.</p>
+          <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 text-sm font-semibold py-2.5 mt-3" style={{ borderRadius: 12, background: "#7A4F9E", color: "#fff" }}>
+            Descargar Mi Asistente en Play Store
+          </a>
+        </div>
+      )}
+      <button onClick={onElegir} disabled={sinCupo} className="w-full py-3 mt-4 text-sm font-semibold flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", opacity: sinCupo ? 0.45 : 1, boxShadow: "0 8px 18px rgba(47,111,237,.3)" }}>
+        <Camera size={16} /> Elegir foto
+      </button>
+    </Sheet>
+  );
+}
+
 /* ---------- agregar desde un mensaje ---------- */
 function MensajeModal({ onClose, onResultado }) {
   const [texto, setTexto] = useState("");
@@ -388,6 +417,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   const [formulario, setFormulario] = useState(null); // item o valores iniciales
   const [mensajeAbierto, setMensajeAbierto] = useState(false);
   const [foto, setFoto] = useState(null); // null | "cargando" | { error }
+  const [fotoPrevia, setFotoPrevia] = useState(false); // hoja que se muestra antes de elegir la foto
   const [propuestas, setPropuestas] = useState(null); // { resultado, origen }
   const [ia, setIa] = useState(null); // null | { cargando } | { titulo, texto } | { error }
   const [pregunta, setPregunta] = useState("");
@@ -424,9 +454,14 @@ export function AgendaScreen({ negocioNombre, onBack }) {
     try {
       const base64 = await reducirImagen(archivo);
       const resultado = await agendaApi.interpretarFoto(base64, "image/jpeg");
+      if (typeof resultado.fotosRestantesHoy === "number") setPerfil((pf) => (pf ? { ...pf, fotosRestantesHoy: resultado.fotosRestantesHoy } : pf));
       setFoto(null);
       setPropuestas({ resultado, origen: "foto" });
-    } catch (e) { setFoto({ error: e.message }); }
+    } catch (e) {
+      if (e.datos && typeof e.datos.fotosRestantesHoy === "number") setPerfil((pf) => (pf ? { ...pf, fotosRestantesHoy: e.datos.fotosRestantesHoy } : pf));
+      else agendaApi.perfil().then(setPerfil).catch(() => {}); // si la IA falló, la foto no cuenta: traemos el cupo real
+      setFoto({ error: e.message });
+    }
   };
 
   const organizar = async () => {
@@ -453,7 +488,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   const acciones = [
     { Icon: CalendarDays, t: "Evento", color: "#2F6FED", bg: "#E8F0FE", f: () => setFormulario({ tipo: "evento", fecha: hoyISO() }) },
     { Icon: ListChecks, t: "Tarea", color: "#16A34A", bg: "#DCFCE7", f: () => setFormulario({ tipo: "tarea" }) },
-    { Icon: Camera, t: "Desde foto", color: "#EA580C", bg: "#FFEDD5", f: () => (aiOk ? inputFotoRef.current?.click() : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
+    { Icon: Camera, t: "Desde foto", color: "#EA580C", bg: "#FFEDD5", f: () => (aiOk ? setFotoPrevia(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
     { Icon: MessageSquare, t: "Desde mensaje", color: "#7A4F9E", bg: "#EDE3F8", f: () => (aiOk ? setMensajeAbierto(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
   ];
 
@@ -620,6 +655,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         )}
       </div>
 
+      {fotoPrevia && <FotoPrevia perfil={perfil} onClose={() => setFotoPrevia(false)} onElegir={() => { setFotoPrevia(false); inputFotoRef.current?.click(); }} />}
       {formulario && <FormularioItem inicial={formulario} perfil={perfil} onClose={() => setFormulario(null)} onGuardado={refrescar} />}
       {mensajeAbierto && <MensajeModal onClose={() => setMensajeAbierto(false)} onResultado={(resultado) => { setMensajeAbierto(false); setPropuestas({ resultado, origen: "mensaje" }); }} />}
       {foto && (

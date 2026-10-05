@@ -89,6 +89,24 @@ export async function loginConGoogle(idToken, modo = "registro") {
   return r; // { token, usuario, nombreGoogle, requiereNombre }
 }
 
+// Registro e ingreso con correo y contraseña (alternativa a Google)
+async function accesoConCorreo(ruta, cuerpo) {
+  let r;
+  try {
+    r = await pedirJSON(ruta, { method: "POST", body: JSON.stringify(cuerpo) }, { "Content-Type": "application/json" });
+  } catch (e) {
+    if (e.status === undefined) e.message = "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo.";
+    throw e;
+  }
+  setToken(r.token);
+  return r;
+}
+export const registrarConCorreo = (nombre, email, password) => accesoConCorreo("/auth/registro", { nombre, email, password });
+export const entrarConCorreo = (email, password) => accesoConCorreo("/auth/login", { email, password });
+
+// Enlace para descargar Mi Asistente. Poné el link exacto en Netlify con la variable VITE_PLAY_STORE_URL.
+export const PLAY_STORE_URL = import.meta.env.VITE_PLAY_STORE_URL || "https://play.google.com/store/search?q=Mi%20Asistente&c=apps";
+
 export async function traerMiSesion() {
   if (!getToken()) return null;
   try {

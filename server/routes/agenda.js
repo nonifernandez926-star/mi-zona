@@ -6,6 +6,7 @@ import { ahoraArgentina, sumarDias, nombreDia } from "../utils/fechas.js";
 import { perfilAgenda } from "../utils/agendaPerfiles.js";
 import { interpretar, responderSobreAgenda } from "../utils/agendaIA.js";
 import { recordatorioDebido, enviarRecordatoriosPush } from "../utils/recordatorios.js";
+import { FOTOS_POR_DIA, fotosRestantes, consumirFoto, devolverFoto } from "../utils/fotosAgenda.js";
 
 const router = express.Router();
 
@@ -17,10 +18,11 @@ const minutosDe = (hora) => { const [h, m] = hora.split(":").map(Number); return
 // La agenda es SOLO para dueños: hace falta tener al menos un negocio en la cuenta. El primero define el rubro.
 async function requiereDueno(req, res, next) {
   try {
-    const negocios = await Business.find({ ownerId: String(req.actor.usuario._id) }).sort({ createdAt: 1 }).select("cat name status pendientePago expiresAt");
+    const negocios = await Business.find({ ownerId: String(req.actor.usuario._id) }).sort({ createdAt: 1 }).select("cat name status pendientePago expiresAt asistenteActivo");
     if (!negocios.length) return res.status(403).json({ error: "La agenda es para dueños de negocios." });
     req.negocio = negocios[0];
     req.tieneNegocioActivo = negocios.some((n) => n.status === "active" && !n.pendientePago);
+    req.tieneAsistente = negocios.some((n) => n.asistenteActivo);
     next();
   } catch (e) {
     next(e);
@@ -104,8 +106,19 @@ async function armarDia(usuarioId, fecha) {
 const uid = (req) => String(req.actor.usuario._id);
 
 // GET /api/agenda/perfil → tipos de evento y tareas sugeridas para el rubro
-router.get("/perfil", base, (req, res) => {
-  res.json({ ...perfilAgenda(req.negocio.cat), aiDisponible: Boolean(process.env.ANTHROPIC_API_KEY) && req.tieneNegocioActivo });
+router.get("/perfil", base, async (req, res) => {
+  try {
+    res.json({
+      ...perfilAgenda(req.negocio.cat),
+      aiDisponible: Boolean(process.env.ANTHROPIC_API_KEY) && req.tieneNegocioActivo,
+      tieneAsistente: req.tieneAsistente, // si no lo tiene, la web le ofrece descargar Mi Asistente
+      fotosPorDia: FOTOS_POR_DIA,
+      fotosRestantesHoy: await fotosRestantes(uid(req), ahoraArgentina().fecha),
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo cargar la agenda" });
+  }
 });
 
 // GET /api/agenda/hoy → la vista "Hoy"
@@ -235,10 +248,21 @@ router.post("/interpretar-foto", base, async (req, res) => {
     if (imagen.length > 4_200_000) return res.status(413).json({ error: "La foto es muy pesada. Probá con otra." });
     if (!/^[A-Za-z0-9+/=\s]+$/.test(imagen.slice(0, 2000))) return res.status(400).json({ error: "La foto no es válida." });
     if (!validarIA(req, res)) return;
-    res.json(await interpretar({ imagenBase64: imagen.replace(/\s/g, ""), mediaType, hoy: ahoraArgentina().fecha, perfil: perfilAgenda(req.negocio.cat) }));
+    // Límite: 2 fotos por día por persona (hora argentina). Si la IA falla, la foto no cuenta.
+    const hoy = ahoraArgentina().fecha;
+    if (!(await consumirFoto(uid(req), hoy))) {
+      return res.status(429).json({ error: `Ya usaste tus ${FOTOS_POR_DIA} fotos de hoy. Mañana podés importar más, o agregá tus eventos escribiéndolos.`, fotosRestantesHoy: 0 });
+    }
+    try {
+      const resultado = await interpretar({ imagenBase64: imagen.replace(/\s/g, ""), mediaType, hoy, perfil: perfilAgenda(req.negocio.cat) });
+      res.json({ ...resultado, fotosRestantesHoy: await fotosRestantes(uid(req), hoy) });
+    } catch (e) {
+      await devolverFoto(uid(req), hoy);
+      throw e;
+    }
   } catch (e) {
     console.error("Error interpretando foto de agenda:", e.message);
-    res.status(500).json({ error: "No pude leer la foto. Probá con una más nítida y bien iluminada." });
+    res.status(500).json({ error: "No pude leer la foto. Probá con una más nítida y bien iluminada. Esta foto no cuenta en tu límite." });
   }
 });
 

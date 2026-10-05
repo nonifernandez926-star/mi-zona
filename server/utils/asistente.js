@@ -62,6 +62,8 @@ export async function refrescarAsistentes() {
 // Si después renueva en Mi Asistente, la próxima vez que entre a Mi Zona se extiende solo.
 // `negocio` puede ser null (todavía no cargó ninguno): en ese caso solo informa si está cubierto.
 export async function sincronizarCobertura(negocio, usuario) {
+  // Las cuentas de correo y contraseña no tienen el correo verificado: no se pueden usar para reconocer pagos de Mi Asistente
+  if (usuario.proveedor === "email") return { consultado: false, cubierto: false, hasta: null };
   const cuenta = await consultarCuentaAsistente({ googleId: usuario.googleId, email: usuario.email });
   if (!cuenta) return { consultado: false, cubierto: false, hasta: null };
 

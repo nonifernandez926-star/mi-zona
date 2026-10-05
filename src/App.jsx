@@ -10,7 +10,7 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers,
+  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion,
@@ -641,7 +641,7 @@ function emptyBusiness() {
     id: uid(), kind: "business",
     name: "", desc: "", cat: "comida", zone: ZONES[0],
     services: [], specialties: [], paymentMethods: [], delivery: false, acceptsWhatsapp: true,
-    phone: "", ig: "", logo: "", photos: [], loc: "",
+    phone: "", ig: "", tiktok: "", facebook: "", logo: "", photos: [], loc: "",
     lat: null, lng: null,
     weekHours: DAYS.map(() => [9, 20]),
     featured: false, status: "active",
@@ -1608,27 +1608,42 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               ))}
             </div>
 
-            {/* acciones rápidas */}
+            {/* acciones rápidas: arriba WhatsApp + Cómo llegar; abajo las redes sociales, siempre en equilibrio */}
             {(() => {
-              const acciones = [
-                biz.phone && { Icon: Phone, label: "Llamar", color: "#2C9A5F", href: `tel:${soloDigitos(biz.phone)}`, track: "contacto" },
-                biz.phone && biz.acceptsWhatsapp && { Icon: MessageCircle, label: "WhatsApp", color: "#25A06A", href: `https://wa.me/${numeroWhatsapp(biz.phone)}`, track: "contacto" },
-                biz.ig && { Icon: Instagram, label: "Instagram", color: "#C13584", href: `https://instagram.com/${biz.ig}`, track: "contacto" },
-                { Icon: Navigation, label: "Cómo llegar", color: "#2F6FED", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" },
+              const handle = (v) => String(v || "").trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?[^/]+\//, "").replace(/\/+$/, "");
+              const esUrl = (v) => /^https?:\/\//i.test(String(v || "").trim());
+              // arriba: contacto directo + ubicación. Si el negocio no usa WhatsApp pero tiene teléfono, el botón de contacto es "Llamar".
+              const contacto = biz.phone && biz.acceptsWhatsapp
+                ? { Icon: MessageCircle, label: "WhatsApp", color: "#25A06A", href: `https://wa.me/${numeroWhatsapp(biz.phone)}`, track: "contacto" }
+                : biz.phone ? { Icon: Phone, label: "Llamar", color: "#2C9A5F", href: `tel:${soloDigitos(biz.phone)}`, track: "contacto" } : null;
+              const principales = [contacto, { Icon: Navigation, label: "Cómo llegar", color: "#2F6FED", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" }].filter(Boolean);
+              const redes = [
+                biz.ig && handle(biz.ig) && { Icon: Instagram, label: "Instagram", color: "#C13584", href: `https://instagram.com/${handle(biz.ig)}`, track: "contacto" },
+                biz.tiktok && handle(biz.tiktok) && { Icon: Music2, label: "TikTok", color: "#111827", href: `https://www.tiktok.com/@${handle(biz.tiktok)}`, track: "contacto" },
+                biz.facebook && handle(biz.facebook) && { Icon: Facebook, label: "Facebook", color: "#1877F2", href: esUrl(biz.facebook) ? biz.facebook.trim() : `https://facebook.com/${handle(biz.facebook)}`, track: "contacto" },
               ].filter(Boolean);
+              const Boton = ({ Icon, label, color, href, track, ancho }) => (
+                <a
+                  href={href} target="_blank" rel="noreferrer"
+                  onClick={() => onTrack && onTrack(biz.id, track)}
+                  className="flex items-center justify-center gap-2 py-3"
+                  style={{ borderRadius: 14, background: `${color}14`, gridColumn: ancho ? "span 2" : undefined }}
+                >
+                  <Icon size={17} color={color} />
+                  <span className="text-xs font-semibold" style={{ color: "#0B1220" }}>{label}</span>
+                </a>
+              );
               return (
-                <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: `repeat(${acciones.length}, minmax(0, 1fr))` }}>
-                  {acciones.map(({ Icon, label, color, href, track }) => (
-                    <a
-                      key={label} href={href} target="_blank" rel="noreferrer"
-                      onClick={() => onTrack && onTrack(biz.id, track)}
-                      className="flex flex-col items-center gap-1 py-2.5"
-                      style={{ borderRadius: 14, background: `${color}14` }}
-                    >
-                      <Icon size={18} color={color} />
-                      <span className="text-[11px] font-semibold" style={{ color: "#0B1220" }}>{label}</span>
-                    </a>
-                  ))}
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${principales.length}, minmax(0, 1fr))` }}>
+                    {principales.map((a) => <Boton key={a.label} {...a} />)}
+                  </div>
+                  {redes.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* de a dos; si queda uno solo, ocupa todo el ancho para que no se vea desparejo */}
+                      {redes.map((a, n) => <Boton key={a.label} {...a} ancho={redes.length % 2 === 1 && n === redes.length - 1} />)}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1869,14 +1884,6 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <Sparkles size={16} /> Hablar con el asistente
               </button>
             )}
-            <a
-              href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
-              onClick={() => onTrack && onTrack(biz.id, "ubicacion")}
-              className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
-              style={{ backgroundColor: "#E8F0FE", color: "#0B2A54", borderRadius: 10 }}
-            >
-              <Navigation size={16} /> Cómo llegar
-            </a>
           </div>
         </div>
       </div>
@@ -3579,26 +3586,6 @@ function HerramientasScreen({ usuario, ownerBiz, onLogin, onAddBusiness, onAgreg
         <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 22, color: "#0B1220" }}>Herramientas</p>
         <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
 
-        <div className="relative overflow-hidden p-5 mb-5" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
-          <div style={{ position: "absolute", top: -40, right: -30, width: 130, height: 130, borderRadius: "50%", background: "#ffffff12" }} />
-          <p className="relative" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 17, color: "#fff" }}>¿Tenés un negocio?</p>
-          <p className="relative text-xs mt-1 mb-4" style={{ color: "#BBD1FB", maxWidth: 260 }}>Sumalo a Mi Zona y recibí más clientes. Si ya tenías uno registrado, entrá con tu cuenta de Google y te aparece solo.</p>
-          {!usuario ? (
-            <div className="relative flex gap-2 flex-wrap">
-              <button onClick={() => onLogin("registro")} className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#fff", color: "#0B2A54" }}>
-                <User size={15} /> Registrarme
-              </button>
-              <button onClick={() => onLogin("login")} className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#ffffff1f", color: "#fff", border: "1px solid #ffffff44" }}>
-                Iniciar sesión
-              </button>
-            </div>
-          ) : (
-            <button onClick={onAddBusiness} className="relative flex items-center gap-2 text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 14, background: "#fff", color: "#0B2A54" }}>
-              <Building2 size={15} /> Agregar mi negocio
-            </button>
-          )}
-        </div>
-
         {herramientasDeTodos}
       </div>
     );
@@ -4038,6 +4025,8 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
           <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
             <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Logo (opcional)</p>
@@ -4459,7 +4448,7 @@ export default function MiZona() {
   };
 
   // modo: "registro" (primera vez) | "login" (ya tiene cuenta)
-  const abrirLogin = (motivo, despues = null, modo = "registro") => setShowLogin({ motivo, despues, modo });
+  const abrirLogin = (motivo, despues = null, modo = "login") => setShowLogin({ motivo, despues, modo });
   const continuarDespues = (despues) => {
     if (despues === "agregar") setShowAddBusiness(true);
     else if (despues?.tipo === "chat") setChatBiz(despues.biz);
@@ -4471,7 +4460,7 @@ export default function MiZona() {
     return false;
   };
   const abrirChat = (biz) => {
-    if (requerirSesion("Para chatear con el asistente de este negocio, registrate o iniciá sesión con Google.", { tipo: "chat", biz })) setChatBiz(biz);
+    if (requerirSesion("Para chatear con el asistente de este negocio necesitás una cuenta de Mi Zona.", { tipo: "chat", biz })) setChatBiz(biz);
   };
   const alIniciarSesion = (r) => {
     const despues = showLogin?.despues || null;
@@ -4491,7 +4480,7 @@ export default function MiZona() {
     try { setBusinesses(await loadBusinesses()); } catch { /* se queda la lista que ya estaba */ }
   };
   const abrirAgregarNegocio = () => {
-    if (requerirSesion("Para registrar tu negocio primero tenés que registrarte con Google. Es rápido y gratis.", "agregar")) setShowAddBusiness(true);
+    if (requerirSesion("Para registrar tu negocio necesitás una cuenta de Mi Zona. Es rápido y gratis.", "agregar")) setShowAddBusiness(true);
   };
 
   // Al completar el formulario y tocar "Aceptar": se ve cuánto tiene que pagar (o que no paga, si ya pagó Mi Asistente)
@@ -4759,7 +4748,7 @@ export default function MiZona() {
   };
 
   const addReview = (id, review) => {
-    if (!requerirSesion("Para dejar una reseña, registrate o iniciá sesión con Google.")) return false;
+    if (!requerirSesion("Para dejar una reseña necesitás una cuenta de Mi Zona.")) return false;
     const nombre = review.name && review.name !== "Anónimo" ? review.name : (usuario.nombre || "Anónimo");
     persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, { ...review, name: nombre }] }));
     return true;
@@ -5122,17 +5111,30 @@ export default function MiZona() {
           />
         ) : (
         <>
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={() => {
+              // el mapa se abre con los mismos filtros que ya elegiste acá
+              setMapaFiltros({ cat: activeCat, abiertos: onlyOpen, favoritos: onlyFavorites, nuevos: onlyNuevos, promos: sortBy === "descuentos" });
+              setShowMapa(true);
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 shrink-0"
+            style={{ borderRadius: 20, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", color: "#fff", boxShadow: "0 6px 14px rgba(11,42,84,.28)" }}
+          >
+            <MapIcon size={13} /> Ver en el mapa
+          </button>
+        </div>
         {activeTab === "inicio" && !query && !activeCat && (() => {
           const vistos = getRecentlyViewed().map((id) => businesses.find((b) => b.id === id)).filter(Boolean);
           const MiniCard = ({ biz }) => {
             const c = catInfo(biz.cat);
             return (
-              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden transition-transform hover:-translate-y-0.5" style={{ width: 150, borderRadius: 16, border: "1px solid #E6ECF5", boxShadow: "0 6px 18px rgba(11,42,84,0.08)" }}>
-                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={92} radius="0px" iconSize={22} clickable={false} />
-                <div className="px-3 py-2.5">
-                  <p className="text-xs font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
-                  <p className="text-[10px] truncate mt-0.5 flex items-center gap-1" style={{ color: "#6B7280" }}>
-                    <span className="rounded-full inline-block" style={{ width: 6, height: 6, background: c?.color }} /> {c?.label}
+              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden transition-transform hover:-translate-y-0.5" style={{ width: 112, borderRadius: 14, border: "1px solid #E6ECF5", boxShadow: "0 4px 12px rgba(11,42,84,0.07)" }}>
+                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={62} radius="0px" iconSize={18} clickable={false} />
+                <div className="px-2.5 py-2">
+                  <p className="text-[11px] font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
+                  <p className="text-[9px] truncate mt-0.5 flex items-center gap-1" style={{ color: "#6B7280" }}>
+                    <span className="rounded-full inline-block" style={{ width: 5, height: 5, background: c?.color }} /> {c?.label}
                   </p>
                 </div>
               </button>
@@ -5142,10 +5144,10 @@ export default function MiZona() {
             <>
               {vistos.length > 0 && (
                 <div className="mb-5">
-                  <p className="flex items-center gap-1.5 mb-2.5" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
-                    <Clock size={15} color="#2F6FED" /> Visto recientemente
+                  <p className="flex items-center gap-1.5 mb-2" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>
+                    <Clock size={14} color="#2F6FED" /> Visto recientemente
                   </p>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
+                  <div className="flex gap-2.5 overflow-x-auto pb-2">
                     {vistos.map((b) => <MiniCard key={b.id} biz={b} />)}
                   </div>
                 </div>
@@ -5158,17 +5160,6 @@ export default function MiZona() {
             <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
               {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#6B7280" }}>en {zone}</span>
             </p>
-            <button
-              onClick={() => {
-                // el mapa se abre con los mismos filtros que ya elegiste acá
-                setMapaFiltros({ cat: activeCat, abiertos: onlyOpen, favoritos: onlyFavorites, nuevos: onlyNuevos, promos: sortBy === "descuentos" });
-                setShowMapa(true);
-              }}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 shrink-0"
-              style={{ borderRadius: 20, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", color: "#fff", boxShadow: "0 6px 14px rgba(11,42,84,.28)" }}
-            >
-              <MapIcon size={13} /> Ver en el mapa
-            </button>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
             {onlyFavorites && (

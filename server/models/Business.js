@@ -14,6 +14,8 @@ const businessSchema = new mongoose.Schema(
     acceptsWhatsapp: Boolean,
     phone: String,
     ig: String,
+    tiktok: String,
+    facebook: String,
     logo: String,
     photos: [String],
     loc: String,

@@ -72,10 +72,12 @@ router.get("/", async (req, res) => {
 router.get("/mios", requiereUsuario, async (req, res) => {
   try {
     const usuario = req.actor.usuario;
-    await Business.updateMany(
-      { ownerEmail: usuario.email, $or: [{ ownerId: { $exists: false } }, { ownerId: "" }, { ownerId: null }] },
-      { $set: { ownerId: String(usuario._id) } }
-    );
+    if (usuario.proveedor !== "email") { // el correo solo es de fiar si lo verificó Google
+      await Business.updateMany(
+        { ownerEmail: usuario.email, $or: [{ ownerId: { $exists: false } }, { ownerId: "" }, { ownerId: null }] },
+        { $set: { ownerId: String(usuario._id) } }
+      );
+    }
     // Si la cuenta tiene Mi Asistente, sus negocios viejos conectados a ese asistente pasan a ser suyos (ver sincronizarCobertura)
     await sincronizarCobertura(null, usuario);
     const negocios = await Business.find({ ownerId: String(usuario._id) });

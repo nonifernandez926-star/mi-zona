@@ -5,6 +5,8 @@ import {
   verificarIdTokenGoogle, firmarTokenUsuario,
   identificar, requiereUsuario,
 } from "../utils/auth.js";
+import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
+import { permitir, olvidar } from "../utils/limitador.js";
 
 const router = express.Router();
 
@@ -32,7 +34,18 @@ router.post("/google", async (req, res) => {
     const { googleId, email, nombreGoogle } = await verificarIdTokenGoogle(idToken);
 
     let usuario = await Usuario.findOne({ googleId });
-    const yaExistia = !!usuario;
+    let yaExistia = !!usuario;
+    if (!usuario) {
+      // Si ya se había registrado con correo y contraseña con este mismo correo, ahora Google lo verifica: pasa a ser la misma cuenta
+      const porCorreo = await Usuario.findOne({ email, proveedor: "email" });
+      if (porCorreo) {
+        porCorreo.googleId = googleId;
+        porCorreo.proveedor = "google";
+        await porCorreo.save();
+        usuario = porCorreo;
+        yaExistia = true;
+      }
+    }
     if (!usuario && modo === "login") {
       return res.status(404).json({ error: "cuenta_inexistente", mensaje: "Todavía no te registraste con esta cuenta de Google. Tocá \"Registrarme\" para crear tu cuenta." });
     }
@@ -53,6 +66,64 @@ router.post("/google", async (req, res) => {
     if (e.status === 503) return res.status(503).json({ error: e.message });
     // el detalle técnico (por ejemplo "Wrong recipient": el ID de cliente de Google no coincide) ayuda a encontrar el problema
     res.status(401).json({ error: "No se pudo verificar la cuenta de Google", detalle: String(e.message || "").slice(0, 160) });
+  }
+});
+
+const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const normalizarCorreo = (v) => String(v || "").trim().toLowerCase();
+const ip = (req) => req.ip || "sin-ip";
+
+// POST /api/auth/registro   { nombre, email, password }  → crea una cuenta con correo y contraseña
+router.post("/registro", async (req, res) => {
+  try {
+    if (!permitir(`registro|${ip(req)}`, 10, 3600 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
+    const email = normalizarCorreo(req.body?.email);
+    const password = String(req.body?.password || "");
+    const nombre = String(req.body?.nombre || "").replace(/\s+/g, " ").trim();
+    if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
+    if (password.length < 8) return res.status(400).json({ error: "La contraseña tiene que tener al menos 8 caracteres." });
+    if (password.length > 100) return res.status(400).json({ error: "La contraseña es demasiado larga (máximo 100)." });
+    if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
+
+    if (await Usuario.findOne({ email })) {
+      return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
+    }
+    const usuario = await Usuario.create({
+      googleId: `email:${email}`, email, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
+    });
+    res.status(201).json({ token: firmarTokenUsuario(String(usuario._id)), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
+  } catch (e) {
+    if (e.code === 11000) return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
+    console.error("Error en registro con correo:", e.message);
+    res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo crear la cuenta. Probá de nuevo." });
+  }
+});
+
+// POST /api/auth/login   { email, password }  → entra con correo y contraseña
+router.post("/login", async (req, res) => {
+  try {
+    const email = normalizarCorreo(req.body?.email);
+    const password = String(req.body?.password || "");
+    const clave = `login|${ip(req)}|${email}`;
+    // 8 intentos cada 15 minutos por persona y correo: frena a quien prueba contraseñas
+    if (!permitir(clave, 8, 15 * 60 * 1000) || !permitir(`login|${ip(req)}`, 40, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    }
+    if (!RE_CORREO.test(email) || !password) return res.status(400).json({ error: "Escribí tu correo y tu contraseña." });
+
+    const usuario = await Usuario.findOne({ email });
+    if (usuario && !usuario.passwordHash) {
+      return res.status(400).json({ error: "Ese correo se registró con Google. Entrá con el botón de Google.", codigo: "cuenta_google" });
+    }
+    // aunque el correo no exista hacemos el mismo trabajo, así no se nota la diferencia
+    const ok = await verificarContrasena(password, usuario ? usuario.passwordHash : "00:00");
+    if (!usuario || !ok) return res.status(401).json({ error: "Correo o contraseña incorrectos." });
+
+    olvidar(clave);
+    res.json({ token: firmarTokenUsuario(String(usuario._id)), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
+  } catch (e) {
+    console.error("Error en login con correo:", e.message);
+    res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo iniciar sesión. Probá de nuevo." });
   }
 });
 

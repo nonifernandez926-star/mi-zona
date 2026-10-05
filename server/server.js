@@ -15,6 +15,7 @@ import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // detrás de Render: así req.ip es la IP real de cada persona (límite de intentos)
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 
