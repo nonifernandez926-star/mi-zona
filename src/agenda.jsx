@@ -3,9 +3,10 @@
 // confirmación antes de guardar) · "Organizar mi día" y preguntarle a la agenda. Los pedidos NO se gestionan acá.
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft, Plus, X, Check, Clock, User, Bell, Camera, MessageSquare, Sparkles, Send,
+  Plus, X, Check, Clock, User, Bell, Camera, MessageSquare, Sparkles, Send,
   AlertTriangle, CalendarDays, ListChecks, Lock,
 } from "lucide-react";
+import { BotonAtras } from "./cuenta.jsx";
 import { agendaApi, estadoPush, activarPush, pushSoportado, PLAY_STORE_URL } from "./api.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
@@ -499,7 +500,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={onBack} className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: "#ffffff1f" }} aria-label="Volver"><ArrowLeft size={18} color="#fff" /></button>
+            <BotonAtras onClick={onBack} size={38} />
             <p className="flex-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi agenda</p>
           </div>
           <p className="text-xs" style={{ color: "#B8C9EA" }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>

@@ -1,3 +1,9 @@
+# Mi Zona — Seguridad completa y botones de volver (LEER PRIMERO)
+
+- **Ajustes → Seguridad** (`SeguridadScreen` en `src/cuenta.jsx`): portada, estado de la cuenta con datos reales (cómo entrás, correo verificado o no, contraseña, vencimiento de la sesión, fecha de alta, negocios a tu nombre, dispositivos con avisos), cambiar contraseña (o enlace a la seguridad de Google), cerrar otras sesiones, lista de cómo se cuida Mi Zona, consejos y accesos a Privacidad y Soporte. Los datos salen de `GET /api/privacidad`, no hizo falta tocar el servidor.
+- **Botones de volver:** dos componentes nuevos en `src/cuenta.jsx`: `BotonAtras` (cuadrado con flecha, para las barras de arriba; tonos claro / oscuro / foto) y `BotonVolver` (píldora con círculo y nombre de la pantalla anterior). Reemplazan a todas las flechas sueltas de la app.
+- El ícono de Seguridad en Ajustes ahora es un escudo, para no repetir el candado de Privacidad.
+
 # Mi Zona — cambios de diseño (LEER PRIMERO)
 
 - Privacidad: se quitó el bloque "Seguridad".

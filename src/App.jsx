@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  Search, MapPin, Instagram, Clock, Eye, Plus, X, Lock, ArrowLeft,
+  Search, MapPin, Instagram, Clock, Eye, Plus, X, Lock, ShieldCheck,
   ChevronDown, MessageCircle, Grid3x3, Star, Pencil, Trash2, Power,
   RefreshCw, ImageIcon, LogOut, UtensilsCrossed, Wrench, Shirt, Sparkles,
   Home, Laptop, GraduationCap, Dog, Car, Tractor, PartyPopper, Building2,
@@ -19,7 +19,7 @@ import {
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
 import {
-  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver,
+  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver, BotonAtras,
   PlanesModal, TarjetaSuscripcion, infoSuscripcion,
 } from "./cuenta.jsx";
 
@@ -920,7 +920,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
     <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
       <div style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <BotonAtras onClick={onBack} />
           <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)" }}>
             <Search size={16} color="#fff" />
           </div>
@@ -1094,7 +1094,7 @@ function ChatScreen({ biz, onBack }) {
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <BotonAtras onClick={onBack} />
           <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", fontWeight: 700, fontSize: 14 }}>
             {biz.name?.[0]?.toUpperCase()}
           </div>
@@ -1547,9 +1547,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
           <Photo cat={biz.cat} src={biz.portada || null} height={270} radius="0" iconSize={52} onOpen={onOpenPhoto} />
           <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height: 110, background: "linear-gradient(to bottom, rgba(8,18,38,0.55), rgba(8,18,38,0))" }} />
           <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3" style={{ zIndex: 5 }}>
-            <button onClick={onBack} aria-label="Volver" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
-              <ArrowLeft size={19} color="#0B2A54" />
-            </button>
+            <BotonAtras onClick={onBack} tono="foto" />
             <div className="flex items-center gap-2.5">
               <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <Share2 size={17} color="#0B2A54" />
@@ -2229,7 +2227,7 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
+        <BotonAtras onClick={onBack} tono="oscuro" size={36} />
         <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
       </div>
       <p className="text-xs mb-5" style={{ color: "#4B5563" }}>Tus negocios guardados</p>
@@ -2554,7 +2552,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
       {/* encabezado */}
       <div style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Mapa de {zone}</p>
             <p className="text-[11px]" style={{ color: "#BBD1FB" }}>
@@ -2923,7 +2921,7 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
       <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
+          <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Notificaciones</p>
             <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
@@ -3145,7 +3143,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
   const cabecera = (titulo, subtitulo, atras) => (
     <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-        <button onClick={atras}><ArrowLeft size={19} color="#fff" /></button>
+        <BotonAtras onClick={atras} />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{titulo}</p>
           {subtitulo && <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{subtitulo}</p>}
@@ -3382,9 +3380,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
         <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "#7FA8F51a" }} />
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={onBack} className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#ffffff1f" }} aria-label="Volver">
-              <ArrowLeft size={17} color="#fff" />
-            </button>
+            <BotonAtras onClick={onBack} size={36} />
             <div className="flex-1 min-w-0">
               <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#fff", lineHeight: 1.15 }}>Ranking de la zona</p>
               <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#B8C9EA" }}><MapPin size={11} /> {zone}</p>
@@ -3775,7 +3771,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
   }
 
   if (sub === "seguridad") {
-    return <SeguridadScreen usuario={usuario} onBack={() => setSub(null)} onLogin={() => onLogin("login")} />;
+    return <SeguridadScreen usuario={usuario} onBack={() => setSub(null)} onLogin={() => onLogin("login")} onIrPrivacidad={() => setSub("privacidad")} onIrSoporte={() => setSub("soporte")} />;
   }
 
   if (sub === "apariencia") {
@@ -3858,7 +3854,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
-        <Row Icon={Lock} title="Seguridad" desc="Contraseña y sesiones abiertas" onClick={() => setSub("seguridad")} />
+        <Row Icon={ShieldCheck} title="Seguridad" desc="Estado de tu cuenta, contraseña y sesiones abiertas" onClick={() => setSub("seguridad")} />
         <Row Icon={Settings} title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
         <Row Icon={Lock} title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}

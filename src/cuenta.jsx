@@ -1,6 +1,6 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, CreditCard, Store, Star, Lock, LifeBuoy, Timer, BadgeCheck, MessageCircle } from "lucide-react";
 import {
   cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
   estadoPush, activarPush, desactivarPush, privacidadApi, setToken,
@@ -36,19 +36,40 @@ export function infoSuscripcion(negocio) {
   return { estado: dias <= 7 ? "por_vencer" : "activa", dias };
 }
 
-/* ---------- botón de volver (el único de cada subpantalla) ---------- */
+/* ---------- botones de volver ---------- */
 
+// Botón cuadrado con flecha, para las barras de arriba.
+//   tono "claro": sobre fondo azul oscuro · "oscuro": sobre fondo blanco · "foto": encima de una foto
+export function BotonAtras({ onClick, tono = "claro", size = 40, label = "Volver" }) {
+  const estilos = {
+    claro: { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.28)", color: "#fff" },
+    oscuro: { background: "#fff", border: "1px solid #DCE5F2", color: "#0B2A54", boxShadow: "0 1px 2px rgba(11,42,84,0.08)" },
+    foto: { background: "rgba(255,255,255,0.95)", border: "1px solid rgba(255,255,255,0.9)", color: "#0B2A54", boxShadow: "0 4px 14px rgba(0,0,0,0.25)" },
+  }[tono];
+  return (
+    <button
+      onClick={onClick} aria-label={label}
+      className="flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.34), ...estilos }}
+    >
+      <ChevronLeft size={Math.round(size * 0.56)} strokeWidth={2.4} style={{ marginLeft: -1 }} />
+    </button>
+  );
+}
+
+// Botón de las subpantallas de Ajustes: círculo con flecha + nombre de la pantalla anterior
 export function BotonVolver({ texto, onClick }) {
-  // Flecha + nombre de la pantalla anterior, como en las apps del celular ("‹ Ajustes")
   const destino = String(texto || "").replace(/^Volver a /i, "") || "Volver";
   return (
     <button
       onClick={onClick} aria-label={texto}
-      className="flex items-center -ml-2 mb-3 pr-3 py-2 active:opacity-60"
-      style={{ color: "#2F6FED", minHeight: 44 }}
+      className="inline-flex items-center gap-2 mb-4 active:scale-95 transition-transform"
+      style={{ padding: "5px 16px 5px 5px", borderRadius: 999, background: "#fff", border: "1px solid #DCE5F2", boxShadow: "0 1px 2px rgba(11,42,84,0.08), 0 4px 12px rgba(11,42,84,0.06)", color: "#0B2A54" }}
     >
-      <ChevronLeft size={26} strokeWidth={2.2} />
-      <span style={{ fontSize: 16, fontWeight: 500 }}>{destino}</span>
+      <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: "50%", background: "#0B2A54", color: "#fff" }}>
+        <ChevronLeft size={18} strokeWidth={2.6} style={{ marginLeft: -1 }} />
+      </span>
+      <span style={{ fontFamily: "var(--fuente-titulo)", fontSize: 14.5, fontWeight: 700, letterSpacing: "-0.01em" }}>{destino}</span>
     </button>
   );
 }
@@ -381,31 +402,65 @@ function EliminarCuenta({ usuario, onEliminada }) {
 
 /* ---------- Ajustes → Seguridad ---------- */
 
-export function SeguridadScreen({ usuario, onBack, onLogin }) {
+const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
+
+function SegSeccion({ titulo, desc, children }) {
+  return (
+    <section className="mb-6">
+      <h3 style={{ ...TITULO, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "#4B5563", fontWeight: 700 }} className="px-1 mb-2">{titulo}</h3>
+      {desc && <p className="text-sm px-1 mb-2.5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{desc}</p>}
+      {children}
+    </section>
+  );
+}
+
+function SegFila({ Icon, titulo, desc, valor, tono, ultimo, onClick }) {
+  const colores = { ok: ["#E4F3EA", "#1E6B44"], aviso: ["#FDF1DC", "#8A5A0B"], neutro: ["#EEF3FB", "#0B2A54"] }[tono || "neutro"];
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#EEF3FB", color: "#0B2A54" }}><Icon size={19} /></span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.45 }}>{desc}</span>}
+      </span>
+      {valor && <span className="shrink-0 text-xs font-bold px-2.5 py-1" style={{ borderRadius: 999, background: colores[0], color: colores[1] }}>{valor}</span>}
+      {onClick && !valor && <ChevronRight size={18} color="#64748B" className="shrink-0" />}
+    </Tag>
+  );
+}
+
+export function SeguridadScreen({ usuario, onBack, onLogin, onIrPrivacidad, onIrSoporte }) {
   const [actual, setActual] = useState("");
   const [nueva, setNueva] = useState("");
   const [repetir, setRepetir] = useState("");
   const [ver, setVer] = useState(false);
   const [estadoClave, setEstadoClave] = useState(null); // null | "guardando" | "ok" | { error }
   const [estadoSesiones, setEstadoSesiones] = useState(null); // null | "confirmar" | "cerrando" | "ok" | { error }
-  const campo = { borderRadius: 10, borderColor: "#E2E8F0", background: "#fff" };
-  const tarjeta = { borderRadius: 16, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" };
+  const [resumen, setResumen] = useState(null); // datos reales de la cuenta (servidor)
+  const campo = { borderRadius: 12, borderColor: "#CBD5E1", background: "#fff", color: "#0B1220" };
 
-  const Volver = () => (
-    <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-  );
+  useEffect(() => {
+    if (!usuario) { setResumen(null); return; }
+    let vivo = true;
+    privacidadApi.resumen().then((r) => { if (vivo) setResumen(r); }).catch(() => {});
+    return () => { vivo = false; };
+  }, [usuario?.id]);
+
+  const Volver = () => <BotonVolver texto="Volver a Ajustes" onClick={onBack} />;
 
   if (!usuario) {
     return (
       <div>
         <Volver />
-        <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Seguridad</h2>
+        <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800 }} className="mb-2">Seguridad</h2>
         <p className="text-sm mb-4" style={{ color: "#374151", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
         <button onClick={onLogin} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 12, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
       </div>
     );
   }
 
+  const conClave = usuario.conClave;
   const claveValida = actual && nueva.length >= 8 && nueva === repetir;
   const guardarClave = async () => {
     setEstadoClave("guardando");
@@ -422,62 +477,116 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
     catch (e) { setEstadoSesiones({ error: e.message }); }
   };
 
+  const creada = resumen?.cuenta?.creadaEn ? fmtFecha(String(resumen.cuenta.creadaEn).slice(0, 10)) : null;
+  const venceSesion = resumen?.sesion?.venceEn ? fmtFecha(String(resumen.sesion.venceEn).slice(0, 10)) : null;
+  const negocios = resumen?.negocios || [];
+  const dispositivos = resumen?.dispositivosPush ?? null;
+
   return (
     <div>
       <Volver />
-      <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">Seguridad</h2>
-      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Cuidá el acceso a tu cuenta</p>
 
-      <div className="p-4 mb-3" style={tarjeta}>
-        <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Cómo se protege tu cuenta</p>
-        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>
-          {usuario.conClave
-            ? <>Entrás con el correo <b>{usuario.email}</b> y una contraseña. Guardamos tu contraseña cifrada: nadie, ni nosotros, puede verla.</>
-            : <>Entrás con tu cuenta de Google (<b>{usuario.email}</b>). La contraseña y la verificación en dos pasos se manejan desde Google.</>}
-        </p>
-        {!usuario.conClave && (
-          <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="inline-block text-xs font-semibold mt-2.5" style={{ color: "#2F6FED" }}>
-            Abrir la seguridad de mi cuenta de Google
-          </a>
-        )}
-      </div>
-
-      {usuario.conClave && (
-        <div className="p-4 mb-3" style={tarjeta}>
-          <p className="text-sm font-semibold mb-3" style={{ color: "#0B1220" }}>Cambiar contraseña</p>
-          <div className="flex flex-col gap-2.5">
-            <input value={actual} onChange={(e) => { setActual(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
-            <input value={nueva} onChange={(e) => { setNueva(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
-            <input value={repetir} onChange={(e) => { setRepetir(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
-            <label className="flex items-center gap-2 text-xs" style={{ color: "#374151" }}>
-              <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
-            </label>
-            {repetir && nueva !== repetir && <p className="text-xs" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
-            {estadoClave?.error && <p className="text-xs" style={{ color: "#C1443A" }}>{estadoClave.error}</p>}
-            {estadoClave === "ok" && <p className="text-xs flex items-center gap-1" style={{ color: "#1E6B44" }}><Check size={13} /> Listo: cambiaste tu contraseña y cerramos tu sesión en los demás dispositivos.</p>}
-            <button onClick={guardarClave} disabled={!claveValida || estadoClave === "guardando"} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#2F6FED", color: "#fff", opacity: !claveValida || estadoClave === "guardando" ? 0.5 : 1 }}>
-              {estadoClave === "guardando" ? "Guardando..." : "Cambiar contraseña"}
-            </button>
+      {/* portada */}
+      <div className="relative overflow-hidden p-5 mb-6" data-conservar-color style={{ borderRadius: 22, background: "linear-gradient(135deg, #0B2A54 0%, #1B4A8C 100%)", color: "#fff", boxShadow: "0 10px 28px rgba(11,42,84,0.28)" }}>
+        <div className="absolute" style={{ right: -28, top: -28, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
+        <div className="relative flex items-center gap-3.5">
+          <span className="flex items-center justify-center shrink-0" style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)" }}><ShieldCheck size={27} color="#fff" /></span>
+          <div className="min-w-0">
+            <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.02em" }}>Seguridad</h2>
+            <p className="text-sm mt-1 truncate" style={{ color: "#CFE0FB" }}>{usuario.email}</p>
           </div>
         </div>
+      </div>
+
+      <SegSeccion titulo="Estado de tu cuenta">
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          <SegFila Icon={conClave ? Mail : BadgeCheck} titulo="Cómo entrás" desc={conClave ? "Con tu correo y una contraseña." : "Con tu cuenta de Google."} valor={conClave ? "Correo" : "Google"} />
+          <SegFila Icon={Mail} titulo="Correo" desc={conClave ? "Tu correo no fue verificado por Google: por eso no se usa para reconocer pagos de Mi Asistente." : "Lo confirmó Google cuando entraste."} valor={conClave ? "Sin verificar" : "Verificado"} tono={conClave ? "aviso" : "ok"} />
+          <SegFila Icon={KeyRound} titulo="Contraseña" desc={conClave ? "Se guarda cifrada: nadie, ni nosotros, puede verla." : "La contraseña y la verificación en dos pasos las maneja Google."} valor={conClave ? "Cifrada" : "En Google"} tono="ok" />
+          <SegFila Icon={Timer} titulo="Sesión en este dispositivo" desc={venceSesion ? `Se cierra sola el ${venceSesion}. Cada vez que entrás de nuevo se renueva por 90 días.` : "Se cierra sola a los 90 días."} valor="90 días" />
+          {creada && <SegFila Icon={Clock} titulo="Cuenta creada" desc={creada} />}
+          <SegFila Icon={Store} titulo="Negocios a tu nombre" desc={negocios.length ? "Solo vos podés editarlos desde tu cuenta." : "Todavía no cargaste ninguno."} valor={String(negocios.length)} />
+          <SegFila Icon={MonitorSmartphone} titulo="Dispositivos con avisos" desc="Celulares con las notificaciones de Mi Zona activadas." valor={dispositivos === null ? "—" : String(dispositivos)} ultimo />
+        </div>
+      </SegSeccion>
+
+      {conClave ? (
+        <SegSeccion titulo="Cambiar contraseña" desc="Al cambiarla cerramos tu sesión en todos los demás dispositivos.">
+          <div className="p-4" style={TARJETA_SEG}>
+            <div className="flex flex-col gap-2.5">
+              <input value={actual} onChange={(e) => { setActual(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+              <input value={nueva} onChange={(e) => { setNueva(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+              <input value={repetir} onChange={(e) => { setRepetir(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+              <label className="flex items-center gap-2 text-sm" style={{ color: "#374151" }}>
+                <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
+              </label>
+              {repetir && nueva !== repetir && <p className="text-sm" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
+              {estadoClave?.error && <p className="text-sm" style={{ color: "#C1443A" }}>{estadoClave.error}</p>}
+              {estadoClave === "ok" && <p className="text-sm flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> Listo: cambiaste tu contraseña y cerramos tu sesión en los demás dispositivos.</p>}
+              <button onClick={guardarClave} disabled={!claveValida || estadoClave === "guardando"} className="w-full text-sm font-bold py-3" style={{ borderRadius: 12, background: "#0B2A54", color: "#fff", opacity: !claveValida || estadoClave === "guardando" ? 0.45 : 1 }}>
+                {estadoClave === "guardando" ? "Guardando..." : "Cambiar contraseña"}
+              </button>
+            </div>
+          </div>
+        </SegSeccion>
+      ) : (
+        <SegSeccion titulo="Contraseña y verificación en dos pasos">
+          <div className="p-4" style={TARJETA_SEG}>
+            <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>Como entrás con Google, la contraseña, la verificación en dos pasos y las alertas de acceso se manejan desde tu cuenta de Google.</p>
+            <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-bold mt-3" style={{ color: "#2F6FED" }}>
+              Abrir la seguridad de mi cuenta de Google <ChevronRight size={16} />
+            </a>
+          </div>
+        </SegSeccion>
       )}
 
-      <div className="p-4" style={tarjeta}>
-        <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Sesiones abiertas</p>
-        <p className="text-xs mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
-        {estadoSesiones?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estadoSesiones.error}</p>}
-        {estadoSesiones === "ok" && <p className="text-xs mb-2 flex items-center gap-1" style={{ color: "#1E6B44" }}><Check size={13} /> Cerramos tu sesión en los demás dispositivos.</p>}
-        {estadoSesiones === "confirmar" ? (
-          <div className="flex gap-2">
-            <button onClick={() => setEstadoSesiones(null)} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>Cancelar</button>
-            <button onClick={cerrarOtras} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff" }}>Sí, cerrar</button>
-          </div>
-        ) : (
-          <button onClick={() => setEstadoSesiones("confirmar")} disabled={estadoSesiones === "cerrando"} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, border: "1px solid #C1443A", color: "#9A3B34", opacity: estadoSesiones === "cerrando" ? 0.5 : 1 }}>
-            {estadoSesiones === "cerrando" ? "Cerrando..." : "Cerrar sesión en los demás dispositivos"}
-          </button>
-        )}
-      </div>
+      <SegSeccion titulo="Sesiones abiertas">
+        <div className="p-4" style={TARJETA_SEG}>
+          <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
+          {estadoSesiones?.error && <p className="text-sm mb-2" style={{ color: "#C1443A" }}>{estadoSesiones.error}</p>}
+          {estadoSesiones === "ok" && <p className="text-sm mb-2 flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> Cerramos tu sesión en los demás dispositivos.</p>}
+          {estadoSesiones === "confirmar" ? (
+            <div className="flex gap-2">
+              <button onClick={() => setEstadoSesiones(null)} className="flex-1 text-sm font-semibold py-3" style={{ borderRadius: 12, border: "1px solid #CBD5E1", color: "#0B1220" }}>Cancelar</button>
+              <button onClick={cerrarOtras} className="flex-1 text-sm font-bold py-3" style={{ borderRadius: 12, background: "#C1443A", color: "#fff" }}>Sí, cerrar</button>
+            </div>
+          ) : (
+            <button onClick={() => setEstadoSesiones("confirmar")} disabled={estadoSesiones === "cerrando"} className="w-full text-sm font-bold py-3" style={{ borderRadius: 12, border: "1.5px solid #C1443A", color: "#9A3B34", opacity: estadoSesiones === "cerrando" ? 0.5 : 1 }}>
+              {estadoSesiones === "cerrando" ? "Cerrando..." : "Cerrar sesión en los demás dispositivos"}
+            </button>
+          )}
+        </div>
+      </SegSeccion>
+
+      <SegSeccion titulo="Cómo cuidamos Mi Zona">
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          <SegFila Icon={Lock} titulo="Contraseñas cifradas" desc="Nunca guardamos tu contraseña, solo una huella que no se puede revertir." />
+          <SegFila Icon={ShieldCheck} titulo="Frenamos los intentos repetidos" desc="Si alguien prueba contraseñas una y otra vez, el servidor lo bloquea un rato." />
+          <SegFila Icon={KeyRound} titulo="Sesiones firmadas que vencen" desc="Si cambiás la contraseña o cerrás las otras sesiones, las anteriores dejan de servir." />
+          <SegFila Icon={MessageCircle} titulo="Tus puntos, canjes y chats" desc="Solo se ven con tu sesión iniciada: no alcanza con conocer un id." />
+          <SegFila Icon={Store} titulo="Tu negocio es solo tuyo" desc="Solo su dueño lo edita. Pagos, vencimiento y estado los maneja el servidor." />
+          <SegFila Icon={Star} titulo="Reseñas protegidas" desc="Nadie puede editar ni borrar reseñas ajenas ni responder por el dueño." />
+          <SegFila Icon={CreditCard} titulo="Pagos con Mercado Pago" desc="Cobra Mercado Pago: en Mi Zona nunca vemos los datos de tu tarjeta." ultimo />
+        </div>
+      </SegSeccion>
+
+      <SegSeccion titulo="Consejos para cuidar tu cuenta">
+        <div className="p-4" style={TARJETA_SEG}>
+          <ul className="text-sm flex flex-col gap-2.5" style={{ color: "#374151", lineHeight: 1.5 }}>
+            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Usá una contraseña que no uses en ningún otro sitio.</span></li>
+            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>En un celular o computadora compartida, cerrá sesión al terminar.</span></li>
+            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Pagá siempre dentro de Mercado Pago, desde Mi suscripción. Nadie del equipo te pide claves ni pagos por mensaje.</span></li>
+            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Si ves algo raro en tu cuenta, cerrá las otras sesiones y cambiá la contraseña.</span></li>
+          </ul>
+        </div>
+      </SegSeccion>
+
+      <SegSeccion titulo="Más">
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          {onIrPrivacidad && <SegFila Icon={Lock} titulo="Privacidad y mis datos" desc="Controles de uso, descarga de tus datos y eliminación de la cuenta." onClick={onIrPrivacidad} />}
+          {onIrSoporte && <SegFila Icon={LifeBuoy} titulo="Avisar un problema de seguridad" desc="Escribile al equipo de Mi Zona." onClick={onIrSoporte} ultimo />}
+        </div>
+      </SegSeccion>
     </div>
   );
 }
