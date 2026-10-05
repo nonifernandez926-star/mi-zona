@@ -5,6 +5,8 @@ import AgendaItem from "../models/AgendaItem.js";
 import PushSuscripcion from "../models/PushSuscripcion.js";
 import UsoFotoAgenda from "../models/UsoFotoAgenda.js";
 import Evento from "../models/Evento.js";
+import Sesion from "../models/Sesion.js";
+import ActividadSeguridad from "../models/ActividadSeguridad.js";
 import { identificar, requiereUsuario, verificarAccessTokenGoogle, limitar } from "../utils/auth.js";
 import { verificarContrasena } from "../utils/contrasenas.js";
 import { huellaAutor } from "../utils/negocios.js";
@@ -160,6 +162,8 @@ router.delete("/cuenta", async (req, res) => {
       AgendaItem.deleteMany({ usuarioId: id }),
       PushSuscripcion.deleteMany({ usuarioId: id }),
       UsoFotoAgenda.deleteMany({ usuarioId: id }),
+      Sesion.deleteMany({ usuarioId: id }),
+      ActividadSeguridad.deleteMany({ usuarioId: id }),
     ]);
     await Usuario.deleteOne({ _id: u._id });
     res.json({ ok: true });

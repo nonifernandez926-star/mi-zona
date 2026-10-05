@@ -1,8 +1,14 @@
-# Mi Zona — Seguridad completa y botones de volver (LEER PRIMERO)
+# Mi Zona — Seguridad con subpantallas (LEER PRIMERO · volver a publicar servidor Y web)
 
-- **Ajustes → Seguridad** (`SeguridadScreen` en `src/cuenta.jsx`): portada, estado de la cuenta con datos reales (cómo entrás, correo verificado o no, contraseña, vencimiento de la sesión, fecha de alta, negocios a tu nombre, dispositivos con avisos), cambiar contraseña (o enlace a la seguridad de Google), cerrar otras sesiones, lista de cómo se cuida Mi Zona, consejos y accesos a Privacidad y Soporte. Los datos salen de `GET /api/privacidad`, no hizo falta tocar el servidor.
-- **Botones de volver:** dos componentes nuevos en `src/cuenta.jsx`: `BotonAtras` (cuadrado con flecha, para las barras de arriba; tonos claro / oscuro / foto) y `BotonVolver` (píldora con círculo y nombre de la pantalla anterior). Reemplazan a todas las flechas sueltas de la app.
-- El ícono de Seguridad en Ajustes ahora es un escudo, para no repetir el candado de Privacidad.
+Seguridad ahora funciona como en Google, Instagram y Mercado Pago: un menú corto y cada fila abre su propia pantalla.
+- **Revisión de seguridad:** recomendaciones (dispositivos de más, alertas apagadas, notificaciones apagadas); cada una lleva a donde se resuelve.
+- **Contraseña:** cambiar contraseña (cuentas con correo) o enlace a Google (cuentas con Google).
+- **Alertas de inicio de sesión:** interruptor + estado de las notificaciones de este dispositivo. Manda un aviso push cuando entran desde un dispositivo nuevo o cambian la contraseña.
+- **Dispositivos:** sesiones abiertas con nombre ("Chrome en Android") y último uso; cerrar una, o todas las demás.
+- **Actividad reciente:** inicios de sesión y cambios de seguridad de los últimos 90 días.
+
+**Servidor (nuevo):** modelos `Sesion` y `ActividadSeguridad`, `utils/sesiones.js`, `utils/dispositivos.js`; rutas `GET/DELETE /api/auth/sesiones`, `POST /api/auth/salir`, `GET /api/auth/actividad`, `GET/PUT /api/auth/alertas`. El token ahora lleva el id de la sesión de cada dispositivo.
+Las sesiones abiertas antes de esta versión siguen funcionando; aparecen en Dispositivos la primera vez que abrís esa pantalla. "Cerrar sesión" también la borra del servidor. Al eliminar la cuenta se borran las sesiones y el historial.
 
 # Mi Zona — cambios de diseño (LEER PRIMERO)
 

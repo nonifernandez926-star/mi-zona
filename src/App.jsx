@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, vincularSesionCliente, traerMisConversaciones,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, seguridadApi, vincularSesionCliente, traerMisConversaciones,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
@@ -3771,7 +3771,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
   }
 
   if (sub === "seguridad") {
-    return <SeguridadScreen usuario={usuario} onBack={() => setSub(null)} onLogin={() => onLogin("login")} onIrPrivacidad={() => setSub("privacidad")} onIrSoporte={() => setSub("soporte")} />;
+    return <SeguridadScreen usuario={usuario} onBack={() => setSub(null)} onLogin={() => onLogin("login")} />;
   }
 
   if (sub === "apariencia") {
@@ -3854,7 +3854,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
-        <Row Icon={ShieldCheck} title="Seguridad" desc="Estado de tu cuenta, contraseña y sesiones abiertas" onClick={() => setSub("seguridad")} />
+        <Row Icon={ShieldCheck} title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
         <Row Icon={Settings} title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
         <Row Icon={Lock} title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
@@ -4539,6 +4539,7 @@ export default function MiZona() {
   };
   const cerrarSesion = async () => {
     try { await desactivarPush(); } catch { /* no había push activo */ }
+    await seguridadApi.salir(); // la sesión de este dispositivo deja de figurar como abierta en Seguridad → Dispositivos
     setToken(null);
     setUsuario(null);
     misNegociosRef.current = [];

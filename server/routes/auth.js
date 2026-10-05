@@ -1,10 +1,14 @@
 import express from "express";
+import mongoose from "mongoose";
 import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
+import Sesion from "../models/Sesion.js";
+import ActividadSeguridad from "../models/ActividadSeguridad.js";
 import {
   verificarIdTokenGoogle, verificarAccessTokenGoogle, firmarTokenUsuario,
-  identificar, requiereUsuario, sesionClienteDe,
+  identificar, requiereUsuario, sesionClienteDe, limitar,
 } from "../utils/auth.js";
+import { iniciarSesion, crearSesion, registrarActividad, avisarSeguridad } from "../utils/sesiones.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
 import { permitir, olvidar } from "../utils/limitador.js";
 
@@ -64,7 +68,7 @@ router.post("/google", async (req, res) => {
     await vincularNegociosPorEmail(usuario);
 
     res.json({
-      token: firmarTokenUsuario(usuario),
+      token: await iniciarSesion(req, usuario, { cuentaNueva: !yaExistia }),
       usuario: usuarioPublico(usuario),
       nombreGoogle, // solo como sugerencia para el campo de nombre
       requiereNombre: !usuario.nombre,
@@ -115,7 +119,7 @@ router.post("/registro", async (req, res) => {
     const usuario = await Usuario.create({
       googleId: `email:${email}`, email, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
     });
-    res.status(201).json({ token: firmarTokenUsuario(usuario), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
+    res.status(201).json({ token: await iniciarSesion(req, usuario, { cuentaNueva: true }), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
     console.error("Error en registro con correo:", e.message);
@@ -144,7 +148,7 @@ router.post("/login", async (req, res) => {
     if (!usuario || !ok) return res.status(401).json({ error: "Correo o contraseña incorrectos." });
 
     olvidar(clave);
-    res.json({ token: firmarTokenUsuario(usuario), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
+    res.json({ token: await iniciarSesion(req, usuario), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
   } catch (e) {
     console.error("Error en login con correo:", e.message);
     res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo iniciar sesión. Probá de nuevo." });
@@ -187,6 +191,13 @@ router.get("/me", identificar, requiereUsuario, (req, res) => {
   res.json({ usuario: usuarioPublico(req.actor.usuario) });
 });
 
+// Borra todas las sesiones de la cuenta menos la de este dispositivo (si este todavía no tenía una, se la crea). Devuelve su sid.
+async function dejarSoloEstaSesion(req, usuario) {
+  const sid = req.sid || (await crearSesion(req, usuario));
+  await Sesion.deleteMany({ usuarioId: String(usuario._id), sid: { $ne: sid } });
+  return sid;
+}
+
 // PUT /api/auth/clave   { actual, nueva }  → cambiar la contraseña (solo cuentas con correo y contraseña).
 // Cierra la sesión en los demás dispositivos y devuelve un token nuevo para este.
 router.put("/clave", identificar, requiereUsuario, async (req, res) => {
@@ -203,7 +214,10 @@ router.put("/clave", identificar, requiereUsuario, async (req, res) => {
     u.passwordHash = await hashearContrasena(nueva);
     u.tokenVersion = (u.tokenVersion || 0) + 1;
     await u.save();
-    res.json({ token: firmarTokenUsuario(u), ok: true });
+    const sid = await dejarSoloEstaSesion(req, u);
+    await registrarActividad(u._id, "contrasena_cambiada", req);
+    avisarSeguridad(u, "Cambiaste tu contraseña", "Cerramos tu sesión en los demás dispositivos. Si no fuiste vos, avisanos desde Seguridad.");
+    res.json({ token: firmarTokenUsuario(u, sid), ok: true });
   } catch (e) {
     console.error("Error al cambiar la contraseña:", e.message);
     res.status(500).json({ error: "No se pudo cambiar la contraseña. Probá de nuevo." });
@@ -216,10 +230,81 @@ router.post("/cerrar-otras-sesiones", identificar, requiereUsuario, async (req, 
     const u = req.actor.usuario;
     u.tokenVersion = (u.tokenVersion || 0) + 1;
     await u.save();
-    res.json({ token: firmarTokenUsuario(u), ok: true });
+    const sid = await dejarSoloEstaSesion(req, u);
+    await registrarActividad(u._id, "sesiones_cerradas", req);
+    res.json({ token: firmarTokenUsuario(u, sid), ok: true });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "No se pudo cerrar las otras sesiones. Probá de nuevo." });
+  }
+});
+
+// GET /api/auth/sesiones → dispositivos con sesión abierta. Si este dispositivo tenía una sesión de antes de esta versión, se la registra y se devuelve un token nuevo.
+router.get("/sesiones", identificar, requiereUsuario, limitar("sesiones", 60, 10 * 60 * 1000), async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    let sid = req.sid;
+    let token = null;
+    if (!sid) { sid = await crearSesion(req, u); token = firmarTokenUsuario(u, sid); }
+    const lista = await Sesion.find({ usuarioId: String(u._id) }).sort({ ultimoUso: -1 }).limit(50);
+    res.json({
+      token,
+      sesiones: lista.map((x) => ({ id: String(x._id), dispositivo: x.dispositivo, tipo: x.tipo, creadaEn: x.creadaEn, ultimoUso: x.ultimoUso, actual: x.sid === sid })),
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudieron cargar tus dispositivos." });
+  }
+});
+
+// DELETE /api/auth/sesiones/:id → cierra la sesión de un dispositivo
+router.delete("/sesiones/:id", identificar, requiereUsuario, limitar("sesiones", 60, 10 * 60 * 1000), async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Dispositivo inválido." });
+    const borrada = await Sesion.findOneAndDelete({ _id: req.params.id, usuarioId: String(u._id) });
+    if (!borrada) return res.status(404).json({ error: "Ese dispositivo ya no tiene la sesión abierta." });
+    await registrarActividad(u._id, "sesion_cerrada", req);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo cerrar la sesión de ese dispositivo." });
+  }
+});
+
+// POST /api/auth/salir → "Cerrar sesión" en este dispositivo: borra su sesión para que deje de figurar como abierta
+router.post("/salir", identificar, async (req, res) => {
+  try {
+    if (req.sid) await Sesion.deleteOne({ sid: req.sid });
+  } catch (e) { console.error(e); }
+  res.json({ ok: true });
+});
+
+// GET /api/auth/actividad → historial de seguridad (últimos 90 días)
+router.get("/actividad", identificar, requiereUsuario, limitar("actividad", 60, 10 * 60 * 1000), async (req, res) => {
+  try {
+    const lista = await ActividadSeguridad.find({ usuarioId: String(req.actor.usuario._id) }).sort({ fecha: -1 }).limit(40);
+    res.json({ eventos: lista.map((x) => ({ tipo: x.tipo, dispositivo: x.dispositivo, fecha: x.fecha })) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo cargar la actividad." });
+  }
+});
+
+// GET / PUT /api/auth/alertas → avisos por notificación cuando entran a la cuenta desde un dispositivo nuevo
+router.get("/alertas", identificar, requiereUsuario, (req, res) => {
+  res.json({ alertasInicio: req.actor.usuario.seguridad?.alertasInicio !== false });
+});
+router.put("/alertas", identificar, requiereUsuario, limitar("alertas", 30, 10 * 60 * 1000), async (req, res) => {
+  try {
+    if (typeof req.body?.alertasInicio !== "boolean") return res.status(400).json({ error: "Pedido inválido." });
+    const u = req.actor.usuario;
+    u.set("seguridad.alertasInicio", req.body.alertasInicio);
+    await u.save();
+    res.json({ alertasInicio: req.body.alertasInicio });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar el cambio." });
   }
 });
 

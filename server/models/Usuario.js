@@ -15,6 +15,10 @@ const usuarioSchema = new mongoose.Schema(
     sesionClienteId: { type: String, default: "" },
     // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
     tokenVersion: { type: Number, default: 0 },
+    // Alertas de seguridad (Seguridad → Alertas de inicio de sesión): avisos por notificación cuando entran a la cuenta desde un dispositivo nuevo
+    seguridad: {
+      alertasInicio: { type: Boolean, default: true },
+    },
     // Controles de privacidad que el SERVIDOR respeta (la búsqueda con asistente y las funciones de IA de la agenda los consultan)
     privacidad: {
       ubicacionBusqueda: { type: Boolean, default: true }, // usar mi ubicación para ordenar negocios por cercanía

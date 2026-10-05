@@ -146,6 +146,17 @@ export const cerrarOtrasSesiones = async () => {
   setToken(r.token);
 };
 
+// Seguridad: dispositivos con sesión, actividad reciente y alertas de inicio de sesión
+export const seguridadApi = {
+  // Si este dispositivo tenía una sesión de antes de esta versión, el servidor la registra y manda un token nuevo
+  sesiones: async () => { const r = await getUsuarioJSON("/auth/sesiones"); if (r.token) setToken(r.token); return r.sesiones; },
+  cerrarSesion: (id) => enviarUsuarioJSON(`/auth/sesiones/${id}`, "DELETE", {}),
+  actividad: () => getUsuarioJSON("/auth/actividad").then((r) => r.eventos),
+  alertas: () => getUsuarioJSON("/auth/alertas").then((r) => r.alertasInicio),
+  guardarAlertas: (alertasInicio) => enviarUsuarioJSON("/auth/alertas", "PUT", { alertasInicio }).then((r) => r.alertasInicio),
+  salir: () => enviarUsuarioJSON("/auth/salir", "POST", {}).catch(() => {}),
+};
+
 export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT", { nombre }).then((r) => r.usuario);
 
 /* ---------- negocios propios y suscripción ---------- */

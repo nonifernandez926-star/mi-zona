@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import Usuario from "../models/Usuario.js";
+import Sesion from "../models/Sesion.js";
 import { permitir } from "./limitador.js";
 
 // ID de cliente de Google de la web de Mi Zona (es público: también va dentro de la web). El servidor siempre lo acepta,
@@ -22,8 +23,11 @@ function secreto() {
   return process.env.JWT_SECRET;
 }
 
-export function firmarTokenUsuario(usuario) {
-  return jwt.sign({ uid: String(usuario._id), v: usuario.tokenVersion || 0 }, secreto(), { expiresIn: "90d", algorithm: "HS256" });
+// "sid" identifica la sesión de ESTE dispositivo (ver models/Sesion.js): al cerrarla desde Seguridad, el token deja de servir.
+export function firmarTokenUsuario(usuario, sid = null) {
+  const datos = { uid: String(usuario._id), v: usuario.tokenVersion || 0 };
+  if (sid) datos.sid = sid;
+  return jwt.sign(datos, secreto(), { expiresIn: "90d", algorithm: "HS256" });
 }
 
 function leerToken(req) {
@@ -71,7 +75,19 @@ export async function identificar(req, res, next) {
     if (t?.uid) {
       const usuario = await Usuario.findById(t.uid);
       // si la versión del token no coincide, la persona cerró sesión en todos los dispositivos o cambió su contraseña
-      if (usuario && (t.v || 0) === (usuario.tokenVersion || 0)) { req.actor = { tipo: "usuario", usuario }; req.tokenExp = t.exp; }
+      if (usuario && (t.v || 0) === (usuario.tokenVersion || 0)) {
+        if (!t.sid) {
+          // token de antes de que existieran las sesiones por dispositivo: sigue valiendo hasta que venza o se cambie la contraseña
+          req.actor = { tipo: "usuario", usuario }; req.tokenExp = t.exp;
+        } else {
+          const ses = await Sesion.findOne({ sid: t.sid, usuarioId: String(usuario._id) }).select("ultimoUso");
+          // si la sesión ya no existe, se cerró desde otro dispositivo: no se la identifica
+          if (ses) {
+            req.actor = { tipo: "usuario", usuario }; req.tokenExp = t.exp; req.sid = t.sid;
+            if (Date.now() - new Date(ses.ultimoUso).getTime() > 10 * 60 * 1000) Sesion.updateOne({ _id: ses._id }, { $set: { ultimoUso: new Date() } }).catch(() => {});
+          }
+        }
+      }
     }
     next();
   } catch (e) {

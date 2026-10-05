@@ -1,9 +1,9 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, CreditCard, Store, Star, Lock, LifeBuoy, Timer, BadgeCheck, MessageCircle } from "lucide-react";
+import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing } from "lucide-react";
 import {
   cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
-  estadoPush, activarPush, desactivarPush, privacidadApi, setToken,
+  estadoPush, activarPush, desactivarPush, privacidadApi, seguridadApi, setToken,
 } from "./api.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
@@ -400,193 +400,409 @@ function EliminarCuenta({ usuario, onEliminada }) {
   );
 }
 
-/* ---------- Ajustes → Seguridad ---------- */
+/* ---------- Ajustes → Seguridad ----------
+   Menú corto como el de Google, Instagram o Mercado Pago: cada fila abre su propia pantalla.
+   Contraseña · Dispositivos con sesión · Actividad reciente · Alertas de inicio de sesión · Revisión de seguridad */
 
 const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
+const VERDE = "#1E8A55", AMBAR = "#C77A0A";
 
-function SegSeccion({ titulo, desc, children }) {
-  return (
-    <section className="mb-6">
-      <h3 style={{ ...TITULO, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "#4B5563", fontWeight: 700 }} className="px-1 mb-2">{titulo}</h3>
-      {desc && <p className="text-sm px-1 mb-2.5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{desc}</p>}
-      {children}
-    </section>
-  );
+function hace(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 2) return "ahora";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} ${h === 1 ? "hora" : "horas"}`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d} ${d === 1 ? "día" : "días"}`;
+  return new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "long" });
+}
+const fechaHora = (iso) => new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+function Etiqueta({ children }) {
+  return <h3 className="px-1 mb-2 mt-6" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "#4B5563" }}>{children}</h3>;
 }
 
-function SegFila({ Icon, titulo, desc, valor, tono, ultimo, onClick }) {
-  const colores = { ok: ["#E4F3EA", "#1E6B44"], aviso: ["#FDF1DC", "#8A5A0B"], neutro: ["#EEF3FB", "#0B2A54"] }[tono || "neutro"];
-  const Tag = onClick ? "button" : "div";
+// Fila del menú: ícono de color, título, dato corto a la derecha y flecha (abre una pantalla)
+function FilaMenu({ Icon, color, titulo, desc, valor, tonoValor, onClick, ultimo }) {
   return (
-    <Tag onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
-      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#EEF3FB", color: "#0B2A54" }}><Icon size={19} /></span>
+    <button onClick={onClick} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: color }}><Icon size={20} color="#fff" /></span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.45 }}>{desc}</span>}
+        <span className="block text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{titulo}</span>
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{desc}</span>}
       </span>
-      {valor && <span className="shrink-0 text-xs font-bold px-2.5 py-1" style={{ borderRadius: 999, background: colores[0], color: colores[1] }}>{valor}</span>}
-      {onClick && !valor && <ChevronRight size={18} color="#64748B" className="shrink-0" />}
-    </Tag>
+      {valor && <span className="text-sm font-semibold shrink-0" style={{ color: tonoValor || "#4B5563" }}>{valor}</span>}
+      <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
+    </button>
   );
 }
 
-export function SeguridadScreen({ usuario, onBack, onLogin, onIrPrivacidad, onIrSoporte }) {
+function Interruptor({ activo, onChange, disabled }) {
+  return (
+    <button role="switch" aria-checked={activo} disabled={disabled} onClick={() => onChange(!activo)} className="shrink-0 relative transition-colors" style={{ width: 52, height: 32, borderRadius: 16, background: activo ? VERDE : "#CBD5E1", opacity: disabled ? 0.6 : 1 }}>
+      <span className="absolute transition-all" style={{ top: 3, left: activo ? 23 : 3, width: 26, height: 26, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+    </button>
+  );
+}
+
+// Encabezado de cada subpantalla: volver a Seguridad + título
+function CabeceraSeg({ titulo, sub, onBack }) {
+  return (
+    <>
+      <BotonVolver texto="Volver a Seguridad" onClick={onBack} />
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{titulo}</h2>
+      {sub && <p className="text-sm mt-1.5 mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{sub}</p>}
+      {!sub && <div className="mb-5" />}
+    </>
+  );
+}
+
+/* ----- Contraseña ----- */
+function SegContrasena({ usuario, onBack, onCambio }) {
   const [actual, setActual] = useState("");
   const [nueva, setNueva] = useState("");
   const [repetir, setRepetir] = useState("");
   const [ver, setVer] = useState(false);
-  const [estadoClave, setEstadoClave] = useState(null); // null | "guardando" | "ok" | { error }
-  const [estadoSesiones, setEstadoSesiones] = useState(null); // null | "confirmar" | "cerrando" | "ok" | { error }
-  const [resumen, setResumen] = useState(null); // datos reales de la cuenta (servidor)
+  const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   const campo = { borderRadius: 12, borderColor: "#CBD5E1", background: "#fff", color: "#0B1220" };
 
-  useEffect(() => {
-    if (!usuario) { setResumen(null); return; }
-    let vivo = true;
-    privacidadApi.resumen().then((r) => { if (vivo) setResumen(r); }).catch(() => {});
-    return () => { vivo = false; };
-  }, [usuario?.id]);
+  if (!usuario.conClave) {
+    return (
+      <div>
+        <CabeceraSeg titulo="Contraseña" sub="Entrás con Google: tu contraseña y la verificación en dos pasos se manejan desde tu cuenta de Google." onBack={onBack} />
+        <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "#0B2A54", color: "#fff" }}>
+          Administrar en Google <ChevronRight size={16} />
+        </a>
+      </div>
+    );
+  }
+  const valida = actual && nueva.length >= 8 && nueva === repetir;
+  const guardar = async () => {
+    setEstado("guardando");
+    try {
+      await cambiarClave(actual, nueva);
+      setActual(""); setNueva(""); setRepetir("");
+      setEstado("ok");
+      onCambio?.();
+    } catch (e) { setEstado({ error: e.message }); }
+  };
+  const cambia = (set) => (e) => { set(e.target.value); setEstado(null); };
+  return (
+    <div>
+      <CabeceraSeg titulo="Contraseña" sub="Al cambiarla cerramos tu sesión en todos los demás dispositivos." onBack={onBack} />
+      <div className="p-4" style={TARJETA_SEG}>
+        <div className="flex flex-col gap-3">
+          <input value={actual} onChange={cambia(setActual)} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input value={repetir} onChange={cambia(setRepetir)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <label className="flex items-center gap-2 text-sm" style={{ color: "#374151" }}>
+            <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
+          </label>
+          {repetir && nueva !== repetir && <p className="text-sm" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
+          {estado?.error && <p className="text-sm" style={{ color: "#C1443A" }}>{estado.error}</p>}
+          {estado === "ok" && <p className="text-sm flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> Listo: cambiaste tu contraseña y cerramos las otras sesiones.</p>}
+          <button onClick={guardar} disabled={!valida || estado === "guardando"} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "#0B2A54", color: "#fff", opacity: !valida || estado === "guardando" ? 0.45 : 1 }}>
+            {estado === "guardando" ? "Guardando..." : "Cambiar contraseña"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  const Volver = () => <BotonVolver texto="Volver a Ajustes" onClick={onBack} />;
+/* ----- Dispositivos con sesión ----- */
+function IconoDispositivo({ tipo, size = 22 }) {
+  const I = tipo === "celular" ? Smartphone : tipo === "tablet" ? Tablet : Monitor;
+  return <I size={size} />;
+}
+
+function SegDispositivos({ sesiones, error, recargar, onBack }) {
+  const [confirmar, setConfirmar] = useState(null); // id de sesión | "todas" | null
+  const [trabajando, setTrabajando] = useState(false);
+  const [fallo, setFallo] = useState(null);
+  const actual = (sesiones || []).find((s) => s.actual);
+  const otras = (sesiones || []).filter((s) => !s.actual);
+
+  const cerrarUna = async (id) => {
+    setTrabajando(true); setFallo(null);
+    try { await seguridadApi.cerrarSesion(id); setConfirmar(null); await recargar(); }
+    catch (e) { setFallo(e.message); }
+    finally { setTrabajando(false); }
+  };
+  const cerrarTodas = async () => {
+    setTrabajando(true); setFallo(null);
+    try { await cerrarOtrasSesiones(); setConfirmar(null); await recargar(); }
+    catch (e) { setFallo(e.message); }
+    finally { setTrabajando(false); }
+  };
+
+  return (
+    <div>
+      <CabeceraSeg titulo="Dispositivos" sub="Los celulares y computadoras donde tenés la sesión abierta." onBack={onBack} />
+      {sesiones === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {error && (
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+          <span>No pudimos cargar tus dispositivos.</span>
+          <button onClick={recargar} className="font-bold shrink-0">Reintentar</button>
+        </div>
+      )}
+      {fallo && <p className="text-sm mb-3" style={{ color: "#C1443A" }}>{fallo}</p>}
+
+      {actual && (
+        <>
+          <Etiqueta>Este dispositivo</Etiqueta>
+          <div className="flex items-center gap-3.5 px-4 py-3.5" style={TARJETA_SEG}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "#E4F3EA", color: VERDE }}><IconoDispositivo tipo={actual.tipo} /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{actual.dispositivo}</span>
+              <span className="block text-xs mt-0.5" style={{ color: VERDE, fontWeight: 600 }}>Activo ahora</span>
+            </span>
+          </div>
+        </>
+      )}
+
+      {sesiones !== null && (
+        <>
+          <Etiqueta>Otros dispositivos</Etiqueta>
+          {otras.length === 0 ? (
+            <div className="px-4 py-5 text-sm text-center" style={{ ...TARJETA_SEG, color: "#4B5563" }}>No hay otros dispositivos con la sesión abierta.</div>
+          ) : (
+            <>
+              <div className="overflow-hidden" style={TARJETA_SEG}>
+                {otras.map((s, i) => (
+                  <div key={s.id} className="px-4 py-3.5" style={{ borderBottom: i === otras.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+                    <div className="flex items-center gap-3.5">
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "#EEF3FB", color: "#0B2A54" }}><IconoDispositivo tipo={s.tipo} /></span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[15px] font-semibold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{s.dispositivo}</span>
+                        <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>Último uso {hace(s.ultimoUso)}</span>
+                      </span>
+                      {confirmar !== s.id && (
+                        <button onClick={() => setConfirmar(s.id)} className="text-sm font-bold shrink-0 px-3 py-2" style={{ borderRadius: 10, color: "#C1443A", background: "#FBEDEC" }}>Cerrar sesión</button>
+                      )}
+                    </div>
+                    {confirmar === s.id && (
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => setConfirmar(null)} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, border: "1px solid #CBD5E1", color: "#0B1220" }}>Cancelar</button>
+                        <button onClick={() => cerrarUna(s.id)} disabled={trabajando} className="flex-1 text-sm font-bold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff", opacity: trabajando ? 0.6 : 1 }}>{trabajando ? "Cerrando..." : "Sí, cerrar"}</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                {confirmar === "todas" ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmar(null)} className="flex-1 text-sm font-semibold py-3.5" style={{ borderRadius: 14, border: "1px solid #CBD5E1", color: "#0B1220" }}>Cancelar</button>
+                    <button onClick={cerrarTodas} disabled={trabajando} className="flex-1 text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "#C1443A", color: "#fff", opacity: trabajando ? 0.6 : 1 }}>{trabajando ? "Cerrando..." : "Sí, cerrar todas"}</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmar("todas")} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, border: "1.5px solid #C1443A", color: "#9A3B34" }}>Cerrar sesión en todos los demás</button>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ----- Actividad reciente ----- */
+const ACTIVIDAD = {
+  cuenta_creada: { Icon: User, color: "#2F6FED", texto: "Creaste tu cuenta" },
+  inicio_sesion: { Icon: LogOut, color: "#0B2A54", texto: "Iniciaste sesión" },
+  contrasena_cambiada: { Icon: KeyRound, color: "#C77A0A", texto: "Cambiaste tu contraseña" },
+  sesiones_cerradas: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión en los demás dispositivos" },
+  sesion_cerrada: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión de un dispositivo" },
+};
+
+function SegActividad({ onBack, irDispositivos }) {
+  const [eventos, setEventos] = useState(null);
+  const [error, setError] = useState(false);
+  const cargar = () => { setError(false); seguridadApi.actividad().then(setEventos).catch(() => setError(true)); };
+  useEffect(cargar, []);
+  return (
+    <div>
+      <CabeceraSeg titulo="Actividad reciente" sub="Inicios de sesión y cambios de seguridad de los últimos 90 días." onBack={onBack} />
+      {eventos === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {error && (
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+          <span>No pudimos cargar la actividad.</span>
+          <button onClick={cargar} className="font-bold shrink-0">Reintentar</button>
+        </div>
+      )}
+      {eventos && eventos.length === 0 && <div className="px-4 py-6 text-sm text-center" style={{ ...TARJETA_SEG, color: "#4B5563" }}>Todavía no hay actividad registrada.</div>}
+      {eventos && eventos.length > 0 && (
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          {eventos.map((e, i) => {
+            const m = ACTIVIDAD[e.tipo] || { Icon: History, color: "#64748B", texto: "Actividad de la cuenta" };
+            return (
+              <div key={`${e.fecha}-${i}`} className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: i === eventos.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: m.color }}><m.Icon size={18} color="#fff" /></span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{m.texto}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{[e.dispositivo, fechaHora(e.fecha)].filter(Boolean).join(" · ")}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {eventos && eventos.length > 0 && (
+        <button onClick={irDispositivos} className="w-full text-sm font-bold py-3.5 mt-4" style={{ borderRadius: 14, border: "1.5px solid #0B2A54", color: "#0B2A54" }}>¿No reconocés algo? Revisar dispositivos</button>
+      )}
+    </div>
+  );
+}
+
+/* ----- Alertas de inicio de sesión ----- */
+function SegAlertas({ alertas, setAlertas, push, recargarPush, onBack }) {
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState(null);
+  const cambiar = async (v) => {
+    setGuardando(true); setError(null);
+    try { setAlertas(await seguridadApi.guardarAlertas(v)); }
+    catch (e) { setError(e.message); }
+    finally { setGuardando(false); }
+  };
+  const activar = async () => {
+    setError(null);
+    try { await activarPush(); } catch (e) { setError(e.message); }
+    recargarPush();
+  };
+  return (
+    <div>
+      <CabeceraSeg titulo="Alertas de inicio de sesión" sub="Te avisamos por notificación cuando alguien entra a tu cuenta desde un dispositivo nuevo o cambia tu contraseña." onBack={onBack} />
+      <div style={TARJETA_SEG}>
+        <div className="flex items-center gap-3.5 px-4 py-4">
+          <span className="flex-1 text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>Avisarme de accesos nuevos</span>
+          <Interruptor activo={alertas !== false} onChange={cambiar} disabled={guardando || alertas === null} />
+        </div>
+      </div>
+      {error && <p className="text-sm mt-3 px-1" style={{ color: "#C1443A" }}>{error}</p>}
+
+      <Etiqueta>Notificaciones en este dispositivo</Etiqueta>
+      <div className="flex items-center gap-3.5 px-4 py-3.5" style={TARJETA_SEG}>
+        <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: push === "activo" ? VERDE : "#94A3B8" }}><BellRing size={20} color="#fff" /></span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{push === "activo" ? "Activadas" : push === "bloqueado" ? "Bloqueadas" : push === "no-soportado" ? "No disponibles" : "Desactivadas"}</span>
+          {push !== "activo" && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{push === "bloqueado" ? "Habilitalas desde la configuración del navegador." : push === "no-soportado" ? "Este navegador no las permite." : "Sin ellas no te llegan las alertas."}</span>}
+        </span>
+        {(push === "inactivo") && <button onClick={activar} className="text-sm font-bold shrink-0 px-3.5 py-2" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>Activar</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ----- Revisión de seguridad ----- */
+function recomendaciones({ sesiones, alertas, push }) {
+  const lista = [];
+  const otras = (sesiones || []).filter((s) => !s.actual).length;
+  if (sesiones !== null) lista.push(otras > 0
+    ? { id: "dispositivos", ok: false, titulo: "Dispositivos con sesión", desc: `Hay ${otras} ${otras === 1 ? "dispositivo más" : "dispositivos más"} con tu sesión abierta. Revisá que sean tuyos.` }
+    : { id: "dispositivos", ok: true, titulo: "Dispositivos con sesión", desc: "Solo este dispositivo tiene la sesión abierta." });
+  if (alertas !== null) lista.push(alertas !== false
+    ? { id: "alertas", ok: true, titulo: "Alertas de inicio de sesión", desc: "Te avisamos si alguien entra a tu cuenta." }
+    : { id: "alertas", ok: false, titulo: "Alertas de inicio de sesión", desc: "Están desactivadas: no te enteras si alguien entra a tu cuenta." });
+  if (alertas !== false && push && push !== "activo" && push !== "no-soportado") lista.push({ id: "alertas", ok: false, titulo: "Notificaciones en este dispositivo", desc: "Las alertas llegan por notificación y acá están apagadas." });
+  return lista;
+}
+
+function SegRevision({ datos, ir, onBack }) {
+  const lista = recomendaciones(datos);
+  const pendientes = lista.filter((x) => !x.ok).length;
+  return (
+    <div>
+      <CabeceraSeg titulo="Revisión de seguridad" onBack={onBack} />
+      <div className="flex items-center gap-3.5 p-4 mb-2" data-conservar-color style={{ borderRadius: 18, background: pendientes ? "#FFF4E0" : "#E4F3EA", border: `1px solid ${pendientes ? "#F3D9A4" : "#BFE3CE"}` }}>
+        <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 14, background: pendientes ? AMBAR : VERDE }}>{pendientes ? <AlertTriangle size={23} color="#fff" /> : <ShieldCheck size={24} color="#fff" />}</span>
+        <span>
+          <span className="block text-[16px] font-bold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{pendientes ? `${pendientes} ${pendientes === 1 ? "recomendación" : "recomendaciones"}` : "Tu cuenta está al día"}</span>
+          <span className="block text-xs mt-0.5" style={{ color: "#374151" }}>{pendientes ? "Tocá cada una para resolverla." : "No hay nada para revisar."}</span>
+        </span>
+      </div>
+      <div className="overflow-hidden mt-4" style={TARJETA_SEG}>
+        {lista.map((r, i) => (
+          <button key={r.titulo} onClick={() => ir(r.id)} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: "50%", background: r.ok ? "#E4F3EA" : "#FFF1D6", color: r.ok ? VERDE : AMBAR }}>{r.ok ? <Check size={18} strokeWidth={3} /> : <AlertTriangle size={17} />}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{r.titulo}</span>
+              <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{r.desc}</span>
+            </span>
+            <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
+          </button>
+        ))}
+        {lista.length === 0 && <p className="px-4 py-5 text-sm" style={{ color: "#4B5563" }}>Cargando...</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ----- Pantalla principal de Seguridad ----- */
+export function SeguridadScreen({ usuario, onBack, onLogin }) {
+  const [vista, setVista] = useState(null); // null | "revision" | "clave" | "dispositivos" | "actividad" | "alertas"
+  const [sesiones, setSesiones] = useState(null);
+  const [errorSesiones, setErrorSesiones] = useState(false);
+  const [alertas, setAlertas] = useState(null);
+  const [push, setPush] = useState(null);
+
+  const cargarSesiones = async () => {
+    setErrorSesiones(false);
+    try { setSesiones(await seguridadApi.sesiones()); } catch { setErrorSesiones(true); }
+  };
+  const cargarPush = () => estadoPush().then(setPush).catch(() => setPush("inactivo"));
+  useEffect(() => {
+    if (!usuario) return;
+    cargarSesiones();
+    seguridadApi.alertas().then(setAlertas).catch(() => {});
+    cargarPush();
+  }, [usuario?.id]);
 
   if (!usuario) {
     return (
       <div>
-        <Volver />
-        <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800 }} className="mb-2">Seguridad</h2>
+        <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
+        <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800 }} className="mb-2">Seguridad</h2>
         <p className="text-sm mb-4" style={{ color: "#374151", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
-        <button onClick={onLogin} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 12, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
+        <button onClick={onLogin} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "#0B2A54", color: "#fff" }}>Iniciar sesión</button>
       </div>
     );
   }
 
-  const conClave = usuario.conClave;
-  const claveValida = actual && nueva.length >= 8 && nueva === repetir;
-  const guardarClave = async () => {
-    setEstadoClave("guardando");
-    try {
-      await cambiarClave(actual, nueva);
-      setActual(""); setNueva(""); setRepetir("");
-      setEstadoClave("ok");
-      setTimeout(() => setEstadoClave(null), 3500);
-    } catch (e) { setEstadoClave({ error: e.message }); }
-  };
-  const cerrarOtras = async () => {
-    setEstadoSesiones("cerrando");
-    try { await cerrarOtrasSesiones(); setEstadoSesiones("ok"); setTimeout(() => setEstadoSesiones(null), 3500); }
-    catch (e) { setEstadoSesiones({ error: e.message }); }
-  };
+  const atras = () => setVista(null);
+  if (vista === "clave") return <SegContrasena usuario={usuario} onBack={atras} onCambio={cargarSesiones} />;
+  if (vista === "dispositivos") return <SegDispositivos sesiones={sesiones} error={errorSesiones} recargar={cargarSesiones} onBack={atras} />;
+  if (vista === "actividad") return <SegActividad onBack={atras} irDispositivos={() => setVista("dispositivos")} />;
+  if (vista === "alertas") return <SegAlertas alertas={alertas} setAlertas={setAlertas} push={push} recargarPush={cargarPush} onBack={atras} />;
+  if (vista === "revision") return <SegRevision datos={{ sesiones, alertas, push }} ir={setVista} onBack={atras} />;
 
-  const creada = resumen?.cuenta?.creadaEn ? fmtFecha(String(resumen.cuenta.creadaEn).slice(0, 10)) : null;
-  const venceSesion = resumen?.sesion?.venceEn ? fmtFecha(String(resumen.sesion.venceEn).slice(0, 10)) : null;
-  const negocios = resumen?.negocios || [];
-  const dispositivos = resumen?.dispositivosPush ?? null;
+  const pendientes = recomendaciones({ sesiones, alertas, push }).filter((x) => !x.ok).length;
+  const nDisp = sesiones ? sesiones.length : null;
 
   return (
     <div>
-      <Volver />
+      <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Seguridad</h2>
+      <p className="text-sm mt-1.5 mb-5 truncate" style={{ color: "#4B5563" }}>{usuario.email}</p>
 
-      {/* portada */}
-      <div className="relative overflow-hidden p-5 mb-6" data-conservar-color style={{ borderRadius: 22, background: "linear-gradient(135deg, #0B2A54 0%, #1B4A8C 100%)", color: "#fff", boxShadow: "0 10px 28px rgba(11,42,84,0.28)" }}>
-        <div className="absolute" style={{ right: -28, top: -28, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
-        <div className="relative flex items-center gap-3.5">
-          <span className="flex items-center justify-center shrink-0" style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)" }}><ShieldCheck size={27} color="#fff" /></span>
-          <div className="min-w-0">
-            <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.02em" }}>Seguridad</h2>
-            <p className="text-sm mt-1 truncate" style={{ color: "#CFE0FB" }}>{usuario.email}</p>
-          </div>
-        </div>
+      <div className="overflow-hidden mb-1" style={TARJETA_SEG}>
+        <FilaMenu Icon={ShieldCheck} color={pendientes ? AMBAR : VERDE} titulo="Revisión de seguridad" desc={pendientes ? `${pendientes} ${pendientes === 1 ? "recomendación" : "recomendaciones"} para tu cuenta` : "Tu cuenta está al día"} onClick={() => setVista("revision")} ultimo />
       </div>
 
-      <SegSeccion titulo="Estado de tu cuenta">
-        <div className="overflow-hidden" style={TARJETA_SEG}>
-          <SegFila Icon={conClave ? Mail : BadgeCheck} titulo="Cómo entrás" desc={conClave ? "Con tu correo y una contraseña." : "Con tu cuenta de Google."} valor={conClave ? "Correo" : "Google"} />
-          <SegFila Icon={Mail} titulo="Correo" desc={conClave ? "Tu correo no fue verificado por Google: por eso no se usa para reconocer pagos de Mi Asistente." : "Lo confirmó Google cuando entraste."} valor={conClave ? "Sin verificar" : "Verificado"} tono={conClave ? "aviso" : "ok"} />
-          <SegFila Icon={KeyRound} titulo="Contraseña" desc={conClave ? "Se guarda cifrada: nadie, ni nosotros, puede verla." : "La contraseña y la verificación en dos pasos las maneja Google."} valor={conClave ? "Cifrada" : "En Google"} tono="ok" />
-          <SegFila Icon={Timer} titulo="Sesión en este dispositivo" desc={venceSesion ? `Se cierra sola el ${venceSesion}. Cada vez que entrás de nuevo se renueva por 90 días.` : "Se cierra sola a los 90 días."} valor="90 días" />
-          {creada && <SegFila Icon={Clock} titulo="Cuenta creada" desc={creada} />}
-          <SegFila Icon={Store} titulo="Negocios a tu nombre" desc={negocios.length ? "Solo vos podés editarlos desde tu cuenta." : "Todavía no cargaste ninguno."} valor={String(negocios.length)} />
-          <SegFila Icon={MonitorSmartphone} titulo="Dispositivos con avisos" desc="Celulares con las notificaciones de Mi Zona activadas." valor={dispositivos === null ? "—" : String(dispositivos)} ultimo />
-        </div>
-      </SegSeccion>
+      <Etiqueta>Iniciar sesión</Etiqueta>
+      <div className="overflow-hidden" style={TARJETA_SEG}>
+        <FilaMenu Icon={KeyRound} color="#2F6FED" titulo="Contraseña" valor={usuario.conClave ? null : "Google"} onClick={() => setVista("clave")} />
+        <FilaMenu Icon={Bell} color="#E08A1E" titulo="Alertas de inicio de sesión" valor={alertas === null ? null : alertas ? "Activadas" : "Desactivadas"} tonoValor={alertas === false ? AMBAR : undefined} onClick={() => setVista("alertas")} ultimo />
+      </div>
 
-      {conClave ? (
-        <SegSeccion titulo="Cambiar contraseña" desc="Al cambiarla cerramos tu sesión en todos los demás dispositivos.">
-          <div className="p-4" style={TARJETA_SEG}>
-            <div className="flex flex-col gap-2.5">
-              <input value={actual} onChange={(e) => { setActual(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-              <input value={nueva} onChange={(e) => { setNueva(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-              <input value={repetir} onChange={(e) => { setRepetir(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-              <label className="flex items-center gap-2 text-sm" style={{ color: "#374151" }}>
-                <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
-              </label>
-              {repetir && nueva !== repetir && <p className="text-sm" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
-              {estadoClave?.error && <p className="text-sm" style={{ color: "#C1443A" }}>{estadoClave.error}</p>}
-              {estadoClave === "ok" && <p className="text-sm flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> Listo: cambiaste tu contraseña y cerramos tu sesión en los demás dispositivos.</p>}
-              <button onClick={guardarClave} disabled={!claveValida || estadoClave === "guardando"} className="w-full text-sm font-bold py-3" style={{ borderRadius: 12, background: "#0B2A54", color: "#fff", opacity: !claveValida || estadoClave === "guardando" ? 0.45 : 1 }}>
-                {estadoClave === "guardando" ? "Guardando..." : "Cambiar contraseña"}
-              </button>
-            </div>
-          </div>
-        </SegSeccion>
-      ) : (
-        <SegSeccion titulo="Contraseña y verificación en dos pasos">
-          <div className="p-4" style={TARJETA_SEG}>
-            <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>Como entrás con Google, la contraseña, la verificación en dos pasos y las alertas de acceso se manejan desde tu cuenta de Google.</p>
-            <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-bold mt-3" style={{ color: "#2F6FED" }}>
-              Abrir la seguridad de mi cuenta de Google <ChevronRight size={16} />
-            </a>
-          </div>
-        </SegSeccion>
-      )}
-
-      <SegSeccion titulo="Sesiones abiertas">
-        <div className="p-4" style={TARJETA_SEG}>
-          <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
-          {estadoSesiones?.error && <p className="text-sm mb-2" style={{ color: "#C1443A" }}>{estadoSesiones.error}</p>}
-          {estadoSesiones === "ok" && <p className="text-sm mb-2 flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> Cerramos tu sesión en los demás dispositivos.</p>}
-          {estadoSesiones === "confirmar" ? (
-            <div className="flex gap-2">
-              <button onClick={() => setEstadoSesiones(null)} className="flex-1 text-sm font-semibold py-3" style={{ borderRadius: 12, border: "1px solid #CBD5E1", color: "#0B1220" }}>Cancelar</button>
-              <button onClick={cerrarOtras} className="flex-1 text-sm font-bold py-3" style={{ borderRadius: 12, background: "#C1443A", color: "#fff" }}>Sí, cerrar</button>
-            </div>
-          ) : (
-            <button onClick={() => setEstadoSesiones("confirmar")} disabled={estadoSesiones === "cerrando"} className="w-full text-sm font-bold py-3" style={{ borderRadius: 12, border: "1.5px solid #C1443A", color: "#9A3B34", opacity: estadoSesiones === "cerrando" ? 0.5 : 1 }}>
-              {estadoSesiones === "cerrando" ? "Cerrando..." : "Cerrar sesión en los demás dispositivos"}
-            </button>
-          )}
-        </div>
-      </SegSeccion>
-
-      <SegSeccion titulo="Cómo cuidamos Mi Zona">
-        <div className="overflow-hidden" style={TARJETA_SEG}>
-          <SegFila Icon={Lock} titulo="Contraseñas cifradas" desc="Nunca guardamos tu contraseña, solo una huella que no se puede revertir." />
-          <SegFila Icon={ShieldCheck} titulo="Frenamos los intentos repetidos" desc="Si alguien prueba contraseñas una y otra vez, el servidor lo bloquea un rato." />
-          <SegFila Icon={KeyRound} titulo="Sesiones firmadas que vencen" desc="Si cambiás la contraseña o cerrás las otras sesiones, las anteriores dejan de servir." />
-          <SegFila Icon={MessageCircle} titulo="Tus puntos, canjes y chats" desc="Solo se ven con tu sesión iniciada: no alcanza con conocer un id." />
-          <SegFila Icon={Store} titulo="Tu negocio es solo tuyo" desc="Solo su dueño lo edita. Pagos, vencimiento y estado los maneja el servidor." />
-          <SegFila Icon={Star} titulo="Reseñas protegidas" desc="Nadie puede editar ni borrar reseñas ajenas ni responder por el dueño." />
-          <SegFila Icon={CreditCard} titulo="Pagos con Mercado Pago" desc="Cobra Mercado Pago: en Mi Zona nunca vemos los datos de tu tarjeta." ultimo />
-        </div>
-      </SegSeccion>
-
-      <SegSeccion titulo="Consejos para cuidar tu cuenta">
-        <div className="p-4" style={TARJETA_SEG}>
-          <ul className="text-sm flex flex-col gap-2.5" style={{ color: "#374151", lineHeight: 1.5 }}>
-            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Usá una contraseña que no uses en ningún otro sitio.</span></li>
-            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>En un celular o computadora compartida, cerrá sesión al terminar.</span></li>
-            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Pagá siempre dentro de Mercado Pago, desde Mi suscripción. Nadie del equipo te pide claves ni pagos por mensaje.</span></li>
-            <li className="flex gap-2.5"><Check size={17} color="#1E6B44" className="shrink-0 mt-0.5" /><span>Si ves algo raro en tu cuenta, cerrá las otras sesiones y cambiá la contraseña.</span></li>
-          </ul>
-        </div>
-      </SegSeccion>
-
-      <SegSeccion titulo="Más">
-        <div className="overflow-hidden" style={TARJETA_SEG}>
-          {onIrPrivacidad && <SegFila Icon={Lock} titulo="Privacidad y mis datos" desc="Controles de uso, descarga de tus datos y eliminación de la cuenta." onClick={onIrPrivacidad} />}
-          {onIrSoporte && <SegFila Icon={LifeBuoy} titulo="Avisar un problema de seguridad" desc="Escribile al equipo de Mi Zona." onClick={onIrSoporte} ultimo />}
-        </div>
-      </SegSeccion>
+      <Etiqueta>Tu actividad</Etiqueta>
+      <div className="overflow-hidden" style={TARJETA_SEG}>
+        <FilaMenu Icon={MonitorSmartphone} color="#0B2A54" titulo="Dispositivos" valor={nDisp === null ? null : String(nDisp)} onClick={() => setVista("dispositivos")} />
+        <FilaMenu Icon={History} color="#7A4F9E" titulo="Actividad reciente" onClick={() => setVista("actividad")} ultimo />
+      </div>
     </div>
   );
 }
