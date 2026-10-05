@@ -69,6 +69,7 @@ router.post("/iniciar", identificar, requiereUsuario, async (req, res) => {
       if (typeof business !== "object" || Array.isArray(business)) return res.status(400).json({ error: "Datos del negocio inválidos." });
       const limpio = sanearNegocio(business);
       if (!limpio.name || !limpio.phone) return res.status(400).json({ error: "Completá el nombre y el teléfono del negocio." });
+      if (!limpio.logo) return res.status(400).json({ error: "Subí el logo de tu negocio: es obligatorio." });
       if (!limpio.portada) return res.status(400).json({ error: "Elegí la foto de fondo de tu perfil." });
 
       // ¿Ya pagó Mi Asistente con esta cuenta? Entonces publicamos el negocio sin cobrar.

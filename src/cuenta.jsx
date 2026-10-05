@@ -6,7 +6,7 @@ import {
   estadoPush, activarPush, desactivarPush, privacidadApi, setToken,
 } from "./api.js";
 
-const TITULO = { fontFamily: "'Poppins', sans-serif", fontWeight: 600, color: "#0B1220" };
+const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
 const fmtPesos = (n) => `$${(n || 0).toLocaleString("es-AR")}`;
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 
@@ -120,7 +120,7 @@ function FormularioCorreo({ onLogged }) {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#F3F6FB" }}>
-        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1220" }}><Mail size={14} color="#6B7280" /><span className="truncate">{correo.trim()}</span></span>
+        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1220" }}><Mail size={14} color="#4B5563" /><span className="truncate">{correo.trim()}</span></span>
         <button type="button" onClick={volver} className="text-xs font-semibold shrink-0" style={{ color: "#2F6FED" }}>Cambiar</button>
       </div>
       {esCrear && (
@@ -175,11 +175,11 @@ function PanelAcceso({ onLogged }) {
       {error && <p className="text-xs text-center mt-2" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
       <div className="flex items-center gap-3 my-4">
         <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
-        <span className="text-xs" style={{ color: "#94A3B8" }}>o con tu correo</span>
+        <span className="text-xs" style={{ color: "#64748B" }}>o con tu correo</span>
         <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
       </div>
       <FormularioCorreo onLogged={onLogged} />
-      <p className="text-center mt-4" style={{ fontSize: 12, color: "#6B7280" }}>
+      <p className="text-center mt-4" style={{ fontSize: 12, color: "#4B5563" }}>
         ¿No tenés cuenta?{" "}
         <button onClick={() => conGoogle("registro")} disabled={entrando} className="font-semibold" style={{ color: "#2F6FED" }}>Registrarme</button>
       </p>
@@ -195,7 +195,7 @@ export function LoginModal({ onClose, onLogged }) {
       <div className="bg-white w-full max-w-sm p-6 overflow-y-auto" style={{ borderRadius: 20, maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 style={{ ...TITULO, fontSize: 20 }}>Iniciar sesión</h2>
-          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
+          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#4B5563" /></button>
         </div>
         <PanelAcceso onLogged={onLogged} />
       </div>
@@ -220,7 +220,7 @@ export function NombreModal({ sugerido, onGuardado }) {
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }}>
         <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">¡Bienvenido a Mi Zona!</h2>
-        <p className="text-sm mb-4" style={{ color: "#4B5563" }}>¿Cómo te llamás? Después lo podés cambiar en Ajustes → Mi cuenta.</p>
+        <p className="text-sm mb-4" style={{ color: "#374151" }}>¿Cómo te llamás? Después lo podés cambiar en Ajustes → Mi cuenta.</p>
         <input
           autoFocus value={nombre} maxLength={60}
           onChange={(e) => { setNombre(e.target.value); setError(null); }}
@@ -270,15 +270,15 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
       ) : (
         <>
           <div className="p-4 mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff" }}>
-            <label className="text-xs font-medium block mb-1" style={{ color: "#4B5563" }}>Nombre</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "#374151" }}>Nombre</label>
             <input
               value={nombre} maxLength={60} onChange={(e) => { setNombre(e.target.value); setEstado(null); }}
               onKeyDown={(e) => e.key === "Enter" && cambio && nombre.trim().length >= 2 && guardar()}
               className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
             />
-            <label className="text-xs font-medium block mb-1" style={{ color: "#4B5563" }}>Correo de tu cuenta</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "#374151" }}>Correo de tu cuenta</label>
             <div className="flex items-center gap-2 text-sm px-3 py-2.5 mb-3" style={{ borderRadius: 8, background: "#F3F6FB", color: "#0B1220" }}>
-              <Mail size={14} color="#6B7280" /> <span className="truncate">{usuario.email}</span>
+              <Mail size={14} color="#4B5563" /> <span className="truncate">{usuario.email}</span>
             </div>
             {estado?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estado.error}</p>}
             <button
@@ -348,10 +348,10 @@ function EliminarCuenta({ usuario, onEliminada }) {
   return (
     <div className="mt-5 p-4" style={{ borderRadius: 16, border: "1px solid #F0D3D0", background: "#fff" }}>
       <p className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: "#9A3B34" }}><AlertTriangle size={16} /> Eliminar mi cuenta</p>
-      <p className="text-sm mb-2" style={{ color: "#4B5563", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
+      <p className="text-sm mb-2" style={{ color: "#374151", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
       {negocios.length > 0 && (
         <>
-          <p className="text-sm mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+          <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>
             También se elimina <b>{negocios.length === 1 ? "tu negocio" : `tus ${negocios.length} negocios`}</b> ({negocios.map((n) => n.nombre).join(", ")}). La suscripción pagada no se reembolsa.
           </p>
           <label className="flex items-start gap-2 text-sm mb-3" style={{ color: "#0B1220", lineHeight: 1.4 }}>
@@ -360,14 +360,14 @@ function EliminarCuenta({ usuario, onEliminada }) {
           </label>
         </>
       )}
-      <p className="text-[13px] mb-3" style={{ color: "#6B7280", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
+      <p className="text-[13px] mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
       {esClave && (
         <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Tu contraseña" autoComplete="current-password" maxLength={100}
           className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
       )}
       <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí ELIMINAR para confirmar" autoCapitalize="characters"
         className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
-      {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#6B7280" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
+      {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#4B5563" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
       {error && <p className="text-sm mb-2.5" style={{ color: "#C1443A" }}>{error}</p>}
       <div className="flex gap-2">
         <button onClick={() => { setAbierto(false); setTexto(""); setClave(""); setError(null); setConNegocios(false); }} disabled={trabajando} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>Cancelar</button>
@@ -400,7 +400,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
       <div>
         <Volver />
         <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Seguridad</h2>
-        <p className="text-sm mb-4" style={{ color: "#4B5563", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
+        <p className="text-sm mb-4" style={{ color: "#374151", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
         <button onClick={onLogin} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 12, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
       </div>
     );
@@ -426,11 +426,11 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
     <div>
       <Volver />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">Seguridad</h2>
-      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Cuidá el acceso a tu cuenta</p>
+      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Cuidá el acceso a tu cuenta</p>
 
       <div className="p-4 mb-3" style={tarjeta}>
         <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Cómo se protege tu cuenta</p>
-        <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>
           {usuario.conClave
             ? <>Entrás con el correo <b>{usuario.email}</b> y una contraseña. Guardamos tu contraseña cifrada: nadie, ni nosotros, puede verla.</>
             : <>Entrás con tu cuenta de Google (<b>{usuario.email}</b>). La contraseña y la verificación en dos pasos se manejan desde Google.</>}
@@ -449,7 +449,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
             <input value={actual} onChange={(e) => { setActual(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
             <input value={nueva} onChange={(e) => { setNueva(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
             <input value={repetir} onChange={(e) => { setRepetir(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
-            <label className="flex items-center gap-2 text-xs" style={{ color: "#4B5563" }}>
+            <label className="flex items-center gap-2 text-xs" style={{ color: "#374151" }}>
               <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
             </label>
             {repetir && nueva !== repetir && <p className="text-xs" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
@@ -464,7 +464,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
 
       <div className="p-4" style={tarjeta}>
         <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Sesiones abiertas</p>
-        <p className="text-xs mb-3" style={{ color: "#6B7280", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
+        <p className="text-xs mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
         {estadoSesiones?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estadoSesiones.error}</p>}
         {estadoSesiones === "ok" && <p className="text-xs mb-2 flex items-center gap-1" style={{ color: "#1E6B44" }}><Check size={13} /> Cerramos tu sesión en los demás dispositivos.</p>}
         {estadoSesiones === "confirmar" ? (
@@ -503,7 +503,7 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Notificaciones</h2>
-      <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
+      <p className="text-sm mb-5" style={{ color: "#374151", lineHeight: 1.6 }}>
         Recibí avisos en tu celular aunque Mi Zona esté cerrada, por ejemplo cuántos días le quedan a la suscripción de tu negocio.
       </p>
 
@@ -527,7 +527,7 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
             </span>
             <div className="flex-1">
               <p className="text-sm font-medium" style={{ color: "#0B1220" }}>{estado === "activo" ? "Activadas en este dispositivo" : "Desactivadas"}</p>
-              <p className="text-xs" style={{ color: "#6B7280" }}>Se configuran por dispositivo.</p>
+              <p className="text-xs" style={{ color: "#4B5563" }}>Se configuran por dispositivo.</p>
             </div>
           </div>
           <button
@@ -576,9 +576,9 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
       <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-1">
           <h2 style={{ ...TITULO, fontSize: 17 }}>{gratis ? "Publicar mi negocio" : vencimientoActual ? "Agregar meses" : "Suscripción de tu negocio"}</h2>
-          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#6B7280" /></button>
+          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#4B5563" /></button>
         </div>
-        {nombreNegocio && <p className="text-xs mb-3 truncate" style={{ color: "#6B7280" }}>{nombreNegocio}</p>}
+        {nombreNegocio && <p className="text-xs mb-3 truncate" style={{ color: "#4B5563" }}>{nombreNegocio}</p>}
 
         {gratis ? (
           <div className="p-3.5 mb-4" style={{ borderRadius: 10, background: "#E4F3EA", color: "#1E6B44" }}>
@@ -590,15 +590,15 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
         ) : (
           <>
             {vencimientoActual && (
-              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#4B5563" }}>
+              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#374151" }}>
                 <Clock size={12} /> Hoy vence el {fmtFecha(vencimientoActual)}. Los meses nuevos se suman a esa fecha: no perdés nada.
               </p>
             )}
             {!vencimientoActual && (
-              <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Elegí por cuánto tiempo querés publicar tu negocio. Podés agregar más meses cuando quieras.</p>
+              <p className="text-xs mb-3" style={{ color: "#374151" }}>Elegí por cuánto tiempo querés publicar tu negocio. Podés agregar más meses cuando quieras.</p>
             )}
             <div className="flex flex-col gap-2 mb-3">
-              {!planes && !error && <p className="text-xs py-4 text-center" style={{ color: "#6B7280" }}>Cargando planes...</p>}
+              {!planes && !error && <p className="text-xs py-4 text-center" style={{ color: "#4B5563" }}>Cargando planes...</p>}
               {planes && Object.entries(planes).map(([clave, p]) => {
                 const activo = plan === clave;
                 return (
@@ -617,17 +617,17 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
                           <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>{p.descuentoPorcentaje}% OFF</span>
                         )}
                       </span>
-                      <span className="block text-[11px]" style={{ color: "#6B7280" }}>
+                      <span className="block text-[11px]" style={{ color: "#4B5563" }}>
                         {fmtPesos(p.precioPorMes)} por mes{p.ahorro > 0 ? ` · ahorrás ${fmtPesos(p.ahorro)}` : ""}
                       </span>
                     </span>
-                    <span className="text-sm font-bold" style={{ color: "#0B2A54", fontFamily: "'Poppins', sans-serif" }}>{fmtPesos(p.precio)}</span>
+                    <span className="text-sm font-bold" style={{ color: "#0B2A54", fontFamily: "var(--fuente-titulo)" }}>{fmtPesos(p.precio)}</span>
                   </button>
                 );
               })}
             </div>
             {nuevoVencimiento && (
-              <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Tu negocio quedaría activo hasta el <b>{fmtFecha(nuevoVencimiento)}</b>.</p>
+              <p className="text-xs mb-3" style={{ color: "#374151" }}>Tu negocio quedaría activo hasta el <b>{fmtFecha(nuevoVencimiento)}</b>.</p>
             )}
           </>
         )}
@@ -668,7 +668,7 @@ export function TarjetaSuscripcion({ negocio, onAgregar }) {
         <span className="text-sm font-semibold" style={{ color: "#0B1220" }}>Mi suscripción</span>
         <span className="text-[10px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: paleta.bg, color: paleta.fg }}>{paleta.etiqueta}</span>
       </div>
-      <p className="text-xs mb-2.5" style={{ color: "#4B5563" }}>{texto}</p>
+      <p className="text-xs mb-2.5" style={{ color: "#374151" }}>{texto}</p>
       {info.estado !== "pendiente" && (
         <div className="mb-3" style={{ height: 6, borderRadius: 6, background: "#EEF2F7", overflow: "hidden" }}>
           <div style={{ width: `${fraccion * 100}%`, height: "100%", background: paleta.fg, borderRadius: 6 }} />

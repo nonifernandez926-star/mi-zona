@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --fuente-titulo: "Plus Jakarta Sans", "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-texto: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+html, body, button, input, textarea, select {
+  font-family: var(--fuente-texto);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body { color: #0B1220; letter-spacing: -0.005em; }
+h1, h2, h3 { font-family: var(--fuente-titulo); letter-spacing: -0.02em; }
+
 /* ---------- modo oscuro ----------
    Se invierten los colores de toda la pantalla y se vuelven a invertir las fotos, el mapa y las barras azules de arriba,
    para que se vean con sus colores de siempre. */
@@ -12,3 +25,10 @@ html.tema-oscuro .leaflet-container,
 html.tema-oscuro [data-conservar-color] { filter: invert(1) hue-rotate(180deg); }
 html.tema-oscuro .leaflet-container img { filter: none; }
 html.tema-oscuro [data-conservar-color] img { filter: none; }
+
+/* ---------- legibilidad: letras un poco más grandes y con más peso ---------- */
+.text-xs { font-size: 0.8125rem; line-height: 1.2rem; }
+.text-sm { font-size: 0.9375rem; line-height: 1.4rem; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+input, textarea, select { font-size: 16px; }

@@ -925,7 +925,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
             <Search size={16} color="#fff" />
           </div>
           <div>
-            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Asistente de búsqueda</p>
+            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Asistente de búsqueda</p>
             <p className="text-[11px]" style={{ color: "#BBD1FB" }}>Te ayudo a encontrar lo que necesitás</p>
           </div>
         </div>
@@ -965,7 +965,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
-                        <span className="block text-xs truncate" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</span>
+                        <span className="block text-xs truncate" style={{ color: "#4B5563" }}>{c?.label} · {biz.zone}</span>
                       </span>
                       <ChevronDown size={14} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
                     </button>
@@ -977,7 +977,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#6B7280" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#4B5563" }}>
               Buscando...
             </div>
           </div>
@@ -1099,7 +1099,7 @@ function ChatScreen({ biz, onBack }) {
             {biz.name?.[0]?.toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</p>
             <p className="text-[11px] flex items-center gap-1" style={{ color: "#BBD1FB" }}>
               {tieneAsistenteReal ? "Asistente virtual" : c?.label}
               <span className="inline-flex items-center gap-1 ml-1">
@@ -1146,7 +1146,7 @@ function ChatScreen({ biz, onBack }) {
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#6B7280" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#4B5563" }}>
               Escribiendo...
             </div>
           </div>
@@ -1246,8 +1246,8 @@ function ConfirmModal({ title, message, confirmLabel = "Confirmar", danger, onCo
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17 }}>{title}</h3>
-        <p className="text-sm mt-2 mb-5" style={{ color: "#4B5563" }}>{message}</p>
+        <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17 }}>{title}</h3>
+        <p className="text-sm mt-2 mb-5" style={{ color: "#374151" }}>{message}</p>
         <div className="flex gap-2 justify-end">
           <button onClick={onCancel} className="text-sm px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
           <button
@@ -1277,7 +1277,7 @@ function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
     <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center" style={{ background: "#0B1220cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
+          <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1295,7 +1295,7 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#0B1220cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-lg max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
+          <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -1414,14 +1414,14 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
             className="absolute bottom-3 right-3 flex items-center justify-center"
             style={{ width: 36, height: 36, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.25)", transition: "transform 0.15s ease", transform: isFavorite ? "scale(1.1)" : "scale(1)" }}
           >
-            <Heart size={17} color={isFavorite ? "#E5484D" : "#94A3B8"} fill={isFavorite ? "#E5484D" : "none"} />
+            <Heart size={17} color={isFavorite ? "#E5484D" : "#64748B"} fill={isFavorite ? "#E5484D" : "none"} />
           </button>
         )}
       </div>
 
       <div className="px-4 pt-3.5 pb-3.5 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
-          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
+          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
           {biz.featured && (
             <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 shrink-0" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
               <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
@@ -1452,7 +1452,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
           >
             <MapPin size={13} color="#2F6FED" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
           </a>
-          <span className="flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#94A3B8" }}>
+          <span className="flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#64748B" }}>
             <Eye size={12} /> {fmtNum(biz.views)}
           </span>
         </div>
@@ -1533,7 +1533,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
     <button
       onClick={() => setTab(id)}
       className="flex-1 py-2 text-sm font-semibold transition-all"
-      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#6B7280", boxShadow: tab === id ? "0 3px 10px rgba(11,42,84,.12)" : "none" }}
+      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#4B5563", boxShadow: tab === id ? "0 3px 10px rgba(11,42,84,.12)" : "none" }}
     >
       {label}
     </button>
@@ -1582,7 +1582,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 className="flex items-center justify-center shrink-0 text-xl font-bold overflow-hidden"
                 style={{
                   width: 66, height: 66, borderRadius: 22, background: c?.color || "#2F6FED", color: "#fff",
-                  fontFamily: "'Poppins', sans-serif", marginTop: -36, border: "4px solid #fff",
+                  fontFamily: "var(--fuente-titulo)", marginTop: -36, border: "4px solid #fff",
                   boxShadow: tieneHistorias ? "0 0 0 3px #2F6FED, 0 8px 18px rgba(11,42,84,.25)" : "0 8px 18px rgba(11,42,84,.25)",
                 }}
               >
@@ -1590,14 +1590,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 21, color: "#0B1220", lineHeight: 1.2 }}>{biz.name}</h1>
+                  <h1 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 21, color: "#0B1220", lineHeight: 1.2 }}>{biz.name}</h1>
                   {biz.featured && (
                     <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
                       <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
                     </span>
                   )}
                 </div>
-                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#6B7280" }}>
+                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#4B5563" }}>
                   <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
                 </p>
                 <div className="mt-1.5"><OpenBadge weekHours={biz.weekHours} /></div>
@@ -1611,10 +1611,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 { Icon: Heart, color: "#E5484D", valor: fmtNum(biz.vecesFavorito || 0), etiqueta: "guardados" },
               ].map(({ Icon, color, valor, etiqueta }) => (
                 <div key={etiqueta} className="text-center py-2" style={{ borderRadius: 14, background: "#F6F9FD" }}>
-                  <span className="flex items-center justify-center gap-1" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>
+                  <span className="flex items-center justify-center gap-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>
                     <Icon size={13} color={color} fill={Icon === Star || Icon === Heart ? color : "none"} /> {valor}
                   </span>
-                  <span className="block text-[10px] mt-0.5" style={{ color: "#6B7280" }}>{etiqueta}</span>
+                  <span className="block text-[10px] mt-0.5" style={{ color: "#4B5563" }}>{etiqueta}</span>
                 </div>
               ))}
             </div>
@@ -1706,7 +1706,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#4B5563" }}>
+              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#374151" }}>
                 {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
                 {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
               </div>
@@ -1724,14 +1724,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               )}
 
               <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" onClick={() => onTrack && onTrack(biz.id, "ubicacion")} className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
-                <MapPin size={15} /> {biz.loc} <span style={{ color: "#6B7280" }}>· ver en el mapa</span>
+                <MapPin size={15} /> {biz.loc} <span style={{ color: "#4B5563" }}>· ver en el mapa</span>
               </a>
 
               {puntos && (
                 <div className="mb-6 p-4" style={{ borderRadius: 18, background: "linear-gradient(135deg,#FFF6E0,#FDEBC4)", border: "1px solid #F5D9A0" }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <Coins size={17} color="#B7791F" />
-                    <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Puntos y recompensas</h2>
+                    <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Puntos y recompensas</h2>
                   </div>
                   <p className="text-xs" style={{ color: "#5B4A1E" }}>
                     Ganás <b>1 punto</b> por cada <b>{fmtPesos(puntos.pesosPorPunto)}</b> que gastás en {biz.name}.
@@ -1754,19 +1754,19 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
               {activeDiscounts(biz).length > 0 && (
                 <div className="mb-6">
-                  <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                  <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
                     <Tag size={16} /> Descuentos vigentes
                   </h2>
                   <div className="flex flex-col gap-2">
                     {activeDiscounts(biz).map((d) => (
                       <div key={d.id} className="p-4" style={{ borderRadius: 18, border: "1px solid #F2C98E", background: "linear-gradient(135deg,#FFF3DC,#FBE3BC)" }}>
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <h3 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
+                          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
                           {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}>{d.percent} OFF</span>}
                         </div>
                         {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
                         {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "#6B7280" }}>Válido hasta el {fmtDate(d.endDate)}</p>
+                        <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>Válido hasta el {fmtDate(d.endDate)}</p>
                       </div>
                     ))}
                   </div>
@@ -1774,7 +1774,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               )}
 
               <div className="mb-2">
-                <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
                   <Clock size={16} /> Horarios de atención
                 </h2>
                 <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
@@ -1794,7 +1794,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
           {tab === "opiniones" && (
             <div className="pb-6">
               <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
-                <p className="text-sm font-semibold mb-2" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>Dejá tu opinión</p>
+                <p className="text-sm font-semibold mb-2" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 <input
                   value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
@@ -1815,7 +1815,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                     <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{r.name}</span>
-                        <span className="text-xs" style={{ color: "#6B7280" }}>{fmtDate(r.date)}</span>
+                        <span className="text-xs" style={{ color: "#4B5563" }}>{fmtDate(r.date)}</span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
@@ -1830,7 +1830,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                             {r.respuesta.esDueño && (
                               <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E8F0FE", color: "#2F6FED", borderRadius: 6 }}>Respuesta del dueño</span>
                             )}
-                            <span className="text-[11px]" style={{ color: "#94A3B8" }}>{fmtDate(r.respuesta.fecha)}</span>
+                            <span className="text-[11px]" style={{ color: "#64748B" }}>{fmtDate(r.respuesta.fecha)}</span>
                           </div>
                           <p className="text-sm" style={{ color: "#1F2937" }}>{r.respuesta.texto}</p>
                         </div>
@@ -1848,7 +1848,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                             >
                               Responder
                             </button>
-                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#6B7280" }}>
+                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#4B5563" }}>
                               Cancelar
                             </button>
                           </div>
@@ -1862,7 +1862,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="text-sm" style={{ color: "#6B7280" }}>Sé el primero en dejar una reseña.</p>
+                <p className="text-sm" style={{ color: "#4B5563" }}>Sé el primero en dejar una reseña.</p>
               )}
             </div>
           )}
@@ -1876,7 +1876,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#6B7280" }}>
+                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#4B5563" }}>
                   <ImageIcon size={15} /> Este negocio todavía no cargó fotos
                 </p>
               )}
@@ -1909,8 +1909,8 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
   return (
     <div>
       <BotonVolver texto={`Volver a ${volverA}`} onClick={onBack} />
-      <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
-      {desc && <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</p>}
+      <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
+      {desc && <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</p>}
       <div className="mt-4">{children}</div>
     </div>
   );
@@ -1921,7 +1921,7 @@ function BarraTitulo({ titulo }) {
   return (
     <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-        <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>{titulo}</span>
+        <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{titulo}</span>
       </div>
     </div>
   );
@@ -1951,7 +1951,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2F6FED,#7FA8F5)", boxShadow: "0 4px 12px rgba(47,111,237,.5)" }}>
                 <MapPin size={16} color="#fff" />
               </span>
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
                 Mi<span style={{ color: "#7FA8F5" }}>Zona</span>
               </span>
             </div>
@@ -1979,7 +1979,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
         <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
-          <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
+          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
             Descubrí lo mejor<br />de tu zona
           </p>
           <p className="text-sm mt-1.5 mb-4" style={{ color: "#B8C9EA", maxWidth: 380 }}>
@@ -1995,7 +1995,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               placeholder="Buscá un negocio, producto o servicio..."
               className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1220" }}
             />
-            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#6B7280" /></button>}
+            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#4B5563" /></button>}
           </div>
 
           {!query && historial.length > 0 && (
@@ -2035,8 +2035,8 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowZoneModal(false)}>
           <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14, boxShadow: "0 12px 40px #00000033" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
-              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#6B7280" /></button>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
+              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#4B5563" /></button>
             </div>
             <ZonePicker value={pendingZone} onChange={setPendingZone} />
             <button
@@ -2055,7 +2055,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
         <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E6ECF5", boxShadow: "0 12px 32px rgba(11,42,84,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Categorías</span>
+            <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Categorías</span>
             <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2F6FED", background: "#E8F0FE", borderRadius: 20 }}>Ver todas</button>
           </div>
           <div className="flex gap-3.5 overflow-x-auto pb-1">
@@ -2063,7 +2063,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2F6FED,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2F6FED55" : "none", transition: "all .2s" }}>
                 <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2F6FED"} />
               </span>
-              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#4B5563" }}>Todos</span>
+              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#374151" }}>Todos</span>
             </button>
             {QUICK_CATEGORIES.map((c) => {
               const Icon = c.icon;
@@ -2073,7 +2073,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
                   <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: active ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
                     <Icon size={21} color={active ? "#fff" : c.color} />
                   </span>
-                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#4B5563" }}>{c.label.split(" ")[0]}</span>
+                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#374151" }}>{c.label.split(" ")[0]}</span>
                 </button>
               );
             })}
@@ -2106,7 +2106,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
           >
             <MapPin size={26} color="#fff" />
           </div>
-          <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi<span style={{ color: "#9BBBF7" }}>Zona</span></p>
+          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi<span style={{ color: "#9BBBF7" }}>Zona</span></p>
           <p className="text-xs mt-0.5" style={{ color: "#BBD1FB" }}>Explorá los negocios de tu zona</p>
         </div>
         <div className="py-2 flex-1 overflow-y-auto">
@@ -2123,7 +2123,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onClose} />
           <Item Icon={Send} label="Soporte" onClick={onClose} />
         </div>
-        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#6B7280", borderTop: "1px solid #EEF2F7" }}>
+        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#4B5563", borderTop: "1px solid #EEF2F7" }}>
           <X size={13} /> Cerrar menú
         </button>
       </div>
@@ -2162,7 +2162,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Tus conversaciones con negocios</p>
+      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Tus conversaciones con negocios</p>
 
       {conversaciones.length === 0 ? (
         <div className="text-center py-16">
@@ -2170,7 +2170,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
             <MessageCircle size={24} color="#2F6FED" />
           </span>
           <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés conversaciones</p>
-          <p className="text-xs px-8" style={{ color: "#6B7280" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+          <p className="text-xs px-8" style={{ color: "#4B5563" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
         </div>
       ) : (
         <div className="flex flex-col">
@@ -2198,10 +2198,10 @@ function ChatsScreen({ businesses, onOpenChat }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm truncate" style={{ color: "#0B1220", fontWeight: noLeido ? 700 : 500 }}>{biz.name}</span>
-                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#94A3B8", fontWeight: noLeido ? 600 : 400 }}>{fmtChatTime(ultimo.hora)}</span>
+                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#64748B", fontWeight: noLeido ? 600 : 400 }}>{fmtChatTime(ultimo.hora)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#6B7280", fontWeight: noLeido ? 600 : 400 }}>
+                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#4B5563", fontWeight: noLeido ? 600 : 400 }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
                     {noLeido && (
@@ -2230,9 +2230,9 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
     <div>
       <div className="flex items-center gap-2 mb-1">
         <button onClick={onBack}><ArrowLeft size={17} color="#2F6FED" /></button>
-        <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
+        <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
       </div>
-      <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Tus negocios guardados</p>
+      <p className="text-xs mb-5" style={{ color: "#4B5563" }}>Tus negocios guardados</p>
 
       {guardados.length === 0 ? (
         <div className="text-center py-14">
@@ -2240,7 +2240,7 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
             <Heart size={22} color="#C1443A" />
           </span>
           <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no guardaste ningún negocio</p>
-          <p className="text-xs" style={{ color: "#6B7280" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
+          <p className="text-xs" style={{ color: "#4B5563" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -2259,10 +2259,10 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
-                  <p className="text-xs truncate mb-1" style={{ color: "#6B7280" }}>{c?.label} · {biz.zone}</p>
+                  <p className="text-xs truncate mb-1" style={{ color: "#4B5563" }}>{c?.label} · {biz.zone}</p>
                   <div className="flex items-center gap-2">
                     {rating && (
-                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#4B5563" }}>
+                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#374151" }}>
                         <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
                       </span>
                     )}
@@ -2529,7 +2529,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#4B5563", border: "1px solid " + (active ? activeBorder : "#E2E8F0") }}
+      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#374151", border: "1px solid " + (active ? activeBorder : "#E2E8F0") }}
     >
       {Icon && <Icon size={13} />} {label}
     </button>
@@ -2549,14 +2549,14 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   return (
     <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
       <style>{`@keyframes mzPulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.2); opacity: 0; } }
-        .leaflet-container { font-family: 'Work Sans', sans-serif; }`}</style>
+        .leaflet-container { font-family: var(--fuente-texto); }`}</style>
 
       {/* encabezado */}
       <div style={{ backgroundColor: "#0B2A54" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Mapa de {zone}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Mapa de {zone}</p>
             <p className="text-[11px]" style={{ color: "#BBD1FB" }}>
               {conUbicacion.length} {conUbicacion.length === 1 ? "negocio" : "negocios"} en el mapa
               {sinUbicacion > 0 ? ` · ${sinUbicacion} sin ubicación exacta` : ""}
@@ -2582,7 +2582,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
           <button
             onClick={() => setShowCats(true)}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#4B5563", border: "1px solid " + (catActual ? catActual.color : "#E2E8F0") }}
+            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#374151", border: "1px solid " + (catActual ? catActual.color : "#E2E8F0") }}
           >
             {catActual ? <catActual.icon size={13} /> : <Grid3x3 size={13} />} {catActual ? catActual.label : "Rubro"}
             {catActual ? <X size={12} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={12} />}
@@ -2611,10 +2611,10 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
         {vista === "mapa" && lista.length > 0 && conUbicacion.length === 0 && (
           <div className="absolute inset-x-4 flex justify-center" style={{ top: 80, zIndex: 15 }}>
             <div className="bg-white px-4 py-3 text-center" style={{ borderRadius: 16, boxShadow: "0 8px 24px rgba(11,42,84,0.18)", maxWidth: 320 }}>
-              <p className="text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>
+              <p className="text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>
                 Ubicando los negocios...
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+              <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>
                 Estamos buscando sus direcciones en el mapa, puede tardar unos segundos.
               </p>
             </div>
@@ -2643,7 +2643,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                     {Object.entries(CAPAS_MAPA).map(([id, c]) => (
                       <button key={id} onClick={() => { setCapa(id); setCapasAbierto(false); }} className="flex flex-col items-center gap-1">
                         <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2F6FED" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#4B5563" }}>{c.label}</span>
+                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#374151" }}>{c.label}</span>
                       </button>
                     ))}
                   </div>
@@ -2667,7 +2667,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
             {lista.length === 0 && (
               <div className="absolute left-4 right-4 text-center p-5" style={{ top: "30%", zIndex: 15, maxWidth: 340, margin: "0 auto", borderRadius: 14, background: "#fff", boxShadow: "0 8px 24px rgba(11,42,84,0.2)" }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
                 {hayFiltros && (
                   <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>
                 )}
@@ -2690,29 +2690,29 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               return (
                 <div className="absolute left-3 right-3" style={{ bottom: 14, zIndex: 20, maxWidth: 440, margin: "0 auto" }}>
                   <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #E2E8F0", boxShadow: "0 10px 30px rgba(11,42,84,0.28)" }}>
-                    <button onClick={() => setSelectedId(null)} className="absolute" style={{ top: 10, right: 10 }} aria-label="Cerrar"><X size={16} color="#94A3B8" /></button>
+                    <button onClick={() => setSelectedId(null)} className="absolute" style={{ top: 10, right: 10 }} aria-label="Cerrar"><X size={16} color="#64748B" /></button>
                     <div className="flex items-start gap-3 pr-5">
                       <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #E2E8F0" }}>
                         <Photo cat={selected.cat} src={selected.logo || selected.photos?.[0]} height={58} radius="14px" iconSize={22} clickable={false} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>{selected.name}</h3>
-                        <p className="text-xs truncate" style={{ color: "#6B7280" }}>
+                        <h3 className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>{selected.name}</h3>
+                        <p className="text-xs truncate" style={{ color: "#4B5563" }}>
                           <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>
                           {km !== null ? ` · A ${fmtDistance(km)} de vos` : ""}
                         </p>
                         {selected.loc && (
-                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#4B5563" }}>
+                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#374151" }}>
                             <MapPin size={11} className="shrink-0" /> <span className="truncate">{selected.loc}</span>
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {rating ? (
-                            <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}>
+                            <span className="flex items-center gap-1 text-xs" style={{ color: "#374151" }}>
                               <Star size={12} fill="#F5A623" color="#F5A623" /> {rating} ({selected.reviews.length})
                             </span>
                           ) : (
-                            <span className="text-[11px]" style={{ color: "#94A3B8" }}>Sin reseñas</span>
+                            <span className="text-[11px]" style={{ color: "#64748B" }}>Sin reseñas</span>
                           )}
                           <OpenBadge weekHours={selected.weekHours} />
                         </div>
@@ -2748,7 +2748,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         className="flex items-center justify-center shrink-0"
                         style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#F7E7E5" : "#F3F6FB" }}
                       >
-                        <Heart size={17} color={esFav ? "#C1443A" : "#94A3B8"} fill={esFav ? "#C1443A" : "none"} />
+                        <Heart size={17} color={esFav ? "#C1443A" : "#64748B"} fill={esFav ? "#C1443A" : "none"} />
                       </button>
                     </div>
                   </div>
@@ -2765,7 +2765,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               {lista.length === 0 ? (
                 <div className="text-center py-14">
                   <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                  <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                  <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
                   {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>}
                 </div>
               ) : lista.map((biz) => {
@@ -2788,12 +2788,12 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
                         {esNegocioNuevo(biz) && <span className="text-[10px] font-semibold px-1.5 py-0.5 shrink-0" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>Nuevo</span>}
                       </div>
-                      <p className="text-xs truncate" style={{ color: "#6B7280" }}>
+                      <p className="text-xs truncate" style={{ color: "#4B5563" }}>
                         <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>{km !== null ? ` · A ${fmtDistance(km)}` : ""}
                       </p>
-                      {biz.loc && <p className="text-[11px] truncate mb-1" style={{ color: "#94A3B8" }}>{biz.loc}</p>}
+                      {biz.loc && <p className="text-[11px] truncate mb-1" style={{ color: "#64748B" }}>{biz.loc}</p>}
                       <div className="flex items-center gap-2 flex-wrap">
-                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#4B5563" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
+                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#374151" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                         <OpenBadge weekHours={biz.weekHours} />
                         {biz.delivery && <Truck size={13} color="#0B2A54" />}
                         {biz.asistenteCodigoPublico && biz.asistenteActivo && <Sparkles size={13} color="#7A4F9E" />}
@@ -2901,8 +2901,8 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
             <p className="text-sm" style={{ color: "#0B1220", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
             {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2F6FED" }} />}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: "#4B5563", wordBreak: "break-word" }}>{n.descripcion}</p>
-          <p className="text-[11px] mt-1" style={{ color: leida ? "#94A3B8" : "#2F6FED", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+          <p className="text-xs mt-0.5" style={{ color: "#374151", wordBreak: "break-word" }}>{n.descripcion}</p>
+          <p className="text-[11px] mt-1" style={{ color: leida ? "#64748B" : "#2F6FED", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
       </div>
     </div>
@@ -2925,7 +2925,7 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={onBack}><ArrowLeft size={19} color="#fff" /></button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>Notificaciones</p>
+            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Notificaciones</p>
             <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
           </div>
           <button
@@ -2945,14 +2945,14 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
               <BellOff size={24} color="#2F6FED" />
             </span>
             <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No tenés notificaciones</p>
-            <p className="text-xs" style={{ color: "#6B7280" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
+            <p className="text-xs" style={{ color: "#4B5563" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
           </div>
         ) : (
           <>
-            <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#94A3B8" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
+            <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#64748B" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#6B7280", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
+                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#4B5563", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
                 <div style={{ borderTop: "1px solid #EEF2F7" }}>
                   {g.items.map((n) => (
                     <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
@@ -2990,19 +2990,19 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
               <Coins size={11} /> {fmtNum(r.puntos)}
             </span>
           </div>
-          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>{r.descripcion}</p>}
+          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#374151" }}>{r.descripcion}</p>}
         </div>
       </div>
 
       {(r.compraMinima > 0 || r.fechaVencimiento || r.cantidadDisponible !== null || r.limitePorCliente || r.condiciones) && (
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
-          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
-          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
-          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#4B5563" }}>Máx. {r.limitePorCliente} por persona</span>}
+          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
+          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
+          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
+          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Máx. {r.limitePorCliente} por persona</span>}
         </div>
       )}
-      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#6B7280" }}>Condiciones: {r.condiciones}</p>}
+      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#4B5563" }}>Condiciones: {r.condiciones}</p>}
 
       <div className="mt-3.5">
         {bloqueoTexto ? (
@@ -3020,7 +3020,7 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
             <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
               <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)", borderRadius: 4 }} />
             </div>
-            <p className="text-xs mt-1.5" style={{ color: "#4B5563" }}>
+            <p className="text-xs mt-1.5" style={{ color: "#374151" }}>
               Te {r.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(r.faltan)} {r.faltan === 1 ? "punto" : "puntos"}</b>.
             </p>
           </>
@@ -3037,14 +3037,14 @@ function CanjeModal({ canje, onClose }) {
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Tu canje</span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Tu canje</span>
+          <button onClick={onClose}><X size={18} color="#4B5563" /></button>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#6B7280" : "#1E6B44" }}>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#4B5563" : "#1E6B44" }}>
           {usado ? <Check size={12} /> : <Ticket size={12} />} {usado ? "Ya utilizado" : "Listo para usar"}
         </span>
         <p className="text-base font-semibold" style={{ color: "#0B1220" }}>{canje.recompensa}</p>
-        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#6B7280" }}>{canje.negocio}</p>}
+        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#4B5563" }}>{canje.negocio}</p>}
         {!usado && (
           <img
             alt="Código QR del canje" className="mx-auto mb-3"
@@ -3052,14 +3052,14 @@ function CanjeModal({ canje, onClose }) {
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(canje.codigo)}`}
           />
         )}
-        <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#94A3B8" : "#0B2A54", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
+        <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#64748B" : "#0B2A54", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
         {usado ? (
-          <p className="text-xs" style={{ color: "#6B7280" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
+          <p className="text-xs" style={{ color: "#4B5563" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
         ) : (
-          <p className="text-xs" style={{ color: "#6B7280" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
+          <p className="text-xs" style={{ color: "#4B5563" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
         )}
         {(canje.condiciones || canje.compraMinima > 0) && (
-          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#4B5563" }}>
+          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#374151" }}>
             {canje.compraMinima > 0 && <>Compra mínima: {fmtPesos(canje.compraMinima)}. </>}
             {canje.condiciones && <>Condiciones: {canje.condiciones}</>}
           </p>
@@ -3147,7 +3147,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
         <button onClick={atras}><ArrowLeft size={19} color="#fff" /></button>
         <div className="min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{titulo}</p>
+          <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{titulo}</p>
           {subtitulo && <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{subtitulo}</p>}
         </div>
       </div>
@@ -3162,13 +3162,13 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
         {cabecera("Recompensas", detalle?.nombreNegocio || biz?.name || "", () => (initialCodigo ? onBack() : setCodigo(null)))}
         <div className="max-w-3xl mx-auto px-4 py-5" style={{ paddingBottom: 60 }}>
           {loadingDetalle && !detalle ? (
-            <p className="text-sm text-center py-16" style={{ color: "#6B7280" }}>Cargando...</p>
+            <p className="text-sm text-center py-16" style={{ color: "#4B5563" }}>Cargando...</p>
           ) : error && !detalle ? (
             <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
           ) : detalle && !detalle.activo ? (
             <div className="text-center py-16 px-6">
               <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Este negocio no tiene programa de puntos</p>
-              <p className="text-xs" style={{ color: "#6B7280" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
+              <p className="text-xs" style={{ color: "#4B5563" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
             </div>
           ) : detalle && (
             <>
@@ -3176,19 +3176,19 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                 <Logo nombre={detalle.nombreNegocio} logoUrl={detalle.logoUrl} cp={codigo} size={50} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs" style={{ color: "#BBD1FB" }}>Tus puntos en {detalle.nombreNegocio}</p>
-                  <p className="flex items-center gap-1.5" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 24 }}>
+                  <p className="flex items-center gap-1.5" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24 }}>
                     <Coins size={20} color="#F5C85A" /> {fmtNum(detalle.saldo)}
                   </p>
                 </div>
               </div>
-              <p className="text-xs mb-4 px-1" style={{ color: "#4B5563" }}>
+              <p className="text-xs mb-4 px-1" style={{ color: "#374151" }}>
                 Ganás <b>1 punto</b> por cada <b>{fmtPesos(detalle.pesosPorPunto)}</b> que gastás. Los puntos se suman cuando tu pedido se entrega y solo sirven en este negocio.
               </p>
               {errorCanje && (
                 <p className="text-xs mb-3 px-3 py-2.5" style={{ borderRadius: 10, background: "#F7E7E5", color: "#9A3B34" }}>{errorCanje}</p>
               )}
               {detalle.recompensas.length === 0 ? (
-                <p className="text-sm text-center py-10" style={{ color: "#6B7280" }}>Este negocio todavía no cargó recompensas.</p>
+                <p className="text-sm text-center py-10" style={{ color: "#4B5563" }}>Este negocio todavía no cargó recompensas.</p>
               ) : (
                 <div className="flex flex-col gap-3">
                   {detalle.recompensas.map((r) => (
@@ -3228,7 +3228,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
       <div className="max-w-3xl mx-auto px-4 py-4" style={{ paddingBottom: 60 }}>
         <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
           {[{ id: "puntos", label: "Mis puntos" }, { id: "canjes", label: `Mis canjes${pendientes ? ` (${pendientes})` : ""}` }].map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#6B7280" }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#4B5563" }}>
               {t.label}
               {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
             </button>
@@ -3236,7 +3236,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
         </div>
 
         {loading ? (
-          <p className="text-sm text-center py-16" style={{ color: "#6B7280" }}>Cargando...</p>
+          <p className="text-sm text-center py-16" style={{ color: "#4B5563" }}>Cargando...</p>
         ) : error ? (
           <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
         ) : tab === "puntos" ? (
@@ -3246,7 +3246,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                 <Coins size={24} color="#B7791F" />
               </span>
               <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés puntos</p>
-              <p className="text-xs" style={{ color: "#6B7280" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
+              <p className="text-xs" style={{ color: "#4B5563" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -3261,13 +3261,13 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   </div>
                   {n.proxima ? (
                     <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#4B5563" }}>
+                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#374151" }}>
                         <span className="truncate pr-2">{n.proxima.nombre} · {fmtNum(n.proxima.puntos)} puntos</span>
                       </div>
                       <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
                         <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)" }} />
                       </div>
-                      <p className="text-xs mt-1.5" style={{ color: "#4B5563" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
+                      <p className="text-xs mt-1.5" style={{ color: "#374151" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
                     </div>
                   ) : n.recompensas.some((r) => r.puedeCanjear) ? (
                     <p className="text-xs mt-3 font-medium" style={{ color: "#1E6B44" }}>¡Ya podés canjear una recompensa!</p>
@@ -3289,7 +3289,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
               <Ticket size={24} color="#7A4F9E" />
             </span>
             <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no canjeaste nada</p>
-            <p className="text-xs" style={{ color: "#6B7280" }}>Tus cupones aparecen acá, con su código y su estado.</p>
+            <p className="text-xs" style={{ color: "#4B5563" }}>Tus cupones aparecen acá, con su código y su estado.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -3298,14 +3298,14 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
               return (
                 <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: usado ? 0.7 : 1 }}>
                   <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: usado ? "#EEEDE7" : "#F3ECFC" }}>
-                    {usado ? <Check size={19} color="#6B7280" /> : <Ticket size={19} color="#7A4F9E" />}
+                    {usado ? <Check size={19} color="#4B5563" /> : <Ticket size={19} color="#7A4F9E" />}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{c.recompensa}</span>
-                    <span className="block text-xs truncate" style={{ color: "#6B7280" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
-                    <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#94A3B8" : "#0B2A54", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
+                    <span className="block text-xs truncate" style={{ color: "#4B5563" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
+                    <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#64748B" : "#0B2A54", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
                   </span>
-                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#6B7280" : "#1E6B44" }}>
+                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#4B5563" : "#1E6B44" }}>
                     {usado ? "Utilizado" : "Pendiente de uso"}
                   </span>
                 </button>
@@ -3368,7 +3368,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
           <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 8, background: "#ffffff22", color: st.color }}>{Math.round(rankingScore(biz))} pts</span>
         </div>
         <div className="w-full flex items-start justify-center" style={{ height: st.alto, borderRadius: "16px 16px 0 0", background: `linear-gradient(180deg, ${st.color}55, ${st.color}08)`, border: `1px solid ${st.color}66`, borderBottom: "none", paddingTop: 10 }}>
-          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: puesto === 1 ? 40 : 32, lineHeight: 1, color: st.color, opacity: 0.9 }}>{puesto}</span>
+          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: puesto === 1 ? 40 : 32, lineHeight: 1, color: st.color, opacity: 0.9 }}>{puesto}</span>
         </div>
       </button>
     );
@@ -3386,7 +3386,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <ArrowLeft size={17} color="#fff" />
             </button>
             <div className="flex-1 min-w-0">
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#fff", lineHeight: 1.15 }}>Ranking de la zona</p>
+              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#fff", lineHeight: 1.15 }}>Ranking de la zona</p>
               <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#B8C9EA" }}><MapPin size={11} /> {zone}</p>
             </div>
             <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 14, background: "linear-gradient(135deg,#FFE08A,#F5A623)", boxShadow: "0 6px 16px rgba(245,166,35,.45)" }}>
@@ -3404,7 +3404,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 <div key={etiqueta} className="flex-1 flex items-center gap-2 px-3 py-2" style={{ borderRadius: 14, background: "#ffffff14", border: "1px solid #ffffff1f" }}>
                   <Icon size={14} color="#7FA8F5" />
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold leading-none" style={{ color: "#fff", fontFamily: "'Poppins', sans-serif" }}>{valor}</span>
+                    <span className="block text-sm font-bold leading-none" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{valor}</span>
                     <span className="block text-[10px] mt-0.5" style={{ color: "#B8C9EA" }}>{etiqueta}</span>
                   </span>
                 </div>
@@ -3430,7 +3430,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <button
                 onClick={() => setCatFiltro(null)}
                 className="text-xs font-semibold px-3 py-1.5"
-                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#4B5563", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#E2E8F0") }}
+                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#374151", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#E2E8F0") }}
               >
                 Todas
               </button>
@@ -3441,7 +3441,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                   <button
                     key={c.id} onClick={() => setCatFiltro(act ? null : c.id)}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
-                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#4B5563", border: "1px solid " + (act ? c.color : "#E2E8F0") }}
+                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#374151", border: "1px solid " + (act ? c.color : "#E2E8F0") }}
                   >
                     <Icon size={13} color={act ? "#fff" : c.color} /> {c.label}
                   </button>
@@ -3455,15 +3455,15 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "#E8F0FE" }}>
                 <Trophy size={32} color="#2F6FED" />
               </span>
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>Todavía no hay ranking</p>
-              <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>Todavía no hay ranking</p>
+              <p className="text-sm mt-1" style={{ color: "#4B5563" }}>
                 {catFiltro ? "No hay negocios de esta categoría en tu zona." : "Cuando los negocios de tu zona reciban visitas, reseñas y favoritos, van a aparecer acá."}
               </p>
             </div>
           ) : (
             <>
               {resto.length > 0 && (
-                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#6B7280", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
+                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#4B5563", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
               )}
               <div className="flex flex-col gap-2.5">
                 {resto.map((biz, i) => {
@@ -3479,15 +3479,15 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                       className="w-full flex items-center gap-3 p-3 text-left bg-white transition-shadow hover:shadow-lg"
                       style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
                     >
-                      <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B2A54" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "'Poppins', sans-serif" }}>
+                      <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B2A54" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "var(--fuente-titulo)" }}>
                         {puesto}
                       </span>
                       <div className="shrink-0 overflow-hidden" style={{ width: 48, height: 48, borderRadius: 14 }}>
                         <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={48} radius="14px" iconSize={20} clickable={false} />
                       </div>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</span>
-                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#6B7280" }}>
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</span>
+                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#4B5563" }}>
                           <span className="font-medium truncate" style={{ color: c?.color }}>{c?.label}</span>
                           {rating && <span className="flex items-center gap-0.5 shrink-0"><Star size={10} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                           <span className="flex items-center gap-0.5 shrink-0"><Eye size={10} /> {fmtNum(biz.views || 0)}</span>
@@ -3498,8 +3498,8 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                         </span>
                       </span>
                       <span className="text-right shrink-0" style={{ minWidth: 38 }}>
-                        <span className="block text-base font-bold leading-none" style={{ color: "#0B2A54", fontFamily: "'Poppins', sans-serif" }}>{pts}</span>
-                        <span className="block text-[10px] mt-0.5" style={{ color: "#94A3B8" }}>pts</span>
+                        <span className="block text-base font-bold leading-none" style={{ color: "#0B2A54", fontFamily: "var(--fuente-titulo)" }}>{pts}</span>
+                        <span className="block text-[10px] mt-0.5" style={{ color: "#64748B" }}>pts</span>
                       </span>
                     </button>
                   );
@@ -3512,7 +3512,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B2A54" }}><Medal size={16} color="#2F6FED" /> ¿Cómo se calcula el ranking?</span>
-                <ChevronDown size={16} color="#6B7280" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+                <ChevronDown size={16} color="#4B5563" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {verComo && (
                 <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}>
@@ -3525,7 +3525,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                       <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
                       <span>
                         <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
-                        <span className="block text-xs" style={{ color: "#6B7280" }}>{texto}</span>
+                        <span className="block text-xs" style={{ color: "#4B5563" }}>{texto}</span>
                       </span>
                     </div>
                   ))}
@@ -3569,8 +3569,8 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
         <Icon size={20} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{title}</span>
-        <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>
+        <span className="block text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>
       </span>
       <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -3591,15 +3591,15 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{title}</span>
-      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#6B7280" }}>{desc}</span>
+      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#4B5563" }}>{desc}</span>
     </button>
   );
 
   const Titulo = ({ children, sub }) => (
     <div className="mb-3 mt-6">
-      <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{children}</p>
-      {sub && <p className="text-xs" style={{ color: "#6B7280" }}>{sub}</p>}
+      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{children}</p>
+      {sub && <p className="text-xs" style={{ color: "#4B5563" }}>{sub}</p>}
     </div>
   );
 
@@ -3615,7 +3615,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   if (!ownerBiz) {
     return (
       <div>
-        <p className="text-xs mb-5" style={{ color: "#6B7280" }}>Todo lo que necesitás en Mi Zona</p>
+        <p className="text-xs mb-5" style={{ color: "#4B5563" }}>Todo lo que necesitás en Mi Zona</p>
 
         {herramientasDeTodos}
       </div>
@@ -3635,8 +3635,8 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
     <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
       <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
-      <span className="block leading-none" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{valor}</span>
-      <span className="block text-[11px] mt-1" style={{ color: "#6B7280" }}>{etiqueta}</span>
+      <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{valor}</span>
+      <span className="block text-[11px] mt-1" style={{ color: "#4B5563" }}>{etiqueta}</span>
     </div>
   );
 
@@ -3669,7 +3669,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
             style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E2E8F0" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
           />
-          <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
+          <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
           <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
             Compartir enlace
           </button>
@@ -3680,17 +3680,17 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Controlá y mejorá tu negocio en Mi Zona</p>
+      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Controlá y mejorá tu negocio en Mi Zona</p>
 
       {/* tarjeta de identidad */}
       <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
         <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
         <div className="relative flex items-center gap-3.5">
-          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2F6FED", color: "#fff", border: "3px solid #ffffff55", fontFamily: "'Poppins', sans-serif" }}>
+          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2F6FED", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
             {ownerBiz.logo ? <img src={ownerBiz.logo} alt="" className="w-full h-full object-cover" /> : ownerBiz.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="truncate" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>{ownerBiz.name}</p>
+            <p className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{ownerBiz.name}</p>
             <p className="text-xs truncate" style={{ color: "#BBD1FB" }}>{c?.label} · {ownerBiz.zone}</p>
             <span className="inline-block text-[10px] font-bold px-2 py-0.5 mt-1.5" style={{ borderRadius: 10, background: estadoColor.bg, color: estadoColor.fg }}>{estadoTexto}</span>
           </div>
@@ -3754,7 +3754,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
           <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{title}</span>
           {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
         </span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>}
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>}
       </span>
       <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -3787,8 +3787,8 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
     return (
       <div>
         <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
-        <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Elegí cómo querés ver Mi Zona</p>
+        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
+        <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Elegí cómo querés ver Mi Zona</p>
         <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
           {opciones.map(({ id, titulo, desc, Icon }) => {
             const activa = tema === id;
@@ -3803,7 +3803,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>
                 </span>
                 {activa && <Check size={18} color="#2F6FED" />}
               </button>
@@ -3820,7 +3820,6 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
         usuario={usuario}
         onBack={() => setSub(null)}
         onLogin={() => onLogin("login")}
-        onIrSeguridad={() => setSub("seguridad")}
         onIrCuenta={() => setSub("cuenta")}
         local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length }}
         onBorrarDatosLocales={onBorrarDatosLocales}
@@ -3846,15 +3845,15 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
     return (
       <div>
         <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">{content.title}</h2>
-        <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.6 }}>{content.body}</p>
+        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">{content.title}</h2>
+        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.6 }}>{content.body}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Configurá tu cuenta y preferencias</p>
+      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Configurá tu cuenta y preferencias</p>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
@@ -3998,6 +3997,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   const submit = async () => {
     if (!form.name.trim()) { setFormError("Escribí el nombre del negocio."); return; }
     if (!form.phone.trim()) { setFormError("Escribí el teléfono de contacto."); return; }
+    if (!form.logo) { setFormError("Subí el logo de tu negocio: es obligatorio."); return; }
     if (!form.portada) { setFormError("Elegí la foto de fondo de tu perfil: es obligatoria."); return; }
     setFormError(null);
     setSaving(true);
@@ -4017,7 +4017,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
     <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F6FB" }}>
       <div className="w-full max-w-lg p-5 pb-10">
         <BotonVolver texto="Volver" onClick={onCancel} />
-        <h2 className="mb-4" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
+        <h2 className="mb-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
           {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
         </h2>
         <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
@@ -4033,11 +4033,11 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Servicios disponibles</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Servicios disponibles</p>
             <TagInput values={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="Ej: reparación de celulares" />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Especialidades</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Especialidades</p>
             <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
           </div>
 
@@ -4059,7 +4059,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
                     </label>
                   ) : (
                     <>
-                      <p className="text-xs mb-1" style={{ color: "#4B5563" }}>{q.label}</p>
+                      <p className="text-xs mb-1" style={{ color: "#374151" }}>{q.label}</p>
                       <input
                         placeholder={q.placeholder}
                         value={form.extra?.[q.key] || ""}
@@ -4074,7 +4074,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Métodos de pago</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Métodos de pago</p>
             <div className="flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const active = form.paymentMethods.includes(m);
@@ -4098,7 +4098,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Logo (opcional)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Logo (obligatorio)</p>
             <div className="flex items-center gap-3">
               {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
               <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
@@ -4112,7 +4112,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
             {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
             <div className="flex items-center gap-3">
               <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
@@ -4123,7 +4123,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Fotos de productos</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.photos.map((url) => (
@@ -4146,7 +4146,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "#4B5563" }}>Horarios de la semana</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: "#374151" }}>Horarios de la semana</p>
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
@@ -4236,10 +4236,10 @@ function EmpleoDetalleModal({ business, onClose }) {
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(ev) => ev.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <span className="flex items-center gap-2" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+          <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
             <Briefcase size={17} color="#2F6FED" /> Buscan personal
           </span>
-          <button onClick={onClose}><X size={18} color="#6B7280" /></button>
+          <button onClick={onClose}><X size={18} color="#4B5563" /></button>
         </div>
         <p className="text-xs font-semibold mb-1" style={{ color: "#2F6FED" }}>{e.puesto}</p>
         <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
@@ -4284,7 +4284,7 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
 
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Tipo de puesto</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Tipo de puesto</p>
             <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
               {TIPOS_PUESTO.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -4293,7 +4293,7 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           )}
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Descripción del trabajo</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Descripción del trabajo</p>
             <textarea
               value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3}
               placeholder="Contá qué va a hacer la persona, horarios, requisitos..."
@@ -4301,13 +4301,13 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>¿Cuánto tiempo va a estar publicada?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>¿Cuánto tiempo va a estar publicada?</p>
             <div className="flex gap-2 flex-wrap">
               {DURACIONES_BUSQUEDA.map((d) => (
                 <button
                   key={d.dias} onClick={() => setDias(d.dias)}
                   className="text-xs font-medium px-3 py-1.5"
-                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#E2E8F0"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#4B5563" }}
+                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#E2E8F0"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#374151" }}
                 >
                   {d.label}
                 </button>
@@ -4315,19 +4315,19 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>¿Cómo te van a contactar?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>¿Cómo te van a contactar?</p>
             <div className="flex gap-2 mb-2">
               <button
                 onClick={() => setContactoTipo("whatsapp")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#4B5563" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#374151" }}
               >
                 WhatsApp
               </button>
               <button
                 onClick={() => setContactoTipo("red_social")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#4B5563" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#374151" }}
               >
                 Red social / link
               </button>
@@ -4365,7 +4365,7 @@ function DiscountForm({ initial, onSave, onCancel }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18 }} className="mb-4">
+        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }} className="mb-4">
           {initial.title ? "Editar descuento" : "Nuevo descuento"}
         </h2>
         <div className="flex flex-col gap-3">
@@ -4375,11 +4375,11 @@ function DiscountForm({ initial, onSave, onCancel }) {
           <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Desde</p>
+              <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Desde</p>
               <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Hasta</p>
+              <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Hasta</p>
               <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
             </div>
           </div>
@@ -4408,7 +4408,7 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
             <div className="text-center py-8">
               <span className="inline-flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 18, background: "#FBEBD1" }}><Tag size={22} color="#B8703F" /></span>
               <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Todavía no creaste promociones</p>
-              <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>Un descuento atrae más clientes a tu negocio.</p>
+              <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>Un descuento atrae más clientes a tu negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -4417,7 +4417,7 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
                 return (
                   <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E6ECF5", background: vigente ? "#FFFBF2" : "#fff" }}>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>{d.title}</h4>
+                      <h4 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>{d.title}</h4>
                       {d.percent && <span className="text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>{d.percent} OFF</span>}
                     </div>
                     <div className="flex items-center justify-between gap-2">
@@ -4425,7 +4425,7 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 mr-2" style={{ borderRadius: 8, background: vigente ? "#E4F3EA" : "#EEEDE7", color: vigente ? "#1E6B44" : "#7A7D87" }}>
                           {d.active ? (vigente ? "Vigente" : "Fuera de fecha") : "Pausada"}
                         </span>
-                        <span className="text-[11px]" style={{ color: "#6B7280" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
+                        <span className="text-[11px]" style={{ color: "#4B5563" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
                       </span>
                       <span className="flex gap-1.5 shrink-0">
                         <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}><Pencil size={13} /></button>
@@ -4876,7 +4876,7 @@ export default function MiZona() {
   };
 
   if (loading) {
-    return <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#6B7280"}}>Cargando...</span></div>;
+    return <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#4B5563"}}>Cargando...</span></div>;
   }
 
   const globalStyle = (
@@ -4886,7 +4886,7 @@ export default function MiZona() {
   /* ---- vista chat con el asistente ---- */
   if (chatBiz) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <ChatScreen biz={chatBiz} onBack={() => setChatBiz(null)} />
       </div>
@@ -4896,7 +4896,7 @@ export default function MiZona() {
   /* ---- vista del asistente de búsqueda general ---- */
   if (showBusquedaAsistente) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <BusquedaAsistenteScreen
           userLoc={userLoc}
@@ -4912,7 +4912,7 @@ export default function MiZona() {
   /* ---- centro de notificaciones ---- */
   if (showNotificaciones) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <NotificacionesScreen
           notificaciones={notificaciones}
@@ -4934,7 +4934,7 @@ export default function MiZona() {
   /* ---- mis puntos y recompensas ---- */
   if (puntosView) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <PuntosScreen
           businesses={businesses}
@@ -4949,7 +4949,7 @@ export default function MiZona() {
   /* ---- vista de la agenda del dueño ---- */
   if (showAgenda && ownerBizId) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <RecordatoriosToast lista={recordatoriosAgenda} onCerrar={(id) => setRecordatoriosAgenda((l) => l.filter((r) => r.id !== id))} onAbrir={(r) => setRecordatoriosAgenda((l) => l.filter((x) => x.id !== r.id))} />
         <AgendaScreen negocioNombre={ownerBiz?.name} onBack={() => setShowAgenda(false)} />
@@ -4960,7 +4960,7 @@ export default function MiZona() {
   /* ---- vista del ranking ---- */
   if (showRanking) {
     return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <RankingScreen
           businesses={businesses}
@@ -4975,7 +4975,7 @@ export default function MiZona() {
   /* ---- vista del mapa ---- */
   if (showMapa) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <MapaScreen
           businesses={businesses}
@@ -4997,7 +4997,7 @@ export default function MiZona() {
   /* ---- vista de favoritos ---- */
   if (showFavoritos) {
     return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
           <FavoritosScreen
@@ -5015,7 +5015,7 @@ export default function MiZona() {
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
-      <div style={{ fontFamily: "'Work Sans', sans-serif" }}>
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
@@ -5032,7 +5032,7 @@ export default function MiZona() {
 
   /* ---- vista pública: listado ---- */
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "'Work Sans', sans-serif" }}>
+    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
       {globalStyle}
 
       {errorMsg && (
@@ -5133,8 +5133,8 @@ export default function MiZona() {
           <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 30px #00000022" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 4, background: "#E2E8F0", margin: "0 auto 16px" }} />
             <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>¿Qué querés hacer?</span>
-              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#6B7280" /></button>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>¿Qué querés hacer?</span>
+              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#4B5563" /></button>
             </div>
             <button
               onClick={() => { setShowAddSheet(false); abrirAgregarNegocio(); }}
@@ -5146,7 +5146,7 @@ export default function MiZona() {
               </span>
               <span>
                 <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Agregar mi negocio</span>
-                <span className="block text-xs" style={{ color: "#6B7280" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
+                <span className="block text-xs" style={{ color: "#4B5563" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
               </span>
             </button>
           </div>
@@ -5168,8 +5168,8 @@ export default function MiZona() {
             <div className="flex items-center justify-center mx-auto mb-3" style={{ width: 48, height: 48, borderRadius: "50%", background: "#E4F3EA" }}>
               <Check size={24} color="#1E6B44" />
             </div>
-            <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
-            <p className="text-sm mb-5" style={{ color: "#4B5563" }}>
+            <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
+            <p className="text-sm mb-5" style={{ color: "#374151" }}>
               Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
                         <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
@@ -5254,8 +5254,8 @@ export default function MiZona() {
         </div>
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3 mb-2.5">
-            <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
-              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#6B7280" }}>en {zone}</span>
+            <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
+              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#4B5563" }}>en {zone}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
@@ -5270,7 +5270,7 @@ export default function MiZona() {
                 <option value="descuentos">🏷️ Descuentos</option>
                 <option value="cercanos">📍 Más cercanos</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#6B7280" />
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#4B5563" />
             </div>
             {onlyFavorites && (
               <button
@@ -5294,7 +5294,7 @@ export default function MiZona() {
                 style={{
                   fontSize: 13, borderRadius: 20,
                   backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#E8F0FE") : "#fff",
-                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#4B5563",
+                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#374151",
                   border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2F6FED") : "#E2E8F0"),
                 }}
               >
@@ -5318,7 +5318,7 @@ export default function MiZona() {
           </div>
         )}
         {sortBy === "cercanos" && locStatus === "loading" && (
-          <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Ubicándote para ordenar por cercanía...</p>
+          <p className="text-xs mb-4" style={{ color: "#374151" }}>Ubicándote para ordenar por cercanía...</p>
         )}
         {sortBy === "cercanos" && locStatus === "denied" && (
           <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3 flex-wrap" style={{ background: "#F7E7E5", borderRadius: 10 }}>
@@ -5337,8 +5337,8 @@ export default function MiZona() {
         )}
 
         {filtered.length === 0 ? (
-          <div className="text-center py-16" style={{ color: "#6B7280" }}>
-            <p className="mb-1" style={{ fontFamily: "'Poppins', sans-serif", fontSize: 19, color: "#0B1220" }}>
+          <div className="text-center py-16" style={{ color: "#4B5563" }}>
+            <p className="mb-1" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 19, color: "#0B1220" }}>
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : onlyVistos && vistosIds.length === 0 ? "Todavía no viste ningún negocio" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">

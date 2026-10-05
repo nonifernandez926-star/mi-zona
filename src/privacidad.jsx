@@ -6,7 +6,7 @@ import { BotonVolver } from "./cuenta.jsx";
 import { getPrivacidad, setPrivacidadLocal, privacidadApi } from "./api.js";
 
 // Mismo lenguaje visual que Ajustes: tarjetas blancas con borde suave, filas con ícono azul y texto legible.
-const TITULO = { fontFamily: "'Poppins', sans-serif", fontWeight: 600, color: "#0B1220" };
+const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
 const TARJETA = { borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" };
 const LINEA = { borderBottom: "1px solid #EEF2F7" };
 
@@ -14,7 +14,7 @@ function Grupo({ titulo, desc, children }) {
   return (
     <section className="mb-5">
       <h3 className="px-1 mb-1" style={{ ...TITULO, fontSize: 15 }}>{titulo}</h3>
-      {desc && <p className="px-1 mb-2 text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>{desc}</p>}
+      {desc && <p className="px-1 mb-2 text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{desc}</p>}
       <div className="overflow-hidden bg-white mt-2" style={TARJETA}>{children}</div>
     </section>
   );
@@ -46,7 +46,7 @@ function Control({ Icon, titulo, desc, activo, onChange, disabled, ultimo }) {
       <Icono Icon={Icon} />
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-        <span className="block text-[13px] mt-0.5" style={{ color: "#4B5563", lineHeight: 1.45 }}>{desc}</span>
+        <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
       </span>
       <Interruptor activo={activo} onChange={onChange} disabled={disabled} etiqueta={titulo} />
     </div>
@@ -56,7 +56,7 @@ function Control({ Icon, titulo, desc, activo, onChange, disabled, ultimo }) {
 function Dato({ etiqueta, valor, ultimo }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3" style={ultimo ? null : LINEA}>
-      <span className="text-sm" style={{ color: "#4B5563" }}>{etiqueta}</span>
+      <span className="text-sm" style={{ color: "#374151" }}>{etiqueta}</span>
       <span className="text-sm font-semibold text-right break-all" style={{ color: "#0B1220" }}>{valor}</span>
     </div>
   );
@@ -66,7 +66,7 @@ function Servicio({ nombre, desc, ultimo }) {
   return (
     <div className="px-4 py-3" style={ultimo ? null : LINEA}>
       <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{nombre}</span>
-      <span className="block text-[13px] mt-0.5" style={{ color: "#4B5563", lineHeight: 1.45 }}>{desc}</span>
+      <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
     </div>
   );
 }
@@ -78,7 +78,7 @@ function FilaIr({ Icon, titulo, desc, onClick, ultimo }) {
       <Icono Icon={Icon} />
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-        <span className="block text-[13px] mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>
+        <span className="block text-[13px] mt-0.5" style={{ color: "#374151" }}>{desc}</span>
       </span>
       <ChevronDown size={16} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -103,7 +103,7 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
         <Icono Icon={Icon} danger={danger} />
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{titulo}</span>
-          <span className="block text-[13px] mt-0.5" style={{ color: "#4B5563", lineHeight: 1.45 }}>{desc}</span>
+          <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
         </span>
         {estado !== "confirmar" && (
           <button
@@ -130,7 +130,7 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
   );
 }
 
-export function PrivacidadScreen({ usuario, onBack, onLogin, onIrSeguridad, onIrCuenta, local, onBorrarVistos, onBorrarDatosLocales }) {
+export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, onBorrarVistos, onBorrarDatosLocales }) {
   const [prefs, setPrefs] = useState(() => getPrivacidad());
   const [resumen, setResumen] = useState(null); // datos del servidor (solo con sesión)
   const [errorCarga, setErrorCarga] = useState(null);
@@ -168,7 +168,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrSeguridad, onIr
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">Privacidad</h2>
-      <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+      <p className="text-sm mb-5" style={{ color: "#374151", lineHeight: 1.5 }}>
         Tu correo, tu agenda y tus pagos son privados. Los datos de un negocio (nombre, dirección, teléfono, fotos y reseñas) son públicos.
       </p>
 
@@ -211,7 +211,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrSeguridad, onIr
           </>
         ) : (
           <div className="px-4 py-3.5" style={LINEA}>
-            <p className="text-sm mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>No iniciaste sesión: no tenemos ningún dato tuyo en el servidor.</p>
+            <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>No iniciaste sesión: no tenemos ningún dato tuyo en el servidor.</p>
             <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
           </div>
         )}
@@ -225,10 +225,6 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrSeguridad, onIr
         <Servicio nombre="Inteligencia artificial" desc="Procesa tu búsqueda y, si lo permitís, tu agenda." />
         <Servicio nombre="Mercado Pago" desc="Cobra las suscripciones de los negocios. Nunca vemos tu tarjeta." />
         <Servicio nombre="Cloudinary" desc="Aloja las fotos que sube un negocio, visibles para todos." ultimo />
-      </Grupo>
-
-      <Grupo titulo="Seguridad">
-        <FilaIr Icon={Lock} titulo="Contraseña y sesiones" desc="Cambiá tu contraseña o cerrá tus otras sesiones." onClick={onIrSeguridad} ultimo />
       </Grupo>
 
       <Grupo titulo="Tus datos">

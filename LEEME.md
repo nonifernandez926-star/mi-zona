@@ -1,3 +1,11 @@
+# Mi Zona — cambios de diseño (LEER PRIMERO)
+
+- Privacidad: se quitó el bloque "Seguridad".
+- Formulario de negocio: el logo ahora es obligatorio (en la web y también en el servidor, `routes/suscripcion.js`).
+- Tipografía: antes se pedía "Poppins" pero nunca se cargaba, por eso se veía una letra genérica. Ahora se cargan Inter (texto) y Plus Jakarta Sans (títulos) desde `index.html`; se definen en `src/index.css` (`--fuente-titulo`, `--fuente-texto`).
+- Legibilidad: textos grises más oscuros y letra chica un poco más grande.
+- Hay que volver a publicar la web y el servidor.
+
 # Mi Zona — novedades de esta versión (LEER PRIMERO)
 
 ## Revisión de seguridad y nueva Privacidad (volver a publicar el servidor Y la web)

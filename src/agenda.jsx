@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { agendaApi, estadoPush, activarPush, pushSoportado, PLAY_STORE_URL } from "./api.js";
 
-const TITULO = { fontFamily: "'Poppins', sans-serif", fontWeight: 600, color: "#0B1220" };
+const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
 const CARD = { borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)", background: "#fff" };
 
 const RECORDATORIOS = [
@@ -32,11 +32,11 @@ const minutosDe = (hora) => { const [h, m] = hora.split(":").map(Number); return
 
 function etiquetaFecha(iso) {
   const hoy = hoyISO();
-  if (!iso) return { texto: "Sin fecha", color: "#6B7280", bg: "#F1F4F9" };
+  if (!iso) return { texto: "Sin fecha", color: "#4B5563", bg: "#F1F4F9" };
   if (iso < hoy) return { texto: "Vencida", color: "#B42318", bg: "#FDE7E4" };
   if (iso === hoy) return { texto: "Hoy", color: "#1D4ED8", bg: "#DBEAFE" };
-  if (iso === sumarDias(hoy, 1)) return { texto: "Mañana", color: "#6B7280", bg: "#F1F4F9" };
-  return { texto: new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).replace(".", ""), color: "#6B7280", bg: "#F1F4F9" };
+  if (iso === sumarDias(hoy, 1)) return { texto: "Mañana", color: "#4B5563", bg: "#F1F4F9" };
+  return { texto: new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).replace(".", ""), color: "#4B5563", bg: "#F1F4F9" };
 }
 
 /* ---------- recordatorios dentro de la app ---------- */
@@ -113,7 +113,7 @@ function Sheet({ titulo, onClose, children, ancho = 480 }) {
   );
 }
 
-const Etiqueta = ({ children }) => <label className="block text-xs font-semibold mt-3 mb-1" style={{ color: "#4B5563" }}>{children}</label>;
+const Etiqueta = ({ children }) => <label className="block text-xs font-semibold mt-3 mb-1" style={{ color: "#374151" }}>{children}</label>;
 const inputCls = "w-full border px-3 py-2.5 text-sm";
 const inputStyle = { borderRadius: 12, borderColor: "#E2E8F0", background: "#fff" };
 
@@ -179,7 +179,7 @@ function FormularioItem({ inicial, perfil, onClose, onGuardado, alDevolver }) {
       <div className="flex p-1 mt-1" style={{ borderRadius: 14, background: "#EEF2F8" }}>
         {[{ id: "evento", t: "Evento" }, { id: "tarea", t: "Tarea" }].map((o) => (
           <button key={o.id} onClick={() => setTipo(o.id)} className="flex-1 py-2 text-sm font-semibold"
-            style={{ borderRadius: 11, background: tipo === o.id ? "#fff" : "transparent", color: tipo === o.id ? "#0B2A54" : "#6B7280", boxShadow: tipo === o.id ? "0 2px 8px rgba(11,42,84,.12)" : "none" }}>
+            style={{ borderRadius: 11, background: tipo === o.id ? "#fff" : "transparent", color: tipo === o.id ? "#0B2A54" : "#4B5563", boxShadow: tipo === o.id ? "0 2px 8px rgba(11,42,84,.12)" : "none" }}>
             {o.t}
           </button>
         ))}
@@ -238,7 +238,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
   if (!items.length) {
     return (
       <Sheet titulo="No encontré nada" onClose={onClose}>
-        <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>{resultado.aclaraciones || "No pude encontrar eventos ni tareas. Probá con otra foto más nítida o escribilo de otra forma."}</p>
+        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{resultado.aclaraciones || "No pude encontrar eventos ni tareas. Probá con otra foto más nítida o escribilo de otra forma."}</p>
         <button onClick={onClose} className="w-full py-3 mt-5 text-sm font-semibold" style={{ borderRadius: 14, background: "#2F6FED", color: "#fff" }}>Cerrar</button>
       </Sheet>
     );
@@ -257,7 +257,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
   return (
     <>
       <Sheet titulo={`Encontré ${items.length} ${items.length === 1 ? "elemento" : "elementos"}`} onClose={onClose} ancho={520}>
-        <p className="text-xs mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Revisalos antes de guardar: una letra mal leída puede cambiar una fecha o un horario. Tocá "Editar" para corregir.</p>
+        <p className="text-xs mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Revisalos antes de guardar: una letra mal leída puede cambiar una fecha o un horario. Tocá "Editar" para corregir.</p>
         {resultado.aclaraciones && (
           <div className="flex items-start gap-2 p-3 mb-3 text-xs" style={{ borderRadius: 14, background: "#FFF6E0", color: "#8A5B12" }}><AlertTriangle size={14} className="shrink-0 mt-0.5" /> {resultado.aclaraciones}</div>
         )}
@@ -267,13 +267,13 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
               <Check2 marcado={i._marcado} onClick={() => setItems((l) => l.map((x, k) => (k === n ? { ...x, _marcado: !x._marcado } : x)))} label="Incluir" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold leading-snug">{i.titulo} <Chip bg={i.tipo === "tarea" ? "#FFEDD5" : "#E8F0FE"} color={i.tipo === "tarea" ? "#C2410C" : "#2F6FED"}>{i.tipo === "tarea" ? "Tarea" : "Evento"}</Chip></p>
-                <p className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5" style={{ color: "#6B7280" }}>
+                <p className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5" style={{ color: "#4B5563" }}>
                   <span className="flex items-center gap-1"><Clock size={12} /> {i.fecha ? fechaLinda(i.fecha) : "Sin fecha"}{i.hora ? ` · ${i.hora}` : ""}</span>
                   {i.persona && <span className="flex items-center gap-1"><User size={12} /> {i.persona}</span>}
                 </p>
-                {i.notas && <p className="text-xs mt-1" style={{ color: "#6B7280" }}>{i.notas}</p>}
+                {i.notas && <p className="text-xs mt-1" style={{ color: "#4B5563" }}>{i.notas}</p>}
                 {i.confianza === "baja" && <p className="text-xs font-semibold mt-1.5" style={{ color: "#B45309" }}>No estoy seguro de esta lectura: revisala.</p>}
-                {i.textoOriginal && <p className="text-[11px] mt-1 italic" style={{ color: "#94A3B8" }}>Leí: “{i.textoOriginal}”</p>}
+                {i.textoOriginal && <p className="text-[11px] mt-1 italic" style={{ color: "#64748B" }}>Leí: “{i.textoOriginal}”</p>}
                 <button onClick={() => setEditando(n)} className="text-xs font-semibold mt-1.5" style={{ color: "#2F6FED" }}>Editar</button>
               </div>
             </div>
@@ -304,7 +304,7 @@ function FotoPrevia({ perfil, onElegir, onClose }) {
   const sinCupo = restantes <= 0;
   return (
     <Sheet titulo="Importar desde foto" onClose={onClose}>
-      <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+      <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>
         Sacale una foto a tu agenda de papel y la IA arma los eventos y tareas. Podés importar hasta {porDia} fotos por día.
       </p>
       <p className="text-sm font-semibold mt-3" style={{ color: sinCupo ? "#B42318" : "#0B2A54" }}>
@@ -339,7 +339,7 @@ function MensajeModal({ onClose, onResultado }) {
   };
   return (
     <Sheet titulo="Agregar desde un mensaje" onClose={onClose}>
-      <p className="text-xs mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Escribí como hablás y la IA arma el evento o la tarea. Siempre vas a poder revisarlo antes de guardar.</p>
+      <p className="text-xs mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Escribí como hablás y la IA arma el evento o la tarea. Siempre vas a poder revisarlo antes de guardar.</p>
       <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={4} maxLength={2500} autoFocus className={inputCls} style={inputStyle}
         placeholder="Ej: El jueves a las 16 tengo que reunirme con Martín para hablar del nuevo pedido." />
       {error && <p className="text-xs mt-2" style={{ color: "#C1443A" }}>{error}</p>}
@@ -355,8 +355,8 @@ function TarjetaEvento({ e, proximo, pasado, onClick }) {
   return (
     <button onClick={onClick} className="w-full flex gap-3 p-3 text-left" style={{ ...CARD, borderLeft: `4px solid ${proximo ? "#7A4F9E" : "#2F6FED"}`, opacity: pasado ? 0.55 : 1, background: proximo ? "linear-gradient(135deg,#FAF7FF,#fff)" : "#fff" }}>
       <span className="shrink-0 text-center" style={{ width: 50 }}>
-        <span className="block text-sm font-bold leading-tight" style={{ color: "#0B2A54", fontFamily: "'Poppins', sans-serif" }}>{e.hora || "Todo el día"}</span>
-        {e.hora && e.duracionMinutos ? <span className="block text-[10px]" style={{ color: "#94A3B8" }}>{e.duracionMinutos} min</span> : null}
+        <span className="block text-sm font-bold leading-tight" style={{ color: "#0B2A54", fontFamily: "var(--fuente-titulo)" }}>{e.hora || "Todo el día"}</span>
+        {e.hora && e.duracionMinutos ? <span className="block text-[10px]" style={{ color: "#64748B" }}>{e.duracionMinutos} min</span> : null}
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-semibold leading-snug">
@@ -364,10 +364,10 @@ function TarjetaEvento({ e, proximo, pasado, onClick }) {
           {proximo && <span className="ml-2 text-[9px] font-bold uppercase px-2 py-0.5 align-middle" style={{ borderRadius: 20, background: "#7A4F9E", color: "#fff" }}>Próximo</span>}
         </span>
         <span className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5">
-          {e.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#6B7280" }}><User size={12} /> {e.persona}</span>}
-          {e.recordatorioMinutos !== null && e.recordatorioMinutos !== undefined && <span className="flex items-center gap-1 text-xs" style={{ color: "#6B7280" }}><Bell size={12} /> Aviso</span>}
+          {e.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><User size={12} /> {e.persona}</span>}
+          {e.recordatorioMinutos !== null && e.recordatorioMinutos !== undefined && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><Bell size={12} /> Aviso</span>}
         </span>
-        {e.notas && <span className="block text-xs mt-1" style={{ color: "#6B7280" }}>{e.notas}</span>}
+        {e.notas && <span className="block text-xs mt-1" style={{ color: "#4B5563" }}>{e.notas}</span>}
       </span>
     </button>
   );
@@ -379,12 +379,12 @@ function TarjetaTarea({ t, onToggle, onClick }) {
     <div className="flex items-start gap-3 p-3" style={CARD}>
       <Check2 marcado={t.completada} onClick={() => onToggle(t)} label="Marcar como hecha" />
       <button onClick={onClick} className="flex-1 min-w-0 text-left">
-        <span className="block text-sm font-semibold leading-snug" style={{ textDecoration: t.completada ? "line-through" : "none", color: t.completada ? "#94A3B8" : "#0B1220" }}>{t.titulo}</span>
+        <span className="block text-sm font-semibold leading-snug" style={{ textDecoration: t.completada ? "line-through" : "none", color: t.completada ? "#64748B" : "#0B1220" }}>{t.titulo}</span>
         <span className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5">
           <Chip color={et.color} bg={et.bg}>{t.fecha || t.completada ? et.texto : "Sin fecha"}{t.hora && !t.completada ? ` · ${t.hora}` : ""}</Chip>
-          {t.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#6B7280" }}><User size={12} /> {t.persona}</span>}
+          {t.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><User size={12} /> {t.persona}</span>}
         </span>
-        {t.notas && <span className="block text-xs mt-1" style={{ color: "#6B7280" }}>{t.notas}</span>}
+        {t.notas && <span className="block text-xs mt-1" style={{ color: "#4B5563" }}>{t.notas}</span>}
       </button>
     </div>
   );
@@ -394,7 +394,7 @@ const Vacio = ({ Icon = CalendarDays, titulo, texto }) => (
   <div className="flex flex-col items-center text-center gap-1 py-7 px-4" style={{ borderRadius: 18, border: "1.5px dashed #D3DAEE", background: "#fff" }}>
     <Icon size={30} color="#B7C0E0" className="mb-1" />
     <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</p>
-    {texto && <p className="text-xs" style={{ color: "#6B7280" }}>{texto}</p>}
+    {texto && <p className="text-xs" style={{ color: "#4B5563" }}>{texto}</p>}
   </div>
 );
 
@@ -500,18 +500,18 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={onBack} className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: "#ffffff1f" }} aria-label="Volver"><ArrowLeft size={18} color="#fff" /></button>
-            <p className="flex-1" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi agenda</p>
+            <p className="flex-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi agenda</p>
           </div>
           <p className="text-xs" style={{ color: "#B8C9EA" }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>
           <div className="flex items-end justify-between gap-3 mt-1">
             <div className="min-w-0">
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 23, color: "#fff", lineHeight: 1.15 }}>{fechaLinda(hoyISO())}</p>
+              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 23, color: "#fff", lineHeight: 1.15 }}>{fechaLinda(hoyISO())}</p>
               <p className="text-sm mt-1" style={{ color: "#DCE7FB" }}>
                 {hoy ? (hoy.eventos.length || hoy.tareas.length ? `${hoy.eventos.length} ${hoy.eventos.length === 1 ? "evento" : "eventos"} y ${hoy.tareas.length} ${hoy.tareas.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "Tu día está libre") : "Cargando tu día..."}
               </p>
             </div>
             <span className="flex flex-col items-center justify-center shrink-0" style={{ width: 62, height: 62, borderRadius: 20, background: "#ffffff1f", border: "1px solid #ffffff33" }}>
-              <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1 }}>{hoy ? hoy.eventos.length : "·"}</span>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1 }}>{hoy ? hoy.eventos.length : "·"}</span>
               <span className="text-[9px] uppercase mt-0.5" style={{ color: "#B8C9EA", letterSpacing: 0.6 }}>hoy</span>
             </span>
           </div>
@@ -557,11 +557,11 @@ export function AgendaScreen({ negocioNombre, onBack }) {
           {!aiOk && perfil && <p className="text-[11px] mt-2" style={{ color: "#7A6FA8" }}>Las funciones con IA se habilitan cuando tu negocio tiene la suscripción activa.</p>}
           {ia && (
             <div className="mt-2.5 p-3.5 bg-white" style={{ borderRadius: 14, border: "1px solid #E4E6F5" }}>
-              {ia.cargando ? <p className="text-sm" style={{ color: "#6B7280" }}>Pensando...</p> : ia.error ? <p className="text-sm" style={{ color: "#C1443A" }}>{ia.error}</p> : (
+              {ia.cargando ? <p className="text-sm" style={{ color: "#4B5563" }}>Pensando...</p> : ia.error ? <p className="text-sm" style={{ color: "#C1443A" }}>{ia.error}</p> : (
                 <>
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <p className="text-sm font-semibold" style={{ color: "#5B3FD1" }}>{ia.titulo}</p>
-                    <button onClick={() => setIa(null)} aria-label="Cerrar"><X size={15} color="#94A3B8" /></button>
+                    <button onClick={() => setIa(null)} aria-label="Cerrar"><X size={15} color="#64748B" /></button>
                   </div>
                   <p className="text-sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.55, color: "#1E293B" }}>{ia.texto}</p>
                 </>
@@ -574,14 +574,14 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <div className="flex p-1 mb-4" style={{ borderRadius: 16, background: "#E3E9F5" }}>
           {[{ id: "hoy", t: "Hoy" }, { id: "semana", t: "Semana" }, { id: "tareas", t: "Tareas" }].map((o) => (
             <button key={o.id} onClick={() => setVista(o.id)} className="flex-1 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "#2F6FED" : "#6B7280", boxShadow: vista === o.id ? "0 3px 10px rgba(11,42,84,.1)" : "none" }}>
+              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "#2F6FED" : "#4B5563", boxShadow: vista === o.id ? "0 3px 10px rgba(11,42,84,.1)" : "none" }}>
               {o.t}
             </button>
           ))}
         </div>
 
         {error && <p className="text-sm p-3 mb-3" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>{error}</p>}
-        {cargando && !datos && <p className="text-sm text-center py-8" style={{ color: "#6B7280" }}>Cargando...</p>}
+        {cargando && !datos && <p className="text-sm text-center py-8" style={{ color: "#4B5563" }}>Cargando...</p>}
 
         {/* HOY */}
         {vista === "hoy" && hoy && (
@@ -617,7 +617,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
             </div>
             {d.eventos.length ? (
               <div className="flex flex-col gap-2.5">{d.eventos.map((e) => <TarjetaEvento key={e._id} e={e} onClick={() => setFormulario(e)} />)}</div>
-            ) : <p className="text-xs text-center py-3" style={{ borderRadius: 14, border: "1px dashed #DCE1F0", color: "#94A3B8", background: "#F8FAFD" }}>Sin eventos</p>}
+            ) : <p className="text-xs text-center py-3" style={{ borderRadius: 14, border: "1px dashed #DCE1F0", color: "#64748B", background: "#F8FAFD" }}>Sin eventos</p>}
           </div>
         ))}
 
@@ -665,7 +665,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
               <span style={{ width: 36, height: 36, borderRadius: "50%", border: "4px solid #E3E8FA", borderTopColor: "#2F6FED", animation: "agGirar 0.8s linear infinite" }} />
               <style>{"@keyframes agGirar { to { transform: rotate(360deg); } }"}</style>
               <p className="text-sm font-semibold">Analizando la foto...</p>
-              <p className="text-xs" style={{ color: "#6B7280" }}>Puede tardar unos segundos. Después vas a poder revisar todo antes de guardar.</p>
+              <p className="text-xs" style={{ color: "#4B5563" }}>Puede tardar unos segundos. Después vas a poder revisar todo antes de guardar.</p>
             </div>
           ) : (
             <>
