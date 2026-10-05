@@ -3766,6 +3766,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
         usuario={usuario} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
         onCerrarSesion={onCerrarSesion}
+        onCuentaEliminada={onCuentaEliminada}
       />
     );
   }
@@ -3820,11 +3821,9 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
         onBack={() => setSub(null)}
         onLogin={() => onLogin("login")}
         onIrSeguridad={() => setSub("seguridad")}
-        local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length, vistos: getRecentlyViewed().length, busquedas: getSearchHistory().length }}
-        onBorrarVistos={onBorrarVistos}
-        onBorrarBusquedas={() => clearSearchHistory()}
+        onIrCuenta={() => setSub("cuenta")}
+        local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length }}
         onBorrarDatosLocales={onBorrarDatosLocales}
-        onCuentaEliminada={onCuentaEliminada}
       />
     );
   }
@@ -4460,6 +4459,7 @@ export default function MiZona() {
   const [onlyVistos, setOnlyVistos] = useState(false);
   const [vistosIds, setVistosIds] = useState(() => getRecentlyViewed());
   const [onlyNuevos, setOnlyNuevos] = useState(false);
+  const [onlyEmpleo, setOnlyEmpleo] = useState(false); // negocios que buscan personal
   const [sortBy, setSortBy] = useState("destacados");
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
@@ -4812,8 +4812,9 @@ export default function MiZona() {
       const matchFav = onlyFavorites ? favorites.includes(b.id) : true;
       const matchVisto = onlyVistos ? vistosIds.includes(b.id) : true;
       const matchNuevo = onlyNuevos ? esNegocioNuevo(b) : true;
+      const matchEmpleo = onlyEmpleo ? busquedaEmpleoActiva(b) : true;
       const matchDiscount = sortBy === "descuentos" ? activeDiscounts(b).length > 0 : true;
-      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchVisto && matchNuevo && matchDiscount;
+      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchVisto && matchNuevo && matchEmpleo && matchDiscount;
     });
     list = [...list];
     if (onlyVistos) {
@@ -4831,7 +4832,7 @@ export default function MiZona() {
       list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyVistos, vistosIds, onlyNuevos, sortBy, userLoc]);
+  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyVistos, vistosIds, onlyNuevos, onlyEmpleo, sortBy, userLoc]);
 
   const selected = businesses.find((b) => b.id === selectedId);
 
@@ -5258,6 +5259,19 @@ export default function MiZona() {
             </p>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
+            <div className="relative">
+              <select
+                value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none font-medium pl-3.5 pr-8 py-2"
+                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E2E8F0", color: "#0B1220", backgroundColor: "#fff" }}
+              >
+                <option value="destacados">⭐ Destacados</option>
+                <option value="vistas">👁️ Más visitados</option>
+                <option value="descuentos">🏷️ Descuentos</option>
+                <option value="cercanos">📍 Más cercanos</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#6B7280" />
+            </div>
             {onlyFavorites && (
               <button
                 onClick={() => setOnlyFavorites(false)}
@@ -5271,6 +5285,7 @@ export default function MiZona() {
               { activo: onlyOpen, alternar: () => setOnlyOpen((v) => !v), texto: "Abiertos", verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} /> },
               { activo: onlyVistos, alternar: () => setOnlyVistos((v) => !v), texto: "Vistos", icono: <Clock size={14} /> },
               { activo: onlyNuevos, alternar: () => setOnlyNuevos((v) => !v), texto: "Nuevos", verde: true, icono: <Sparkles size={14} /> },
+              { activo: onlyEmpleo, alternar: () => setOnlyEmpleo((v) => !v), texto: "Busca personal", icono: <Briefcase size={14} /> },
             ].map((c) => (
               <button
                 key={c.texto}
@@ -5287,19 +5302,6 @@ export default function MiZona() {
                 {c.texto}
               </button>
             ))}
-            <div className="relative">
-              <select
-                value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none font-medium pl-3.5 pr-8 py-2"
-                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E2E8F0", color: "#0B1220", backgroundColor: "#fff" }}
-              >
-                <option value="destacados">⭐ Destacados</option>
-                <option value="vistas">👁️ Más visitados</option>
-                <option value="descuentos">🏷️ Descuentos</option>
-                <option value="cercanos">📍 Más cercanos</option>
-              </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#6B7280" />
-            </div>
           </div>
         </div>
 

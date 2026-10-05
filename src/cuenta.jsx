@@ -1,9 +1,9 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ArrowLeft, Mail, Clock, Sparkles } from "lucide-react";
+import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import {
   cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
-  estadoPush, activarPush, desactivarPush,
+  estadoPush, activarPush, desactivarPush, privacidadApi, setToken,
 } from "./api.js";
 
 const TITULO = { fontFamily: "'Poppins', sans-serif", fontWeight: 600, color: "#0B1220" };
@@ -39,16 +39,16 @@ export function infoSuscripcion(negocio) {
 /* ---------- botón de volver (el único de cada subpantalla) ---------- */
 
 export function BotonVolver({ texto, onClick }) {
+  // Flecha + nombre de la pantalla anterior, como en las apps del celular ("‹ Ajustes")
+  const destino = String(texto || "").replace(/^Volver a /i, "") || "Volver";
   return (
     <button
-      onClick={onClick}
-      className="inline-flex items-center gap-2.5 mb-5 pl-1.5 pr-4 py-1.5 transition-transform active:scale-[0.97]"
-      style={{ borderRadius: 16, background: "#fff", border: "1px solid #DCE6F5", boxShadow: "0 4px 14px rgba(11,42,84,0.09)" }}
+      onClick={onClick} aria-label={texto}
+      className="flex items-center -ml-2 mb-3 pr-3 py-2 active:opacity-60"
+      style={{ color: "#2F6FED", minHeight: 44 }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 12, background: "linear-gradient(135deg,#2F6FED,#5B91F7)" }}>
-        <ArrowLeft size={18} color="#fff" strokeWidth={2.4} />
-      </span>
-      <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B2A54" }}>{texto}</span>
+      <ChevronLeft size={26} strokeWidth={2.2} />
+      <span style={{ fontSize: 16, fontWeight: 500 }}>{destino}</span>
     </button>
   );
 }
@@ -243,7 +243,7 @@ export function NombreModal({ sugerido, onGuardado }) {
 
 /* ---------- Ajustes → Mi cuenta ---------- */
 
-export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado, onCerrarSesion }) {
+export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
@@ -296,8 +296,85 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
           >
             <LogOut size={15} /> Cerrar sesión
           </button>
+          <EliminarCuenta usuario={usuario} onEliminada={onCuentaEliminada} />
         </>
       )}
+    </div>
+  );
+}
+
+/* ---------- Mi cuenta → Eliminar cuenta ---------- */
+
+function EliminarCuenta({ usuario, onEliminada }) {
+  const [abierto, setAbierto] = useState(false);
+  const [resumen, setResumen] = useState(null);
+  const [texto, setTexto] = useState("");
+  const [clave, setClave] = useState("");
+  const [conNegocios, setConNegocios] = useState(false);
+  const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState(null);
+  const esClave = !!usuario.conClave;
+  const negocios = resumen?.negocios || [];
+
+  const abrir = async () => {
+    setAbierto(true); setError(null);
+    if (!esClave) cargarGoogle().catch(() => {});
+    try { setResumen(await privacidadApi.resumen()); } catch (e) { setError(e.message); }
+  };
+  const listo = !!resumen && texto.trim().toUpperCase() === "ELIMINAR" && (!esClave || clave) && (!negocios.length || conNegocios);
+
+  const eliminar = async () => {
+    setError(null); setTrabajando(true);
+    try {
+      const cuerpo = { confirmacion: "ELIMINAR", eliminarNegocios: conNegocios };
+      if (esClave) cuerpo.password = clave;
+      else cuerpo.accessToken = await pedirCuentaGoogle(); // se vuelve a pedir Google para confirmar que sos vos
+      await privacidadApi.eliminarCuenta(cuerpo);
+      setToken(null);
+      onEliminada();
+    } catch (e) {
+      if (!e.cancelado) setError(e.message || "No se pudo eliminar la cuenta.");
+      setTrabajando(false);
+    }
+  };
+
+  if (!abierto) {
+    return (
+      <button onClick={abrir} className="w-full text-sm font-medium py-3 mt-4" style={{ color: "#9A3B34" }}>
+        Eliminar mi cuenta
+      </button>
+    );
+  }
+  return (
+    <div className="mt-5 p-4" style={{ borderRadius: 16, border: "1px solid #F0D3D0", background: "#fff" }}>
+      <p className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: "#9A3B34" }}><AlertTriangle size={16} /> Eliminar mi cuenta</p>
+      <p className="text-sm mb-2" style={{ color: "#4B5563", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
+      {negocios.length > 0 && (
+        <>
+          <p className="text-sm mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+            También se elimina <b>{negocios.length === 1 ? "tu negocio" : `tus ${negocios.length} negocios`}</b> ({negocios.map((n) => n.nombre).join(", ")}). La suscripción pagada no se reembolsa.
+          </p>
+          <label className="flex items-start gap-2 text-sm mb-3" style={{ color: "#0B1220", lineHeight: 1.4 }}>
+            <input type="checkbox" checked={conNegocios} onChange={(e) => setConNegocios(e.target.checked)} className="mt-1" />
+            Entiendo que mi negocio se elimina con la cuenta.
+          </label>
+        </>
+      )}
+      <p className="text-[13px] mb-3" style={{ color: "#6B7280", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
+      {esClave && (
+        <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Tu contraseña" autoComplete="current-password" maxLength={100}
+          className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
+      )}
+      <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí ELIMINAR para confirmar" autoCapitalize="characters"
+        className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
+      {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#6B7280" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
+      {error && <p className="text-sm mb-2.5" style={{ color: "#C1443A" }}>{error}</p>}
+      <div className="flex gap-2">
+        <button onClick={() => { setAbierto(false); setTexto(""); setClave(""); setError(null); setConNegocios(false); }} disabled={trabajando} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>Cancelar</button>
+        <button onClick={eliminar} disabled={!listo || trabajando} className="flex-1 text-sm font-semibold py-2.5 flex items-center justify-center gap-1.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff", opacity: !listo || trabajando ? 0.5 : 1 }}>
+          {trabajando && <Loader2 size={14} className="animate-spin" />} Eliminar
+        </button>
+      </div>
     </div>
   );
 }
