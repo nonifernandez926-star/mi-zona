@@ -10,7 +10,7 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2,
+  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion,
@@ -18,7 +18,7 @@ import {
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import {
-  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen,
+  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen,
   PlanesModal, TarjetaSuscripcion, infoSuscripcion,
 } from "./cuenta.jsx";
 
@@ -143,6 +143,15 @@ const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "
 function catInfo(id) {
   return CATEGORIES.find((c) => c.id === id);
 }
+/* ---------- apariencia: claro, oscuro o automático (según el celular) ---------- */
+const TEMA_KEY = "miZonaTema";
+function getTema() { try { return localStorage.getItem(TEMA_KEY) || "auto"; } catch { return "auto"; } }
+function aplicarTema(t) {
+  const oscuro = t === "oscuro" || (t === "auto" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("tema-oscuro", oscuro);
+}
+function guardarTema(t) { try { localStorage.setItem(TEMA_KEY, t); } catch { /* sin almacenamiento */ } aplicarTema(t); }
+
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
@@ -1547,8 +1556,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               </button>
             </div>
           </div>
-          <div className="absolute flex items-center gap-2" style={{ bottom: 40, left: 16 }}><OpenBadge weekHours={biz.weekHours} /></div>
-          {rank && (
+                    {rank && (
             <div
               className="absolute flex items-center gap-1 text-xs font-bold px-2.5 py-1.5"
               style={{
@@ -1589,6 +1597,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#6B7280" }}>
                   <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
                 </p>
+                <div className="mt-1.5"><OpenBadge weekHours={biz.weekHours} /></div>
               </div>
             </div>
 
@@ -1909,7 +1918,7 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
 // Barra de arriba de Chats, Herramientas y Ajustes: flecha para volver al Inicio y el título de la pantalla
 function BarraTitulo({ titulo, onBack }) {
   return (
-    <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
+    <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
         <button onClick={onBack} aria-label="Volver al inicio" className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
           <ArrowLeft size={18} color="#fff" />
@@ -1930,7 +1939,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   return (
     <>
       {/* barra superior fija: menú, logo y notificaciones */}
-      <div className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
+      <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -1968,7 +1977,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       </div>
 
       {/* portada: saludo, buscador y zona */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 58%,#1F55B3 125%)" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 58%,#1F55B3 125%)" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
         <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
@@ -2092,7 +2101,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
         style={{ width: "min(78vw, 300px)", boxShadow: "6px 0 30px #00000033" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 pt-7" style={{ background: "linear-gradient(160deg, #0B2A54, #1F55B3)" }}>
+        <div data-conservar-color className="p-5 pt-7" style={{ background: "linear-gradient(160deg, #0B2A54, #1F55B3)" }}>
           <div
             className="flex items-center justify-center mb-3"
             style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, #2F6FED, #7FA8F5)", boxShadow: "0 8px 20px rgba(47,111,237,.45)" }}
@@ -3370,7 +3379,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   return (
     <div>
       {/* portada oscura con título y podio */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 0" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 0" }}>
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "#7FA8F51a" }} />
         <div className="relative max-w-3xl mx-auto">
@@ -3676,7 +3685,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
       <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Controlá y mejorá tu negocio en Mi Zona</p>
 
       {/* tarjeta de identidad */}
-      <div className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
+      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
         <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
         <div className="relative flex items-center gap-3.5">
           <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2F6FED", color: "#fff", border: "3px solid #ffffff55", fontFamily: "'Poppins', sans-serif" }}>
@@ -3729,8 +3738,11 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 }
 
 function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales }) {
-  const [sub, setSub] = useState(null); // null | "cuenta" | "notificaciones" | "acerca" | "ayuda" | "soporte" | "privacidad"
+  const [sub, setSub] = useState(null); // null | "cuenta" | "notificaciones" | "seguridad" | "apariencia" | "acerca" | "ayuda" | "soporte" | "privacidad"
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+  const [tema, setTemaEstado] = useState(() => getTema());
+  // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
+  useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
 
   const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
     <button
@@ -3757,12 +3769,54 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
       <MiCuentaScreen
         usuario={usuario} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
-        onCerrarSesion={() => { onCerrarSesion(); setSub(null); }}
+        onCerrarSesion={onCerrarSesion}
       />
     );
   }
   if (sub === "notificaciones") {
     return <NotificacionesPushScreen usuario={usuario} onBack={() => setSub(null)} onLogin={onLogin} />;
+  }
+
+  if (sub === "seguridad") {
+    return <SeguridadScreen usuario={usuario} onBack={() => setSub(null)} onLogin={() => onLogin("login")} />;
+  }
+
+  if (sub === "apariencia") {
+    const opciones = [
+      { id: "claro", titulo: "Claro", desc: "Fondo blanco, como siempre.", Icon: Sun },
+      { id: "oscuro", titulo: "Oscuro", desc: "Fondo oscuro, más cómodo de noche.", Icon: Moon },
+      { id: "auto", titulo: "Automático", desc: "Sigue el modo de tu celular.", Icon: Smartphone },
+    ];
+    return (
+      <div>
+        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+          <ArrowLeft size={15} /> Volver a Ajustes
+        </button>
+        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
+        <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Elegí cómo querés ver Mi Zona</p>
+        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+          {opciones.map(({ id, titulo, desc, Icon }) => {
+            const activa = tema === id;
+            return (
+              <button
+                key={id} onClick={() => { guardarTema(id); setTemaEstado(id); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
+                style={{ borderBottom: "1px solid #EEF2F7" }}
+              >
+                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: activa ? "#2F6FED" : "#E8F0FE" }}>
+                  <Icon size={17} color={activa ? "#fff" : "#2F6FED"} />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</span>
+                </span>
+                {activa && <Check size={18} color="#2F6FED" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   if (sub === "privacidad") {
@@ -3841,8 +3895,8 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
-        <Row Icon={Lock} title="Seguridad" desc="Tu cuenta se protege con Google" badge="Próximamente" disabled />
-        <Row Icon={Settings} title="Apariencia" desc="Elegí el modo claro u oscuro" badge="Próximamente" disabled />
+        <Row Icon={Lock} title="Seguridad" desc="Contraseña y sesiones abiertas" onClick={() => setSub("seguridad")} />
+        <Row Icon={Settings} title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
         <Row Icon={Lock} title="Privacidad" desc="Qué datos guardamos y cómo borrarlos" onClick={() => setSub("privacidad")} />
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
@@ -3911,6 +3965,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const setBool = (k) => (e) => setForm({ ...form, [k]: e.target.checked });
 
@@ -3947,6 +4002,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
     try {
       const url = await uploadImage(file);
       setForm((f) => ({ ...f, portada: url }));
+      setFormError(null);
     } catch (err) {
       console.error(err);
       setUploadError("No se pudo subir la foto de fondo. Revisá la configuración de Cloudinary.");
@@ -3976,7 +4032,10 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   const removePhoto = (url) => setForm((f) => ({ ...f, photos: f.photos.filter((p) => p !== url) }));
 
   const submit = async () => {
-    if (!form.name.trim() || !form.phone.trim()) return;
+    if (!form.name.trim()) { setFormError("Escribí el nombre del negocio."); return; }
+    if (!form.phone.trim()) { setFormError("Escribí el teléfono de contacto."); return; }
+    if (!form.portada) { setFormError("Elegí la foto de fondo de tu perfil: es obligatoria."); return; }
+    setFormError(null);
     setSaving(true);
     let coords = { lat: form.lat ?? null, lng: form.lng ?? null };
     // Si cambió la dirección o todavía no tiene coordenadas, geocodificamos automáticamente
@@ -4091,16 +4150,13 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Foto de fondo de tu perfil (opcional, una sola)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#4B5563" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
             {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
             <div className="flex items-center gap-3">
               <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
                 {uploadingPortada ? "Subiendo..." : form.portada ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePortadaUpload} disabled={uploadingPortada} />
               </label>
-              {form.portada && !uploadingPortada && (
-                <button type="button" onClick={() => setForm({ ...form, portada: "" })} className="text-xs" style={{ color: "#C1443A" }}>Quitar</button>
-              )}
             </div>
           </div>
 
@@ -4132,6 +4188,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
+          {formError && <p className="text-xs font-medium" style={{ color: "#C1443A" }}>{formError}</p>}
           <div className="flex gap-2 mt-2">
             <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
             <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
@@ -4563,6 +4620,15 @@ export default function MiZona() {
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
   const [activeTab, setActiveTab] = useState("inicio");
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
+  // aplica la apariencia elegida y, en modo automático, la sigue cuando el celular cambia de claro a oscuro
+  useEffect(() => {
+    aplicarTema(getTema());
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const alCambiar = () => { if (getTema() === "auto") aplicarTema("auto"); };
+    mq?.addEventListener?.("change", alCambiar);
+    return () => mq?.removeEventListener?.("change", alCambiar);
+  }, []);
   const [subHerramientas, setSubHerramientas] = useState(null); // null | "promos" | "empleo" | "qr"
   const irATab = (tab) => { setSubHerramientas(null); setActiveTab(tab); window.scrollTo(0, 0); };
 
@@ -5048,6 +5114,15 @@ export default function MiZona() {
       )}
 
       {showAllCats && <CategoryModal activeCat={activeCat} onSelect={(id) => { setActiveCat(id); setShowAllCats(false); }} onClose={() => setShowAllCats(false)} />}
+      {confirmarSalida && (
+        <ConfirmModal
+          title="¿Cerrar sesión?"
+          message={`Vas a salir de ${usuario?.email || "tu cuenta"}. Podés volver a entrar cuando quieras.`}
+          confirmLabel="Cerrar sesión" danger
+          onConfirm={() => { setConfirmarSalida(false); cerrarSesion(); }}
+          onCancel={() => setConfirmarSalida(false)}
+        />
+      )}
       {showLogin && <LoginModal onClose={() => setShowLogin(null)} onLogged={alIniciarSesion} />}
       {nombrePendiente && (
         <NombreModal
@@ -5132,13 +5207,14 @@ export default function MiZona() {
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}
-            onCerrarSesion={cerrarSesion}
+            onCerrarSesion={() => setConfirmarSalida(true)}
             onBorrarDatosLocales={() => {
               Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
               setFavorites([]);
               setOnlyFavorites(false);
               setNotifLeidas(new Set());
               setNotifEliminadas(new Set());
+              aplicarTema("auto");
             }}
           />
         ) : activeTab === "chats" ? (

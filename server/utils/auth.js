@@ -3,7 +3,14 @@ import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import Usuario from "../models/Usuario.js";
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// ID de cliente de Google de la web de Mi Zona (es público: también va dentro de la web). El servidor siempre lo acepta,
+// y además acepta los que se carguen en GOOGLE_CLIENT_ID (separados por coma), así un error al cargar la variable no rompe el acceso con Google.
+const ID_GOOGLE_WEB = "553562775987-ovo25d12tq3fhntvj34342nk3jlg7vtc.apps.googleusercontent.com";
+function idsGooglePermitidos() {
+  const deEntorno = String(process.env.GOOGLE_CLIENT_ID || "").split(",").map((x) => x.trim().replace(/^["']+|["']+$/g, "")).filter(Boolean);
+  return [...new Set([...deEntorno, ID_GOOGLE_WEB])];
+}
+const googleClient = new OAuth2Client();
 
 function secreto() {
   if (!process.env.JWT_SECRET) {
@@ -14,8 +21,8 @@ function secreto() {
   return process.env.JWT_SECRET;
 }
 
-export function firmarTokenUsuario(usuarioId) {
-  return jwt.sign({ uid: usuarioId }, secreto(), { expiresIn: "90d" });
+export function firmarTokenUsuario(usuario) {
+  return jwt.sign({ uid: String(usuario._id), v: usuario.tokenVersion || 0 }, secreto(), { expiresIn: "90d" });
 }
 
 function leerToken(req) {
@@ -29,12 +36,7 @@ function leerToken(req) {
 }
 
 export async function verificarIdTokenGoogle(idToken) {
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    const e = new Error("Falta GOOGLE_CLIENT_ID en las variables de entorno del servidor.");
-    e.status = 503;
-    throw e;
-  }
-  const ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+  const ticket = await googleClient.verifyIdToken({ idToken, audience: idsGooglePermitidos() });
   const p = ticket.getPayload();
   if (!p?.email || p.email_verified === false) throw new Error("Cuenta de Google sin email verificado");
   return { googleId: p.sub, email: p.email.toLowerCase(), nombreGoogle: p.name || "" };
@@ -43,18 +45,14 @@ export async function verificarIdTokenGoogle(idToken) {
 // Verifica un access token de Google (el que entrega la ventana "elegir cuenta"): comprueba que lo emitió NUESTRO ID de cliente
 // y trae el correo y el nombre de la cuenta elegida.
 export async function verificarAccessTokenGoogle(accessToken) {
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    const e = new Error("Falta GOOGLE_CLIENT_ID en las variables de entorno del servidor.");
-    e.status = 503;
-    throw e;
-  }
   const t = String(accessToken || "");
   if (t.length < 20 || t.length > 4096) throw new Error("Token de Google inválido");
   const info = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(t)}`);
   if (!info.ok) throw new Error("Token de Google vencido o inválido");
   const datos = await info.json();
-  if (datos.aud !== process.env.GOOGLE_CLIENT_ID && datos.azp !== process.env.GOOGLE_CLIENT_ID) {
-    throw new Error("Wrong recipient: el ID de cliente de Google no coincide con GOOGLE_CLIENT_ID del servidor");
+  const permitidos = idsGooglePermitidos();
+  if (!permitidos.includes(datos.aud) && !permitidos.includes(datos.azp)) {
+    throw new Error(`Wrong recipient: Google emitió el acceso para el ID ${String(datos.aud || "?").slice(0, 14)}… y el servidor espera ${permitidos.map((x) => x.slice(0, 14)).join(" / ")}…`);
   }
   const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { Authorization: `Bearer ${t}` } });
   if (!res.ok) throw new Error("No se pudo leer la cuenta de Google");
@@ -71,7 +69,8 @@ export async function identificar(req, res, next) {
     req.actor = null;
     if (t?.uid) {
       const usuario = await Usuario.findById(t.uid);
-      if (usuario) req.actor = { tipo: "usuario", usuario };
+      // si la versión del token no coincide, la persona cerró sesión en todos los dispositivos o cambió su contraseña
+      if (usuario && (t.v || 0) === (usuario.tokenVersion || 0)) req.actor = { tipo: "usuario", usuario };
     }
     next();
   } catch (e) {

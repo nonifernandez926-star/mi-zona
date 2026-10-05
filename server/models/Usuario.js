@@ -13,6 +13,8 @@ const usuarioSchema = new mongoose.Schema(
     proveedor: { type: String, enum: ["google", "email"], default: "google" },
     passwordHash: { type: String, default: "" },
     sesionClienteId: { type: String, default: "" },
+    // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

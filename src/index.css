@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- modo oscuro ----------
+   Se invierten los colores de toda la pantalla y se vuelven a invertir las fotos, el mapa y las barras azules de arriba,
+   para que se vean con sus colores de siempre. */
+html.tema-oscuro { filter: invert(1) hue-rotate(180deg); background: #fff; }
+html.tema-oscuro img,
+html.tema-oscuro video,
+html.tema-oscuro .leaflet-container,
+html.tema-oscuro [data-conservar-color] { filter: invert(1) hue-rotate(180deg); }
+html.tema-oscuro .leaflet-container img { filter: none; }
+html.tema-oscuro [data-conservar-color] img { filter: none; }

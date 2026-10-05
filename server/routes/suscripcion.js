@@ -13,7 +13,7 @@ const router = express.Router();
 // Campos que un dueño puede mandar al cargar su negocio (el resto se ignora: estado, vencimiento, dueño, etc. los pone el servidor)
 const CAMPOS_NEGOCIO = [
   "name", "desc", "cat", "zone", "services", "specialties", "paymentMethods", "delivery", "acceptsWhatsapp",
-  "phone", "ig", "tiktok", "facebook", "logo", "photos", "loc", "lat", "lng", "weekHours", "extra",
+  "phone", "ig", "tiktok", "facebook", "logo", "portada", "photos", "loc", "lat", "lng", "weekHours", "extra",
 ];
 
 function armarNegocioNuevo(datos, usuario) {
@@ -72,6 +72,7 @@ router.post("/iniciar", identificar, requiereUsuario, async (req, res) => {
     let negocio;
     if (business) {
       if (!business.name?.trim() || !business.phone?.trim()) return res.status(400).json({ error: "Completá el nombre y el teléfono del negocio." });
+      if (!String(business.portada || "").trim()) return res.status(400).json({ error: "Elegí la foto de fondo de tu perfil." });
 
       // ¿Ya pagó Mi Asistente con esta cuenta? Entonces publicamos el negocio sin cobrar.
       const cob = await sincronizarCobertura(null, usuario);

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Check, LogOut, User, Bell, BellOff, ArrowLeft, Mail, Clock, Sparkles } from "lucide-react";
 import {
-  cargarGoogle, pedirCuentaGoogle, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
+  cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
   estadoPush, activarPush, desactivarPush,
 } from "./api.js";
 
@@ -283,6 +283,111 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+/* ---------- Ajustes → Seguridad ---------- */
+
+export function SeguridadScreen({ usuario, onBack, onLogin }) {
+  const [actual, setActual] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [repetir, setRepetir] = useState("");
+  const [ver, setVer] = useState(false);
+  const [estadoClave, setEstadoClave] = useState(null); // null | "guardando" | "ok" | { error }
+  const [estadoSesiones, setEstadoSesiones] = useState(null); // null | "confirmar" | "cerrando" | "ok" | { error }
+  const campo = { borderRadius: 10, borderColor: "#E2E8F0", background: "#fff" };
+  const tarjeta = { borderRadius: 16, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" };
+
+  const Volver = () => (
+    <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
+      <ArrowLeft size={15} /> Volver a Ajustes
+    </button>
+  );
+
+  if (!usuario) {
+    return (
+      <div>
+        <Volver />
+        <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Seguridad</h2>
+        <p className="text-sm mb-4" style={{ color: "#4B5563", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
+        <button onClick={onLogin} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 12, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
+      </div>
+    );
+  }
+
+  const claveValida = actual && nueva.length >= 8 && nueva === repetir;
+  const guardarClave = async () => {
+    setEstadoClave("guardando");
+    try {
+      await cambiarClave(actual, nueva);
+      setActual(""); setNueva(""); setRepetir("");
+      setEstadoClave("ok");
+      setTimeout(() => setEstadoClave(null), 3500);
+    } catch (e) { setEstadoClave({ error: e.message }); }
+  };
+  const cerrarOtras = async () => {
+    setEstadoSesiones("cerrando");
+    try { await cerrarOtrasSesiones(); setEstadoSesiones("ok"); setTimeout(() => setEstadoSesiones(null), 3500); }
+    catch (e) { setEstadoSesiones({ error: e.message }); }
+  };
+
+  return (
+    <div>
+      <Volver />
+      <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">Seguridad</h2>
+      <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Cuidá el acceso a tu cuenta</p>
+
+      <div className="p-4 mb-3" style={tarjeta}>
+        <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Cómo se protege tu cuenta</p>
+        <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>
+          {usuario.conClave
+            ? <>Entrás con el correo <b>{usuario.email}</b> y una contraseña. Guardamos tu contraseña cifrada: nadie, ni nosotros, puede verla.</>
+            : <>Entrás con tu cuenta de Google (<b>{usuario.email}</b>). La contraseña y la verificación en dos pasos se manejan desde Google.</>}
+        </p>
+        {!usuario.conClave && (
+          <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="inline-block text-xs font-semibold mt-2.5" style={{ color: "#2F6FED" }}>
+            Abrir la seguridad de mi cuenta de Google
+          </a>
+        )}
+      </div>
+
+      {usuario.conClave && (
+        <div className="p-4 mb-3" style={tarjeta}>
+          <p className="text-sm font-semibold mb-3" style={{ color: "#0B1220" }}>Cambiar contraseña</p>
+          <div className="flex flex-col gap-2.5">
+            <input value={actual} onChange={(e) => { setActual(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
+            <input value={nueva} onChange={(e) => { setNueva(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
+            <input value={repetir} onChange={(e) => { setRepetir(e.target.value); setEstadoClave(null); }} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-2.5 text-sm" style={campo} />
+            <label className="flex items-center gap-2 text-xs" style={{ color: "#4B5563" }}>
+              <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
+            </label>
+            {repetir && nueva !== repetir && <p className="text-xs" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
+            {estadoClave?.error && <p className="text-xs" style={{ color: "#C1443A" }}>{estadoClave.error}</p>}
+            {estadoClave === "ok" && <p className="text-xs flex items-center gap-1" style={{ color: "#1E6B44" }}><Check size={13} /> Listo: cambiaste tu contraseña y cerramos tu sesión en los demás dispositivos.</p>}
+            <button onClick={guardarClave} disabled={!claveValida || estadoClave === "guardando"} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#2F6FED", color: "#fff", opacity: !claveValida || estadoClave === "guardando" ? 0.5 : 1 }}>
+              {estadoClave === "guardando" ? "Guardando..." : "Cambiar contraseña"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="p-4" style={tarjeta}>
+        <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Sesiones abiertas</p>
+        <p className="text-xs mb-3" style={{ color: "#6B7280", lineHeight: 1.5 }}>Si entraste desde un celular o computadora que no es tuya, cerrá la sesión en todos los demás dispositivos. Este sigue abierto.</p>
+        {estadoSesiones?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estadoSesiones.error}</p>}
+        {estadoSesiones === "ok" && <p className="text-xs mb-2 flex items-center gap-1" style={{ color: "#1E6B44" }}><Check size={13} /> Cerramos tu sesión en los demás dispositivos.</p>}
+        {estadoSesiones === "confirmar" ? (
+          <div className="flex gap-2">
+            <button onClick={() => setEstadoSesiones(null)} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>Cancelar</button>
+            <button onClick={cerrarOtras} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff" }}>Sí, cerrar</button>
+          </div>
+        ) : (
+          <button onClick={() => setEstadoSesiones("confirmar")} disabled={estadoSesiones === "cerrando"} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, border: "1px solid #C1443A", color: "#9A3B34", opacity: estadoSesiones === "cerrando" ? 0.5 : 1 }}>
+            {estadoSesiones === "cerrando" ? "Cerrando..." : "Cerrar sesión en los demás dispositivos"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

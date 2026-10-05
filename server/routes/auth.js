@@ -10,7 +10,7 @@ import { permitir, olvidar } from "../utils/limitador.js";
 
 const router = express.Router();
 
-const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, nombre: u.nombre });
+const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, nombre: u.nombre, conClave: !!u.passwordHash });
 
 // Une a la cuenta los negocios que tengan su email como dueño (negocios cargados antes de que existiera el login).
 async function vincularNegociosPorEmail(usuario) {
@@ -58,7 +58,7 @@ router.post("/google", async (req, res) => {
     await vincularNegociosPorEmail(usuario);
 
     res.json({
-      token: firmarTokenUsuario(String(usuario._id)),
+      token: firmarTokenUsuario(usuario),
       usuario: usuarioPublico(usuario),
       nombreGoogle, // solo como sugerencia para el campo de nombre
       requiereNombre: !usuario.nombre,
@@ -109,7 +109,7 @@ router.post("/registro", async (req, res) => {
     const usuario = await Usuario.create({
       googleId: `email:${email}`, email, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
     });
-    res.status(201).json({ token: firmarTokenUsuario(String(usuario._id)), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
+    res.status(201).json({ token: firmarTokenUsuario(usuario), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
     console.error("Error en registro con correo:", e.message);
@@ -138,7 +138,7 @@ router.post("/login", async (req, res) => {
     if (!usuario || !ok) return res.status(401).json({ error: "Correo o contraseña incorrectos." });
 
     olvidar(clave);
-    res.json({ token: firmarTokenUsuario(String(usuario._id)), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
+    res.json({ token: firmarTokenUsuario(usuario), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
   } catch (e) {
     console.error("Error en login con correo:", e.message);
     res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo iniciar sesión. Probá de nuevo." });
@@ -148,7 +148,7 @@ router.post("/login", async (req, res) => {
 // GET /api/auth/estado → qué está configurado en el servidor (solo sí/no, nunca los valores). Sirve para diagnosticar errores de inicio de sesión.
 router.get("/estado", (req, res) => {
   res.json({
-    googleClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
+    googleClientId: Boolean(process.env.GOOGLE_CLIENT_ID), // aunque falte, el servidor acepta el ID de la web de Mi Zona
     jwtSecret: Boolean(process.env.JWT_SECRET),
     mongodb: Boolean(process.env.MONGODB_URI),
     anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
@@ -178,6 +178,42 @@ router.post("/sesion-cliente", identificar, requiereUsuario, async (req, res) =>
 
 router.get("/me", identificar, requiereUsuario, (req, res) => {
   res.json({ usuario: usuarioPublico(req.actor.usuario) });
+});
+
+// PUT /api/auth/clave   { actual, nueva }  → cambiar la contraseña (solo cuentas con correo y contraseña).
+// Cierra la sesión en los demás dispositivos y devuelve un token nuevo para este.
+router.put("/clave", identificar, requiereUsuario, async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    if (!permitir(`clave|${ip(req)}|${u._id}`, 8, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    if (!u.passwordHash) return res.status(400).json({ error: "Tu cuenta entra con Google: la contraseña se maneja desde tu cuenta de Google." });
+    const actual = String(req.body?.actual || "");
+    const nueva = String(req.body?.nueva || "");
+    if (!(await verificarContrasena(actual, u.passwordHash))) return res.status(401).json({ error: "La contraseña actual no es correcta." });
+    if (nueva.length < 8) return res.status(400).json({ error: "La contraseña nueva tiene que tener al menos 8 caracteres." });
+    if (nueva.length > 100) return res.status(400).json({ error: "La contraseña nueva es demasiado larga (máximo 100)." });
+    if (nueva === actual) return res.status(400).json({ error: "La contraseña nueva tiene que ser distinta a la actual." });
+    u.passwordHash = await hashearContrasena(nueva);
+    u.tokenVersion = (u.tokenVersion || 0) + 1;
+    await u.save();
+    res.json({ token: firmarTokenUsuario(u), ok: true });
+  } catch (e) {
+    console.error("Error al cambiar la contraseña:", e.message);
+    res.status(500).json({ error: "No se pudo cambiar la contraseña. Probá de nuevo." });
+  }
+});
+
+// POST /api/auth/cerrar-otras-sesiones → cierra la sesión en todos los demás dispositivos (este sigue abierto)
+router.post("/cerrar-otras-sesiones", identificar, requiereUsuario, async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    u.tokenVersion = (u.tokenVersion || 0) + 1;
+    await u.save();
+    res.json({ token: firmarTokenUsuario(u), ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo cerrar las otras sesiones. Probá de nuevo." });
+  }
 });
 
 // PUT /api/auth/perfil   { nombre }  — el nombre se pide al registrarse y se puede editar en "Mi cuenta"

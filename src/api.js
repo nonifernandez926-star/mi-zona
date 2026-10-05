@@ -136,6 +136,16 @@ export async function traerMiSesion() {
 export const vincularSesionCliente = (sesionClienteId) => enviarUsuarioJSON("/auth/sesion-cliente", "POST", { sesionClienteId });
 export const traerMisConversaciones = () => enviarUsuarioJSON("/asistente/mis-conversaciones", "POST", {});
 
+// Seguridad: cambiar la contraseña (cuentas con correo) y cerrar sesión en los demás dispositivos. Ambas devuelven un token nuevo para este dispositivo.
+export const cambiarClave = async (actual, nueva) => {
+  const r = await enviarUsuarioJSON("/auth/clave", "PUT", { actual, nueva });
+  setToken(r.token);
+};
+export const cerrarOtrasSesiones = async () => {
+  const r = await enviarUsuarioJSON("/auth/cerrar-otras-sesiones", "POST", {});
+  setToken(r.token);
+};
+
 export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT", { nombre }).then((r) => r.usuario);
 
 /* ---------- negocios propios y suscripción ---------- */
