@@ -1,6 +1,6 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing } from "lucide-react";
+import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays } from "lucide-react";
 import {
   cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
   estadoPush, activarPush, desactivarPush, privacidadApi, seguridadApi, setToken,
@@ -264,10 +264,37 @@ export function NombreModal({ sugerido, onGuardado }) {
 
 /* ---------- Ajustes → Mi cuenta ---------- */
 
-export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
+const fmtFechaLarga = (iso) => (iso ? new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" }) : "—");
+
+// Estado de un negocio de la cuenta, en palabras simples
+function estadoNegocio(n) {
+  if (n.estado === "pendiente") return { texto: "Esperando el pago", color: AMBAR };
+  const dias = diasHasta(n.venceEl ? String(n.venceEl).slice(0, 10) : null);
+  if (dias === null) return { texto: "Activo", color: VERDE };
+  if (dias < 0) return { texto: "Vencido", color: "#C1443A" };
+  if (dias <= 7) return { texto: `Vence en ${dias} ${dias === 1 ? "día" : "días"}`, color: AMBAR };
+  return { texto: `Activo hasta el ${fmtFecha(String(n.venceEl).slice(0, 10))}`, color: VERDE };
+}
+
+function FilaDato({ Icon, titulo, valor, ultimo }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 11, background: "#E8F0FE" }}><Icon size={16} color="#2F6FED" /></span>
+      <span className="flex-1 min-w-0 text-sm" style={{ color: "#374151" }}>{titulo}</span>
+      <span className="text-sm font-semibold text-right" style={{ color: "#0B1220" }}>{valor}</span>
+    </div>
+  );
+}
+
+export function MiCuentaScreen({ usuario, local, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
+  const [resumen, setResumen] = useState(null); // lo que Mi Zona tiene de esta cuenta (cantidades, negocios, fecha de alta)
   useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
+  useEffect(() => {
+    if (!usuario) { setResumen(null); return; }
+    privacidadApi.resumen().then(setResumen).catch(() => {});
+  }, [usuario?.id]);
 
   const guardar = async () => {
     setEstado("guardando");
@@ -278,11 +305,14 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
     } catch (e) { setEstado({ error: e.message }); }
   };
   const cambio = usuario && nombre.trim() !== (usuario.nombre || "");
+  const negocios = resumen?.negocios || [];
+  const inicial = (usuario?.nombre || usuario?.email || "?").trim().charAt(0).toUpperCase();
+  const conCorreo = resumen ? resumen.cuenta.proveedor === "email" : !!usuario?.conClave;
 
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-      <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-4">Mi cuenta</h2>
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }} className="mb-4">Mi cuenta</h2>
 
       {!usuario ? (
         <div className="p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
@@ -290,7 +320,18 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
         </div>
       ) : (
         <>
-          <div className="p-4 mb-4" style={{ borderRadius: 12, border: "1px solid #E2E8F0", background: "#fff" }}>
+          {/* Quién sos en Mi Zona */}
+          <div className="flex items-center gap-3.5 p-4 mb-1" style={TARJETA_SEG}>
+            <span className="flex items-center justify-center shrink-0 text-xl font-bold" style={{ width: 54, height: 54, borderRadius: "50%", background: "#0B2A54", color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{inicial}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-base font-bold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{usuario.nombre || "Sin nombre"}</span>
+              <span className="block text-xs truncate mt-0.5" style={{ color: "#4B5563" }}>{usuario.email}</span>
+              <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "#E8F0FE", color: "#2F6FED" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
+            </span>
+          </div>
+
+          <Etiqueta>Tus datos</Etiqueta>
+          <div className="p-4" style={TARJETA_SEG}>
             <label className="text-xs font-medium block mb-1" style={{ color: "#374151" }}>Nombre</label>
             <input
               value={nombre} maxLength={60} onChange={(e) => { setNombre(e.target.value); setEstado(null); }}
@@ -310,9 +351,38 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
               {estado === "ok" ? <><Check size={15} /> Guardado</> : estado === "guardando" ? "Guardando..." : "Guardar nombre"}
             </button>
           </div>
+
+          <Etiqueta>Tu actividad en Mi Zona</Etiqueta>
+          <div className="overflow-hidden" style={TARJETA_SEG}>
+            <FilaDato Icon={CalendarDays} titulo="Miembro desde" valor={resumen ? fmtFechaLarga(resumen.cuenta.creadaEn) : "…"} />
+            <FilaDato Icon={Star} titulo="Reseñas que escribiste" valor={resumen ? resumen.resenas : "…"} />
+            <FilaDato Icon={Heart} titulo="Favoritos en este dispositivo" valor={local?.favoritos ?? 0} />
+            <FilaDato Icon={Store} titulo="Negocios en tu cuenta" valor={resumen ? negocios.length : "…"} ultimo />
+          </div>
+
+          {negocios.length > 0 && (
+            <>
+              <Etiqueta>Tus negocios</Etiqueta>
+              <div className="overflow-hidden" style={TARJETA_SEG}>
+                {negocios.map((n, i) => {
+                  const e = estadoNegocio(n);
+                  return (
+                    <div key={n.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i === negocios.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 11, background: "#E8F0FE" }}><Store size={16} color="#2F6FED" /></span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombre}</span>
+                        <span className="block text-xs mt-0.5" style={{ color: e.color }}>{e.texto}</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           <button
             onClick={onCerrarSesion}
-            className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3"
+            className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mt-6"
             style={{ borderRadius: 10, border: "1px solid #C1443A", color: "#9A3B34", background: "#fff" }}
           >
             <LogOut size={15} /> Cerrar sesión
@@ -402,7 +472,7 @@ function EliminarCuenta({ usuario, onEliminada }) {
 
 /* ---------- Ajustes → Seguridad ----------
    Menú corto como el de Google, Instagram o Mercado Pago: cada fila abre su propia pantalla.
-   Contraseña · Dispositivos con sesión · Actividad reciente · Alertas de inicio de sesión · Revisión de seguridad */
+   Contraseña · Alertas de inicio de sesión · Dispositivos con sesión · Actividad reciente (el estado general va arriba, sin pantalla aparte) */
 
 const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
 const VERDE = "#1E8A55", AMBAR = "#C77A0A";
@@ -697,53 +767,20 @@ function SegAlertas({ alertas, setAlertas, push, recargarPush, onBack }) {
   );
 }
 
-/* ----- Revisión de seguridad ----- */
-function recomendaciones({ sesiones, alertas, push }) {
-  const lista = [];
+/* ----- Estado de la cuenta -----
+   Antes había una pantalla "Revisión de seguridad" que repetía las mismas filas de abajo (Dispositivos, Alertas) y mandaba a ellas.
+   Ahora el estado se ve arriba en un solo cartel y cada fila de abajo marca en ámbar lo que hay que mirar. */
+function estadoSeguridad({ sesiones, alertas, push }) {
   const otras = (sesiones || []).filter((s) => !s.actual).length;
-  if (sesiones !== null) lista.push(otras > 0
-    ? { id: "dispositivos", ok: false, titulo: "Dispositivos con sesión", desc: `Hay ${otras} ${otras === 1 ? "dispositivo más" : "dispositivos más"} con tu sesión abierta. Revisá que sean tuyos.` }
-    : { id: "dispositivos", ok: true, titulo: "Dispositivos con sesión", desc: "Solo este dispositivo tiene la sesión abierta." });
-  if (alertas !== null) lista.push(alertas !== false
-    ? { id: "alertas", ok: true, titulo: "Alertas de inicio de sesión", desc: "Te avisamos si alguien entra a tu cuenta." }
-    : { id: "alertas", ok: false, titulo: "Alertas de inicio de sesión", desc: "Están desactivadas: no te enteras si alguien entra a tu cuenta." });
-  if (alertas !== false && push && push !== "activo" && push !== "no-soportado") lista.push({ id: "alertas", ok: false, titulo: "Notificaciones en este dispositivo", desc: "Las alertas llegan por notificación y acá están apagadas." });
-  return lista;
-}
-
-function SegRevision({ datos, ir, onBack }) {
-  const lista = recomendaciones(datos);
-  const pendientes = lista.filter((x) => !x.ok).length;
-  return (
-    <div>
-      <CabeceraSeg titulo="Revisión de seguridad" onBack={onBack} />
-      <div className="flex items-center gap-3.5 p-4 mb-2" data-conservar-color style={{ borderRadius: 18, background: pendientes ? "#FFF4E0" : "#E4F3EA", border: `1px solid ${pendientes ? "#F3D9A4" : "#BFE3CE"}` }}>
-        <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 14, background: pendientes ? AMBAR : VERDE }}>{pendientes ? <AlertTriangle size={23} color="#fff" /> : <ShieldCheck size={24} color="#fff" />}</span>
-        <span>
-          <span className="block text-[16px] font-bold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{pendientes ? `${pendientes} ${pendientes === 1 ? "recomendación" : "recomendaciones"}` : "Tu cuenta está al día"}</span>
-          <span className="block text-xs mt-0.5" style={{ color: "#374151" }}>{pendientes ? "Tocá cada una para resolverla." : "No hay nada para revisar."}</span>
-        </span>
-      </div>
-      <div className="overflow-hidden mt-4" style={TARJETA_SEG}>
-        {lista.map((r, i) => (
-          <button key={r.titulo} onClick={() => ir(r.id)} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
-            <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: "50%", background: r.ok ? "#E4F3EA" : "#FFF1D6", color: r.ok ? VERDE : AMBAR }}>{r.ok ? <Check size={18} strokeWidth={3} /> : <AlertTriangle size={17} />}</span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{r.titulo}</span>
-              <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{r.desc}</span>
-            </span>
-            <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
-          </button>
-        ))}
-        {lista.length === 0 && <p className="px-4 py-5 text-sm" style={{ color: "#4B5563" }}>Cargando...</p>}
-      </div>
-    </div>
-  );
+  const alertasApagadas = alertas === false;
+  const sinAvisos = alertas !== false && alertas !== null && push && push !== "activo" && push !== "no-soportado";
+  const pendientes = (otras > 0 ? 1 : 0) + (alertasApagadas ? 1 : 0) + (sinAvisos ? 1 : 0);
+  return { otras, alertasApagadas, sinAvisos, pendientes, cargando: sesiones === null && alertas === null };
 }
 
 /* ----- Pantalla principal de Seguridad ----- */
 export function SeguridadScreen({ usuario, onBack, onLogin }) {
-  const [vista, setVista] = useState(null); // null | "revision" | "clave" | "dispositivos" | "actividad" | "alertas"
+  const [vista, setVista] = useState(null); // null | "clave" | "dispositivos" | "actividad" | "alertas"
   const [sesiones, setSesiones] = useState(null);
   const [errorSesiones, setErrorSesiones] = useState(false);
   const [alertas, setAlertas] = useState(null);
@@ -777,30 +814,35 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
   if (vista === "dispositivos") return <SegDispositivos sesiones={sesiones} error={errorSesiones} recargar={cargarSesiones} onBack={atras} />;
   if (vista === "actividad") return <SegActividad onBack={atras} irDispositivos={() => setVista("dispositivos")} />;
   if (vista === "alertas") return <SegAlertas alertas={alertas} setAlertas={setAlertas} push={push} recargarPush={cargarPush} onBack={atras} />;
-  if (vista === "revision") return <SegRevision datos={{ sesiones, alertas, push }} ir={setVista} onBack={atras} />;
 
-  const pendientes = recomendaciones({ sesiones, alertas, push }).filter((x) => !x.ok).length;
+  const est = estadoSeguridad({ sesiones, alertas, push });
   const nDisp = sesiones ? sesiones.length : null;
 
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Seguridad</h2>
-      <p className="text-sm mt-1.5 mb-5 truncate" style={{ color: "#4B5563" }}>{usuario.email}</p>
+      <p className="text-sm mt-1.5 mb-4 truncate" style={{ color: "#4B5563" }}>{usuario.email}</p>
 
-      <div className="overflow-hidden mb-1" style={TARJETA_SEG}>
-        <FilaMenu Icon={ShieldCheck} color={pendientes ? AMBAR : VERDE} titulo="Revisión de seguridad" desc={pendientes ? `${pendientes} ${pendientes === 1 ? "recomendación" : "recomendaciones"} para tu cuenta` : "Tu cuenta está al día"} onClick={() => setVista("revision")} ultimo />
-      </div>
+      {!est.cargando && (
+        <div className="flex items-center gap-3.5 p-4 mb-1" data-conservar-color style={{ borderRadius: 18, background: est.pendientes ? "#FFF4E0" : "#E4F3EA", border: `1px solid ${est.pendientes ? "#F3D9A4" : "#BFE3CE"}` }}>
+          <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: est.pendientes ? AMBAR : VERDE }}>{est.pendientes ? <AlertTriangle size={22} color="#fff" /> : <ShieldCheck size={23} color="#fff" />}</span>
+          <span>
+            <span className="block text-[16px] font-bold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{est.pendientes ? `${est.pendientes} ${est.pendientes === 1 ? "cosa para revisar" : "cosas para revisar"}` : "Tu cuenta está al día"}</span>
+            <span className="block text-xs mt-0.5" style={{ color: "#374151" }}>{est.pendientes ? "Mirá lo que está marcado en ámbar acá abajo." : "No hay nada para revisar."}</span>
+          </span>
+        </div>
+      )}
 
       <Etiqueta>Iniciar sesión</Etiqueta>
       <div className="overflow-hidden" style={TARJETA_SEG}>
         <FilaMenu Icon={KeyRound} color="#2F6FED" titulo="Contraseña" valor={usuario.conClave ? null : "Google"} onClick={() => setVista("clave")} />
-        <FilaMenu Icon={Bell} color="#E08A1E" titulo="Alertas de inicio de sesión" valor={alertas === null ? null : alertas ? "Activadas" : "Desactivadas"} tonoValor={alertas === false ? AMBAR : undefined} onClick={() => setVista("alertas")} ultimo />
+        <FilaMenu Icon={Bell} color="#E08A1E" titulo="Alertas de inicio de sesión" desc={est.sinAvisos ? "Las notificaciones de este dispositivo están apagadas." : undefined} valor={alertas === null ? null : alertas === false ? "Desactivadas" : est.sinAvisos ? "Sin avisos" : "Activadas"} tonoValor={est.alertasApagadas || est.sinAvisos ? AMBAR : undefined} onClick={() => setVista("alertas")} ultimo />
       </div>
 
       <Etiqueta>Tu actividad</Etiqueta>
       <div className="overflow-hidden" style={TARJETA_SEG}>
-        <FilaMenu Icon={MonitorSmartphone} color="#0B2A54" titulo="Dispositivos" valor={nDisp === null ? null : String(nDisp)} onClick={() => setVista("dispositivos")} />
+        <FilaMenu Icon={MonitorSmartphone} color="#0B2A54" titulo="Dispositivos" desc={est.otras > 0 ? `${est.otras} ${est.otras === 1 ? "dispositivo más" : "dispositivos más"} con tu sesión abierta: revisá que sean tuyos.` : undefined} valor={nDisp === null ? null : String(nDisp)} tonoValor={est.otras > 0 ? AMBAR : undefined} onClick={() => setVista("dispositivos")} />
         <FilaMenu Icon={History} color="#7A4F9E" titulo="Actividad reciente" onClick={() => setVista("actividad")} ultimo />
       </div>
     </div>

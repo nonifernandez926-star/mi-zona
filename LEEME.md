@@ -1,3 +1,12 @@
+# Mi Zona — Seguridad sin repetir, Privacidad completa y Mi cuenta con datos reales (LEER PRIMERO · solo hay que volver a publicar la WEB)
+
+- **Seguridad:** se quitó la pantalla "Revisión de seguridad", que repetía las mismas funciones de abajo (Dispositivos y Alertas). Ahora el estado va en un cartel arriba ("Tu cuenta está al día" / "N cosas para revisar") y cada fila de abajo se marca en ámbar cuando hay algo para mirar.
+- **Privacidad:** nuevo control "Guardar los negocios que vi"; "Lo que guardamos de vos" ahora incluye nombre, forma de acceso, dispositivos con notificaciones, chats ligados a la cuenta, vistos y búsquedas del dispositivo; nuevo bloque "Qué es público y qué es privado"; acciones nuevas: desactivar notificaciones en todos los dispositivos y borrar vistos y búsquedas; acceso directo a Seguridad.
+- **Mi cuenta:** tarjeta con tu inicial, nombre, correo y forma de acceso; "Tu actividad en Mi Zona" (miembro desde, reseñas, favoritos, negocios) y "Tus negocios" con su estado (activo, vence en N días, esperando el pago). Cerrar sesión y Eliminar cuenta siguen igual.
+- No cambió nada del servidor: todo usa las rutas que ya existían.
+
+---
+
 # Mi Zona — Seguridad con subpantallas (LEER PRIMERO · volver a publicar servidor Y web)
 
 Seguridad ahora funciona como en Google, Instagram y Mercado Pago: un menú corto y cada fila abre su propia pantalla.

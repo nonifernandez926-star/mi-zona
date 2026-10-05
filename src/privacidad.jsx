@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import {
   MapPin, MessageCircle, Sparkles, BarChart3, Download, Trash2, Star, CalendarCheck, Smartphone, Lock, ChevronDown, Check, Loader2, User, UserX,
+  Eye, History, BellOff, ShieldCheck,
 } from "lucide-react";
 import { BotonVolver } from "./cuenta.jsx";
-import { getPrivacidad, setPrivacidadLocal, privacidadApi } from "./api.js";
+import { getPrivacidad, setPrivacidadLocal, privacidadApi, desactivarPush } from "./api.js";
 
 // Mismo lenguaje visual que Ajustes: tarjetas blancas con borde suave, filas con ícono azul y texto legible.
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
@@ -86,7 +87,7 @@ function FilaIr({ Icon, titulo, desc, onClick, ultimo }) {
 }
 
 // Fila con una acción real. Las que borran piden confirmación en el mismo lugar.
-function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, deshabilitada, mensajeOk, ultimo }) {
+function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, deshabilitada, mensajeOk, ultimo, confirmarTexto = "Sí, borrar" }) {
   const [estado, setEstado] = useState(null); // null | "confirmar" | "trabajando" | { ok } | { error }
   const correr = async () => {
     setEstado("trabajando");
@@ -120,7 +121,7 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
           <p className="text-sm mb-3" style={{ color: "#7A3029", lineHeight: 1.5 }}>{confirmar}</p>
           <div className="flex gap-2">
             <button onClick={() => setEstado(null)} className="flex-1 text-sm font-medium py-2.5 bg-white" style={{ borderRadius: 10, border: "1px solid #E2E8F0", color: "#0B1220" }}>Cancelar</button>
-            <button onClick={correr} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff" }}>Sí, borrar</button>
+            <button onClick={correr} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff" }}>{confirmarTexto}</button>
           </div>
         </div>
       )}
@@ -130,7 +131,8 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
   );
 }
 
-export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, onBorrarVistos, onBorrarDatosLocales }) {
+export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeguridad, local, onBorrarVistos, onBorrarDatosLocales }) {
+  const [contLocal, setContLocal] = useState(local); // cantidades de este dispositivo (se actualizan al borrar)
   const [prefs, setPrefs] = useState(() => getPrivacidad());
   const [resumen, setResumen] = useState(null); // datos del servidor (solo con sesión)
   const [errorCarga, setErrorCarga] = useState(null);
@@ -167,7 +169,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, 
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-      <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">Privacidad</h2>
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }} className="mb-1.5">Privacidad</h2>
       <p className="text-sm mb-5" style={{ color: "#374151", lineHeight: 1.5 }}>
         Tu correo, tu agenda y tus pagos son privados. Los datos de un negocio (nombre, dirección, teléfono, fotos y reseñas) son públicos.
       </p>
@@ -195,19 +197,27 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, 
           />
         )}
         <Control
+          Icon={Eye} titulo="Guardar los negocios que vi" desc="Mantiene la lista de vistos recientemente, solo en este dispositivo."
+          activo={prefs.guardarVistos} onChange={(v) => cambiar("guardarVistos", v)}
+        />
+        <Control
           Icon={BarChart3} titulo="Estadísticas anónimas" desc="Suma una visita, guardado o contacto anónimo a las estadísticas del negocio que mirás."
           activo={prefs.estadisticasAnonimas} onChange={(v) => cambiar("estadisticasAnonimas", v)} ultimo
         />
       </Grupo>
       {errorPref && <p className="text-sm -mt-3 mb-5 px-1" style={{ color: "#C1443A" }}>{errorPref}</p>}
 
-      <Grupo titulo="Lo que guardamos de vos">
+      <Grupo titulo="Lo que guardamos de vos" desc="Esto es todo lo que Mi Zona tiene sobre vos.">
         {usuario ? (
           <>
             <Dato etiqueta="Cuenta" valor={usuario.email} />
+            {resumen && <Dato etiqueta="Nombre" valor={resumen.cuenta.nombre || "Sin nombre"} />}
+            {resumen && <Dato etiqueta="Entrás con" valor={resumen.cuenta.proveedor === "email" ? "Correo y contraseña" : "Google"} />}
             {resumen && esDueno && <Dato etiqueta="Negocios" valor={resumen.negocios.length} />}
             {resumen && esDueno && <Dato etiqueta="Eventos y tareas de agenda" valor={nAgenda} />}
             {resumen && <Dato etiqueta="Reseñas que escribiste" valor={resumen.resenas} />}
+            {resumen && <Dato etiqueta="Dispositivos con notificaciones" valor={resumen.dispositivosPush} />}
+            {resumen && <Dato etiqueta="Chats con asistentes ligados a tu cuenta" valor={resumen.chatsVinculados ? "Sí" : "No"} />}
           </>
         ) : (
           <div className="px-4 py-3.5" style={LINEA}>
@@ -215,8 +225,16 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, 
             <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
           </div>
         )}
-        <Dato etiqueta="Favoritos en este dispositivo" valor={local.favoritos} />
-        <Dato etiqueta="Chats en este dispositivo" valor={local.chats} ultimo />
+        <Dato etiqueta="Favoritos en este dispositivo" valor={contLocal.favoritos} />
+        <Dato etiqueta="Chats en este dispositivo" valor={contLocal.chats} />
+        <Dato etiqueta="Negocios vistos en este dispositivo" valor={contLocal.vistos} />
+        <Dato etiqueta="Búsquedas recientes en este dispositivo" valor={contLocal.busquedas} ultimo />
+      </Grupo>
+
+      <Grupo titulo="Qué es público y qué es privado">
+        <Servicio nombre="Público" desc="Los datos de un negocio (nombre, dirección, teléfono, fotos) y las reseñas, que se muestran con el nombre que pusiste al escribirlas." />
+        <Servicio nombre="Privado" desc="Tu correo, tu agenda, tus pagos, tus favoritos y tus chats. Nadie más los ve." />
+        <Servicio nombre="Tu ubicación" desc="Se usa solo en el momento de buscar y no se guarda en el servidor." ultimo />
       </Grupo>
 
       <Grupo titulo="Quién recibe datos" desc="Mi Zona funciona con estos servicios.">
@@ -250,14 +268,38 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, local, 
             mensajeOk="Listo: se borraron tus reseñas." deshabilitada={!resumen || resumen.resenas === 0}
           />
         )}
+        {usuario && (
+          <FilaAccion
+            Icon={BellOff} danger titulo="Desactivar notificaciones en todos mis dispositivos" desc={`${resumen?.dispositivosPush ?? 0} ${resumen?.dispositivosPush === 1 ? "dispositivo recibe" : "dispositivos reciben"} avisos de Mi Zona.`}
+            boton="Desactivar" confirmarTexto="Sí, desactivar" confirmar="Dejás de recibir avisos en todos tus dispositivos. Podés volver a activarlos cuando quieras."
+            ejecutar={async () => { const r = await privacidadApi.borrarNotificaciones(); try { await desactivarPush(); } catch { /* este dispositivo no tenía push activo */ } await cargar(); return r; }}
+            mensajeOk="Listo: no vas a recibir notificaciones." deshabilitada={!resumen || resumen.dispositivosPush === 0}
+          />
+        )}
+        <FilaAccion
+          Icon={History} danger titulo="Borrar vistos y búsquedas" desc="La lista de negocios que viste y tus búsquedas recientes, en este dispositivo."
+          boton="Borrar" confirmar="Se borran los negocios vistos y las búsquedas recientes de este dispositivo."
+          ejecutar={async () => {
+            try { localStorage.removeItem("miZonaHistorialBusqueda"); } catch { /* sin almacenamiento */ }
+            if (onBorrarVistos) onBorrarVistos();
+            setContLocal((c) => ({ ...c, vistos: 0, busquedas: 0 }));
+          }}
+          mensajeOk="Listo." deshabilitada={!contLocal.vistos && !contLocal.busquedas}
+        />
         <FilaAccion
           Icon={Smartphone} danger titulo="Borrar datos de este dispositivo" desc="Favoritos, chats y preferencias guardados acá. También cierra tu sesión."
           boton="Borrar" confirmar="Se borran tus favoritos, chats y preferencias de este dispositivo y se cierra tu sesión. No se puede deshacer."
-          ejecutar={async () => { onBorrarDatosLocales(); setPrefs(getPrivacidad()); }} mensajeOk="Listo."
+          ejecutar={async () => { onBorrarDatosLocales(); setPrefs(getPrivacidad()); setContLocal({ favoritos: 0, chats: 0, vistos: 0, busquedas: 0 }); }} mensajeOk="Listo."
           ultimo={!usuario}
         />
         {usuario && <FilaIr Icon={UserX} titulo="Eliminar mi cuenta" desc="Se hace desde Mi cuenta." onClick={onIrCuenta} ultimo />}
       </Grupo>
+
+      {usuario && onIrSeguridad && (
+        <Grupo titulo="Protegé tu cuenta">
+          <FilaIr Icon={ShieldCheck} titulo="Seguridad" desc="Contraseña, dispositivos y alertas de inicio de sesión." onClick={onIrSeguridad} ultimo />
+        </Grupo>
+      )}
     </div>
   );
 }

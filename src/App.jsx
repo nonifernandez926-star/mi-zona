@@ -3759,7 +3759,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
   if (sub === "cuenta") {
     return (
       <MiCuentaScreen
-        usuario={usuario} onBack={() => setSub(null)} onLogged={onLogged}
+        usuario={usuario} local={{ favoritos: getFavorites().length }} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
         onCerrarSesion={onCerrarSesion}
         onCuentaEliminada={onCuentaEliminada}
@@ -3817,7 +3817,9 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
         onBack={() => setSub(null)}
         onLogin={() => onLogin("login")}
         onIrCuenta={() => setSub("cuenta")}
-        local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length }}
+        onIrSeguridad={() => setSub("seguridad")}
+        local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length, vistos: getRecentlyViewed().length, busquedas: getSearchHistory().length }}
+        onBorrarVistos={onBorrarVistos}
         onBorrarDatosLocales={onBorrarDatosLocales}
       />
     );
