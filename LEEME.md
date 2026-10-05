@@ -1,5 +1,20 @@
 # Mi Zona — novedades de esta versión (LEER PRIMERO)
 
+## Revisión de seguridad y nueva Privacidad (volver a publicar el servidor Y la web)
+
+**Seguridad (servidor):**
+- Puntos, canjes, actividad y chats ya no aceptan el id de cliente que manda el navegador: exigen sesión y usan el id de la cuenta (armado por el servidor). Antes, conociendo el id de otra persona se podían ver sus pedidos/puntos o canjearlos.
+- `/auth/sesion-cliente` no deja adoptar un id que ya pertenece a otra cuenta (índice único nuevo en `usuarios.sesionClienteId`).
+- Si alguien se registraba con el correo de otra persona (sin verificar) y la víctima después entraba con Google, el atacante conservaba su contraseña. Ahora al unir las cuentas se borra la contraseña vieja y se cierran las sesiones anteriores.
+- Edición de negocios con lista blanca (`server/utils/negocios.js`): el dueño ya no puede escribir campos internos con claves tipo `suscripcion.plan` ni enlaces `javascript:`. Lo mismo al crear un negocio.
+- Reseñas: el servidor arma la reseña (fecha, valoración, huella de autor); no se pueden borrar ni editar reseñas ajenas ni escribir respuestas del dueño.
+- `asistenteCodigo` y `geoIntentos` ya no salen en `/api/businesses`.
+- Límites de pedidos (búsqueda con IA, chat, canjes, favoritos, visitas, reseñas, login con Google), JWT fijado a HS256, CORS limitado a `FRONTEND_URL` (si está configurada), encabezados de seguridad y errores 5xx sin detalles internos.
+
+**Privacidad (Ajustes → Privacidad):** resumen de datos, controles reales (ubicación y chats en la búsqueda, IA en la agenda, estadísticas anónimas, vistos recientes), descarga de datos (JSON), borrar agenda / reseñas / historial / notificaciones, y eliminar cuenta (pide contraseña o Google de nuevo). Rutas nuevas en `/api/privacidad`.
+Las reseñas escritas antes de esta versión no tienen huella de autor: no se pueden borrar desde Privacidad.
+
+
 Qué cambió: inicio de sesión con Google, suscripción por negocio (Mercado Pago), no pagar si ya pagó Mi Asistente,
 notificaciones push, avisos de vencimiento, mapa con logo/nombre/dirección, "Cerrar sesión" y se eliminaron los códigos.
 
@@ -64,7 +79,7 @@ Para que siempre avise, creá un cron gratis (por ejemplo en cron-job.org) que c
 - **Agenda del dueño (solo para quienes tienen un negocio en su cuenta):** Herramientas → "Mi agenda". Vista Hoy, Semana y Tareas; eventos con hora, duración, persona, notas y recordatorio; tareas sugeridas según el rubro; importar desde una foto de agenda de papel o desde un mensaje (la IA propone y la persona revisa y confirma antes de guardar); "Organizar mi día" y preguntarle a la agenda. No incluye pedidos. Las funciones con IA usan `ANTHROPIC_API_KEY` y solo se habilitan si el negocio tiene la suscripción activa (tope de 40 usos por hora). La foto no se guarda: se analiza y se descarta. Opcional: `CLAUDE_MODEL_AGENDA` para cambiar el modelo.
 - **Avisos de la agenda:** dentro de la app (cada minuto mientras está abierta) y por notificación al celular. Como Render gratis se duerme, para que SIEMPRE avise creá un cron (cron-job.org) que cada 5 minutos haga un POST a `https://TU-SERVIDOR.onrender.com/api/agenda/enviar-recordatorios` con el header `x-cron-key: TU_CRON_KEY`.
 - **Mapa con capas (gratis):** botón de capas con Mapa (calles), Relieve (cerros, vegetación, ríos) y Satélite (fotos aéreas con nombres de calles). Solo se marcan los negocios registrados en Mi Zona. Usa mapas públicos de CARTO y Esri sin clave; si algún día tenés mucho tráfico, conviene pasar a un proveedor con clave gratuita (MapTiler, Stadia o una cuenta de Esri).
-- **Búsqueda con asistente:** usa siempre la ubicación del cliente (el navegador le pide permiso) y sus últimos chats; no hay botón para desactivarla.
+- **Búsqueda con asistente:** usa la ubicación del cliente (el navegador le pide permiso) y un resumen de sus últimos chats, salvo que los apague en Ajustes → Privacidad (el servidor lo respeta).
 - **Inicio:** la portada muestra solo "Visto recientemente"; "Recién agregados" es un filtro más, junto a "Solo abiertos ahora" y los demás.
 - **Ranking:** podio con los 3 primeros, filtro por categoría, puntaje, barras de comparación y explicación de cómo se calcula.
 
@@ -252,3 +267,5 @@ Ahora hay un botón explícito **"Activar ubicación"** que aparece al elegir "M
 - **Cerrar sesión:** pide confirmación (Cancelar / Cerrar sesión) tanto en Ajustes como dentro de Mi cuenta.
 - **Apariencia:** Claro, Oscuro o Automático (sigue el celular). Se guarda en el dispositivo. El modo oscuro invierte los colores de la pantalla y deja las fotos, el mapa y las barras azules con sus colores.
 - **Seguridad:** muestra cómo entra la cuenta (Google o correo), permite cambiar la contraseña (cuentas con correo) y cerrar sesión en los demás dispositivos. Hay que volver a publicar el servidor.
+- **Botón de volver:** en cada subpantalla hay uno solo ("Volver a Ajustes", "Volver a Herramientas"), grande, con ícono azul. Dentro de una subpantalla se oculta la barra de arriba, que queda solo en las listas principales (Chats, Herramientas, Ajustes).
+- **Filtros del inicio:** ya no hay carrusel "Visto recientemente" ni filtro "Busca personal". Ahora hay tres filtros chicos: **Abiertos**, **Vistos** (los negocios que miraste, el último primero) y **Nuevos**, al lado del selector (Destacados, Más visitados, Descuentos, Más cercanos). "Vistos" se guarda en el celular.

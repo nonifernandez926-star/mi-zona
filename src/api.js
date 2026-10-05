@@ -223,3 +223,38 @@ export async function desactivarPush() {
   await enviarUsuarioJSON("/push/cancelar", "POST", { endpoint: sub.endpoint }).catch(() => {});
   await sub.unsubscribe();
 }
+
+/* ---------- privacidad ---------- */
+
+// Controles de privacidad guardados en este dispositivo. Los tres primeros además se guardan en la cuenta (si hay sesión),
+// y el servidor los respeta. "estadisticasAnonimas" y "guardarVistos" funcionan en este dispositivo.
+const PRIV_KEY = "miZonaPrivacidad";
+export const PRIV_POR_DEFECTO = { ubicacionBusqueda: true, chatsBusqueda: true, iaAgenda: true, estadisticasAnonimas: true, guardarVistos: true };
+
+export function getPrivacidad() {
+  try { return { ...PRIV_POR_DEFECTO, ...JSON.parse(localStorage.getItem(PRIV_KEY) || "{}") }; } catch { return { ...PRIV_POR_DEFECTO }; }
+}
+export function setPrivacidadLocal(cambios) {
+  const nuevo = { ...getPrivacidad(), ...cambios };
+  try { localStorage.setItem(PRIV_KEY, JSON.stringify(nuevo)); } catch { /* sin almacenamiento */ }
+  return nuevo;
+}
+
+export const privacidadApi = {
+  resumen: () => getUsuarioJSON("/privacidad"),
+  guardarPreferencias: (prefs) => enviarUsuarioJSON("/privacidad/preferencias", "PUT", prefs),
+  borrarAgenda: () => enviarUsuarioJSON("/privacidad/agenda", "DELETE", {}),
+  borrarNotificaciones: () => enviarUsuarioJSON("/privacidad/notificaciones", "DELETE", {}),
+  borrarResenas: () => enviarUsuarioJSON("/privacidad/resenas", "DELETE", {}),
+  eliminarCuenta: (cuerpo) => enviarUsuarioJSON("/privacidad/cuenta", "DELETE", cuerpo),
+  // descarga un archivo JSON con todos los datos de la cuenta
+  exportar: async () => {
+    const datos = await getUsuarioJSON("/privacidad/exportar");
+    const blob = new Blob([JSON.stringify(datos, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "mis-datos-mi-zona.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
+};

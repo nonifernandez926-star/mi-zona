@@ -15,8 +15,17 @@ const usuarioSchema = new mongoose.Schema(
     sesionClienteId: { type: String, default: "" },
     // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
     tokenVersion: { type: Number, default: 0 },
+    // Controles de privacidad que el SERVIDOR respeta (la búsqueda con asistente y las funciones de IA de la agenda los consultan)
+    privacidad: {
+      ubicacionBusqueda: { type: Boolean, default: true }, // usar mi ubicación para ordenar negocios por cercanía
+      chatsBusqueda: { type: Boolean, default: true }, // usar un resumen de mis últimos chats para recomendarme
+      iaAgenda: { type: Boolean, default: true }, // permitir que la IA lea mi agenda para organizar, interpretar y responder
+    },
   },
   { timestamps: true }
 );
+
+// Un id de cliente no puede estar en dos cuentas (evita que alguien "adopte" el historial de otra persona)
+usuarioSchema.index({ sesionClienteId: 1 }, { unique: true, partialFilterExpression: { sesionClienteId: { $type: "string", $gt: "" } } });
 
 export default mongoose.model("Usuario", usuarioSchema);

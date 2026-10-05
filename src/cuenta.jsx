@@ -36,6 +36,23 @@ export function infoSuscripcion(negocio) {
   return { estado: dias <= 7 ? "por_vencer" : "activa", dias };
 }
 
+/* ---------- botón de volver (el único de cada subpantalla) ---------- */
+
+export function BotonVolver({ texto, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-2.5 mb-5 pl-1.5 pr-4 py-1.5 transition-transform active:scale-[0.97]"
+      style={{ borderRadius: 16, background: "#fff", border: "1px solid #DCE6F5", boxShadow: "0 4px 14px rgba(11,42,84,0.09)" }}
+    >
+      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 12, background: "linear-gradient(135deg,#2F6FED,#5B91F7)" }}>
+        <ArrowLeft size={18} color="#fff" strokeWidth={2.4} />
+      </span>
+      <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B2A54" }}>{texto}</span>
+    </button>
+  );
+}
+
 /* ---------- Google: elegir cuenta ---------- */
 
 const LogoG = () => (
@@ -243,9 +260,7 @@ export function MiCuentaScreen({ usuario, onBack, onLogged, onUsuarioActualizado
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-        <ArrowLeft size={15} /> Volver a Ajustes
-      </button>
+      <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-4">Mi cuenta</h2>
 
       {!usuario ? (
@@ -300,9 +315,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
   const tarjeta = { borderRadius: 16, border: "1px solid #E6ECF5", background: "#fff", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" };
 
   const Volver = () => (
-    <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-      <ArrowLeft size={15} /> Volver a Ajustes
-    </button>
+    <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
   );
 
   if (!usuario) {
@@ -411,9 +424,7 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-        <ArrowLeft size={15} /> Volver a Ajustes
-      </button>
+      <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Notificaciones</h2>
       <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
         Recibí avisos en tu celular aunque Mi Zona esté cerrada, por ejemplo cuántos días le quedan a la suscripción de tu negocio.

@@ -13,12 +13,13 @@ import {
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2,
 } from "lucide-react";
 import {
-  API_URL, authHeaders, userHeaders, setToken, traerMiSesion,
+  API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
   traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, vincularSesionCliente, traerMisConversaciones,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
+import { PrivacidadScreen } from "./privacidad.jsx";
 import {
-  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen,
+  LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver,
   PlanesModal, TarjetaSuscripcion, infoSuscripcion,
 } from "./cuenta.jsx";
 
@@ -221,6 +222,7 @@ function getRecentlyViewed() {
   try { return JSON.parse(localStorage.getItem("miZonaVistosRecientemente") || "[]"); } catch { return []; }
 }
 function addRecentlyViewed(bizId) {
+  if (!getPrivacidad().guardarVistos) return; // lo apagó en Privacidad
   const actual = getRecentlyViewed().filter((id) => id !== bizId);
   localStorage.setItem("miZonaVistosRecientemente", JSON.stringify([bizId, ...actual].slice(0, 12)));
 }
@@ -376,6 +378,7 @@ function esNegocioNuevo(biz) {
 // Se manda en segundo plano al servidor. El dueño ve los totales SOLO desde su panel de Mi Asistente;
 // nada de esto se muestra en pantallas públicas. tipo: "visita" | "ubicacion" | "guardado" | "contacto"
 function trackEvento(bizId, tipo) {
+  if (!getPrivacidad().estadisticasAnonimas) return; // lo apagó en Privacidad
   try {
     fetch(`${API_URL}/eventos`, {
       method: "POST",
@@ -391,8 +394,8 @@ function trackEvento(bizId, tipo) {
 async function fetchActividad() {
   const res = await fetch(`${API_URL}/asistente/cliente/actividad`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sesionClienteId: getClienteId() }),
+    headers: userHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({}), // el servidor usa el id de tu cuenta (no se manda desde acá)
   });
   if (!res.ok) throw new Error("No se pudo cargar la actividad");
   return res.json(); // { pedidos, turnos, puntos, canjes }
@@ -401,15 +404,15 @@ async function fetchActividad() {
 async function fetchMisPuntos() {
   const res = await fetch(`${API_URL}/asistente/puntos/mis-puntos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sesionClienteId: getClienteId() }),
+    headers: userHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error("No se pudieron cargar tus puntos");
   return res.json(); // { negocios: [...], canjes: [...] }
 }
 
 async function fetchPuntosNegocio(codigoPublico) {
-  const res = await fetch(`${API_URL}/asistente/puntos/negocio/${encodeURIComponent(codigoPublico)}?sesionClienteId=${encodeURIComponent(getClienteId())}`);
+  const res = await fetch(`${API_URL}/asistente/puntos/negocio/${encodeURIComponent(codigoPublico)}`, { headers: userHeaders() });
   if (!res.ok) throw new Error("No se pudo cargar el programa de puntos");
   return res.json(); // { activo: false } o { activo: true, saldo, pesosPorPunto, recompensas, proxima, ... }
 }
@@ -417,8 +420,8 @@ async function fetchPuntosNegocio(codigoPublico) {
 async function canjearRecompensaApi(codigoPublico, recompensaId, claveUnica) {
   const res = await fetch(`${API_URL}/asistente/puntos/canjear`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ codigoPublico, sesionClienteId: getClienteId(), recompensaId, claveUnica }),
+    headers: userHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ codigoPublico, recompensaId, claveUnica }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.mensaje || "No se pudo completar el canje. Probá de nuevo.");
@@ -682,7 +685,7 @@ async function loadBusinesses() {
 async function buscarConAsistente(mensaje, historial, contexto = {}) {
   const res = await fetch(`${API_URL}/asistente/buscar`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ mensaje, historial, ubicacion: contexto.ubicacion, chats: contexto.chats }),
   });
   if (!res.ok) throw new Error("No se pudo consultar al asistente");
@@ -876,7 +879,6 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
 
 function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, onUbicacion }) {
   // La búsqueda usa la ubicación de la persona (el navegador le pide permiso) y un resumen de sus últimos chats con negocios
-  const usarContexto = true;
   const obtenerUbicacion = () => new Promise((resolve) => {
     if (userLoc) return resolve(userLoc);
     if (!navigator.geolocation) return resolve(null);
@@ -901,8 +903,9 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
     setText("");
     setSending(true);
     try {
-      const ubicacion = usarContexto ? await obtenerUbicacion() : null;
-      const chats = usarContexto ? contextoDeChats(businesses) : [];
+      const priv = getPrivacidad(); // lo que la persona eligió en Privacidad
+      const ubicacion = priv.ubicacionBusqueda ? await obtenerUbicacion() : null;
+      const chats = priv.chatsBusqueda ? contextoDeChats(businesses) : [];
       const data = await buscarConAsistente(contenido, historialActual, { ubicacion, chats });
       const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, negocios: data.negocios || [] };
       setMessages((prev) => [...prev, msgAsistente]);
@@ -1905,9 +1908,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children }) {
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-        <ArrowLeft size={15} /> Volver a {volverA}
-      </button>
+      <BotonVolver texto={`Volver a ${volverA}`} onClick={onBack} />
       <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
       {desc && <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{desc}</p>}
       <div className="mt-4">{children}</div>
@@ -1915,14 +1916,11 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
   );
 }
 
-// Barra de arriba de Chats, Herramientas y Ajustes: flecha para volver al Inicio y el título de la pantalla
-function BarraTitulo({ titulo, onBack }) {
+// Barra de arriba de Chats, Herramientas y Ajustes: solo el título (son pestañas, como Inicio, no llevan flecha)
+function BarraTitulo({ titulo }) {
   return (
     <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-        <button onClick={onBack} aria-label="Volver al inicio" className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
-          <ArrowLeft size={18} color="#fff" />
-        </button>
         <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 18, color: "#fff" }}>{titulo}</span>
       </div>
     </div>
@@ -2530,10 +2528,10 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   const Chip = ({ label, Icon, active, onClick, activeBg = "#E8F0FE", activeColor = "#2F6FED", activeBorder = "#2F6FED" }) => (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0"
+      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
       style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#4B5563", border: "1px solid " + (active ? activeBorder : "#E2E8F0") }}
     >
-      {Icon && <Icon size={12} />} {label}
+      {Icon && <Icon size={13} />} {label}
     </button>
   );
 
@@ -2583,11 +2581,11 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setShowCats(true)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
             style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#4B5563", border: "1px solid " + (catActual ? catActual.color : "#E2E8F0") }}
           >
-            {catActual ? <catActual.icon size={12} /> : <Grid3x3 size={12} />} {catActual ? catActual.label : "Rubro"}
-            {catActual ? <X size={11} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={11} />}
+            {catActual ? <catActual.icon size={13} /> : <Grid3x3 size={13} />} {catActual ? catActual.label : "Rubro"}
+            {catActual ? <X size={12} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={12} />}
           </button>
           <Chip label="Abiertos ahora" active={filtros.abiertos} onClick={() => setFiltro("abiertos", !filtros.abiertos)} activeBg="#E4F3EA" activeColor="#1E6B44" activeBorder="#2C9A5F" />
           <Chip label="Delivery" Icon={Truck} active={filtros.delivery} onClick={() => setFiltro("delivery", !filtros.delivery)} />
@@ -3431,7 +3429,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
             <div className="flex gap-2 overflow-x-auto pb-3 [&>*]:shrink-0" style={{ marginBottom: 6 }}>
               <button
                 onClick={() => setCatFiltro(null)}
-                className="text-xs font-semibold px-3.5 py-2"
+                className="text-xs font-semibold px-3 py-1.5"
                 style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#4B5563", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#E2E8F0") }}
               >
                 Todas
@@ -3442,7 +3440,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 return (
                   <button
                     key={c.id} onClick={() => setCatFiltro(act ? null : c.id)}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2"
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
                     style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#4B5563", border: "1px solid " + (act ? c.color : "#E2E8F0") }}
                   >
                     <Icon size={13} color={act ? "#fff" : c.color} /> {c.label}
@@ -3737,9 +3735,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   );
 }
 
-function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales }) {
-  const [sub, setSub] = useState(null); // null | "cuenta" | "notificaciones" | "seguridad" | "apariencia" | "acerca" | "ayuda" | "soporte" | "privacidad"
-  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
   const [tema, setTemaEstado] = useState(() => getTema());
   // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
   useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
@@ -3789,9 +3785,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
     ];
     return (
       <div>
-        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-          <ArrowLeft size={15} /> Volver a Ajustes
-        </button>
+        <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
         <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
         <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Elegí cómo querés ver Mi Zona</p>
         <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
@@ -3820,45 +3814,18 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
   }
 
   if (sub === "privacidad") {
-    const favs = getFavorites().length;
-    const chats = getAllConversationIds().length;
     return (
-      <div>
-        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-          <ArrowLeft size={15} /> Volver a Ajustes
-        </button>
-        <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">Privacidad</h2>
-        <p className="text-sm mb-5" style={{ color: "#4B5563", lineHeight: 1.6 }}>
-          Tus favoritos y preferencias se guardan <b>solo en este dispositivo</b>. Si te registrás con Google, guardamos tu nombre y tu email para reconocerte (por ejemplo como dueño de tu negocio), y tus chats con los asistentes de los negocios quedan ligados a tu cuenta para que reaparezcan en otros dispositivos. En la búsqueda con asistente podés elegir si se usa tu ubicación y un resumen de tus últimos chats para recomendarte negocios cercanos: la ubicación no se guarda. Las reseñas que escribís y los negocios que registrás sí se guardan en nuestro servidor, porque son públicos.
-        </p>
-        <div className="p-4 mb-4" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span style={{ color: "#4B5563" }}>Negocios favoritos</span>
-            <span style={{ color: "#0B1220", fontWeight: 600 }}>{favs}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span style={{ color: "#4B5563" }}>Conversaciones guardadas</span>
-            <span style={{ color: "#0B1220", fontWeight: 600 }}>{chats}</span>
-          </div>
-        </div>
-        {!confirmarBorrado ? (
-          <button onClick={() => setConfirmarBorrado(true)} className="w-full text-sm font-semibold py-3" style={{ borderRadius: 10, border: "1px solid #C1443A", color: "#9A3B34" }}>
-            Borrar todos mis datos de este dispositivo
-          </button>
-        ) : (
-          <div className="p-4" style={{ borderRadius: 10, background: "#F7E7E5" }}>
-            <p className="text-xs mb-3" style={{ color: "#9A3B34" }}>Esto va a borrar tus favoritos, conversaciones y notificaciones de este dispositivo, y también el identificador que vincula tus puntos y canjes con este dispositivo: vas a perder el acceso a los puntos que tengas acumulados. No se puede deshacer.</p>
-            <div className="flex gap-2">
-              <button onClick={() => { onBorrarDatosLocales(); setConfirmarBorrado(false); }} className="flex-1 text-xs font-semibold py-2" style={{ backgroundColor: "#9A3B34", color: "#fff", borderRadius: 8 }}>
-                Sí, borrar todo
-              </button>
-              <button onClick={() => setConfirmarBorrado(false)} className="flex-1 text-xs font-medium py-2" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <PrivacidadScreen
+        usuario={usuario}
+        onBack={() => setSub(null)}
+        onLogin={() => onLogin("login")}
+        onIrSeguridad={() => setSub("seguridad")}
+        local={{ favoritos: getFavorites().length, chats: getAllConversationIds().length, vistos: getRecentlyViewed().length, busquedas: getSearchHistory().length }}
+        onBorrarVistos={onBorrarVistos}
+        onBorrarBusquedas={() => clearSearchHistory()}
+        onBorrarDatosLocales={onBorrarDatosLocales}
+        onCuentaEliminada={onCuentaEliminada}
+      />
     );
   }
 
@@ -3879,9 +3846,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
     }[sub];
     return (
       <div>
-        <button onClick={() => setSub(null)} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-          <ArrowLeft size={15} /> Volver a Ajustes
-        </button>
+        <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
         <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">{content.title}</h2>
         <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.6 }}>{content.body}</p>
       </div>
@@ -3897,7 +3862,7 @@ function AjustesScreen({ usuario, onLogin, onLogged, onUsuarioActualizado, onCer
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
         <Row Icon={Lock} title="Seguridad" desc="Contraseña y sesiones abiertas" onClick={() => setSub("seguridad")} />
         <Row Icon={Settings} title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
-        <Row Icon={Lock} title="Privacidad" desc="Qué datos guardamos y cómo borrarlos" onClick={() => setSub("privacidad")} />
+        <Row Icon={Lock} title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
@@ -4052,9 +4017,7 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   return (
     <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F6FB" }}>
       <div className="w-full max-w-lg p-5 pb-10">
-        <button onClick={onCancel} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "#2F6FED" }}>
-          <ArrowLeft size={15} /> Volver
-        </button>
+        <BotonVolver texto="Volver" onClick={onCancel} />
         <h2 className="mb-4" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
           {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
         </h2>
@@ -4218,7 +4181,7 @@ function contactoEmpleoLink(b) {
   if (b.busquedaEmpleo.contactoTipo === "whatsapp") {
     return `https://wa.me/${b.busquedaEmpleo.contactoValor}?text=${encodeURIComponent(`Hola, te escribo por la búsqueda de personal (${b.busquedaEmpleo.puesto}) en Mi Zona.`)}`;
   }
-  return b.busquedaEmpleo.contactoValor;
+  return /^https?:\/\//i.test(b.busquedaEmpleo.contactoValor) ? b.busquedaEmpleo.contactoValor : "#"; // nunca "javascript:" u otros esquemas
 }
 
 // Modal que ve el CLIENTE al tocar el aviso de "busca personal" en el perfil del negocio
@@ -4494,7 +4457,8 @@ export default function MiZona() {
   const [activeCat, setActiveCat] = useState(null);
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [onlyEmpleo, setOnlyEmpleo] = useState(false);
+  const [onlyVistos, setOnlyVistos] = useState(false);
+  const [vistosIds, setVistosIds] = useState(() => getRecentlyViewed());
   const [onlyNuevos, setOnlyNuevos] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
   const [selectedId, setSelectedId] = useState(null);
@@ -4586,6 +4550,16 @@ export default function MiZona() {
     setShowEditOwnerBiz(false);
     try { setBusinesses(await loadBusinesses()); } catch { /* se queda la lista que ya estaba */ }
   };
+  const borrarDatosLocales = () => {
+    Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
+    setFavorites([]);
+    setOnlyFavorites(false);
+    setNotifLeidas(new Set());
+    setNotifEliminadas(new Set());
+    setVistosIds([]);
+    setOnlyVistos(false);
+    aplicarTema("auto");
+  };
   const abrirAgregarNegocio = () => {
     if (requerirSesion("Para registrar tu negocio necesitás una cuenta de Mi Zona. Es rápido y gratis.", "agregar")) setShowAddBusiness(true);
   };
@@ -4629,8 +4603,9 @@ export default function MiZona() {
     mq?.addEventListener?.("change", alCambiar);
     return () => mq?.removeEventListener?.("change", alCambiar);
   }, []);
+  const [subAjustes, setSubAjustes] = useState(null); // null | "cuenta" | "notificaciones" | "seguridad" | "apariencia" | "acerca" | "ayuda" | "soporte" | "privacidad"
   const [subHerramientas, setSubHerramientas] = useState(null); // null | "promos" | "empleo" | "qr"
-  const irATab = (tab) => { setSubHerramientas(null); setActiveTab(tab); window.scrollTo(0, 0); };
+  const irATab = (tab) => { setSubHerramientas(null); setSubAjustes(null); setActiveTab(tab); window.scrollTo(0, 0); };
 
   // favoritos (guardados en este dispositivo)
   const [favorites, setFavorites] = useState(() => getFavorites());
@@ -4778,6 +4753,7 @@ export default function MiZona() {
   // Actividad del cliente (pedidos, turnos, puntos, canjes) para el centro de notificaciones:
   // al abrir la app, al volver a ella y cada 2 minutos mientras está visible.
   useEffect(() => {
+    if (!usuario?.id) { setActividad({ pedidos: [], turnos: [], puntos: [], canjes: [] }); return; } // la actividad es de la cuenta: sin sesión no hay nada que pedir
     let cancelado = false;
     const cargar = async () => {
       try {
@@ -4790,7 +4766,7 @@ export default function MiZona() {
     const alVolver = () => { if (document.visibilityState === "visible") cargar(); };
     document.addEventListener("visibilitychange", alVolver);
     return () => { cancelado = true; clearInterval(timer); document.removeEventListener("visibilitychange", alVolver); };
-  }, []);
+  }, [usuario?.id]);
 
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
   const notificaciones = useMemo(
@@ -4834,13 +4810,15 @@ export default function MiZona() {
       const matchQ = q ? haystack.includes(q) : true;
       const matchOpen = onlyOpen ? isOpenNow(b.weekHours) : true;
       const matchFav = onlyFavorites ? favorites.includes(b.id) : true;
-      const matchEmpleo = onlyEmpleo ? busquedaEmpleoActiva(b) : true;
+      const matchVisto = onlyVistos ? vistosIds.includes(b.id) : true;
       const matchNuevo = onlyNuevos ? esNegocioNuevo(b) : true;
       const matchDiscount = sortBy === "descuentos" ? activeDiscounts(b).length > 0 : true;
-      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchEmpleo && matchNuevo && matchDiscount;
+      return matchCat && matchZone && matchQ && matchOpen && matchFav && matchVisto && matchNuevo && matchDiscount;
     });
     list = [...list];
-    if (onlyNuevos) {
+    if (onlyVistos) {
+      list.sort((a, b) => vistosIds.indexOf(a.id) - vistosIds.indexOf(b.id)); // el último que viste primero
+    } else if (onlyNuevos) {
       list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // los más recientes primero
     } else if (sortBy === "vistas") {
       list.sort((a, b) => b.views - a.views);
@@ -4853,7 +4831,7 @@ export default function MiZona() {
       list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyEmpleo, onlyNuevos, sortBy, userLoc]);
+  }, [businesses, query, activeCat, zone, onlyOpen, onlyFavorites, favorites, onlyVistos, vistosIds, onlyNuevos, sortBy, userLoc]);
 
   const selected = businesses.find((b) => b.id === selectedId);
 
@@ -4861,6 +4839,7 @@ export default function MiZona() {
     persistOne(id, (b) => ({ ...b, views: b.views + 1 }));
     if (!misIds.has(id)) trackEvento(id, "visita"); // estadística privada del dueño (no cuenta cuando mira su propio perfil)
     addRecentlyViewed(id);
+    setVistosIds(getRecentlyViewed());
     setSelectedId(id);
     window.scrollTo(0, 0);
   };
@@ -5106,10 +5085,9 @@ export default function MiZona() {
           notifSinLeer={notifSinLeer}
           onOpenNotificaciones={() => setShowNotificaciones(true)}
         />
-      ) : (
+      ) : (subHerramientas || subAjustes) ? null : (
         <BarraTitulo
           titulo={activeTab === "chats" ? "Chats" : activeTab === "herramientas" ? (ownerBiz ? "Mi negocio" : "Herramientas") : "Ajustes"}
-          onBack={() => irATab("inicio")}
         />
       )}
 
@@ -5203,18 +5181,30 @@ export default function MiZona() {
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
         {activeTab === "ajustes" ? (
           <AjustesScreen
+            sub={subAjustes} setSub={setSubAjustes}
             usuario={usuario}
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}
             onCerrarSesion={() => setConfirmarSalida(true)}
             onBorrarDatosLocales={() => {
-              Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
-              setFavorites([]);
-              setOnlyFavorites(false);
-              setNotifLeidas(new Set());
-              setNotifEliminadas(new Set());
-              aplicarTema("auto");
+              borrarDatosLocales(); // también se borró el token: la sesión de este dispositivo queda cerrada
+              setUsuario(null);
+              misNegociosRef.current = [];
+              setMisNegocios([]);
+              setShowEditOwnerBiz(false);
+            }}
+            onBorrarVistos={() => { try { localStorage.removeItem("miZonaVistosRecientemente"); } catch { /* sin almacenamiento */ } setVistosIds([]); setOnlyVistos(false); }}
+            onCuentaEliminada={async () => {
+              // la cuenta ya se borró en el servidor: se limpia este dispositivo y se vuelve al inicio
+              try { await desactivarPush(); } catch { /* no había push activo */ }
+              borrarDatosLocales();
+              setUsuario(null);
+              misNegociosRef.current = [];
+              setMisNegocios([]);
+              setShowEditOwnerBiz(false);
+              setSubAjustes(null);
+              try { setBusinesses(await loadBusinesses()); } catch { /* se queda la lista que ya estaba */ }
             }}
           />
         ) : activeTab === "chats" ? (
@@ -5261,37 +5251,6 @@ export default function MiZona() {
             <MapIcon size={13} /> Ver en el mapa
           </button>
         </div>
-        {activeTab === "inicio" && !activeCat && (() => {
-          const vistos = getRecentlyViewed().map((id) => businesses.find((b) => b.id === id)).filter(Boolean);
-          const MiniCard = ({ biz }) => {
-            const c = catInfo(biz.cat);
-            return (
-              <button onClick={() => openDetail(biz.id)} className="text-left shrink-0 bg-white overflow-hidden transition-transform hover:-translate-y-0.5" style={{ width: 112, borderRadius: 14, border: "1px solid #E6ECF5", boxShadow: "0 4px 12px rgba(11,42,84,0.07)" }}>
-                <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={62} radius="0px" iconSize={18} clickable={false} />
-                <div className="px-2.5 py-2">
-                  <p className="text-[11px] font-semibold truncate" style={{ color: "#0B1220", fontFamily: "'Poppins', sans-serif" }}>{biz.name}</p>
-                  <p className="text-[9px] truncate mt-0.5 flex items-center gap-1" style={{ color: "#6B7280" }}>
-                    <span className="rounded-full inline-block" style={{ width: 5, height: 5, background: c?.color }} /> {c?.label}
-                  </p>
-                </div>
-              </button>
-            );
-          };
-          return (
-            <>
-              {vistos.length > 0 && (
-                <div className="mb-5">
-                  <p className="flex items-center gap-1.5 mb-2" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>
-                    <Clock size={14} color="#2F6FED" /> Visto recientemente
-                  </p>
-                  <div className="flex gap-2.5 overflow-x-auto pb-2">
-                    {vistos.map((b) => <MiniCard key={b.id} biz={b} />)}
-                  </div>
-                </div>
-              )}
-            </>
-          );
-        })()}
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <p style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
@@ -5302,48 +5261,44 @@ export default function MiZona() {
             {onlyFavorites && (
               <button
                 onClick={() => setOnlyFavorites(false)}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
-                style={{ borderRadius: 20, backgroundColor: "#F7E7E5", color: "#9A3B34", border: "1px solid #C1443A" }}
+                className="flex items-center gap-1.5 font-medium px-3.5 py-2"
+                style={{ fontSize: 13, borderRadius: 20, backgroundColor: "#F7E7E5", color: "#9A3B34", border: "1px solid #C1443A" }}
               >
-                <Heart size={11} fill="#9A3B34" /> Solo favoritos <X size={11} />
+                <Heart size={14} fill="#9A3B34" /> Solo favoritos <X size={14} />
               </button>
             )}
-            <button
-              onClick={() => setOnlyOpen((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
-              style={{ borderRadius: 20, backgroundColor: onlyOpen ? "#E4F3EA" : "#fff", color: onlyOpen ? "#1E6B44" : "#4B5563", border: "1px solid " + (onlyOpen ? "#2C9A5F" : "#E2E8F0") }}
-            >
-              <span className="rounded-full" style={{ width: 6, height: 6, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} />
-              Solo abiertos ahora
-            </button>
-            <button
-              onClick={() => setOnlyEmpleo((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
-              style={{ borderRadius: 20, backgroundColor: onlyEmpleo ? "#E8F0FE" : "#fff", color: onlyEmpleo ? "#2F6FED" : "#4B5563", border: "1px solid " + (onlyEmpleo ? "#2F6FED" : "#E2E8F0") }}
-            >
-              <Briefcase size={12} />
-              Busca personal
-            </button>
-            <button
-              onClick={() => setOnlyNuevos((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
-              style={{ borderRadius: 20, backgroundColor: onlyNuevos ? "#E4F3EA" : "#fff", color: onlyNuevos ? "#1E6B44" : "#4B5563", border: "1px solid " + (onlyNuevos ? "#2C9A5F" : "#E2E8F0") }}
-            >
-              <Sparkles size={12} />
-              Recién agregados
-            </button>
+            {[
+              { activo: onlyOpen, alternar: () => setOnlyOpen((v) => !v), texto: "Abiertos", verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} /> },
+              { activo: onlyVistos, alternar: () => setOnlyVistos((v) => !v), texto: "Vistos", icono: <Clock size={14} /> },
+              { activo: onlyNuevos, alternar: () => setOnlyNuevos((v) => !v), texto: "Nuevos", verde: true, icono: <Sparkles size={14} /> },
+            ].map((c) => (
+              <button
+                key={c.texto}
+                onClick={c.alternar}
+                className="flex items-center gap-1.5 font-medium px-3.5 py-2"
+                style={{
+                  fontSize: 13, borderRadius: 20,
+                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#E8F0FE") : "#fff",
+                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#4B5563",
+                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2F6FED") : "#E2E8F0"),
+                }}
+              >
+                {c.icono}
+                {c.texto}
+              </button>
+            ))}
             <div className="relative">
               <select
                 value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none text-xs font-medium pl-3 pr-7 py-1.5"
-                style={{ borderRadius: 20, border: "1px solid #E2E8F0", color: "#0B1220", backgroundColor: "#fff" }}
+                className="appearance-none font-medium pl-3.5 pr-8 py-2"
+                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E2E8F0", color: "#0B1220", backgroundColor: "#fff" }}
               >
                 <option value="destacados">⭐ Destacados</option>
                 <option value="vistas">👁️ Más visitados</option>
                 <option value="descuentos">🏷️ Descuentos</option>
                 <option value="cercanos">📍 Más cercanos</option>
               </select>
-              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" color="#6B7280" />
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#6B7280" />
             </div>
           </div>
         </div>
@@ -5382,7 +5337,7 @@ export default function MiZona() {
         {filtered.length === 0 ? (
           <div className="text-center py-16" style={{ color: "#6B7280" }}>
             <p className="mb-1" style={{ fontFamily: "'Poppins', sans-serif", fontSize: 19, color: "#0B1220" }}>
-              {businesses.length === 0 ? "Todavía no hay negocios cargados" : `No hay resultados en ${zone}`}
+              {businesses.length === 0 ? "Todavía no hay negocios cargados" : onlyVistos && vistosIds.length === 0 ? "Todavía no viste ningún negocio" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">
               {businesses.length === 0 ? "Sé el primero: tocá el botón \"+\" para agregar tu negocio." : "Probá con otra categoría, otra búsqueda, o cambiá de zona."}

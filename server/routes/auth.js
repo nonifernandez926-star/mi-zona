@@ -3,7 +3,7 @@ import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
 import {
   verificarIdTokenGoogle, verificarAccessTokenGoogle, firmarTokenUsuario,
-  identificar, requiereUsuario,
+  identificar, requiereUsuario, sesionClienteDe,
 } from "../utils/auth.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
 import { permitir, olvidar } from "../utils/limitador.js";
@@ -27,6 +27,7 @@ async function vincularNegociosPorEmail(usuario) {
 //   modo "login":    solo entra si la cuenta ya está registrada; si no, responde cuenta_inexistente
 router.post("/google", async (req, res) => {
   try {
+    if (!permitir(`google|${req.ip || "sin-ip"}`, 40, 15 * 60 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
     const { idToken, accessToken } = req.body || {};
     const modo = req.body?.modo === "login" ? "login" : "registro";
     if (!idToken && !accessToken) return res.status(400).json({ error: "Falta el token de Google" });
@@ -42,8 +43,13 @@ router.post("/google", async (req, res) => {
       // Si ya se había registrado con correo y contraseña con este mismo correo, ahora Google lo verifica: pasa a ser la misma cuenta
       const porCorreo = await Usuario.findOne({ email, proveedor: "email" });
       if (porCorreo) {
+        // IMPORTANTE: cualquiera pudo haber creado esa cuenta con el correo de otra persona (el correo no se verificaba).
+        // Ahora que Google confirma que el correo es de quien entra, se borra la contraseña vieja y se cierran las sesiones
+        // anteriores: así quien la creó antes no conserva acceso.
         porCorreo.googleId = googleId;
         porCorreo.proveedor = "google";
+        porCorreo.passwordHash = "";
+        porCorreo.tokenVersion = (porCorreo.tokenVersion || 0) + 1;
         await porCorreo.save();
         usuario = porCorreo;
         yaExistia = true;
@@ -165,11 +171,12 @@ router.post("/sesion-cliente", identificar, requiereUsuario, async (req, res) =>
   try {
     const u = req.actor.usuario;
     const propuesto = String(req.body?.sesionClienteId || "");
-    if (!u.sesionClienteId && /^[\w-]{10,80}$/.test(propuesto)) {
+    // Solo se adopta el id del dispositivo si tiene el formato esperado y NO pertenece ya a otra cuenta.
+    if (!u.sesionClienteId && /^[\w-]{16,80}$/.test(propuesto) && !(await Usuario.exists({ sesionClienteId: propuesto, _id: { $ne: u._id } }))) {
       u.sesionClienteId = propuesto;
       await u.save();
     }
-    res.json({ sesionClienteId: u.sesionClienteId || null });
+    res.json({ sesionClienteId: await sesionClienteDe(u) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "No se pudo vincular tu historial." });

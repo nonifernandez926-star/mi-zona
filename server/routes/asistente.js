@@ -1,6 +1,6 @@
 import express from "express";
 import Business from "../models/Business.js";
-import { identificar, requiereUsuario } from "../utils/auth.js";
+import { identificar, requiereUsuario, sesionClienteDe, limitar } from "../utils/auth.js";
 
 const router = express.Router();
 
@@ -31,13 +31,14 @@ async function reenviar(res, ruta, opciones = {}) {
 // POST /api/asistente/chat/:codigoPublico   { mensaje, sesionClienteId }
 // Reenvía el mensaje del cliente directo al asistente REAL de ese negocio en Mi Asistente,
 // y devuelve su respuesta (incluye pedidoCreado/turnoCreado si el asistente registró uno).
-router.post("/chat/:codigoPublico", identificar, requiereUsuario, async (req, res) => {
+router.post("/chat/:codigoPublico", identificar, requiereUsuario, limitar("chat", 40, 10 * 60 * 1000), async (req, res) => {
   try {
-    const { mensaje } = req.body;
-    // Con cuenta, el id de cliente es el de la cuenta (no se puede falsear desde el navegador)
-    const sesionClienteId = req.actor.usuario.sesionClienteId || req.body.sesionClienteId;
-    if (!mensaje || !sesionClienteId) {
-      return res.status(400).json({ error: "Faltan datos: mensaje y sesionClienteId son obligatorios" });
+    const mensaje = typeof req.body?.mensaje === "string" ? req.body.mensaje.trim().slice(0, 2000) : "";
+    // El id de cliente es SIEMPRE el de la cuenta: se arma en el servidor y no se acepta el que mande el navegador,
+    // así nadie puede leer ni escribir los chats de otra persona.
+    const sesionClienteId = await sesionClienteDe(req.actor.usuario);
+    if (!mensaje) {
+      return res.status(400).json({ error: "Escribí un mensaje." });
     }
     const r = await fetch(`${MI_ASISTENTE_URL}/chat/${encodeURIComponent(req.params.codigoPublico)}`, {
       method: "POST",
@@ -66,27 +67,35 @@ router.post("/mis-conversaciones", identificar, requiereUsuario, async (req, res
   reenviar(res, "/integracion/conversaciones-cliente", { method: "POST", body: JSON.stringify({ sesionClienteId }) });
 });
 
-// POST /api/asistente/cliente/actividad   { sesionClienteId }
+// Las rutas de abajo (actividad, puntos y canjes) pertenecen a UNA persona. Antes aceptaban el id de cliente que
+// mandaba el navegador, y cualquiera que lo conociera podía ver o gastar puntos ajenos. Ahora exigen sesión y usan
+// siempre el id de la cuenta, armado por el servidor.
+
+// POST /api/asistente/cliente/actividad
 // Pedidos, turnos, puntos y canjes del cliente: con esto la web arma su centro de notificaciones.
-router.post("/cliente/actividad", (req, res) =>
-  reenviar(res, "/cliente/actividad", { method: "POST", body: JSON.stringify({ sesionClienteId: req.body?.sesionClienteId }) })
+router.post("/cliente/actividad", identificar, requiereUsuario, async (req, res) =>
+  reenviar(res, "/cliente/actividad", { method: "POST", body: JSON.stringify({ sesionClienteId: await sesionClienteDe(req.actor.usuario) }) })
 );
 
-// GET /api/asistente/puntos/negocio/:codigoPublico?sesionClienteId=...
-// Programa de puntos de un negocio y recompensas, con el saldo del cliente.
-router.get("/puntos/negocio/:codigoPublico", (req, res) =>
-  reenviar(res, `/puntos/publico/${encodeURIComponent(req.params.codigoPublico)}?sesionClienteId=${encodeURIComponent(req.query.sesionClienteId || "")}`)
+// GET /api/asistente/puntos/negocio/:codigoPublico
+// Programa de puntos de un negocio y recompensas. El saldo solo se incluye si hay sesión (es el de esa cuenta).
+router.get("/puntos/negocio/:codigoPublico", identificar, async (req, res) => {
+  const sesion = req.actor?.usuario ? await sesionClienteDe(req.actor.usuario) : "";
+  reenviar(res, `/puntos/publico/${encodeURIComponent(req.params.codigoPublico)}?sesionClienteId=${encodeURIComponent(sesion)}`);
+});
+
+// POST /api/asistente/puntos/mis-puntos
+router.post("/puntos/mis-puntos", identificar, requiereUsuario, async (req, res) =>
+  reenviar(res, "/puntos/mis-puntos", { method: "POST", body: JSON.stringify({ sesionClienteId: await sesionClienteDe(req.actor.usuario) }) })
 );
 
-// POST /api/asistente/puntos/mis-puntos   { sesionClienteId }
-router.post("/puntos/mis-puntos", (req, res) =>
-  reenviar(res, "/puntos/mis-puntos", { method: "POST", body: JSON.stringify({ sesionClienteId: req.body?.sesionClienteId }) })
-);
-
-// POST /api/asistente/puntos/canjear   { codigoPublico, sesionClienteId, recompensaId, claveUnica }
-router.post("/puntos/canjear", (req, res) => {
-  const { codigoPublico, sesionClienteId, recompensaId, claveUnica } = req.body || {};
-  reenviar(res, "/puntos/canjear", { method: "POST", body: JSON.stringify({ codigoPublico, sesionClienteId, recompensaId, claveUnica }) });
+// POST /api/asistente/puntos/canjear   { codigoPublico, recompensaId, claveUnica }
+router.post("/puntos/canjear", identificar, requiereUsuario, limitar("canje", 20, 3600 * 1000), async (req, res) => {
+  const { codigoPublico, recompensaId, claveUnica } = req.body || {};
+  if ([codigoPublico, recompensaId, claveUnica].some((v) => v !== undefined && typeof v !== "string" && typeof v !== "number")) {
+    return res.status(400).json({ error: "datos_invalidos", mensaje: "Datos inválidos." });
+  }
+  reenviar(res, "/puntos/canjear", { method: "POST", body: JSON.stringify({ codigoPublico, sesionClienteId: await sesionClienteDe(req.actor.usuario), recompensaId, claveUnica }) });
 });
 
 const CATEGORY_LABELS = {
@@ -95,10 +104,16 @@ const CATEGORY_LABELS = {
 };
 
 // POST /api/asistente/buscar  { mensaje, historial: [{rol, texto}] }
-router.post("/buscar", async (req, res) => {
+// Cuesta plata (usa IA): tope por persona o por IP. Y si la persona apagó la ubicación o el uso de chats en
+// Privacidad, el servidor lo respeta aunque el pedido los incluya.
+router.post("/buscar", identificar, limitar("buscar", 30, 10 * 60 * 1000), async (req, res) => {
   try {
-    const { mensaje, historial = [], ubicacion, chats } = req.body;
-    if (!mensaje || !mensaje.trim()) {
+    const mensaje = typeof req.body?.mensaje === "string" ? req.body.mensaje.trim().slice(0, 600) : "";
+    const priv = req.actor?.usuario?.privacidad;
+    const ubicacion = priv && priv.ubicacionBusqueda === false ? undefined : req.body?.ubicacion;
+    const chats = priv && priv.chatsBusqueda === false ? undefined : req.body?.chats;
+    const historial = (Array.isArray(req.body?.historial) ? req.body.historial : []).filter((m) => m && typeof m.texto === "string").map((m) => ({ rol: m.rol === "cliente" ? "cliente" : "asistente", texto: m.texto.slice(0, 1000) }));
+    if (!mensaje) {
       return res.status(400).json({ error: "Falta el mensaje" });
     }
     // ubicación (opcional): solo se usa para ordenar por cercanía en esta consulta, no se guarda

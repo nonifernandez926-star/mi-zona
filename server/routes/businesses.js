@@ -1,20 +1,16 @@
 import express from "express";
 import Business from "../models/Business.js";
-import { identificar, requiereUsuario } from "../utils/auth.js";
+import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
+import { sanearNegocio, combinarResenas } from "../utils/negocios.js";
 import { sincronizarCobertura } from "../utils/asistente.js";
 import { hoyISO } from "../utils/fechas.js";
+import { permitir } from "../utils/limitador.js";
 
 const router = express.Router();
 router.use(identificar);
 
 // Datos internos que NUNCA salen en las respuestas públicas
-const SECRETOS = ["ownerId", "ownerEmail", "ownerCode", "colabCode", "suscripcion", "pendientePago"];
-
-// Campos que el dueño NO puede cambiar por su cuenta (los maneja el servidor: pagos, vencimiento, destacado, etc.)
-const BLOQUEADOS_PARA_DUENO = [
-  ...SECRETOS, "_id", "__v", "id", "kind", "status", "expiresAt", "lastRenewal",
-  "createdAt", "updatedAt", "featured", "vecesFavorito", "asistenteActivo", "asistenteCodigoPublico",
-];
+const SECRETOS = ["ownerId", "ownerEmail", "ownerCode", "colabCode", "suscripcion", "pendientePago", "asistenteCodigo", "geoIntentos"];
 
 function limpiarSalida(doc, { completo = false } = {}) {
   const obj = doc.toObject ? doc.toObject() : { ...doc };
@@ -24,32 +20,9 @@ function limpiarSalida(doc, { completo = false } = {}) {
     obj.suscripcion = { plan: obj.suscripcion.plan, origen: obj.suscripcion.origen };
   }
   delete obj.__v;
+  // la huella interna de quien escribió cada reseña nunca sale
+  if (Array.isArray(obj.reviews)) obj.reviews = obj.reviews.map(({ autorUid, ...r }) => r);
   return obj;
-}
-
-// stringify con las claves ordenadas, para comparar objetos sin que importe el orden de las propiedades
-function estable(v) {
-  if (Array.isArray(v)) return `[${v.map(estable).join(",")}]`;
-  if (v && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${estable(v[k])}`).join(",")}}`;
-  return JSON.stringify(v ?? null);
-}
-
-// La web guarda las reseñas mandando la lista completa. Acá se verifica que solo se haya AGREGADO una reseña
-// (sin respuesta) y que, salvo la respuesta del dueño, nada de lo existente cambió. Así nadie puede borrar
-// reseñas ajenas ni escribir respuestas en nombre del dueño.
-function reseñasValidas(actuales = [], nuevas, esDueno) {
-  if (!Array.isArray(nuevas)) return false;
-  if (nuevas.length < actuales.length || nuevas.length > actuales.length + 1) return false;
-  for (const a of actuales) {
-    const n = nuevas.find((x) => x && x.id === a.id);
-    if (!n) return false;
-    const { respuesta: ra, ...restoA } = a;
-    const { respuesta: rn, ...restoN } = n;
-    if (estable(restoA) !== estable(restoN)) return false;
-    if (!esDueno && estable(ra) !== estable(rn)) return false;
-  }
-  const ids = new Set(actuales.map((r) => r.id));
-  return !nuevas.filter((r) => !ids.has(r.id)).some((r) => r.respuesta);
 }
 
 // Traer todos los negocios (público: sin datos internos)
@@ -63,7 +36,7 @@ router.get("/", async (req, res) => {
     const list = await Business.find({ pendientePago: { $ne: true } });
     res.json(list.map((b) => limpiarSalida(b)));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
@@ -90,57 +63,62 @@ router.get("/mios", requiereUsuario, async (req, res) => {
     res.json({ negocios: negocios.map((n) => limpiarSalida(n, { completo: true })), cobertura });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
 // Actualizar un negocio
-//  · dueño (sesión de Google): todo menos lo que maneja el servidor (estado, vencimiento, destacado...)
-//  · cualquier otra persona: solo sumar una visita y agregar una reseña
-router.put("/:id", async (req, res) => {
+//  · dueño (sesión): solo los campos de la lista blanca de utils/negocios.js (nunca pagos, vencimiento, estado ni dueño)
+//  · cualquier otra persona: solo sumar una visita y, con cuenta, agregar una reseña
+router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res) => {
   try {
-    const { _id, __v, ...body } = req.body || {};
+    const body = req.body || {};
     const actor = req.actor;
 
-    const biz = await Business.findOne({ id: req.params.id });
+    const biz = await Business.findOne({ id: String(req.params.id) });
     if (!biz) return res.status(404).json({ error: "Negocio no encontrado" });
-    const esDueno = actor?.tipo === "usuario" && biz.ownerId === String(actor.usuario._id);
+    const esDueno = actor?.tipo === "usuario" && !!biz.ownerId && biz.ownerId === String(actor.usuario._id);
 
-    const cambios = {};
-    if (esDueno) {
-      Object.keys(body).forEach((k) => { if (!BLOQUEADOS_PARA_DUENO.includes(k)) cambios[k] = body[k]; });
-    }
+    const cambios = esDueno ? sanearNegocio(body) : {};
     // visitas: solo puede subir de a una por pedido (evita inflar el ranking de un golpe)
-    if (Number.isInteger(body.views) && body.views >= (biz.views || 0) && body.views <= (biz.views || 0) + 1) cambios.views = body.views;
-    else delete cambios.views;
+    const sumaVisita = Number.isInteger(body.views) && body.views === (biz.views || 0) + 1;
     // reseñas: solo agregar una nueva; la respuesta a una reseña la puede escribir únicamente el dueño
-    if (body.reviews !== undefined) {
-      // dejar una reseña (o responderla) requiere cuenta de Google
-      if (actor?.tipo === "usuario" && reseñasValidas(biz.reviews || [], body.reviews, esDueno)) cambios.reviews = body.reviews;
-      else delete cambios.reviews;
+    if (body.reviews !== undefined && actor?.tipo === "usuario") {
+      const uidActor = String(actor.usuario._id);
+      const dejaNueva = Array.isArray(body.reviews) && body.reviews.length > (biz.reviews || []).length;
+      if (!dejaNueva || permitir(`resena|${uidActor}`, 10, 3600 * 1000)) {
+        const lista = combinarResenas(biz.reviews || [], body.reviews, { esDueno, usuarioId: uidActor, hoy: hoyISO() });
+        // solo se escribe si hay una reseña nueva o una respuesta nueva (así un pedido viejo no pisa reseñas recién llegadas)
+        if (lista && JSON.stringify(lista) !== JSON.stringify(biz.reviews || [])) cambios.reviews = lista;
+      }
     }
 
-    if (!Object.keys(cambios).length) return res.json(limpiarSalida(biz));
-    const updated = await Business.findOneAndUpdate({ id: req.params.id }, { $set: cambios }, { new: true });
+    const operacion = {};
+    if (Object.keys(cambios).length) operacion.$set = cambios;
+    if (sumaVisita && permitir(`visita|${req.ip}|${biz.id}`, 30, 3600 * 1000)) operacion.$inc = { views: 1 };
+    if (!Object.keys(operacion).length) return res.json(limpiarSalida(biz, { completo: esDueno }));
+    const updated = await Business.findOneAndUpdate({ id: biz.id }, operacion, { new: true });
     res.json(limpiarSalida(updated, { completo: esDueno }));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar el negocio." });
   }
 });
 
 // Sumar o restar 1 al contador de "veces guardado en favoritos" (atómico, para el ranking)
-router.patch("/:id/favorito", async (req, res) => {
+router.patch("/:id/favorito", limitar("favorito", 60, 3600 * 1000), async (req, res) => {
   try {
     const delta = req.body?.delta === -1 ? -1 : 1;
     const updated = await Business.findOneAndUpdate(
-      { id: req.params.id },
+      { id: String(req.params.id) },
       { $inc: { vecesFavorito: delta } },
       { new: true }
     );
     if (!updated) return res.status(404).json({ error: "Negocio no encontrado" });
+    if ((updated.vecesFavorito || 0) < 0) await Business.updateOne({ _id: updated._id, vecesFavorito: { $lt: 0 } }, { $set: { vecesFavorito: 0 } });
     res.json({ vecesFavorito: Math.max(0, updated.vecesFavorito || 0) });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
@@ -148,15 +126,15 @@ router.patch("/:id/favorito", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const actor = req.actor;
-    const biz = await Business.findOne({ id: req.params.id });
+    const biz = await Business.findOne({ id: String(req.params.id) });
     if (!biz) return res.json({ ok: true });
     if (!(actor?.tipo === "usuario" && biz.ownerId === String(actor.usuario._id))) {
       return res.status(403).json({ error: "No tenés permiso para eliminar este negocio." });
     }
-    await Business.deleteOne({ id: req.params.id });
+    await Business.deleteOne({ id: String(req.params.id) });
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 

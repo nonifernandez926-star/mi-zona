@@ -34,6 +34,7 @@ const base = [identificar, requiereUsuario, requiereDueno];
 const usoIA = new Map();
 function validarIA(req, res) {
   if (!process.env.ANTHROPIC_API_KEY) { res.status(503).json({ error: "La inteligencia artificial todavía no está configurada en el servidor." }); return false; }
+  if (req.actor.usuario.privacidad?.iaAgenda === false) { res.status(403).json({ error: "Desactivaste el uso de IA con tu agenda en Privacidad. Podés volver a activarlo ahí." }); return false; }
   if (!req.tieneNegocioActivo) { res.status(402).json({ error: "Las funciones con IA se habilitan cuando tu negocio tiene la suscripción activa." }); return false; }
   const id = String(req.actor.usuario._id);
   const ahora = Date.now();
@@ -110,7 +111,7 @@ router.get("/perfil", base, async (req, res) => {
   try {
     res.json({
       ...perfilAgenda(req.negocio.cat),
-      aiDisponible: Boolean(process.env.ANTHROPIC_API_KEY) && req.tieneNegocioActivo,
+      aiDisponible: Boolean(process.env.ANTHROPIC_API_KEY) && req.tieneNegocioActivo && req.actor.usuario.privacidad?.iaAgenda !== false,
       tieneAsistente: req.tieneAsistente, // si no lo tiene, la web le ofrece descargar Mi Asistente
       fotosPorDia: FOTOS_POR_DIA,
       fotosRestantesHoy: await fotosRestantes(uid(req), ahoraArgentina().fecha),
@@ -333,7 +334,7 @@ router.put("/:id/completar", base, async (req, res) => {
   try {
     const completada = req.body?.completada !== false;
     const item = await AgendaItem.findOneAndUpdate(
-      { _id: req.params.id, usuarioId: uid(req) },
+      { _id: String(req.params.id), usuarioId: uid(req) },
       { $set: { completada, completadaEn: completada ? new Date() : undefined } },
       { new: true }
     );
@@ -349,7 +350,7 @@ router.put("/:id", base, async (req, res) => {
   try {
     const { datos, error } = sanearItem(req.body || {}, true);
     if (error) return res.status(400).json({ error });
-    const item = await AgendaItem.findOneAndUpdate({ _id: req.params.id, usuarioId: uid(req) }, { $set: datos }, { new: true });
+    const item = await AgendaItem.findOneAndUpdate({ _id: String(req.params.id), usuarioId: uid(req) }, { $set: datos }, { new: true });
     if (!item) return res.status(404).json({ error: "No se encontró" });
     res.json(item);
   } catch (e) {
@@ -361,7 +362,7 @@ router.put("/:id", base, async (req, res) => {
 // DELETE /api/agenda/:id
 router.delete("/:id", base, async (req, res) => {
   try {
-    await AgendaItem.deleteOne({ _id: req.params.id, usuarioId: uid(req) });
+    await AgendaItem.deleteOne({ _id: String(req.params.id), usuarioId: uid(req) });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: "No se pudo eliminar" });

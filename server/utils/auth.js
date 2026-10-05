@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import Usuario from "../models/Usuario.js";
+import { permitir } from "./limitador.js";
 
 // ID de cliente de Google de la web de Mi Zona (es público: también va dentro de la web). El servidor siempre lo acepta,
 // y además acepta los que se carguen en GOOGLE_CLIENT_ID (separados por coma), así un error al cargar la variable no rompe el acceso con Google.
@@ -22,14 +23,14 @@ function secreto() {
 }
 
 export function firmarTokenUsuario(usuario) {
-  return jwt.sign({ uid: String(usuario._id), v: usuario.tokenVersion || 0 }, secreto(), { expiresIn: "90d" });
+  return jwt.sign({ uid: String(usuario._id), v: usuario.tokenVersion || 0 }, secreto(), { expiresIn: "90d", algorithm: "HS256" });
 }
 
 function leerToken(req) {
   const h = req.headers["authorization"];
   if (!h || !h.startsWith("Bearer ")) return null;
   try {
-    return jwt.verify(h.slice(7), secreto());
+    return jwt.verify(h.slice(7), secreto(), { algorithms: ["HS256"] });
   } catch {
     return null;
   }
@@ -70,7 +71,7 @@ export async function identificar(req, res, next) {
     if (t?.uid) {
       const usuario = await Usuario.findById(t.uid);
       // si la versión del token no coincide, la persona cerró sesión en todos los dispositivos o cambió su contraseña
-      if (usuario && (t.v || 0) === (usuario.tokenVersion || 0)) req.actor = { tipo: "usuario", usuario };
+      if (usuario && (t.v || 0) === (usuario.tokenVersion || 0)) { req.actor = { tipo: "usuario", usuario }; req.tokenExp = t.exp; }
     }
     next();
   } catch (e) {
@@ -87,4 +88,22 @@ export function compararSeguro(a, b) {
   const x = Buffer.from(String(a));
   const y = Buffer.from(String(b));
   return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+
+// Id con el que Mi Asistente reconoce a esta cuenta. Lo maneja el SERVIDOR: nunca se toma del pedido, así nadie puede
+// hacerse pasar por otra persona mandando su id. Si la cuenta todavía no tiene uno, se crea uno aleatorio.
+export async function sesionClienteDe(usuario) {
+  if (usuario.sesionClienteId) return usuario.sesionClienteId;
+  usuario.sesionClienteId = "sesion-" + crypto.randomBytes(16).toString("hex");
+  await usuario.save();
+  return usuario.sesionClienteId;
+}
+
+// Límite de pedidos por persona (si hay sesión) o por IP. Devuelve un middleware.
+export function limitar(nombre, max, ventanaMs) {
+  return (req, res, next) => {
+    const quien = req.actor?.usuario ? `u${req.actor.usuario._id}` : `ip${req.ip || "?"}`;
+    if (!permitir(`${nombre}|${quien}`, max, ventanaMs)) return res.status(429).json({ error: "Hiciste muchos pedidos seguidos. Probá de nuevo en un rato." });
+    next();
+  };
 }

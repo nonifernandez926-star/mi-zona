@@ -15,10 +15,17 @@ router.get("/clave-publica", (req, res) => {
 router.post("/suscribirse", identificar, requiereUsuario, async (req, res) => {
   try {
     const { subscription } = req.body || {};
-    if (!subscription?.endpoint) return res.status(400).json({ error: "Faltan datos de la suscripción." });
+    if (typeof subscription?.endpoint !== "string" || !/^https:\/\/[^\s]{10,1000}$/.test(subscription.endpoint) || typeof subscription.keys?.p256dh !== "string" || typeof subscription.keys?.auth !== "string") {
+      return res.status(400).json({ error: "Faltan datos de la suscripción." });
+    }
+    if ((await PushSuscripcion.countDocuments({ usuarioId: String(req.actor.usuario._id) })) >= 10 && !(await PushSuscripcion.exists({ endpoint: subscription.endpoint }))) {
+      return res.status(400).json({ error: "Ya tenés muchos dispositivos con notificaciones. Desactivá alguno primero." });
+    }
+    // se guarda solo lo necesario para enviar la notificación
+    const limpia = { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth } };
     await PushSuscripcion.findOneAndUpdate(
       { endpoint: subscription.endpoint },
-      { usuarioId: String(req.actor.usuario._id), endpoint: subscription.endpoint, subscription },
+      { usuarioId: String(req.actor.usuario._id), endpoint: subscription.endpoint, subscription: limpia },
       { upsert: true }
     );
     res.json({ ok: true });
@@ -31,7 +38,7 @@ router.post("/suscribirse", identificar, requiereUsuario, async (req, res) => {
 // POST /api/push/cancelar   { endpoint }
 router.post("/cancelar", identificar, requiereUsuario, async (req, res) => {
   try {
-    await PushSuscripcion.deleteOne({ endpoint: req.body?.endpoint, usuarioId: String(req.actor.usuario._id) });
+    await PushSuscripcion.deleteOne({ endpoint: String(req.body?.endpoint || ""), usuarioId: String(req.actor.usuario._id) });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: "No se pudo cancelar." });
