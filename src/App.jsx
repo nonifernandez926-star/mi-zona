@@ -28,7 +28,7 @@ import {
 const CATEGORIES = [
   { id: "comida", label: "Gastronomía", icon: UtensilsCrossed, color: "#C1443A", quick: true },
   { id: "salud", label: "Salud", icon: Pill, color: "#2C6E8A", quick: true },
-  { id: "servicios", label: "Servicios", icon: Wrench, color: "#0B2A54", quick: true },
+  { id: "servicios", label: "Servicios", icon: Wrench, color: "#0B1437", quick: true },
   { id: "hogar", label: "Hogar", icon: Home, color: "#3C8558", quick: true },
   { id: "moda", label: "Moda y retail", icon: Shirt, color: "#7A4F9E", quick: true },
   { id: "automotor", label: "Automotor", icon: Car, color: "#4A5568", quick: false },
@@ -39,7 +39,7 @@ const CATEGORIES = [
   { id: "agro", label: "Agro e insumos rurales", icon: Tractor, color: "#5A7A3C", quick: false },
   { id: "eventos", label: "Eventos y fiestas", icon: PartyPopper, color: "#A6437A", quick: false },
   { id: "inmobiliaria", label: "Inmobiliaria", icon: Building2, color: "#3B5266", quick: false },
-  { id: "turismo", label: "Turismo y alojamiento", icon: Palmtree, color: "#2F6FED", quick: false },
+  { id: "turismo", label: "Turismo y alojamiento", icon: Palmtree, color: "#2350F5", quick: false },
   { id: "deportes", label: "Deportes y recreación", icon: Dumbbell, color: "#C1443A", quick: false },
   { id: "talleres", label: "Talleres y reparaciones", icon: Hammer, color: "#4A5568", quick: false },
   { id: "almacenes", label: "Almacenes y supermercados", icon: ShoppingCart, color: "#3C8558", quick: false },
@@ -50,7 +50,7 @@ const CATEGORIES = [
   { id: "limpieza", label: "Limpieza y lavandería", icon: Droplet, color: "#2C8AA6", quick: false },
   { id: "imprenta", label: "Imprenta y gráfica", icon: Printer, color: "#5B5F6B", quick: false },
   { id: "cerrajeria", label: "Cerrajería", icon: KeyRound, color: "#8A7A2E", quick: false },
-  { id: "barberias", label: "Barberías", icon: Scissors, color: "#0B2A54", quick: false },
+  { id: "barberias", label: "Barberías", icon: Scissors, color: "#0B1437", quick: false },
   { id: "mayoristas", label: "Mayoristas y distribuidores", icon: Package, color: "#4A5568", quick: false },
   { id: "florerias", label: "Florerías y regalos", icon: Gift, color: "#A6437A", quick: false },
   { id: "ferreterias", label: "Ferreterías y materiales", icon: HardHat, color: "#B8703F", quick: false },
@@ -453,8 +453,8 @@ function saveIdSet(key, set) {
 }
 
 const NOTIF_TIPOS = {
-  pedido: { Icon: Package, color: "#2F6FED", bg: "#E8F0FE" },
-  turno: { Icon: CalendarCheck, color: "#0B2A54", bg: "#E4EAF5" },
+  pedido: { Icon: Package, color: "#2350F5", bg: "#EDF1FF" },
+  turno: { Icon: CalendarCheck, color: "#0B1437", bg: "#E4EAF5" },
   promo: { Icon: Tag, color: "#B8703F", bg: "#FBEBD1" },
   historia: { Icon: PartyPopper, color: "#2C9A5F", bg: "#E4F3EA" },
   resena: { Icon: Star, color: "#F5A623", bg: "#FDF3DC" },
@@ -807,7 +807,7 @@ function StarPicker({ value, onChange }) {
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <button key={n} type="button" onClick={() => onChange(n)}>
-          <Star size={22} color={n <= value ? "#2F6FED" : "#D1D5DB"} fill={n <= value ? "#2F6FED" : "none"} />
+          <Star size={22} color={n <= value ? "#2350F5" : "#D1D5DB"} fill={n <= value ? "#2350F5" : "none"} />
         </button>
       ))}
     </div>
@@ -846,7 +846,7 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
   const inputCls = "appearance-none text-sm px-3 py-2.5";
   const style = dark
     ? { borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }
-    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1220", border: "1px solid #DDE3EE" };
+    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1437", border: "1px solid #E3E7F1" };
 
   return (
     <div className={compact ? "flex gap-2" : "flex flex-col gap-2 sm:flex-row"}>
@@ -855,8 +855,8 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
         onChange={(e) => { setProvinciaId(e.target.value); setLocalidad(""); }}
         className={inputCls} style={{ ...style, flex: 1 }}
       >
-        <option value="" style={{ color: "#0B1220" }}>Provincia...</option>
-        {provincias.map((p) => <option key={p.id} value={p.id} style={{ color: "#0B1220" }}>{p.nombre}</option>)}
+        <option value="" style={{ color: "#0B1437" }}>Provincia...</option>
+        {provincias.map((p) => <option key={p.id} value={p.id} style={{ color: "#0B1437" }}>{p.nombre}</option>)}
       </select>
       <select
         value={localidad}
@@ -869,8 +869,8 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
         }}
         className={inputCls} style={{ ...style, flex: 1, opacity: !provinciaId || loadingLoc ? 0.6 : 1 }}
       >
-        <option value="" style={{ color: "#0B1220" }}>{loadingLoc ? "Cargando..." : "Localidad..."}</option>
-        {localidades.map((l) => <option key={l} value={l} style={{ color: "#0B1220" }}>{l}</option>)}
+        <option value="" style={{ color: "#0B1437" }}>{loadingLoc ? "Cargando..." : "Localidad..."}</option>
+        {localidades.map((l) => <option key={l} value={l} style={{ color: "#0B1437" }}>{l}</option>)}
       </select>
     </div>
   );
@@ -918,11 +918,11 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
   };
 
   return (
-    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
-      <div style={{ backgroundColor: "#0B2A54" }}>
+    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F5FA", display: "flex", flexDirection: "column" }}>
+      <div style={{ backgroundColor: "#0B1437" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
-          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2F6FED, #7FA8F5)" }}>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2350F5, #7FA8F5)" }}>
             <Search size={16} color="#fff" />
           </div>
           <div>
@@ -939,9 +939,9 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
               className="px-3.5 py-2.5 text-sm"
               style={{
                 maxWidth: "85%", borderRadius: 14,
-                backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
-                color: m.rol === "cliente" ? "#fff" : "#0B1220",
-                border: m.rol === "cliente" ? "none" : "1px solid #DDE3EE",
+                backgroundColor: m.rol === "cliente" ? "#2350F5" : "#fff",
+                color: m.rol === "cliente" ? "#fff" : "#0B1437",
+                border: m.rol === "cliente" ? "none" : "1px solid #E3E7F1",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
                 borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
               }}
@@ -959,16 +959,16 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
                       key={id}
                       onClick={() => onOpenBusiness(id)}
                       className="flex items-center gap-3 p-3 text-left bg-white"
-                      style={{ borderRadius: 12, border: "1px solid #DDE3EE", boxShadow: "0 3px 10px rgba(11,42,84,0.07)" }}
+                      style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 3px 10px rgba(11,20,55,0.07)" }}
                     >
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "#2F6FED" }}>
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "#2350F5" }}>
                         {c?.icon ? <c.icon size={18} color="#fff" /> : <Building2 size={18} color="#fff" />}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
-                        <span className="block text-xs truncate" style={{ color: "#475467" }}>{c?.label} · {biz.zone}</span>
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{biz.name}</span>
+                        <span className="block text-xs truncate" style={{ color: "#5B6482" }}>{c?.label} · {biz.zone}</span>
                       </span>
-                      <ChevronDown size={14} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
+                      <ChevronDown size={14} color="#2350F5" style={{ transform: "rotate(-90deg)" }} />
                     </button>
                   );
                 })}
@@ -978,26 +978,26 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #DDE3EE", color: "#475467" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E3E7F1", color: "#5B6482" }}>
               Buscando...
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ backgroundColor: "#fff", borderTop: "1px solid #DDE3EE" }}>
+      <div style={{ backgroundColor: "#fff", borderTop: "1px solid #E3E7F1" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
           <input
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Ej: quiero comer una hamburguesa..."
             className="flex-1 px-4 py-2.5 text-sm outline-none"
-            style={{ borderRadius: 24, border: "1px solid #DDE3EE", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+            style={{ borderRadius: 24, border: "1px solid #E3E7F1", backgroundColor: "#F3F5FA", color: "#0B1437" }}
           />
           <button
             onClick={enviar} disabled={sending || !text.trim()}
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2F6FED", opacity: sending || !text.trim() ? 0.5 : 1 }}
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2350F5", opacity: sending || !text.trim() ? 0.5 : 1 }}
           >
             <Send size={16} color="#fff" />
           </button>
@@ -1092,11 +1092,11 @@ function ChatScreen({ biz, onBack }) {
 
 
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
-          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", fontWeight: 700, fontSize: 14 }}>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "#2350F5", color: "#fff", fontWeight: 700, fontSize: 14 }}>
             {biz.name?.[0]?.toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -1119,9 +1119,9 @@ function ChatScreen({ biz, onBack }) {
               className="px-3.5 py-2.5 text-sm"
               style={{
                 maxWidth: "78%", borderRadius: 14,
-                backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
-                color: m.rol === "cliente" ? "#fff" : "#0B1220",
-                border: m.rol === "cliente" ? "none" : "1px solid #DDE3EE",
+                backgroundColor: m.rol === "cliente" ? "#2350F5" : "#fff",
+                color: m.rol === "cliente" ? "#fff" : "#0B1437",
+                border: m.rol === "cliente" ? "none" : "1px solid #E3E7F1",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
                 borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
               }}
@@ -1131,7 +1131,7 @@ function ChatScreen({ biz, onBack }) {
             {m.imagenes && (
               <div className="flex gap-2 mt-1.5 overflow-x-auto" style={{ maxWidth: "78%" }}>
                 {m.imagenes.map((url, i) => (
-                  <img key={i} src={url} alt="" className="object-cover shrink-0" style={{ width: 100, height: 100, borderRadius: 10, border: "1px solid #DDE3EE" }} />
+                  <img key={i} src={url} alt="" className="object-cover shrink-0" style={{ width: 100, height: 100, borderRadius: 10, border: "1px solid #E3E7F1" }} />
                 ))}
               </div>
             )}
@@ -1147,26 +1147,26 @@ function ChatScreen({ biz, onBack }) {
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #DDE3EE", color: "#475467" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E3E7F1", color: "#5B6482" }}>
               Escribiendo...
             </div>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #DDE3EE" }}>
+      <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #E3E7F1" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
           <input
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Escribí tu mensaje..."
             className="flex-1 px-4 py-2.5 text-sm outline-none"
-            style={{ borderRadius: 24, border: "1px solid #DDE3EE", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+            style={{ borderRadius: 24, border: "1px solid #E3E7F1", backgroundColor: "#F3F5FA", color: "#0B1437" }}
           />
           <button
             onClick={enviar} disabled={sending || !text.trim()}
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2F6FED", opacity: sending || !text.trim() ? 0.5 : 1 }}
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2350F5", opacity: sending || !text.trim() ? 0.5 : 1 }}
           >
             <Send size={16} color="#fff" />
           </button>
@@ -1221,7 +1221,7 @@ function TagInput({ values, onChange, placeholder }) {
       {values.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1.5">
           {values.map((v) => (
-            <span key={v} className="text-xs px-2 py-1 flex items-center gap-1" style={{ background: "#EDF0F6", borderRadius: 20 }}>
+            <span key={v} className="text-xs px-2 py-1 flex items-center gap-1" style={{ background: "#EEF0F6", borderRadius: 20 }}>
               {v}
               <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}><X size={10} /></button>
             </span>
@@ -1233,9 +1233,9 @@ function TagInput({ values, onChange, placeholder }) {
           value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={placeholder}
-          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#DDE3EE" }}
+          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#E3E7F1" }}
         />
-        <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#0B2A54", color: "#fff", borderRadius: 6 }}>
+        <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#0B1437", color: "#fff", borderRadius: 6 }}>
           Agregar
         </button>
       </div>
@@ -1245,16 +1245,16 @@ function TagInput({ values, onChange, placeholder }) {
 
 function ConfirmModal({ title, message, confirmLabel = "Confirmar", danger, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onCancel}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1437cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 24 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em", color: "#0B1220" }}>{title}</h3>
-        <p className="text-sm mt-2 mb-6" style={{ color: "#475467", lineHeight: 1.55 }}>{message}</p>
+        <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em", color: "#0B1437" }}>{title}</h3>
+        <p className="text-sm mt-2 mb-6" style={{ color: "#5B6482", lineHeight: 1.55 }}>{message}</p>
         <div className="flex gap-2.5 justify-end">
-          <button onClick={onCancel} className="text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 12, border: "1px solid #DDE3EE", background: "#fff", color: "#0B1220" }}>Cancelar</button>
+          <button onClick={onCancel} className="text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 12, border: "1px solid #E3E7F1", background: "#fff", color: "#0B1437" }}>Cancelar</button>
           <button
             onClick={onConfirm}
             className="text-sm font-semibold px-4 py-2.5"
-            style={{ borderRadius: 12, backgroundColor: danger ? "#C1443A" : "#0B2A54", color: "#fff" }}
+            style={{ borderRadius: 12, backgroundColor: danger ? "#C1443A" : "#0B1437", color: "#fff" }}
           >
             {confirmLabel}
           </button>
@@ -1275,7 +1275,7 @@ function Lightbox({ src, onClose }) {
 
 function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
   return (
-    <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center" style={{ background: "#0B1220cc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center" style={{ background: "#0B1437cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
@@ -1293,7 +1293,7 @@ function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
 
 function CategoryModal({ activeCat, onSelect, onClose }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#0B1220cc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#0B1437cc" }} onClick={onClose}>
       <div className="bg-white w-full sm:max-w-lg max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
@@ -1303,10 +1303,10 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
           <button
             onClick={() => onSelect(null)}
             className="flex flex-col items-center gap-1.5 py-3 px-2 text-center"
-            style={{ borderRadius: 12, backgroundColor: activeCat === null ? "#0B2A54" : "#F5F4EF" }}
+            style={{ borderRadius: 12, backgroundColor: activeCat === null ? "#0B1437" : "#F5F4EF" }}
           >
-            <Grid3x3 size={22} color={activeCat === null ? "#fff" : "#0B1220"} />
-            <span className="text-xs font-medium" style={{ color: activeCat === null ? "#fff" : "#0B1220" }}>Todos</span>
+            <Grid3x3 size={22} color={activeCat === null ? "#fff" : "#0B1437"} />
+            <span className="text-xs font-medium" style={{ color: activeCat === null ? "#fff" : "#0B1437" }}>Todos</span>
           </button>
           {CATEGORIES.map((c) => {
             const Icon = c.icon;
@@ -1318,7 +1318,7 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
                 style={{ borderRadius: 12, backgroundColor: active ? c.color : "#F5F4EF" }}
               >
                 <Icon size={22} color={active ? "#fff" : c.color} />
-                <span className="text-xs font-medium leading-tight" style={{ color: active ? "#fff" : "#0B1220" }}>{c.label}</span>
+                <span className="text-xs font-medium leading-tight" style={{ color: active ? "#fff" : "#0B1437" }}>{c.label}</span>
               </button>
             );
           })}
@@ -1349,13 +1349,13 @@ function WeekHoursEditor({ value, onChange }) {
                 <input
                   type="number" value={entry[0]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [Number(e.target.value), entry[1]] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#DDE3EE" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E3E7F1" }}
                 />
                 <span>a</span>
                 <input
                   type="number" value={entry[1]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [entry[0], Number(e.target.value)] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#DDE3EE" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E3E7F1" }}
                 />
               </>
             )}
@@ -1372,21 +1372,21 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
-  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B2A54";
+  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B1437";
   return (
     <div
       role="button" tabIndex={0}
       onClick={() => onOpen(biz.id)}
       onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
       className="bg-white flex flex-col overflow-hidden text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl"
-      style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 14px 30px -14px rgba(11,42,84,.22)" }}
+      style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}
     >
       <div className="relative">
         <Photo cat={biz.cat} src={biz.portada || biz.logo || null} height={176} radius="0px" iconSize={42} clickable={false} />
         <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: 84, background: "linear-gradient(to top, rgba(8,18,38,0.62), rgba(8,18,38,0))" }} />
 
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1" style={{ background: "#ffffffee", color: "#0B1220", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,.15)", backdropFilter: "blur(6px)" }}>
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1" style={{ background: "#ffffffee", color: "#0B1437", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,.15)", backdropFilter: "blur(6px)" }}>
             <span className="rounded-full" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label}
           </span>
           {discounts.length > 0 && (
@@ -1416,24 +1416,24 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
 
       <div className="px-4 pt-3.5 pb-3.5 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
-          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 17, letterSpacing: "-0.015em", color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
+          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 17, letterSpacing: "-0.015em", color: "#0B1437", lineHeight: 1.25 }}>{biz.name}</h3>
           {biz.featured && (
             <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 shrink-0" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
               <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
             </span>
           )}
         </div>
-        <p className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[13px] mt-1.5" style={{ color: "#475467" }}>
+        <p className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[13px] mt-1.5" style={{ color: "#5B6482" }}>
           {rating ? (
             <>
               <Star size={14} fill="#F5B83D" color="#F5B83D" />
-              <b style={{ color: "#0B1220" }}>{String(rating).replace(".", ",")}</b>
+              <b style={{ color: "#0B1437" }}>{String(rating).replace(".", ",")}</b>
               <span>({biz.reviews.length} {biz.reviews.length === 1 ? "reseña" : "reseñas"})</span>
             </>
           ) : <span>Sin reseñas todavía</span>}
-          {typeof distanceKm === "number" && <><span aria-hidden="true">·</span><span className="flex items-center gap-1 font-semibold" style={{ color: "#0B2A54" }}><Navigation size={12} /> A {fmtDistance(distanceKm)} de vos</span></>}
+          {typeof distanceKm === "number" && <><span aria-hidden="true">·</span><span className="flex items-center gap-1 font-semibold" style={{ color: "#0B1437" }}><Navigation size={12} /> A {fmtDistance(distanceKm)} de vos</span></>}
         </p>
-        <p className="text-sm mt-2 mb-3 flex-1" style={{ color: "#667085", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
+        <p className="text-sm mt-2 mb-3 flex-1" style={{ color: "#5B6482", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <OpenBadge weekHours={biz.weekHours} />
@@ -1442,16 +1442,16 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
               <Sparkles size={11} /> Nuevo
             </span>
           )}
-          {c?.label && <span className="text-[11px] font-semibold px-2.5 py-1" style={{ borderRadius: 20, background: "#F1F4FA", color: "#475467" }}>{c.label}</span>}
+          {c?.label && <span className="text-[11px] font-semibold px-2.5 py-1" style={{ borderRadius: 20, background: "#F1F4FA", color: "#5B6482" }}>{c.label}</span>}
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EDF0F6" }}>
+        <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EEF0F6" }}>
           <a
             href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
             onClick={(e) => { e.stopPropagation(); onTrack && onTrack(biz.id, "ubicacion"); }}
-            className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#667085" }}
+            className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#5B6482" }}
           >
-            <MapPin size={13} color="#2F6FED" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
+            <MapPin size={13} color="#2350F5" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
           </a>
           <span className="flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#64748B" }}>
             <Eye size={12} /> {fmtNum(biz.views)}
@@ -1534,14 +1534,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
     <button
       onClick={() => setTab(id)}
       className="flex-1 py-2 text-sm font-semibold transition-all"
-      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#475467", boxShadow: tab === id ? "0 1px 2px rgba(11,18,32,.10), 0 4px 10px -2px rgba(11,42,84,.14)" : "none" }}
+      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B1437" : "#5B6482", boxShadow: tab === id ? "0 1px 2px rgba(11,20,55,.10), 0 4px 10px -2px rgba(11,20,55,.14)" : "none" }}
     >
       {label}
     </button>
   );
 
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
       <div className="max-w-3xl mx-auto">
         {/* foto principal con botones flotantes */}
         <div style={{ position: "relative" }}>
@@ -1551,10 +1551,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             <BotonAtras onClick={onBack} tono="foto" />
             <div className="flex items-center gap-2.5">
               <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
-                <Share2 size={17} color="#0B2A54" />
+                <Share2 size={17} color="#0B1437" />
               </button>
               <button onClick={() => onToggleFavorite(biz.id)} aria-label="Favorito" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
-                <Heart size={18} color={isFavorite ? "#E5484D" : "#0B2A54"} fill={isFavorite ? "#E5484D" : "none"} />
+                <Heart size={18} color={isFavorite ? "#E5484D" : "#0B1437"} fill={isFavorite ? "#E5484D" : "none"} />
               </button>
             </div>
           </div>
@@ -1563,7 +1563,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               className="absolute flex items-center gap-1 text-xs font-bold px-2.5 py-1.5"
               style={{
                 bottom: 40, right: 16, borderRadius: 20, color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-                background: rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B2A54",
+                background: rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B1437",
               }}
             >
               <Trophy size={13} /> Top #{rank} en tu zona
@@ -1573,30 +1573,30 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
         <div className="px-4">
           {/* tarjeta de identidad del negocio */}
-          <div className="bg-white relative p-4 mb-4" style={{ borderRadius: 24, marginTop: -30, boxShadow: "0 12px 32px rgba(11,42,84,0.12)", border: "1px solid #E4E9F2" }}>
+          <div className="bg-white relative p-4 mb-4" style={{ borderRadius: 24, marginTop: -30, boxShadow: "0 12px 32px rgba(11,20,55,0.12)", border: "1px solid #E3E7F1" }}>
             <div className="flex items-start gap-3.5">
               <button
                 onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={cancelPress}
                 onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onTouchCancel={cancelPress}
                 className="flex items-center justify-center shrink-0 text-xl font-bold overflow-hidden"
                 style={{
-                  width: 66, height: 66, borderRadius: 22, background: c?.color || "#2F6FED", color: "#fff",
+                  width: 66, height: 66, borderRadius: 22, background: c?.color || "#2350F5", color: "#fff",
                   fontFamily: "var(--fuente-titulo)", marginTop: -36, border: "4px solid #fff",
-                  boxShadow: tieneHistorias ? "0 0 0 3px #2F6FED, 0 8px 18px rgba(11,42,84,.25)" : "0 8px 18px rgba(11,42,84,.25)",
+                  boxShadow: tieneHistorias ? "0 0 0 3px #2350F5, 0 8px 18px rgba(11,20,55,.25)" : "0 8px 18px rgba(11,20,55,.25)",
                 }}
               >
                 {biz.logo ? <img src={biz.logo} alt="" className="w-full h-full object-cover" /> : biz.name?.[0]?.toUpperCase()}
               </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 21, color: "#0B1220", lineHeight: 1.2 }}>{biz.name}</h1>
+                  <h1 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 21, color: "#0B1437", lineHeight: 1.2 }}>{biz.name}</h1>
                   {biz.featured && (
                     <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
                       <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
                     </span>
                   )}
                 </div>
-                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#475467" }}>
+                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#5B6482" }}>
                   <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
                 </p>
                 <div className="mt-1.5"><OpenBadge weekHours={biz.weekHours} /></div>
@@ -1606,14 +1606,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             <div className="grid grid-cols-3 gap-2 mt-4">
               {[
                 { Icon: Star, color: "#F5A623", valor: rating || "—", etiqueta: biz.reviews?.length ? `${biz.reviews.length} reseñas` : "Sin reseñas" },
-                { Icon: Eye, color: "#2F6FED", valor: fmtNum(biz.views), etiqueta: "visitas" },
+                { Icon: Eye, color: "#2350F5", valor: fmtNum(biz.views), etiqueta: "visitas" },
                 { Icon: Heart, color: "#E5484D", valor: fmtNum(biz.vecesFavorito || 0), etiqueta: "guardados" },
               ].map(({ Icon, color, valor, etiqueta }) => (
                 <div key={etiqueta} className="text-center py-2" style={{ borderRadius: 14, background: "#F6F9FD" }}>
-                  <span className="flex items-center justify-center gap-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>
+                  <span className="flex items-center justify-center gap-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1437" }}>
                     <Icon size={13} color={color} fill={Icon === Star || Icon === Heart ? color : "none"} /> {valor}
                   </span>
-                  <span className="block text-[10px] mt-0.5" style={{ color: "#475467" }}>{etiqueta}</span>
+                  <span className="block text-[10px] mt-0.5" style={{ color: "#5B6482" }}>{etiqueta}</span>
                 </div>
               ))}
             </div>
@@ -1626,7 +1626,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               const contacto = biz.phone && biz.acceptsWhatsapp
                 ? { Icon: MessageCircle, label: "WhatsApp", color: "#25A06A", href: `https://wa.me/${numeroWhatsapp(biz.phone)}`, track: "contacto" }
                 : biz.phone ? { Icon: Phone, label: "Llamar", color: "#2C9A5F", href: `tel:${soloDigitos(biz.phone)}`, track: "contacto" } : null;
-              const principales = [contacto, { Icon: Navigation, label: "Cómo llegar", color: "#2F6FED", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" }].filter(Boolean);
+              const principales = [contacto, { Icon: Navigation, label: "Cómo llegar", color: "#2350F5", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" }].filter(Boolean);
               const redes = [
                 biz.ig && handle(biz.ig) && { Icon: Instagram, label: "Instagram", color: "#C13584", href: `https://instagram.com/${handle(biz.ig)}`, track: "contacto" },
                 biz.tiktok && handle(biz.tiktok) && { Icon: Music2, label: "TikTok", color: "#111827", href: `https://www.tiktok.com/@${handle(biz.tiktok)}`, track: "contacto" },
@@ -1640,7 +1640,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   style={{ borderRadius: 14, background: `${color}14`, gridColumn: ancho ? "span 2" : undefined }}
                 >
                   <Icon size={17} color={color} />
-                  <span className="text-xs font-semibold" style={{ color: "#0B1220" }}>{label}</span>
+                  <span className="text-xs font-semibold" style={{ color: "#0B1437" }}>{label}</span>
                 </a>
               );
               return (
@@ -1663,13 +1663,13 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             <button
               onClick={() => setShowEmpleoDetalle(true)}
               className="w-full flex items-center gap-2.5 px-3.5 py-2.5 mb-4 text-left"
-              style={{ borderRadius: 10, background: "#E8F0FE", border: "1px solid #BFD6FB" }}
+              style={{ borderRadius: 10, background: "#EDF1FF", border: "1px solid #BFD6FB" }}
             >
-              <Briefcase size={16} color="#2F6FED" className="shrink-0" />
-              <span className="flex-1 text-xs" style={{ color: "#0B2A54" }}>
+              <Briefcase size={16} color="#2350F5" className="shrink-0" />
+              <span className="flex-1 text-xs" style={{ color: "#0B1437" }}>
                 <b>Buscan personal:</b> {biz.busquedaEmpleo.puesto}
               </span>
-              <ChevronDown size={13} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
+              <ChevronDown size={13} color="#2350F5" style={{ transform: "rotate(-90deg)" }} />
             </button>
           )}
           {showEmpleoDetalle && <EmpleoDetalleModal business={biz} onClose={() => setShowEmpleoDetalle(false)} />}
@@ -1691,7 +1691,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   {biz.services?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {biz.services.map((s) => (
-                        <span key={s} className="text-xs px-2 py-1" style={{ background: "#E8F0FE", color: "#0B2A54", borderRadius: 20 }}>{s}</span>
+                        <span key={s} className="text-xs px-2 py-1" style={{ background: "#EDF1FF", color: "#0B1437", borderRadius: 20 }}>{s}</span>
                       ))}
                     </div>
                   )}
@@ -1705,7 +1705,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#344054" }}>
+              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#2B3768" }}>
                 {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
                 {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
               </div>
@@ -1715,22 +1715,22 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
                     onClick={() => onTrack && onTrack(biz.id, "contacto")}
                     className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
-                    style={{ border: "1px solid #DDE3EE", color: "#0B1220", borderRadius: 10 }}
+                    style={{ border: "1px solid #E3E7F1", color: "#0B1437", borderRadius: 10 }}
                   >
                     <Instagram size={17} /> @{biz.ig}
                   </a>
                 </div>
               )}
 
-              <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" onClick={() => onTrack && onTrack(biz.id, "ubicacion")} className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
-                <MapPin size={15} /> {biz.loc} <span style={{ color: "#475467" }}>· ver en el mapa</span>
+              <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" onClick={() => onTrack && onTrack(biz.id, "ubicacion")} className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B1437" }}>
+                <MapPin size={15} /> {biz.loc} <span style={{ color: "#5B6482" }}>· ver en el mapa</span>
               </a>
 
               {puntos && (
                 <div className="mb-6 p-4" style={{ borderRadius: 18, background: "linear-gradient(135deg,#FFF6E0,#FDEBC4)", border: "1px solid #F5D9A0" }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <Coins size={17} color="#B7791F" />
-                    <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Puntos y recompensas</h2>
+                    <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>Puntos y recompensas</h2>
                   </div>
                   <p className="text-xs" style={{ color: "#5B4A1E" }}>
                     Ganás <b>1 punto</b> por cada <b>{fmtPesos(puntos.pesosPorPunto)}</b> que gastás en {biz.name}.
@@ -1744,7 +1744,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <button
                     onClick={() => onOpenPuntos && onOpenPuntos(biz.asistenteCodigoPublico)}
                     className="w-full text-sm font-semibold py-2.5 mt-3"
-                    style={{ borderRadius: 10, backgroundColor: "#0B2A54", color: "#fff" }}
+                    style={{ borderRadius: 10, backgroundColor: "#0B1437", color: "#fff" }}
                   >
                     Ver recompensas
                   </button>
@@ -1753,19 +1753,19 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
               {activeDiscounts(biz).length > 0 && (
                 <div className="mb-6">
-                  <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                  <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>
                     <Tag size={16} /> Descuentos vigentes
                   </h2>
                   <div className="flex flex-col gap-2">
                     {activeDiscounts(biz).map((d) => (
                       <div key={d.id} className="p-4" style={{ borderRadius: 18, border: "1px solid #F2C98E", background: "linear-gradient(135deg,#FFF3DC,#FBE3BC)" }}>
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{d.title}</h3>
-                          {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B2A54", color: "#2F6FED", borderRadius: 20 }}>{d.percent} OFF</span>}
+                          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{d.title}</h3>
+                          {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B1437", color: "#2350F5", borderRadius: 20 }}>{d.percent} OFF</span>}
                         </div>
                         {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
                         {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "#475467" }}>Válido hasta el {fmtDate(d.endDate)}</p>
+                        <p className="text-[11px] mt-1" style={{ color: "#5B6482" }}>Válido hasta el {fmtDate(d.endDate)}</p>
                       </div>
                     ))}
                   </div>
@@ -1773,13 +1773,13 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               )}
 
               <div className="mb-2">
-                <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
+                <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>
                   <Clock size={16} /> Horarios de atención
                 </h2>
-                <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+                <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
                   {DAYS.map((day, i) => (
                     <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
-                      style={{ borderTop: i === 0 ? "none" : "1px solid #EDF0F6", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
+                      style={{ borderTop: i === 0 ? "none" : "1px solid #EEF0F6", backgroundColor: i === todayIdx ? "#EDF1FF" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1437" }}
                     >
                       <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
                       <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#1F2937" }}>{fmtHours(biz.weekHours[i])}</span>
@@ -1792,18 +1792,18 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
           {tab === "opiniones" && (
             <div className="pb-6">
-              <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
-                <p className="text-sm font-semibold mb-2" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
+              <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
+                <p className="text-sm font-semibold mb-2" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 <input
                   value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
-                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                 />
                 <textarea
                   value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
-                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                 />
-                <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
+                <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 8 }}>
                   Publicar reseña
                 </button>
               </div>
@@ -1811,23 +1811,23 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               {biz.reviews?.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {[...biz.reviews].reverse().map((r) => (
-                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
+                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{r.name}</span>
-                        <span className="text-xs" style={{ color: "#475467" }}>{fmtDate(r.date)}</span>
+                        <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <Star key={n} size={13} fill={n <= r.rating ? "#2F6FED" : "none"} color={n <= r.rating ? "#2F6FED" : "#D1D5DB"} />
+                          <Star key={n} size={13} fill={n <= r.rating ? "#2350F5" : "none"} color={n <= r.rating ? "#2350F5" : "#D1D5DB"} />
                         ))}
                       </div>
                       <p className="text-sm mb-2" style={{ color: "#1F2937" }}>{r.text}</p>
 
                       {r.respuesta ? (
-                        <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F6FB", borderLeft: "3px solid #2F6FED" }}>
+                        <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F5FA", borderLeft: "3px solid #2350F5" }}>
                           <div className="flex items-center gap-1.5 mb-1">
                             {r.respuesta.esDueño && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#E8F0FE", color: "#2F6FED", borderRadius: 6 }}>Respuesta del dueño</span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#EDF1FF", color: "#2350F5", borderRadius: 6 }}>Respuesta del dueño</span>
                             )}
                             <span className="text-[11px]" style={{ color: "#64748B" }}>{fmtDate(r.respuesta.fecha)}</span>
                           </div>
@@ -1838,22 +1838,22 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                           <textarea
                             value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={2}
                             placeholder="Escribí una respuesta..."
-                            className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+                            className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                           />
                           <div className="flex gap-2">
                             <button
                               onClick={() => { if (replyText.trim()) { onReplyReview(biz.id, r.id, replyText.trim(), esDueño); setReplyingId(null); setReplyText(""); } }}
-                              className="text-xs font-semibold px-3 py-1.5" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 6 }}
+                              className="text-xs font-semibold px-3 py-1.5" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 6 }}
                             >
                               Responder
                             </button>
-                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#475467" }}>
+                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#5B6482" }}>
                               Cancelar
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setReplyingId(r.id); setReplyText(""); }} className="text-xs font-semibold" style={{ color: "#2F6FED" }}>
+                        <button onClick={() => { setReplyingId(r.id); setReplyText(""); }} className="text-xs font-semibold" style={{ color: "#2350F5" }}>
                           Responder
                         </button>
                       )}
@@ -1861,7 +1861,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="text-sm" style={{ color: "#475467" }}>Sé el primero en dejar una reseña.</p>
+                <p className="text-sm" style={{ color: "#5B6482" }}>Sé el primero en dejar una reseña.</p>
               )}
             </div>
           )}
@@ -1875,7 +1875,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#475467" }}>
+                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#5B6482" }}>
                   <ImageIcon size={15} /> Este negocio todavía no cargó fotos
                 </p>
               )}
@@ -1889,7 +1889,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               <button
                 onClick={() => onOpenChat(biz)}
                 className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
-                style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(47,111,237,.35)" }}
+                style={{ background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(35,80,245,.35)" }}
               >
                 <Sparkles size={16} /> Hablar con el asistente
               </button>
@@ -1908,8 +1908,8 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
   return (
     <div>
       <BotonVolver texto={`Volver a ${volverA}`} onClick={onBack} />
-      <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
-      {desc && <p className="text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</p>}
+      <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>{titulo}</h2>
+      {desc && <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</p>}
       <div className="mt-4">{children}</div>
     </div>
   );
@@ -1918,19 +1918,23 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
 // Barra de arriba de Chats, Herramientas y Ajustes: solo el título (son pestañas, como Inicio, no llevan flecha)
 
 /* Icono de Apariencia: mitad sol, mitad luna */
-function IconoSolLuna({ size = 20 }) {
+function IconoSolLuna({ size = 22 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <defs>
-        <clipPath id="zonaMitadSol"><rect x="0" y="0" width="12" height="24" /></clipPath>
-        <clipPath id="zonaMitadLuna"><rect x="12" y="0" width="12" height="24" /></clipPath>
+        <clipPath id="zmIzq"><rect x="0" y="0" width="12" height="24" /></clipPath>
+        <clipPath id="zmDer"><rect x="12" y="0" width="12" height="24" /></clipPath>
+        <linearGradient id="zmSol" x1="0" y1="3" x2="0" y2="21" gradientUnits="userSpaceOnUse"><stop stopColor="#FBBF24" /><stop offset="1" stopColor="#F59E0B" /></linearGradient>
+        <linearGradient id="zmLuna" x1="0" y1="3" x2="0" y2="21" gradientUnits="userSpaceOnUse"><stop stopColor="#6366F1" /><stop offset="1" stopColor="#4338CA" /></linearGradient>
       </defs>
-      <g clipPath="url(#zonaMitadSol)" stroke="#E08A12">
-        <circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m6.34 17.66-1.41 1.41" /><path d="M2 12h2" />
+      <circle cx="12" cy="12" r="6.6" fill="url(#zmSol)" clipPath="url(#zmIzq)" />
+      <circle cx="12" cy="12" r="6.6" fill="url(#zmLuna)" clipPath="url(#zmDer)" />
+      <g stroke="#F59E0B" strokeWidth="1.9" strokeLinecap="round" clipPath="url(#zmIzq)">
+        <path d="M12 1.6v1.8" /><path d="M12 20.6v1.8" /><path d="M4.6 4.6l1.3 1.3" /><path d="M4.6 19.4l1.3-1.3" /><path d="M1.6 12h1.8" />
       </g>
-      <g clipPath="url(#zonaMitadLuna)" stroke="#5B5BD6">
-        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-      </g>
+      <path d="M15.2 9.2a3.4 3.4 0 1 0 3.2 4.6 3 3 0 0 1-3.2-4.6Z" fill="#fff" opacity=".95" />
+      <circle cx="19.2" cy="8.4" r=".9" fill="#C7D2FE" /><circle cx="17.4" cy="17.6" r=".7" fill="#C7D2FE" />
+      <path d="M12 5.4v13.2" stroke="#fff" strokeWidth="1.1" opacity=".9" />
     </svg>
   );
 }
@@ -1938,24 +1942,35 @@ function IconoSolLuna({ size = 20 }) {
 /* Montañas de la portada: ilustración propia, en capas, que se desvanece hacia el texto */
 function PaisajePortada() {
   return (
-    <svg aria-hidden="true" className="absolute pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMax slice"
-      style={{ right: 0, bottom: 0, width: "100%", height: "100%", WebkitMaskImage: "linear-gradient(to right, transparent 12%, #000 62%)", maskImage: "linear-gradient(to right, transparent 12%, #000 62%)" }}>
-      <circle cx="318" cy="52" r="34" fill="#ffffff" opacity=".07" />
-      <path d="M0 150 L40 120 L70 138 L120 85 L150 110 L190 70 L235 118 L270 92 L320 130 L360 100 L400 125 L400 220 L0 220Z" fill="#9DBBF2" opacity=".26" />
-      <path d="M120 85 L107 101 L116 97 L121 105 L128 97 L135 102Z M190 70 L176 90 L186 85 L191 94 L199 86 L206 92Z M270 92 L259 106 L267 103 L271 110 L277 103 L283 107Z" fill="#fff" opacity=".42" />
-      <path d="M0 175 L50 140 L95 160 L150 120 L205 160 L255 135 L310 165 L360 140 L400 158 L400 220 L0 220Z" fill="#4C7FD6" opacity=".34" />
-      <path d="M0 200 L60 172 L120 190 L190 160 L260 188 L330 168 L400 192 L400 220 L0 220Z" fill="#0F3470" opacity=".6" />
+    <svg aria-hidden="true" className="absolute pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMax slice" style={{ right: 0, bottom: 0, width: "100%", height: "100%", WebkitMaskImage: "linear-gradient(to right, transparent 10%, #000 58%)", maskImage: "linear-gradient(to right, transparent 10%, #000 58%)" }}>
+      <defs>
+        <linearGradient id="zmL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8fb0ee" /><stop offset=".6" stopColor="#4a6fc4" /><stop offset="1" stopColor="#2a4a9a" /></linearGradient>
+        <linearGradient id="zmM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3c5fb8" /><stop offset="1" stopColor="#1b3478" /></linearGradient>
+        <linearGradient id="zmC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1f3a82" /><stop offset="1" stopColor="#0e2054" /></linearGradient>
+        <linearGradient id="zmF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f2258" /><stop offset="1" stopColor="#0a1538" /></linearGradient>
+        <linearGradient id="zmB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#9db9f2" stopOpacity="0" /><stop offset="1" stopColor="#9db9f2" stopOpacity=".38" /></linearGradient>
+        <filter id="zmR" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" /><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .09 0" /></filter>
+      </defs>
+      <circle cx="213" cy="32" r="0.5" fill="#fff" opacity="0.77"/><circle cx="309" cy="7" r="0.7" fill="#fff" opacity="0.49"/><circle cx="372" cy="41" r="0.9" fill="#fff" opacity="0.58"/><circle cx="278" cy="60" r="0.5" fill="#fff" opacity="0.70"/><circle cx="348" cy="11" r="0.9" fill="#fff" opacity="0.72"/><circle cx="384" cy="31" r="0.5" fill="#fff" opacity="0.56"/><circle cx="388" cy="61" r="0.9" fill="#fff" opacity="0.69"/><circle cx="164" cy="66" r="0.7" fill="#fff" opacity="0.51"/><circle cx="248" cy="26" r="0.9" fill="#fff" opacity="0.51"/><circle cx="311" cy="42" r="0.7" fill="#fff" opacity="0.71"/><circle cx="333" cy="8" r="0.5" fill="#fff" opacity="0.67"/><circle cx="305" cy="32" r="0.9" fill="#fff" opacity="0.56"/><circle cx="370" cy="54" r="0.5" fill="#fff" opacity="0.67"/><circle cx="327" cy="26" r="0.5" fill="#fff" opacity="0.59"/><circle cx="267" cy="68" r="0.5" fill="#fff" opacity="0.37"/><circle cx="174" cy="58" r="0.7" fill="#fff" opacity="0.43"/><circle cx="385" cy="22" r="0.9" fill="#fff" opacity="0.41"/><circle cx="303" cy="35" r="0.5" fill="#fff" opacity="0.82"/><circle cx="237" cy="16" r="0.7" fill="#fff" opacity="0.59"/><circle cx="314" cy="35" r="0.7" fill="#fff" opacity="0.70"/><circle cx="317" cy="29" r="0.9" fill="#fff" opacity="0.64"/><circle cx="394" cy="67" r="0.9" fill="#fff" opacity="0.42"/><circle cx="268" cy="38" r="0.7" fill="#fff" opacity="0.78"/><circle cx="303" cy="29" r="0.7" fill="#fff" opacity="0.69"/><circle cx="328" cy="51" r="0.5" fill="#fff" opacity="0.70"/><circle cx="335" cy="18" r="0.5" fill="#fff" opacity="0.63"/><circle cx="310" cy="19" r="0.9" fill="#fff" opacity="0.37"/><circle cx="165" cy="23" r="0.7" fill="#fff" opacity="0.36"/><circle cx="159" cy="20" r="0.7" fill="#fff" opacity="0.39"/><circle cx="171" cy="49" r="0.9" fill="#fff" opacity="0.48"/><circle cx="390" cy="37" r="0.7" fill="#fff" opacity="0.47"/><circle cx="234" cy="54" r="0.5" fill="#fff" opacity="0.79"/><circle cx="260" cy="59" r="0.5" fill="#fff" opacity="0.59"/><circle cx="333" cy="31" r="0.5" fill="#fff" opacity="0.55"/>
+      <path d="M0.0 87.6 L3.1 89.5 L6.2 92.2 L9.4 93.3 L12.5 95.7 L15.6 95.3 L18.8 96.5 L21.9 97.6 L25.0 97.6 L28.1 97.2 L31.2 97.9 L34.4 99.0 L37.5 99.8 L40.6 100.6 L43.8 101.6 L46.9 100.2 L50.0 100.0 L53.1 101.3 L56.2 101.8 L59.4 100.3 L62.5 100.1 L65.6 100.6 L68.8 100.6 L71.9 99.0 L75.0 98.7 L78.1 99.5 L81.2 100.6 L84.4 100.3 L87.5 101.0 L90.6 102.0 L93.8 103.8 L96.9 106.8 L100.0 108.0 L103.1 107.2 L106.2 105.2 L109.4 104.5 L112.5 104.4 L115.6 105.5 L118.8 105.2 L121.9 105.8 L125.0 107.4 L128.1 107.1 L131.2 107.1 L134.4 109.1 L137.5 109.9 L140.6 111.1 L143.8 111.8 L146.9 111.1 L150.0 111.9 L153.1 112.5 L156.2 111.2 L159.4 110.7 L162.5 111.2 L165.6 112.7 L168.8 115.1 L171.9 116.3 L175.0 116.5 L178.1 117.3 L181.2 118.8 L184.4 120.0 L187.5 121.9 L190.6 124.4 L193.8 128.4 L196.9 129.2 L200.0 131.6 L203.1 131.9 L206.2 131.9 L209.4 130.4 L212.5 129.8 L215.6 129.6 L218.8 129.0 L221.9 130.0 L225.0 131.6 L228.1 129.2 L231.2 127.0 L234.4 126.5 L237.5 124.4 L240.6 124.9 L243.8 125.4 L246.9 124.6 L250.0 123.5 L253.1 123.9 L256.2 122.9 L259.4 122.1 L262.5 122.4 L265.6 122.4 L268.8 123.7 L271.9 123.5 L275.0 121.7 L278.1 121.2 L281.2 119.5 L284.4 118.2 L287.5 117.9 L290.6 115.9 L293.8 114.9 L296.9 115.4 L300.0 114.9 L303.1 115.4 L306.2 114.4 L309.4 113.1 L312.5 112.9 L315.6 112.5 L318.8 110.5 L321.9 109.1 L325.0 106.3 L328.1 106.5 L331.2 106.3 L334.4 107.0 L337.5 108.0 L340.6 106.9 L343.8 107.3 L346.9 107.5 L350.0 109.4 L353.1 110.3 L356.2 109.4 L359.4 109.5 L362.5 110.5 L365.6 111.5 L368.8 111.7 L371.9 110.3 L375.0 109.7 L378.1 109.2 L381.2 107.6 L384.4 105.8 L387.5 103.6 L390.6 101.0 L393.8 99.2 L396.9 97.8 L400.0 97.5 L400 220 L0 220Z" fill="url(#zmL)" opacity=".85" />
+      <path d="" fill="#fff" opacity=".55" />
+      <rect x="0" y="80" width="400" height="70" fill="url(#zmB)" />
+      <path d="M0.0 145.6 L3.1 143.3 L6.2 142.3 L9.4 141.6 L12.5 140.0 L15.6 139.1 L18.8 139.6 L21.9 138.0 L25.0 136.1 L28.1 136.1 L31.2 136.3 L34.4 137.2 L37.5 139.0 L40.6 139.0 L43.8 138.3 L46.9 137.9 L50.0 137.4 L53.1 137.5 L56.2 137.2 L59.4 137.1 L62.5 135.6 L65.6 134.0 L68.8 133.1 L71.9 129.9 L75.0 128.2 L78.1 128.0 L81.2 128.4 L84.4 128.0 L87.5 127.1 L90.6 126.2 L93.8 126.3 L96.9 124.7 L100.0 124.2 L103.1 124.4 L106.2 123.3 L109.4 122.1 L112.5 120.5 L115.6 119.6 L118.8 118.8 L121.9 117.4 L125.0 114.6 L128.1 113.2 L131.2 112.3 L134.4 111.9 L137.5 110.9 L140.6 109.6 L143.8 109.2 L146.9 107.6 L150.0 106.3 L153.1 105.7 L156.2 104.1 L159.4 102.5 L162.5 99.6 L165.6 100.1 L168.8 99.5 L171.9 98.1 L175.0 97.1 L178.1 96.5 L181.2 95.7 L184.4 94.9 L187.5 94.8 L190.6 95.4 L193.8 97.2 L196.9 97.5 L200.0 97.8 L203.1 98.7 L206.2 98.5 L209.4 98.3 L212.5 97.0 L215.6 98.7 L218.8 99.6 L221.9 101.5 L225.0 101.8 L228.1 103.7 L231.2 106.2 L234.4 107.5 L237.5 109.9 L240.6 110.4 L243.8 111.1 L246.9 111.8 L250.0 113.1 L253.1 112.7 L256.2 113.2 L259.4 112.9 L262.5 112.9 L265.6 112.6 L268.8 111.9 L271.9 111.1 L275.0 110.2 L278.1 110.0 L281.2 110.3 L284.4 112.2 L287.5 113.0 L290.6 113.3 L293.8 112.1 L296.9 111.1 L300.0 110.3 L303.1 108.9 L306.2 108.8 L309.4 105.8 L312.5 104.2 L315.6 105.3 L318.8 105.1 L321.9 103.7 L325.0 103.7 L328.1 103.6 L331.2 102.8 L334.4 101.7 L337.5 100.4 L340.6 98.7 L343.8 97.6 L346.9 97.0 L350.0 95.5 L353.1 94.4 L356.2 94.9 L359.4 93.3 L362.5 92.8 L365.6 92.3 L368.8 91.8 L371.9 90.4 L375.0 90.4 L378.1 91.5 L381.2 91.6 L384.4 92.0 L387.5 93.3 L390.6 93.3 L393.8 94.4 L396.9 93.2 L400.0 93.5 L400 220 L0 220Z" fill="url(#zmM)" opacity=".92" />
+      <rect x="0" y="120" width="400" height="60" fill="url(#zmB)" opacity=".7" />
+      <path d="M0.0 175.8 L3.1 176.0 L6.2 177.1 L9.4 177.1 L12.5 177.1 L15.6 178.2 L18.8 178.7 L21.9 178.9 L25.0 178.3 L28.1 179.6 L31.2 180.4 L34.4 182.1 L37.5 182.7 L40.6 183.8 L43.8 184.8 L46.9 186.0 L50.0 186.2 L53.1 184.8 L56.2 184.5 L59.4 184.0 L62.5 184.1 L65.6 183.3 L68.8 182.5 L71.9 180.9 L75.0 179.8 L78.1 180.6 L81.2 180.8 L84.4 180.7 L87.5 180.3 L90.6 180.9 L93.8 181.4 L96.9 182.0 L100.0 181.7 L103.1 182.4 L106.2 183.0 L109.4 182.9 L112.5 183.2 L115.6 182.5 L118.8 182.0 L121.9 182.4 L125.0 182.1 L128.1 183.6 L131.2 184.1 L134.4 183.8 L137.5 184.3 L140.6 184.9 L143.8 184.7 L146.9 184.3 L150.0 182.9 L153.1 182.9 L156.2 182.9 L159.4 181.9 L162.5 180.8 L165.6 180.8 L168.8 181.6 L171.9 182.0 L175.0 182.3 L178.1 182.6 L181.2 182.8 L184.4 182.6 L187.5 182.1 L190.6 180.3 L193.8 179.7 L196.9 179.4 L200.0 178.1 L203.1 178.2 L206.2 178.4 L209.4 177.5 L212.5 176.8 L215.6 176.8 L218.8 176.1 L221.9 174.9 L225.0 173.7 L228.1 173.2 L231.2 172.8 L234.4 172.9 L237.5 172.5 L240.6 172.1 L243.8 172.7 L246.9 173.7 L250.0 174.7 L253.1 174.6 L256.2 174.7 L259.4 175.5 L262.5 175.1 L265.6 175.9 L268.8 175.6 L271.9 175.5 L275.0 175.9 L278.1 177.0 L281.2 178.1 L284.4 178.1 L287.5 179.0 L290.6 179.4 L293.8 180.0 L296.9 180.9 L300.0 181.0 L303.1 180.7 L306.2 179.5 L309.4 179.7 L312.5 180.0 L315.6 179.0 L318.8 178.5 L321.9 176.6 L325.0 175.5 L328.1 174.6 L331.2 173.5 L334.4 174.0 L337.5 173.4 L340.6 173.1 L343.8 173.7 L346.9 173.4 L350.0 172.5 L353.1 171.4 L356.2 171.4 L359.4 171.2 L362.5 171.7 L365.6 170.8 L368.8 170.6 L371.9 170.7 L375.0 170.3 L378.1 170.2 L381.2 170.4 L384.4 169.6 L387.5 169.2 L390.6 167.8 L393.8 166.2 L396.9 165.0 L400.0 164.8 L400 220 L0 220Z" fill="url(#zmC)" />
+      <path d="M0.0 203.4 L3.1 203.5 L6.2 203.7 L9.4 203.7 L12.5 203.2 L15.6 202.6 L18.8 202.2 L21.9 201.8 L25.0 201.4 L28.1 201.2 L31.2 200.9 L34.4 200.3 L37.5 199.7 L40.6 199.4 L43.8 199.0 L46.9 198.8 L50.0 199.2 L53.1 199.0 L56.2 198.4 L59.4 198.4 L62.5 197.9 L65.6 197.1 L68.8 196.8 L71.9 196.1 L75.0 195.4 L78.1 195.3 L81.2 194.9 L84.4 195.2 L87.5 195.7 L90.6 195.0 L93.8 194.7 L96.9 194.4 L100.0 194.5 L103.1 194.7 L106.2 194.8 L109.4 194.4 L112.5 194.6 L115.6 194.7 L118.8 194.2 L121.9 193.7 L125.0 192.8 L128.1 193.2 L131.2 193.4 L134.4 193.3 L137.5 192.8 L140.6 192.9 L143.8 192.8 L146.9 193.2 L150.0 193.7 L153.1 193.8 L156.2 193.7 L159.4 193.7 L162.5 193.7 L165.6 194.3 L168.8 194.4 L171.9 194.6 L175.0 194.4 L178.1 194.5 L181.2 194.8 L184.4 195.3 L187.5 195.2 L190.6 195.2 L193.8 194.8 L196.9 194.6 L200.0 194.0 L203.1 193.5 L206.2 192.7 L209.4 192.3 L212.5 192.1 L215.6 192.0 L218.8 191.3 L221.9 191.7 L225.0 191.6 L228.1 191.3 L231.2 190.7 L234.4 191.0 L237.5 190.9 L240.6 190.0 L243.8 188.8 L246.9 188.3 L250.0 187.9 L253.1 188.1 L256.2 187.9 L259.4 187.6 L262.5 187.9 L265.6 187.3 L268.8 187.0 L271.9 186.5 L275.0 186.0 L278.1 185.3 L281.2 185.2 L284.4 184.6 L287.5 184.1 L290.6 184.0 L293.8 183.6 L296.9 183.8 L300.0 183.9 L303.1 183.6 L306.2 183.5 L309.4 184.0 L312.5 183.9 L315.6 184.2 L318.8 184.2 L321.9 184.6 L325.0 185.1 L328.1 185.3 L331.2 185.3 L334.4 185.1 L337.5 184.7 L340.6 184.6 L343.8 184.5 L346.9 183.8 L350.0 183.2 L353.1 183.7 L356.2 183.6 L359.4 183.4 L362.5 183.1 L365.6 183.2 L368.8 183.1 L371.9 183.7 L375.0 184.1 L378.1 183.8 L381.2 183.0 L384.4 182.7 L387.5 183.1 L390.6 183.6 L393.8 184.0 L396.9 184.1 L400.0 183.9 L400 220 L0 220Z" fill="url(#zmF)" />
+      <rect width="400" height="220" filter="url(#zmR)" />
     </svg>
   );
 }
 
 function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, buscador }) {
   return (
-    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 62%,#1F55B3 130%)", borderRadius: "0 0 28px 28px", boxShadow: "0 12px 28px -14px rgba(5,20,45,.6)" }}>
+    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", borderRadius: 0 }}>
       <div className="max-w-6xl mx-auto px-4 pt-3 pb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 11, background: "linear-gradient(135deg,#2F6FED,#7FA8F5)", boxShadow: "0 4px 12px rgba(47,111,237,.5)" }}>
+            <span className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 11, background: "linear-gradient(135deg,#2350F5,#7FA8F5)", boxShadow: "0 4px 12px rgba(35,80,245,.5)" }}>
               <MapPin size={17} color="#fff" />
             </span>
             <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
@@ -1966,7 +1981,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
             <button onClick={onOpenNotificaciones} aria-label="Notificaciones" className="relative flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
               <Bell size={17} color="#fff" />
               {notifSinLeer > 0 && (
-                <span className="absolute flex items-center justify-center text-[9px] font-bold" style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B2A54" }}>
+                <span className="absolute flex items-center justify-center text-[9px] font-bold" style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B1437" }}>
                   {notifSinLeer > 9 ? "9+" : notifSinLeer}
                 </span>
               )}
@@ -2001,7 +2016,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   return (
     <>
       {/* barra superior fija: menú, logo y notificaciones */}
-      <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
+      <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B1437", boxShadow: "0 2px 14px rgba(11,20,55,0.25)" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -2012,7 +2027,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               <Menu size={18} color="#fff" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2F6FED,#7FA8F5)", boxShadow: "0 4px 12px rgba(47,111,237,.5)" }}>
+              <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2350F5,#7FA8F5)", boxShadow: "0 4px 12px rgba(35,80,245,.5)" }}>
                 <MapPin size={16} color="#fff" />
               </span>
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
@@ -2029,7 +2044,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             {notifSinLeer > 0 && (
               <span
                 className="absolute flex items-center justify-center text-[9px] font-bold"
-                style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B2A54" }}
+                style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B1437" }}
               >
                 {notifSinLeer > 9 ? "9+" : notifSinLeer}
               </span>
@@ -2039,7 +2054,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       </div>
 
       {/* portada: saludo, buscador y zona */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 58%,#1F55B3 125%)" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
         <PaisajePortada />
@@ -2052,15 +2067,15 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           </p>
 
           <div className="flex items-center gap-2.5 bg-white px-4 py-3" style={{ borderRadius: 16, boxShadow: "0 10px 28px rgba(5,20,45,0.35)" }}>
-            <Search size={18} color="#2F6FED" />
+            <Search size={18} color="#2350F5" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
               onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
               placeholder="Buscá un negocio, producto o servicio..."
-              className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1220" }}
+              className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1437" }}
             />
-            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#475467" /></button>}
+            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#5B6482" /></button>}
           </div>
 
           {!query && historial.length > 0 && (
@@ -2099,18 +2114,18 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       )}
 
       {showZoneModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={() => setShowZoneModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#0B143766" }} onClick={() => setShowZoneModal(false)}>
           <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14, boxShadow: "0 12px 40px #00000033" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
-              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#475467" /></button>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1437" }}>¿Dónde estás?</span>
+              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#5B6482" /></button>
             </div>
             <ZonePicker value={pendingZone} onChange={setPendingZone} />
             <button
               onClick={() => { if (pendingZone) { setZone(pendingZone); setShowZoneModal(false); } }}
               disabled={!pendingZone}
               className="w-full text-sm font-semibold py-3 mt-4"
-              style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: pendingZone ? 1 : 0.5 }}
+              style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10, opacity: pendingZone ? 1 : 0.5 }}
             >
               Confirmar ubicación
             </button>
@@ -2120,17 +2135,17 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
 
       {/* categorías: tarjeta flotante que se superpone a la portada */}
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
-        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 12px 32px rgba(11,42,84,0.12)" }}>
+        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Categorías</span>
-            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2F6FED", background: "#E8F0FE", borderRadius: 20 }}>Ver todas</button>
+            <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>Categorías</span>
+            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2350F5", background: "#EDF1FF", borderRadius: 20 }}>Ver todas</button>
           </div>
           <div className="flex gap-3.5 overflow-x-auto pb-1">
             <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2F6FED,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2F6FED55" : "none", transition: "all .2s" }}>
-                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2F6FED"} />
+              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2350F5,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2350F555" : "none", transition: "all .2s" }}>
+                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2350F5"} />
               </span>
-              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#344054" }}>Todos</span>
+              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B1437" : "#2B3768" }}>Todos</span>
             </button>
             {QUICK_CATEGORIES.map((c) => {
               const Icon = c.icon;
@@ -2140,7 +2155,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
                   <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: active ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
                     <Icon size={21} color={active ? "#fff" : c.color} />
                   </span>
-                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#344054" }}>{c.label.split(" ")[0]}</span>
+                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B1437" : "#2B3768" }}>{c.label.split(" ")[0]}</span>
                 </button>
               );
             })}
@@ -2153,23 +2168,23 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
 
 function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner }) {
   const Item = ({ Icon, label, onClick, danger }) => (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>
-      <Icon size={18} color={danger ? "#9A3B34" : "#0B2A54"} />
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1437" }}>
+      <Icon size={18} color={danger ? "#9A3B34" : "#0B1437"} />
       <span className="text-sm font-medium">{label}</span>
     </button>
   );
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
-      <div className="absolute inset-0" style={{ background: "#0B122066" }} />
+      <div className="absolute inset-0" style={{ background: "#0B143766" }} />
       <div
         className="absolute top-0 left-0 bottom-0 bg-white flex flex-col"
         style={{ width: "min(78vw, 300px)", boxShadow: "6px 0 30px #00000033" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div data-conservar-color className="p-5 pt-7" style={{ background: "linear-gradient(160deg, #0B2A54, #1F55B3)" }}>
+        <div data-conservar-color className="p-5 pt-7" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
           <div
             className="flex items-center justify-center mb-3"
-            style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, #2F6FED, #7FA8F5)", boxShadow: "0 8px 20px rgba(47,111,237,.45)" }}
+            style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, #2350F5, #7FA8F5)", boxShadow: "0 8px 20px rgba(35,80,245,.45)" }}
           >
             <MapPin size={26} color="#fff" />
           </div>
@@ -2180,7 +2195,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
           <Item Icon={Settings} label="Ajustes" onClick={onAjustes} />
           <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
-          <div style={{ borderTop: "1px solid #EDF0F6", margin: "8px 0" }} />
+          <div style={{ borderTop: "1px solid #EEF0F6", margin: "8px 0" }} />
           <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
             const data = { title: "Mi Zona", text: "Descubrí negocios de tu zona con Mi Zona", url: window.location.origin };
             if (navigator.share) { try { await navigator.share(data); } catch {} }
@@ -2190,7 +2205,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onAyuda} />
           <Item Icon={Send} label="Soporte" onClick={onSoporte} />
         </div>
-        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#475467", borderTop: "1px solid #EDF0F6" }}>
+        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#5B6482", borderTop: "1px solid #EEF0F6" }}>
           <X size={13} /> Cerrar menú
         </button>
       </div>
@@ -2229,10 +2244,10 @@ function IlustracionChats() {
   return (
     <svg width="168" height="132" viewBox="0 0 168 132" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="zcA" x1="20" y1="14" x2="96" y2="84" gradientUnits="userSpaceOnUse"><stop stopColor="#6FA0FF" /><stop offset="1" stopColor="#2F6FED" /></linearGradient>
+        <linearGradient id="zcA" x1="20" y1="14" x2="96" y2="84" gradientUnits="userSpaceOnUse"><stop stopColor="#6FA0FF" /><stop offset="1" stopColor="#2350F5" /></linearGradient>
         <linearGradient id="zcB" x1="70" y1="48" x2="140" y2="116" gradientUnits="userSpaceOnUse"><stop stopColor="#F4F8FF" /><stop offset="1" stopColor="#CFE0FB" /></linearGradient>
       </defs>
-      <ellipse cx="84" cy="116" rx="62" ry="10" fill="#2F6FED" opacity=".10" />
+      <ellipse cx="84" cy="116" rx="62" ry="10" fill="#2350F5" opacity=".10" />
       <path d="M78 50a20 20 0 0 1 20-20h28a20 20 0 0 1 20 20v22a20 20 0 0 1-20 20h-6l-12 14v-14h-10a20 20 0 0 1-20-20Z" fill="url(#zcB)" />
       <path d="M22 36a22 22 0 0 1 22-22h40a22 22 0 0 1 22 22v28a22 22 0 0 1-22 22H62L44 106V86h0a22 22 0 0 1-22-22Z" fill="url(#zcA)" />
       <circle cx="46" cy="50" r="5" fill="#fff" /><circle cx="64" cy="50" r="5" fill="#fff" /><circle cx="82" cy="50" r="5" fill="#fff" />
@@ -2267,14 +2282,14 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
       {conversaciones.length === 0 ? (
         <div className="text-center flex flex-col items-center" style={{ paddingTop: 36 }}>
           <IlustracionChats />
-          <p className="mt-4 mb-1.5" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em", color: "#0B2A54" }}>Todavía no tenés conversaciones</p>
-          <p className="text-sm px-6" style={{ color: "#667085", lineHeight: 1.55, maxWidth: 340 }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+          <p className="mt-4 mb-1.5" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em", color: "#0B1437" }}>Todavía no tenés conversaciones</p>
+          <p className="text-sm px-6" style={{ color: "#5B6482", lineHeight: 1.55, maxWidth: 340 }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
         </div>
       ) : visibles.length === 0 ? (
         <div className="text-center py-14">
-          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: 18, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E1E8F2" }}><Search size={24} color="#8A94A8" /></span>
-          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No encontramos chats para “{query.trim()}”</p>
-          <p className="text-xs px-8" style={{ color: "#667085" }}>Probá con el nombre del negocio o con otra palabra del mensaje.</p>
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: 18, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E3E7F1" }}><Search size={24} color="#8D95B0" /></span>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>No encontramos chats para “{query.trim()}”</p>
+          <p className="text-xs px-8" style={{ color: "#5B6482" }}>Probá con el nombre del negocio o con otra palabra del mensaje.</p>
         </div>
       ) : (
         <div className="flex flex-col">
@@ -2287,13 +2302,13 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
                 key={biz.id}
                 onClick={() => onOpenChat(biz)}
                 className="w-full flex items-center gap-3.5 px-3 py-3.5 text-left"
-                style={{ borderRadius: noLeido ? 18 : 0, background: noLeido ? "#EEF4FF" : "transparent", borderBottom: !noLeido && i < visibles.length - 1 && !(visibles[i + 1] && visibles[i + 1].noLeido) ? "1px solid #EDF0F6" : "1px solid transparent" }}
+                style={{ borderRadius: noLeido ? 18 : 0, background: noLeido ? "#EEF4FF" : "transparent", borderBottom: !noLeido && i < visibles.length - 1 && !(visibles[i + 1] && visibles[i + 1].noLeido) ? "1px solid #EEF0F6" : "1px solid transparent" }}
               >
                 <div className="relative shrink-0">
                   {biz.logo ? (
-                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,42,84,.08)" }} />
+                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,20,55,.08)" }} />
                   ) : (
-                    <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
+                    <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "#2350F5", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
                       {CatIcon ? <CatIcon size={24} color="#fff" /> : <span className="text-lg font-bold">{biz.name?.[0]?.toUpperCase()}</span>}
                     </div>
                   )}
@@ -2301,21 +2316,21 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 16, color: "#0B1220", fontWeight: noLeido ? 800 : 700 }}>{biz.name}</span>
-                    <span className="text-xs shrink-0" style={{ color: noLeido ? "#2F6FED" : "#667085", fontWeight: noLeido ? 600 : 400 }}>{fmtChatLista(ultimo.hora)}</span>
+                    <span className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 16, color: "#0B1437", fontWeight: noLeido ? 800 : 700 }}>{biz.name}</span>
+                    <span className="text-xs shrink-0" style={{ color: noLeido ? "#2350F5" : "#5B6482", fontWeight: noLeido ? 600 : 400 }}>{fmtChatLista(ultimo.hora)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-[13px]" style={{ color: noLeido ? "#1D2939" : "#667085", fontWeight: noLeido ? 500 : 400, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <span className="text-[13px]" style={{ color: noLeido ? "#1D2939" : "#5B6482", fontWeight: noLeido ? 500 : 400, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
                     {noLeido ? (
-                      <span className="shrink-0 flex items-center justify-center text-xs font-bold" style={{ minWidth: 24, height: 24, borderRadius: 12, background: "#2F6FED", color: "#fff", padding: "0 7px", boxShadow: "0 4px 10px -3px rgba(47,111,237,.7)" }}>{sinLeer}</span>
+                      <span className="shrink-0 flex items-center justify-center text-xs font-bold" style={{ minWidth: 24, height: 24, borderRadius: 12, background: "#2350F5", color: "#fff", padding: "0 7px", boxShadow: "0 4px 10px -3px rgba(35,80,245,.7)" }}>{sinLeer}</span>
                     ) : ultimo.rol === "asistente" ? (
-                      <CheckCheck size={16} color="#2F6FED" className="shrink-0" />
+                      <CheckCheck size={16} color="#2350F5" className="shrink-0" />
                     ) : null}
                   </div>
                 </div>
-                <ChevronDown size={16} color="#98A2B3" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />
+                <ChevronDown size={16} color="#B9C0D6" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />
               </button>
             );
           })}
@@ -2332,17 +2347,17 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
     <div>
       <div className="flex items-center gap-2 mb-1">
         <BotonAtras onClick={onBack} tono="oscuro" size={36} />
-        <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
+        <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1437" }}>Favoritos</p>
       </div>
-      <p className="text-xs mb-5" style={{ color: "#475467" }}>Tus negocios guardados</p>
+      <p className="text-xs mb-5" style={{ color: "#5B6482" }}>Tus negocios guardados</p>
 
       {guardados.length === 0 ? (
         <div className="text-center py-14">
           <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#FDF1EF" }}>
             <Heart size={22} color="#C1443A" />
           </span>
-          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no guardaste ningún negocio</p>
-          <p className="text-xs" style={{ color: "#475467" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>Todavía no guardaste ningún negocio</p>
+          <p className="text-xs" style={{ color: "#5B6482" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -2354,17 +2369,17 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
                 key={biz.id}
                 onClick={() => onOpenBusiness(biz.id)}
                 className="w-full flex items-center gap-3 p-3 text-left bg-white"
-                style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+                style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 14px rgba(11,20,55,0.07)" }}
               >
                 <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
                   <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={52} radius="12px" iconSize={22} clickable={false} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
-                  <p className="text-xs truncate mb-1" style={{ color: "#475467" }}>{c?.label} · {biz.zone}</p>
+                  <p className="text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{biz.name}</p>
+                  <p className="text-xs truncate mb-1" style={{ color: "#5B6482" }}>{c?.label} · {biz.zone}</p>
                   <div className="flex items-center gap-2">
                     {rating && (
-                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#344054" }}>
+                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#2B3768" }}>
                         <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
                       </span>
                     )}
@@ -2416,7 +2431,7 @@ const CAPAS_MAPA = {
 
 function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const c = catInfo(b.cat);
-  const color = c?.color || "#2F6FED";
+  const color = c?.color || "#2350F5";
   const size = seleccionado ? 54 : 42;
   const inicial = escapeHtml((b.name || "?").trim().charAt(0).toUpperCase());
   const logo = b.logo || b.photos?.[0];
@@ -2426,18 +2441,18 @@ function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const nombre = escapeHtml((b.name || "").length > 22 ? `${b.name.slice(0, 21)}…` : b.name || "");
   const etiqueta = mostrarNombre || seleccionado
     ? `<div style="position:absolute;left:50%;top:${size + 12}px;transform:translateX(-50%);white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;
-        background:#fff;color:#0B1220;font:600 11px 'Work Sans',sans-serif;padding:3px 8px;border-radius:10px;
-        box-shadow:0 2px 8px rgba(11,42,84,.28);border:1px solid #DDE3EE">${nombre}</div>`
+        background:#fff;color:#0B1437;font:600 11px 'Work Sans',sans-serif;padding:3px 8px;border-radius:10px;
+        box-shadow:0 2px 8px rgba(11,20,55,.28);border:1px solid #E3E7F1">${nombre}</div>`
     : "";
   const html = `
     <div style="position:relative;width:${size}px;height:${size + 10}px">
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid #fff;
-        box-shadow:0 4px 12px rgba(11,42,84,.4)${seleccionado ? `,0 0 0 4px ${color}55` : ""};overflow:hidden;
+        box-shadow:0 4px 12px rgba(11,20,55,.4)${seleccionado ? `,0 0 0 4px ${color}55` : ""};overflow:hidden;
         display:flex;align-items:center;justify-content:center;color:#fff;font:700 ${Math.round(size * 0.4)}px Poppins,sans-serif">
         ${inicial}${img}
       </div>
       <div style="position:absolute;left:50%;top:${size - 3}px;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;
-        border-right:7px solid transparent;border-top:11px solid #fff;filter:drop-shadow(0 2px 2px rgba(11,42,84,.25))"></div>
+        border-right:7px solid transparent;border-top:11px solid #fff;filter:drop-shadow(0 2px 2px rgba(11,20,55,.25))"></div>
       ${etiqueta}
     </div>`;
   return L.divIcon({ className: "", html, iconSize: [size, size + 10], iconAnchor: [size / 2, size + 10] });
@@ -2597,7 +2612,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     if (!map || !userLoc) return;
     const icono = L.divIcon({
       className: "",
-      html: `<div style="position:relative;width:22px;height:22px"><span style="position:absolute;inset:0;border-radius:50%;background:#2F6FED55;animation:mzPulse 1.8s ease-out infinite"></span><span style="position:absolute;inset:4px;border-radius:50%;background:#2F6FED;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span></div>`,
+      html: `<div style="position:relative;width:22px;height:22px"><span style="position:absolute;inset:0;border-radius:50%;background:#2350F555;animation:mzPulse 1.8s ease-out infinite"></span><span style="position:absolute;inset:4px;border-radius:50%;background:#2350F5;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span></div>`,
       iconSize: [22, 22], iconAnchor: [11, 11],
     });
     if (userMarkerRef.current) userMarkerRef.current.setLatLng([userLoc.lat, userLoc.lng]);
@@ -2627,11 +2642,11 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     }
   };
 
-  const Chip = ({ label, Icon, active, onClick, activeBg = "#E8F0FE", activeColor = "#2F6FED", activeBorder = "#2F6FED" }) => (
+  const Chip = ({ label, Icon, active, onClick, activeBg = "#EDF1FF", activeColor = "#2350F5", activeBorder = "#2350F5" }) => (
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#344054", border: "1px solid " + (active ? activeBorder : "#DDE3EE") }}
+      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#2B3768", border: "1px solid " + (active ? activeBorder : "#E3E7F1") }}
     >
       {Icon && <Icon size={13} />} {label}
     </button>
@@ -2642,19 +2657,19 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     <button
       onClick={onClick} aria-label={label}
       className="flex items-center justify-center"
-      style={{ width: 40, height: 40, background: "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+      style={{ width: 40, height: 40, background: "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
     >
       {children}
     </button>
   );
 
   return (
-    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F6FB", display: "flex", flexDirection: "column" }}>
+    <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F5FA", display: "flex", flexDirection: "column" }}>
       <style>{`@keyframes mzPulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.2); opacity: 0; } }
         .leaflet-container { font-family: var(--fuente-texto); }`}</style>
 
       {/* encabezado */}
-      <div style={{ backgroundColor: "#0B2A54" }}>
+      <div style={{ backgroundColor: "#0B1437" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0">
@@ -2669,7 +2684,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               <button
                 key={id} onClick={() => setVista(id)}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
-                style={{ borderRadius: 8, background: vista === id ? "#fff" : "transparent", color: vista === id ? "#0B2A54" : "#DCE7FB" }}
+                style={{ borderRadius: 8, background: vista === id ? "#fff" : "transparent", color: vista === id ? "#0B1437" : "#DCE7FB" }}
               >
                 <Icon size={13} /> {label}
               </button>
@@ -2679,12 +2694,12 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
       </div>
 
       {/* filtros */}
-      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #DDE3EE" }}>
+      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E3E7F1" }}>
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setShowCats(true)}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#344054", border: "1px solid " + (catActual ? catActual.color : "#DDE3EE") }}
+            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#2B3768", border: "1px solid " + (catActual ? catActual.color : "#E3E7F1") }}
           >
             {catActual ? <catActual.icon size={13} /> : <Grid3x3 size={13} />} {catActual ? catActual.label : "Rubro"}
             {catActual ? <X size={12} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={12} />}
@@ -2712,11 +2727,11 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
 
         {vista === "mapa" && lista.length > 0 && conUbicacion.length === 0 && (
           <div className="absolute inset-x-4 flex justify-center" style={{ top: 80, zIndex: 15 }}>
-            <div className="bg-white px-4 py-3 text-center" style={{ borderRadius: 16, boxShadow: "0 8px 24px rgba(11,42,84,0.18)", maxWidth: 320 }}>
-              <p className="text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>
+            <div className="bg-white px-4 py-3 text-center" style={{ borderRadius: 16, boxShadow: "0 8px 24px rgba(11,20,55,0.18)", maxWidth: 320 }}>
+              <p className="text-sm font-semibold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>
                 Ubicando los negocios...
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "#475467" }}>
+              <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>
                 Estamos buscando sus direcciones en el mapa, puede tardar unos segundos.
               </p>
             </div>
@@ -2727,25 +2742,25 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
           <>
             {/* controles: zoom y mi ubicación */}
             <div className="absolute flex flex-col gap-2" style={{ right: 12, top: 12, zIndex: 20 }}>
-              <div className="flex flex-col overflow-hidden" style={{ borderRadius: 12, boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}>
-                <CtrlBtn onClick={() => mapRef.current?.zoomIn()} label="Acercar"><Plus size={18} color="#0B2A54" /></CtrlBtn>
-                <div style={{ height: 1, background: "#DDE3EE" }} />
-                <CtrlBtn onClick={() => mapRef.current?.zoomOut()} label="Alejar"><Minus size={18} color="#0B2A54" /></CtrlBtn>
+              <div className="flex flex-col overflow-hidden" style={{ borderRadius: 12, boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}>
+                <CtrlBtn onClick={() => mapRef.current?.zoomIn()} label="Acercar"><Plus size={18} color="#0B1437" /></CtrlBtn>
+                <div style={{ height: 1, background: "#E3E7F1" }} />
+                <CtrlBtn onClick={() => mapRef.current?.zoomOut()} label="Alejar"><Minus size={18} color="#0B1437" /></CtrlBtn>
               </div>
               <div className="relative">
                 <button
                   onClick={() => setCapasAbierto((v) => !v)} aria-label="Cambiar tipo de mapa"
                   className="flex items-center justify-center"
-                  style={{ width: 40, height: 40, borderRadius: 12, background: capasAbierto ? "#2F6FED" : "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+                  style={{ width: 40, height: 40, borderRadius: 12, background: capasAbierto ? "#2350F5" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
                 >
-                  <Layers size={18} color={capasAbierto ? "#fff" : "#0B2A54"} />
+                  <Layers size={18} color={capasAbierto ? "#fff" : "#0B1437"} />
                 </button>
                 {capasAbierto && (
-                  <div className="absolute flex gap-2 p-2" style={{ right: 48, top: 0, borderRadius: 16, background: "#fff", boxShadow: "0 10px 28px rgba(11,42,84,0.28)" }}>
+                  <div className="absolute flex gap-2 p-2" style={{ right: 48, top: 0, borderRadius: 16, background: "#fff", boxShadow: "0 10px 28px rgba(11,20,55,0.28)" }}>
                     {Object.entries(CAPAS_MAPA).map(([id, c]) => (
                       <button key={id} onClick={() => { setCapa(id); setCapasAbierto(false); }} className="flex flex-col items-center gap-1">
-                        <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2F6FED" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#344054" }}>{c.label}</span>
+                        <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2350F5" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
+                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2350F5" : "#2B3768" }}>{c.label}</span>
                       </button>
                     ))}
                   </div>
@@ -2754,9 +2769,9 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               <button
                 onClick={irAMiUbicacion} aria-label="Mi ubicación"
                 className="flex items-center justify-center"
-                style={{ width: 40, height: 40, borderRadius: 12, background: userLoc ? "#2F6FED" : "#fff", boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}
+                style={{ width: 40, height: 40, borderRadius: 12, background: userLoc ? "#2350F5" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
               >
-                <LocateFixed size={18} color={userLoc ? "#fff" : "#0B2A54"} className={locStatus === "loading" ? "animate-pulse" : ""} />
+                <LocateFixed size={18} color={userLoc ? "#fff" : "#0B1437"} className={locStatus === "loading" ? "animate-pulse" : ""} />
               </button>
             </div>
 
@@ -2767,11 +2782,11 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
             )}
 
             {lista.length === 0 && (
-              <div className="absolute left-4 right-4 text-center p-5" style={{ top: "30%", zIndex: 15, maxWidth: 340, margin: "0 auto", borderRadius: 14, background: "#fff", boxShadow: "0 8px 24px rgba(11,42,84,0.2)" }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                <p className="text-xs mb-3" style={{ color: "#475467" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+              <div className="absolute left-4 right-4 text-center p-5" style={{ top: "30%", zIndex: 15, maxWidth: 340, margin: "0 auto", borderRadius: 14, background: "#fff", boxShadow: "0 8px 24px rgba(11,20,55,0.2)" }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>No hay negocios con estos filtros</p>
+                <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
                 {hayFiltros && (
-                  <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>
+                  <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B1437", color: "#fff" }}>Quitar filtros</button>
                 )}
               </div>
             )}
@@ -2784,33 +2799,33 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               const promos = activeDiscounts(selected);
               const esFav = favorites.includes(selected.id);
               const etiquetas = [
-                selected.delivery && { t: "Delivery", Icon: Truck, bg: "#E8F0FE", color: "#0B2A54" },
+                selected.delivery && { t: "Delivery", Icon: Truck, bg: "#EDF1FF", color: "#0B1437" },
                 (selected.asistenteCodigoPublico && selected.asistenteActivo) && { t: "Asistente disponible", Icon: Sparkles, bg: "#F3ECFC", color: "#7A4F9E" },
                 promos.length > 0 && { t: promos[0].percent ? `${promos[0].percent} OFF` : "Promoción", Icon: Tag, bg: "#FBEBD1", color: "#8A5B12" },
                 esNegocioNuevo(selected) && { t: "Nuevo", Icon: Sparkles, bg: "#E4F3EA", color: "#1E6B44" },
               ].filter(Boolean);
               return (
                 <div className="absolute left-3 right-3" style={{ bottom: 14, zIndex: 20, maxWidth: 440, margin: "0 auto" }}>
-                  <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #DDE3EE", boxShadow: "0 10px 30px rgba(11,42,84,0.28)" }}>
+                  <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 10px 30px rgba(11,20,55,0.28)" }}>
                     <button onClick={() => setSelectedId(null)} className="absolute" style={{ top: 10, right: 10 }} aria-label="Cerrar"><X size={16} color="#64748B" /></button>
                     <div className="flex items-start gap-3 pr-5">
-                      <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #DDE3EE" }}>
+                      <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #E3E7F1" }}>
                         <Photo cat={selected.cat} src={selected.logo || selected.photos?.[0]} height={58} radius="14px" iconSize={22} clickable={false} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>{selected.name}</h3>
-                        <p className="text-xs truncate" style={{ color: "#475467" }}>
+                        <h3 className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>{selected.name}</h3>
+                        <p className="text-xs truncate" style={{ color: "#5B6482" }}>
                           <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>
                           {km !== null ? ` · A ${fmtDistance(km)} de vos` : ""}
                         </p>
                         {selected.loc && (
-                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#344054" }}>
+                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#2B3768" }}>
                             <MapPin size={11} className="shrink-0" /> <span className="truncate">{selected.loc}</span>
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {rating ? (
-                            <span className="flex items-center gap-1 text-xs" style={{ color: "#344054" }}>
+                            <span className="flex items-center gap-1 text-xs" style={{ color: "#2B3768" }}>
                               <Star size={12} fill="#F5A623" color="#F5A623" /> {rating} ({selected.reviews.length})
                             </span>
                           ) : (
@@ -2833,7 +2848,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                       <button
                         onClick={() => onOpenBusiness(selected.id)}
                         className="flex-1 text-sm font-semibold py-2.5"
-                        style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+                        style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}
                       >
                         Ver perfil
                       </button>
@@ -2841,14 +2856,14 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`} target="_blank" rel="noreferrer"
                         onClick={() => onTrack && onTrack(selected.id, "ubicacion")}
                         className="flex items-center justify-center gap-1.5 text-sm font-semibold px-3.5 py-2.5"
-                        style={{ backgroundColor: "#E8F0FE", color: "#0B2A54", borderRadius: 10 }}
+                        style={{ backgroundColor: "#EDF1FF", color: "#0B1437", borderRadius: 10 }}
                       >
                         <Navigation size={15} /> Cómo llegar
                       </a>
                       <button
                         onClick={() => onToggleFavorite(selected.id)} aria-label="Guardar"
                         className="flex items-center justify-center shrink-0"
-                        style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#FDF1EF" : "#F3F6FB" }}
+                        style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#FDF1EF" : "#F3F5FA" }}
                       >
                         <Heart size={17} color={esFav ? "#C1443A" : "#64748B"} fill={esFav ? "#C1443A" : "none"} />
                       </button>
@@ -2862,13 +2877,13 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
 
         {/* vista de lista */}
         {vista === "lista" && (
-          <div className="absolute inset-0 overflow-y-auto" style={{ backgroundColor: "#F3F6FB", zIndex: 10 }}>
+          <div className="absolute inset-0 overflow-y-auto" style={{ backgroundColor: "#F3F5FA", zIndex: 10 }}>
             <div className="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3" style={{ paddingBottom: 40 }}>
               {lista.length === 0 ? (
                 <div className="text-center py-14">
-                  <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                  <p className="text-xs mb-3" style={{ color: "#475467" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
-                  {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>}
+                  <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>No hay negocios con estos filtros</p>
+                  <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                  {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B1437", color: "#fff" }}>Quitar filtros</button>}
                 </div>
               ) : lista.map((biz) => {
                 const c = catInfo(biz.cat);
@@ -2880,24 +2895,24 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                     onClick={() => onOpenBusiness(biz.id)}
                     onKeyDown={(e) => (e.key === "Enter" ? onOpenBusiness(biz.id) : null)}
                     className="w-full flex items-center gap-3 p-3 text-left bg-white cursor-pointer"
-                    style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+                    style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 14px rgba(11,20,55,0.07)" }}
                   >
                     <div className="shrink-0 overflow-hidden" style={{ width: 54, height: 54, borderRadius: 12 }}>
                       <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={54} radius="12px" iconSize={22} clickable={false} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
+                        <p className="text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{biz.name}</p>
                         {esNegocioNuevo(biz) && <span className="text-[10px] font-semibold px-1.5 py-0.5 shrink-0" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>Nuevo</span>}
                       </div>
-                      <p className="text-xs truncate" style={{ color: "#475467" }}>
+                      <p className="text-xs truncate" style={{ color: "#5B6482" }}>
                         <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>{km !== null ? ` · A ${fmtDistance(km)}` : ""}
                       </p>
                       {biz.loc && <p className="text-[11px] truncate mb-1" style={{ color: "#64748B" }}>{biz.loc}</p>}
                       <div className="flex items-center gap-2 flex-wrap">
-                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#344054" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
+                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#2B3768" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                         <OpenBadge weekHours={biz.weekHours} />
-                        {biz.delivery && <Truck size={13} color="#0B2A54" />}
+                        {biz.delivery && <Truck size={13} color="#0B1437" />}
                         {biz.asistenteCodigoPublico && biz.asistenteActivo && <Sparkles size={13} color="#7A4F9E" />}
                         {activeDiscounts(biz).length > 0 && <Tag size={13} color="#B8703F" />}
                       </div>
@@ -2906,9 +2921,9 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                       <button
                         onClick={(e) => { e.stopPropagation(); setVista("mapa"); setSelectedId(biz.id); }}
                         className="flex items-center justify-center shrink-0" aria-label="Ver en el mapa"
-                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#E8F0FE" }}
+                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#EDF1FF" }}
                       >
-                        <MapPin size={16} color="#2F6FED" />
+                        <MapPin size={16} color="#2350F5" />
                       </button>
                     )}
                   </div>
@@ -2977,7 +2992,7 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
   return (
     <div
       className="relative overflow-hidden"
-      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EDF0F6" }}
+      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EEF0F6" }}
     >
       {/* fondo que se descubre al deslizar */}
       <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#C1443A" }}>
@@ -3000,11 +3015,11 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm" style={{ color: "#0B1220", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
-            {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2F6FED" }} />}
+            <p className="text-sm" style={{ color: "#0B1437", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
+            {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2350F5" }} />}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: "#344054", wordBreak: "break-word" }}>{n.descripcion}</p>
-          <p className="text-[11px] mt-1" style={{ color: leida ? "#64748B" : "#2F6FED", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+          <p className="text-xs mt-0.5" style={{ color: "#2B3768", wordBreak: "break-word" }}>{n.descripcion}</p>
+          <p className="text-[11px] mt-1" style={{ color: leida ? "#64748B" : "#2350F5", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
       </div>
     </div>
@@ -3022,8 +3037,8 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
   ].filter((g) => g.items.length > 0);
 
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0">
@@ -3043,19 +3058,19 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
       <div className="max-w-3xl mx-auto" style={{ paddingBottom: 40 }}>
         {notificaciones.length === 0 ? (
           <div className="text-center py-20 px-8">
-            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#E8F0FE" }}>
-              <BellOff size={24} color="#2F6FED" />
+            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#EDF1FF" }}>
+              <BellOff size={24} color="#2350F5" />
             </span>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No tenés notificaciones</p>
-            <p className="text-xs" style={{ color: "#475467" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>No tenés notificaciones</p>
+            <p className="text-xs" style={{ color: "#5B6482" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
           </div>
         ) : (
           <>
             <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#64748B" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#475467", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
-                <div style={{ borderTop: "1px solid #EDF0F6" }}>
+                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#5B6482", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
+                <div style={{ borderTop: "1px solid #EEF0F6" }}>
                   {g.items.map((n) => (
                     <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
                   ))}
@@ -3076,7 +3091,7 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
   const progreso = Math.min(100, Math.round(((r.puntos - r.faltan) / r.puntos) * 100));
   const bloqueoTexto = r.bloqueo === "agotada" ? "Agotada" : r.bloqueo === "limite" ? "Ya canjeaste el máximo permitido" : null;
   return (
-    <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
+    <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 12px rgba(11,20,55,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
       <div className="flex items-start gap-3">
         {r.imagen ? (
           <img src={r.imagen} alt="" className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 12 }} />
@@ -3087,24 +3102,24 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>{r.nombre}</p>
+            <p className="text-sm font-semibold" style={{ color: "#0B1437" }}>{r.nombre}</p>
             <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 20, background: "#FDF3DC", color: "#8A5B12" }}>
               <Coins size={11} /> {fmtNum(r.puntos)}
             </span>
           </div>
-          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#344054" }}>{r.descripcion}</p>}
+          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#2B3768" }}>{r.descripcion}</p>}
         </div>
       </div>
 
       {(r.compraMinima > 0 || r.fechaVencimiento || r.cantidadDisponible !== null || r.limitePorCliente || r.condiciones) && (
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
-          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
-          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
-          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Máx. {r.limitePorCliente} por persona</span>}
+          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF0F6", color: "#2B3768" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
+          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF0F6", color: "#2B3768" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
+          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF0F6", color: "#2B3768" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
+          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF0F6", color: "#2B3768" }}>Máx. {r.limitePorCliente} por persona</span>}
         </div>
       )}
-      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#475467" }}>Condiciones: {r.condiciones}</p>}
+      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#5B6482" }}>Condiciones: {r.condiciones}</p>}
 
       <div className="mt-3.5">
         {bloqueoTexto ? (
@@ -3113,16 +3128,16 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
           <button
             onClick={() => onCanjear(r)} disabled={canjeando}
             className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
-            style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: canjeando ? 0.6 : 1 }}
+            style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10, opacity: canjeando ? 0.6 : 1 }}
           >
             <Ticket size={16} /> Canjear por {fmtNum(r.puntos)} puntos
           </button>
         ) : (
           <>
-            <div style={{ height: 7, borderRadius: 4, background: "#EDF0F6", overflow: "hidden" }}>
-              <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)", borderRadius: 4 }} />
+            <div style={{ height: 7, borderRadius: 4, background: "#EEF0F6", overflow: "hidden" }}>
+              <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2350F5, #7FA8F5)", borderRadius: 4 }} />
             </div>
-            <p className="text-xs mt-1.5" style={{ color: "#344054" }}>
+            <p className="text-xs mt-1.5" style={{ color: "#2B3768" }}>
               Te {r.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(r.faltan)} {r.faltan === 1 ? "punto" : "puntos"}</b>.
             </p>
           </>
@@ -3136,32 +3151,32 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
 function CanjeModal({ canje, onClose }) {
   const usado = canje.estado === "utilizado";
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1437cc" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Tu canje</span>
-          <button onClick={onClose}><X size={18} color="#475467" /></button>
+          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>Tu canje</span>
+          <button onClick={onClose}><X size={18} color="#5B6482" /></button>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#475467" : "#1E6B44" }}>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#5B6482" : "#1E6B44" }}>
           {usado ? <Check size={12} /> : <Ticket size={12} />} {usado ? "Ya utilizado" : "Listo para usar"}
         </span>
-        <p className="text-base font-semibold" style={{ color: "#0B1220" }}>{canje.recompensa}</p>
-        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#475467" }}>{canje.negocio}</p>}
+        <p className="text-base font-semibold" style={{ color: "#0B1437" }}>{canje.recompensa}</p>
+        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#5B6482" }}>{canje.negocio}</p>}
         {!usado && (
           <img
             alt="Código QR del canje" className="mx-auto mb-3"
-            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #DDE3EE" }}
+            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #E3E7F1" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(canje.codigo)}`}
           />
         )}
-        <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#64748B" : "#0B2A54", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
+        <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#64748B" : "#0B1437", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
         {usado ? (
-          <p className="text-xs" style={{ color: "#475467" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
+          <p className="text-xs" style={{ color: "#5B6482" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
         ) : (
-          <p className="text-xs" style={{ color: "#475467" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
+          <p className="text-xs" style={{ color: "#5B6482" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
         )}
         {(canje.condiciones || canje.compraMinima > 0) && (
-          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#344054" }}>
+          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F5FA", color: "#2B3768" }}>
             {canje.compraMinima > 0 && <>Compra mínima: {fmtPesos(canje.compraMinima)}. </>}
             {canje.condiciones && <>Condiciones: {canje.condiciones}</>}
           </p>
@@ -3238,14 +3253,14 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
     return src ? (
       <img src={src} alt="" className="object-cover shrink-0" style={{ width: size, height: size, borderRadius: "50%" }} />
     ) : (
-      <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "#2F6FED", color: "#fff" }}>
+      <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "#2350F5", color: "#fff" }}>
         {(nombre || "?")[0].toUpperCase()}
       </span>
     );
   };
 
   const cabecera = (titulo, subtitulo, atras) => (
-    <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B2A54" }}>
+    <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
         <BotonAtras onClick={atras} />
         <div className="min-w-0">
@@ -3260,21 +3275,21 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
   if (codigo) {
     const biz = bizDe(codigo);
     return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
         {cabecera("Recompensas", detalle?.nombreNegocio || biz?.name || "", () => (initialCodigo ? onBack() : setCodigo(null)))}
         <div className="max-w-3xl mx-auto px-4 py-5" style={{ paddingBottom: 60 }}>
           {loadingDetalle && !detalle ? (
-            <p className="text-sm text-center py-16" style={{ color: "#475467" }}>Cargando...</p>
+            <p className="text-sm text-center py-16" style={{ color: "#5B6482" }}>Cargando...</p>
           ) : error && !detalle ? (
             <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
           ) : detalle && !detalle.activo ? (
             <div className="text-center py-16 px-6">
-              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Este negocio no tiene programa de puntos</p>
-              <p className="text-xs" style={{ color: "#475467" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>Este negocio no tiene programa de puntos</p>
+              <p className="text-xs" style={{ color: "#5B6482" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
             </div>
           ) : detalle && (
             <>
-              <div className="p-4 mb-4 flex items-center gap-3" style={{ borderRadius: 14, background: "linear-gradient(135deg, #0B2A54, #17407F)" }}>
+              <div className="p-4 mb-4 flex items-center gap-3" style={{ borderRadius: 14, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
                 <Logo nombre={detalle.nombreNegocio} logoUrl={detalle.logoUrl} cp={codigo} size={50} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs" style={{ color: "#BBD1FB" }}>Tus puntos en {detalle.nombreNegocio}</p>
@@ -3283,14 +3298,14 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   </p>
                 </div>
               </div>
-              <p className="text-xs mb-4 px-1" style={{ color: "#344054" }}>
+              <p className="text-xs mb-4 px-1" style={{ color: "#2B3768" }}>
                 Ganás <b>1 punto</b> por cada <b>{fmtPesos(detalle.pesosPorPunto)}</b> que gastás. Los puntos se suman cuando tu pedido se entrega y solo sirven en este negocio.
               </p>
               {errorCanje && (
                 <p className="text-xs mb-3 px-3 py-2.5" style={{ borderRadius: 10, background: "#FDF1EF", color: "#9A3B34" }}>{errorCanje}</p>
               )}
               {detalle.recompensas.length === 0 ? (
-                <p className="text-sm text-center py-10" style={{ color: "#475467" }}>Este negocio todavía no cargó recompensas.</p>
+                <p className="text-sm text-center py-10" style={{ color: "#5B6482" }}>Este negocio todavía no cargó recompensas.</p>
               ) : (
                 <div className="flex flex-col gap-3">
                   {detalle.recompensas.map((r) => (
@@ -3299,7 +3314,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                 </div>
               )}
               {biz && (
-                <button onClick={() => onOpenBusiness(biz.id)} className="w-full text-sm font-semibold py-3 mt-5" style={{ borderRadius: 10, backgroundColor: "#E8F0FE", color: "#0B2A54" }}>
+                <button onClick={() => onOpenBusiness(biz.id)} className="w-full text-sm font-semibold py-3 mt-5" style={{ borderRadius: 10, backgroundColor: "#EDF1FF", color: "#0B1437" }}>
                   Ver perfil del negocio
                 </button>
               )}
@@ -3325,20 +3340,20 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
   const pendientes = canjes.filter((c) => c.estado === "pendiente").length;
 
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
       {cabecera("Mis puntos", "Cada negocio tiene sus propios puntos", onBack)}
       <div className="max-w-3xl mx-auto px-4 py-4" style={{ paddingBottom: 60 }}>
-        <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #DDE3EE" }}>
+        <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #E3E7F1" }}>
           {[{ id: "puntos", label: "Mis puntos" }, { id: "canjes", label: `Mis canjes${pendientes ? ` (${pendientes})` : ""}` }].map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#475467" }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2350F5" : "#5B6482" }}>
               {t.label}
-              {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
+              {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2350F5", borderRadius: 2 }} />}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <p className="text-sm text-center py-16" style={{ color: "#475467" }}>Cargando...</p>
+          <p className="text-sm text-center py-16" style={{ color: "#5B6482" }}>Cargando...</p>
         ) : error ? (
           <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
         ) : tab === "puntos" ? (
@@ -3347,29 +3362,29 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
               <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#FDF3DC" }}>
                 <Coins size={24} color="#B7791F" />
               </span>
-              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés puntos</p>
-              <p className="text-xs" style={{ color: "#475467" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>Todavía no tenés puntos</p>
+              <p className="text-xs" style={{ color: "#5B6482" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               {negocios.map((n) => (
-                <div key={n.codigoPublico} className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+                <div key={n.codigoPublico} className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 14px rgba(11,20,55,0.07)" }}>
                   <div className="flex items-center gap-3">
                     <Logo nombre={n.nombreNegocio} logoUrl={n.logoUrl} cp={n.codigoPublico} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombreNegocio}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{n.nombreNegocio}</p>
                       <p className="flex items-center gap-1 text-sm font-bold" style={{ color: "#8A5B12" }}><Coins size={13} /> {fmtNum(n.saldo)} puntos</p>
                     </div>
                   </div>
                   {n.proxima ? (
                     <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#344054" }}>
+                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#2B3768" }}>
                         <span className="truncate pr-2">{n.proxima.nombre} · {fmtNum(n.proxima.puntos)} puntos</span>
                       </div>
-                      <div style={{ height: 7, borderRadius: 4, background: "#EDF0F6", overflow: "hidden" }}>
-                        <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)" }} />
+                      <div style={{ height: 7, borderRadius: 4, background: "#EEF0F6", overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2350F5, #7FA8F5)" }} />
                       </div>
-                      <p className="text-xs mt-1.5" style={{ color: "#344054" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
+                      <p className="text-xs mt-1.5" style={{ color: "#2B3768" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
                     </div>
                   ) : n.recompensas.some((r) => r.puedeCanjear) ? (
                     <p className="text-xs mt-3 font-medium" style={{ color: "#1E6B44" }}>¡Ya podés canjear una recompensa!</p>
@@ -3377,7 +3392,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   <button
                     onClick={() => { setErrorCanje(null); setCodigo(n.codigoPublico); }}
                     className="w-full text-sm font-semibold py-2.5 mt-3.5"
-                    style={{ borderRadius: 10, backgroundColor: "#E8F0FE", color: "#0B2A54" }}
+                    style={{ borderRadius: 10, backgroundColor: "#EDF1FF", color: "#0B1437" }}
                   >
                     Ver recompensas
                   </button>
@@ -3390,24 +3405,24 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
             <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#F3ECFC" }}>
               <Ticket size={24} color="#7A4F9E" />
             </span>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no canjeaste nada</p>
-            <p className="text-xs" style={{ color: "#475467" }}>Tus cupones aparecen acá, con su código y su estado.</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>Todavía no canjeaste nada</p>
+            <p className="text-xs" style={{ color: "#5B6482" }}>Tus cupones aparecen acá, con su código y su estado.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {canjes.map((c) => {
               const usado = c.estado === "utilizado";
               return (
-                <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: usado ? 0.7 : 1 }}>
+                <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 12px rgba(11,20,55,0.06)", opacity: usado ? 0.7 : 1 }}>
                   <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: usado ? "#EEEDE7" : "#F3ECFC" }}>
-                    {usado ? <Check size={19} color="#475467" /> : <Ticket size={19} color="#7A4F9E" />}
+                    {usado ? <Check size={19} color="#5B6482" /> : <Ticket size={19} color="#7A4F9E" />}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{c.recompensa}</span>
-                    <span className="block text-xs truncate" style={{ color: "#475467" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
-                    <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#64748B" : "#0B2A54", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
+                    <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{c.recompensa}</span>
+                    <span className="block text-xs truncate" style={{ color: "#5B6482" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
+                    <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#64748B" : "#0B1437", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
                   </span>
-                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#475467" : "#1E6B44" }}>
+                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#5B6482" : "#1E6B44" }}>
                     {usado ? "Utilizado" : "Pendiente de uso"}
                   </span>
                 </button>
@@ -3455,7 +3470,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={st.avatar} radius="50%" iconSize={st.avatar / 3} clickable={false} />
             </div>
           </div>
-          <span className="absolute flex items-center justify-center text-[11px] font-bold" style={{ bottom: -4, right: -2, width: 24, height: 24, borderRadius: "50%", background: st.aro, color: "#0B1220", border: "2px solid #0B2A54" }}>
+          <span className="absolute flex items-center justify-center text-[11px] font-bold" style={{ bottom: -4, right: -2, width: 24, height: 24, borderRadius: "50%", background: st.aro, color: "#0B1437", border: "2px solid #0B1437" }}>
             {puesto}
           </span>
         </div>
@@ -3479,7 +3494,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   return (
     <div>
       {/* portada oscura con título y podio */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 0" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", padding: "16px 16px 0" }}>
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "#7FA8F51a" }} />
         <div className="relative max-w-3xl mx-auto">
@@ -3530,7 +3545,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <button
                 onClick={() => setCatFiltro(null)}
                 className="text-xs font-semibold px-3 py-1.5"
-                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#344054", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#DDE3EE") }}
+                style={{ borderRadius: 20, background: catFiltro === null ? "#0B1437" : "#fff", color: catFiltro === null ? "#fff" : "#2B3768", border: "1px solid " + (catFiltro === null ? "#0B1437" : "#E3E7F1") }}
               >
                 Todas
               </button>
@@ -3541,7 +3556,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                   <button
                     key={c.id} onClick={() => setCatFiltro(act ? null : c.id)}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
-                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#344054", border: "1px solid " + (act ? c.color : "#DDE3EE") }}
+                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#2B3768", border: "1px solid " + (act ? c.color : "#E3E7F1") }}
                   >
                     <Icon size={13} color={act ? "#fff" : c.color} /> {c.label}
                   </button>
@@ -3552,18 +3567,18 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
 
           {ranking.length === 0 ? (
             <div className="text-center py-14 px-6">
-              <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "#E8F0FE" }}>
-                <Trophy size={32} color="#2F6FED" />
+              <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "#EDF1FF" }}>
+                <Trophy size={32} color="#2350F5" />
               </span>
-              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>Todavía no hay ranking</p>
-              <p className="text-sm mt-1" style={{ color: "#475467" }}>
+              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1437" }}>Todavía no hay ranking</p>
+              <p className="text-sm mt-1" style={{ color: "#5B6482" }}>
                 {catFiltro ? "No hay negocios de esta categoría en tu zona." : "Cuando los negocios de tu zona reciban visitas, reseñas y favoritos, van a aparecer acá."}
               </p>
             </div>
           ) : (
             <>
               {resto.length > 0 && (
-                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#475467", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
+                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#5B6482", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
               )}
               <div className="flex flex-col gap-2.5">
                 {resto.map((biz, i) => {
@@ -3577,28 +3592,28 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                     <button
                       key={biz.id} onClick={() => onOpenBusiness(biz.id)}
                       className="w-full flex items-center gap-3 p-3 text-left bg-white transition-shadow hover:shadow-lg"
-                      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+                      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
                     >
-                      <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B2A54" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "var(--fuente-titulo)" }}>
+                      <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B1437" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "var(--fuente-titulo)" }}>
                         {puesto}
                       </span>
                       <div className="shrink-0 overflow-hidden" style={{ width: 48, height: 48, borderRadius: 14 }}>
                         <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={48} radius="14px" iconSize={20} clickable={false} />
                       </div>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</span>
-                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#475467" }}>
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</span>
+                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#5B6482" }}>
                           <span className="font-medium truncate" style={{ color: c?.color }}>{c?.label}</span>
                           {rating && <span className="flex items-center gap-0.5 shrink-0"><Star size={10} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                           <span className="flex items-center gap-0.5 shrink-0"><Eye size={10} /> {fmtNum(biz.views || 0)}</span>
                           {(biz.vecesFavorito || 0) > 0 && <span className="flex items-center gap-0.5 shrink-0"><Heart size={10} color="#C1443A" fill="#C1443A" /> {biz.vecesFavorito}</span>}
                         </span>
-                        <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EDF0F6", overflow: "hidden" }}>
-                          <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "#2F6FED"}, ${c?.color || "#2F6FED"}aa)` }} />
+                        <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EEF0F6", overflow: "hidden" }}>
+                          <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "#2350F5"}, ${c?.color || "#2350F5"}aa)` }} />
                         </span>
                       </span>
                       <span className="text-right shrink-0" style={{ minWidth: 38 }}>
-                        <span className="block text-base font-bold leading-none" style={{ color: "#0B2A54", fontFamily: "var(--fuente-titulo)" }}>{pts}</span>
+                        <span className="block text-base font-bold leading-none" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{pts}</span>
                         <span className="block text-[10px] mt-0.5" style={{ color: "#64748B" }}>pts</span>
                       </span>
                     </button>
@@ -3609,23 +3624,23 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <button
                 onClick={() => setVerComo((v) => !v)}
                 className="w-full flex items-center justify-between mt-5 px-4 py-3 bg-white"
-                style={{ borderRadius: 16, border: "1px solid #E4E9F2" }}
+                style={{ borderRadius: 16, border: "1px solid #E3E7F1" }}
               >
-                <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B2A54" }}><Medal size={16} color="#2F6FED" /> ¿Cómo se calcula el ranking?</span>
-                <ChevronDown size={16} color="#475467" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+                <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B1437" }}><Medal size={16} color="#2350F5" /> ¿Cómo se calcula el ranking?</span>
+                <ChevronDown size={16} color="#5B6482" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {verComo && (
-                <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E4E9F2" }}>
+                <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1" }}>
                   {[
-                    { Icon: Eye, color: "#2F6FED", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
+                    { Icon: Eye, color: "#2350F5", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
                     { Icon: Star, color: "#F5A623", titulo: "Reseñas y valoración", texto: "Más reseñas y mejores estrellas suman más puntos." },
                     { Icon: Heart, color: "#C1443A", titulo: "Favoritos", texto: "Cada persona que guarda el negocio suma el doble que una visita." },
                   ].map(({ Icon, color, titulo, texto }) => (
                     <div key={titulo} className="flex items-start gap-3 mb-3 last:mb-0">
                       <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
                       <span>
-                        <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
-                        <span className="block text-xs" style={{ color: "#475467" }}>{texto}</span>
+                        <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>{titulo}</span>
+                        <span className="block text-xs" style={{ color: "#5B6482" }}>{texto}</span>
                       </span>
                     </div>
                   ))}
@@ -3663,14 +3678,14 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
     >
       <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `inset 0 1px 0 rgba(255,255,255,.3), 0 6px 14px ${bg}55` }}>
         <Icon size={20} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-        <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>
+        <span className="block text-sm font-semibold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</span>
       </span>
       <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -3681,7 +3696,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <button
       onClick={onClick}
       className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
     >
       <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: `${color}1A` }}>
         <Icon size={19} color={color} />
@@ -3691,15 +3706,15 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#475467" }}>{desc}</span>
+      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#5B6482" }}>{desc}</span>
     </button>
   );
 
   const Titulo = ({ children, sub }) => (
     <div className="mb-3 mt-6">
-      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{children}</p>
-      {sub && <p className="text-xs" style={{ color: "#475467" }}>{sub}</p>}
+      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{children}</p>
+      {sub && <p className="text-xs" style={{ color: "#5B6482" }}>{sub}</p>}
     </div>
   );
 
@@ -3732,10 +3747,10 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   const tieneAsistente = !!ownerBiz.asistenteCodigoPublico && !!ownerBiz.asistenteActivo;
 
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
-    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
       <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
-      <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{valor}</span>
-      <span className="block text-[11px] mt-1" style={{ color: "#475467" }}>{etiqueta}</span>
+      <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>{valor}</span>
+      <span className="block text-[11px] mt-1" style={{ color: "#5B6482" }}>{etiqueta}</span>
     </div>
   );
 
@@ -3761,15 +3776,15 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   if (sub === "qr") {
     return (
       <SubPantalla titulo="Mi código QR" onBack={() => setSub(null)}>
-        <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E4E9F2" }}>
+        <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E3E7F1" }}>
           <img
             alt="Código QR de tu negocio"
             className="mx-auto mb-4"
-            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #DDE3EE" }}
+            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E3E7F1" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
           />
-          <p className="text-xs mb-3" style={{ color: "#475467" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
-          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
+          <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
+          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", borderRadius: 14 }}>
             Compartir enlace
           </button>
         </div>
@@ -3781,10 +3796,10 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <div>
 
       {/* tarjeta de identidad */}
-      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
+      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", boxShadow: "0 14px 30px rgba(11,20,55,.28)" }}>
         <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
         <div className="relative flex items-center gap-3.5">
-          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2F6FED", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
+          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2350F5", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
             {ownerBiz.logo ? <img src={ownerBiz.logo} alt="" className="w-full h-full object-cover" /> : ownerBiz.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -3802,7 +3817,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
       {/* números del negocio */}
       <div className="grid grid-cols-2 gap-2.5 mb-1">
-        <Estadistica Icon={Eye} color="#2F6FED" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
+        <Estadistica Icon={Eye} color="#2350F5" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
         <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(ownerBiz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
         <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${ownerBiz.reviews?.length || 0} ${(ownerBiz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
         <Estadistica Icon={Tag} color="#B8703F" valor={promosVigentes} etiqueta={promosVigentes === 1 ? "promoción vigente" : "promociones vigentes"} />
@@ -3816,7 +3831,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
         <Mosaico Icon={MessageCircle} color="#7A4FD6" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
         <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
         <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
-        <Mosaico Icon={QrCode} color="#0B2A54" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
+        <Mosaico Icon={QrCode} color="#0B1437" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
         <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(ownerBiz)} />
         {tieneAsistente ? (
           <Mosaico Icon={Sparkles} color="#7A4F9E" title="Mi Asistente" desc="Clientes, pedidos, puntos y tu asistente virtual." onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")} />
@@ -3842,7 +3857,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
   const irSoporte = (tema, desde, directo) => { setSoporteCtx({ tema: tema || null, directo: !!directo, desde: desde || null }); setSub("soporte"); };
 
   const TONOS = {
-    azul: { bg: "linear-gradient(180deg,#EEF4FF,#DCE8FD)", fg: "#2F6FED", aro: "#D3E1FA" },
+    azul: { bg: "linear-gradient(180deg,#EEF4FF,#DCE8FD)", fg: "#2350F5", aro: "#D3E1FA" },
     violeta: { bg: "linear-gradient(180deg,#F5EFFE,#E8DDFB)", fg: "#7A4FD6", aro: "#E0D2F8" },
     verde: { bg: "linear-gradient(180deg,#E9F8F0,#D4F0E1)", fg: "#1E8A55", aro: "#C3E8D3" },
     naranja: { bg: "linear-gradient(180deg,#FFF5E3,#FFE8C2)", fg: "#E08A12", aro: "#FADFAE" },
@@ -3855,27 +3870,27 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
     <button
       onClick={onClick} disabled={disabled}
       className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left bg-white hover:bg-slate-50"
-      style={{ borderBottom: "1px solid #EDF0F6", opacity: disabled ? 0.55 : 1 }}
+      style={{ borderBottom: "1px solid #EEF0F6", opacity: disabled ? 0.55 : 1 }}
     >
       <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: t.bg, boxShadow: `inset 0 0 0 1px ${t.aro}` }}>
         <Icon size={21} color={t.fg} />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{title}</span>
+          <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1437" }}>{title}</span>
           {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
         </span>
-        {desc && <span className="block text-[13px] mt-0.5" style={{ color: "#667085", lineHeight: 1.4 }}>{desc}</span>}
+        {desc && <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4 }}>{desc}</span>}
       </span>
-      <ChevronDown size={16} color="#98A2B3" style={{ transform: "rotate(-90deg)" }} />
+      <ChevronDown size={16} color="#B9C0D6" style={{ transform: "rotate(-90deg)" }} />
     </button>
     );
   };
   const SeccionAjustes = ({ Icon, children }) => (
     <div className="flex items-center gap-2.5 mb-2.5 px-0.5">
-      <Icon size={19} color="#0B2A54" />
-      <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>{children}</span>
-      <span className="flex-1" style={{ height: 1, background: "#DDE3EE" }} />
+      <Icon size={19} color="#0B1437" />
+      <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1437" }}>{children}</span>
+      <span className="flex-1" style={{ height: 1, background: "#E3E7F1" }} />
     </div>
   );
 
@@ -3906,25 +3921,25 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
     return (
       <div>
         <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
-        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
-        <p className="text-xs mb-4" style={{ color: "#475467" }}>Elegí cómo querés ver Mi Zona</p>
-        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1437" }} className="mb-1">Apariencia</h2>
+        <p className="text-xs mb-4" style={{ color: "#5B6482" }}>Elegí cómo querés ver Mi Zona</p>
+        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E3E7F1", boxShadow: "0 6px 20px rgba(11,20,55,0.07)" }}>
           {opciones.map(({ id, titulo, desc, Icon }) => {
             const activa = tema === id;
             return (
               <button
                 key={id} onClick={() => { guardarTema(id); setTemaEstado(id); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
-                style={{ borderBottom: "1px solid #EDF0F6" }}
+                style={{ borderBottom: "1px solid #EEF0F6" }}
               >
-                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: activa ? "#2F6FED" : "#E8F0FE" }}>
-                  <Icon size={17} color={activa ? "#fff" : "#2F6FED"} />
+                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: activa ? "#2350F5" : "#EDF1FF" }}>
+                  <Icon size={17} color={activa ? "#fff" : "#2350F5"} />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>
+                  <span className="block text-sm font-medium" style={{ color: "#0B1437" }}>{titulo}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</span>
                 </span>
-                {activa && <Check size={18} color="#2F6FED" />}
+                {activa && <Check size={18} color="#2350F5" />}
               </button>
             );
           })}
@@ -3970,7 +3985,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
   return (
     <div>
       <SeccionAjustes Icon={User}>Cuenta y personalización</SeccionAjustes>
-      <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 12px 26px -14px rgba(11,42,84,.18)" }}>
+      <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
         <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} tono="violeta" title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
         <Row Icon={ShieldCheck} tono="verde" title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
@@ -3980,7 +3995,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
       </div>
 
       <SeccionAjustes Icon={Info}>Soporte y más</SeccionAjustes>
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 12px 26px -14px rgba(11,42,84,.18)" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
         <Row Icon={BookOpen} tono="azul" title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
         <Row Icon={MessageCircle} tono="agua" title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
         <Row Icon={Send} tono="violeta" title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
@@ -3995,8 +4010,8 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
     const on = active === id;
     return (
       <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
-        <span className="relative flex items-center justify-center" style={{ width: 52, height: 30, borderRadius: 15, background: on ? "#E8F0FE" : "transparent", transition: "background .25s cubic-bezier(0.22,1,0.36,1)" }}>
-          <Icon size={20} color={on ? "#2F6FED" : "#8A94A8"} strokeWidth={on ? 2.3 : 1.9} />
+        <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 9, background: on ? "#E9EEFF" : "transparent", transition: "background .2s ease" }}>
+          <Icon size={20} color={on ? "#2350F5" : "#8D95B0"} strokeWidth={on ? 2.3 : 1.9} />
           {badge > 0 && (
             <span
               className="absolute flex items-center justify-center text-[9px] font-bold"
@@ -4006,19 +4021,19 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
             </span>
           )}
         </span>
-        <span className="text-[10px]" style={{ color: on ? "#2F6FED" : "#8A94A8", fontWeight: on ? 700 : 500 }}>{label}</span>
+        <span className="text-[10px]" style={{ color: on ? "#2350F5" : "#8D95B0", fontWeight: on ? 700 : 500 }}>{label}</span>
       </button>
     );
   };
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "0 -12px 32px -12px rgba(11,42,84,0.2)", borderTop: "1px solid #E4E9F2" }}>
+    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "none", borderTop: "1px solid #E3E7F1" }}>
       {/* botón flotante "+", elevado por encima de la barra, centrado */}
       <button
         onClick={onAdd} aria-label="Agregar mi negocio"
         className="fixed flex items-center justify-center"
         style={{
           left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg,#2F6FED,#5B91F7)", boxShadow: "0 12px 24px -6px rgba(47,111,237,0.6), 0 0 0 1px rgba(47,111,237,0.18)", border: "4px solid #fff", zIndex: 41,
+          background: "linear-gradient(135deg,#2350F5,#5B91F7)", boxShadow: "0 12px 24px -6px rgba(35,80,245,0.6), 0 0 0 1px rgba(35,80,245,0.18)", border: "4px solid #fff", zIndex: 41,
         }}
       >
         <Plus size={24} color="#fff" strokeWidth={2.6} />
@@ -4130,35 +4145,35 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F6FB" }}>
+    <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F5FA" }}>
       <div className="w-full max-w-lg p-5 pb-10">
         <BotonVolver texto="Volver" onClick={onCancel} />
-        <h2 className="mb-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
+        <h2 className="mb-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>
           {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
         </h2>
-        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
+        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
 
         <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
 
-          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}>
+          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}>
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
           <ZonePicker value={form.zone} onChange={(z) => setForm((f) => ({ ...f, zone: z }))} />
 
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Servicios disponibles</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Servicios disponibles</p>
             <TagInput values={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="Ej: reparación de celulares" />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Especialidades</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Especialidades</p>
             <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
           </div>
 
-          <div className="p-3" style={{ borderRadius: 8, background: "#F3F6FB", border: "1px solid #DDE3EE" }}>
-            <p className="text-xs font-semibold mb-2.5" style={{ color: "#0B2A54" }}>
+          <div className="p-3" style={{ borderRadius: 8, background: "#F3F5FA", border: "1px solid #E3E7F1" }}>
+            <p className="text-xs font-semibold mb-2.5" style={{ color: "#0B1437" }}>
               Preguntas sobre tu rubro ({CATEGORIES.find((c) => c.id === form.cat)?.label})
             </p>
             <div className="flex flex-col gap-2.5">
@@ -4175,12 +4190,12 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
                     </label>
                   ) : (
                     <>
-                      <p className="text-xs mb-1" style={{ color: "#344054" }}>{q.label}</p>
+                      <p className="text-xs mb-1" style={{ color: "#2B3768" }}>{q.label}</p>
                       <input
                         placeholder={q.placeholder}
                         value={form.extra?.[q.key] || ""}
                         onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.value } }))}
-                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                       />
                     </>
                   )}
@@ -4190,14 +4205,14 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Métodos de pago</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Métodos de pago</p>
             <div className="flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const active = form.paymentMethods.includes(m);
                 return (
                   <button key={m} type="button" onClick={() => togglePayment(m)}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#0B2A54" : "#DDE3EE"), backgroundColor: active ? "#0B2A54" : "#fff", color: active ? "#fff" : "#0B1220" }}
+                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#0B1437" : "#E3E7F1"), backgroundColor: active ? "#0B1437" : "#fff", color: active ? "#fff" : "#0B1437" }}
                   >
                     {active && <Check size={12} />} {m}
                   </button>
@@ -4208,16 +4223,16 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.delivery} onChange={setBool("delivery")} /> Hace envíos</label>
 
-          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Logo (obligatorio)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Logo (obligatorio)</p>
             <div className="flex items-center gap-3">
               {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
                 {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
               </label>
@@ -4228,10 +4243,10 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
             {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
             <div className="flex items-center gap-3">
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
                 {uploadingPortada ? "Subiendo..." : form.portada ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePortadaUpload} disabled={uploadingPortada} />
               </label>
@@ -4239,37 +4254,37 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Fotos de productos</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.photos.map((url) => (
                   <div key={url} className="relative">
                     <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
-                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #DDE3EE" }}>
+                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #E3E7F1" }}>
                       <X size={12} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
+            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
               {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
               <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
             </label>
             {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
 
-          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "#344054" }}>Horarios de la semana</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: "#2B3768" }}>Horarios de la semana</p>
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
           {formError && <p className="text-xs font-medium" style={{ color: "#C1443A" }}>{formError}</p>}
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>Cancelar</button>
-            <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>Cancelar</button>
+            <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
               {saving ? "Ubicando dirección..." : publicMode && !initial.name ? "Aceptar" : "Guardar"}
             </button>
           </div>
@@ -4332,7 +4347,7 @@ function HistoriaViewerModal({ business, historias, onClose }) {
       </div>
 
       <div className="absolute flex items-center gap-2 z-10" style={{ top: 20, left: 12, right: 12 }}>
-        <div className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 28, height: 28, borderRadius: "50%", background: "#2F6FED", color: "#fff" }}>
+        <div className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 28, height: 28, borderRadius: "50%", background: "#2350F5", color: "#fff" }}>
           {business.name?.[0]?.toUpperCase()}
         </div>
         <span className="text-sm font-semibold" style={{ color: "#fff" }}>{business.name}</span>
@@ -4349,20 +4364,20 @@ function HistoriaViewerModal({ business, historias, onClose }) {
 function EmpleoDetalleModal({ business, onClose }) {
   const e = business.busquedaEmpleo;
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B122066" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "#0B143766" }} onClick={onClose}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(ev) => ev.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
-            <Briefcase size={17} color="#2F6FED" /> Buscan personal
+          <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>
+            <Briefcase size={17} color="#2350F5" /> Buscan personal
           </span>
-          <button onClick={onClose}><X size={18} color="#475467" /></button>
+          <button onClick={onClose}><X size={18} color="#5B6482" /></button>
         </div>
-        <p className="text-xs font-semibold mb-1" style={{ color: "#2F6FED" }}>{e.puesto}</p>
+        <p className="text-xs font-semibold mb-1" style={{ color: "#2350F5" }}>{e.puesto}</p>
         <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
         <a
           href={contactoEmpleoLink(business)} target="_blank" rel="noreferrer"
           className="flex items-center justify-center gap-2 text-sm font-semibold py-3 w-full"
-          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}
+          style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}
         >
           {e.contactoTipo === "whatsapp" ? <MessageCircle size={16} /> : <Share2 size={16} />}
           Contactar por esta búsqueda
@@ -4396,34 +4411,34 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
 
   return (
     <div>
-      <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
+      <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
 
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Tipo de puesto</p>
-            <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Tipo de puesto</p>
+            <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}>
               {TIPOS_PUESTO.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           {puesto === "Otro" && (
-            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
           )}
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Descripción del trabajo</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Descripción del trabajo</p>
             <textarea
               value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3}
               placeholder="Contá qué va a hacer la persona, horarios, requisitos..."
-              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
             />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>¿Cuánto tiempo va a estar publicada?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>¿Cuánto tiempo va a estar publicada?</p>
             <div className="flex gap-2 flex-wrap">
               {DURACIONES_BUSQUEDA.map((d) => (
                 <button
                   key={d.dias} onClick={() => setDias(d.dias)}
                   className="text-xs font-medium px-3 py-1.5"
-                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#DDE3EE"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#344054" }}
+                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2350F5" : "#E3E7F1"), background: dias === d.dias ? "#EDF1FF" : "#fff", color: dias === d.dias ? "#2350F5" : "#2B3768" }}
                 >
                   {d.label}
                 </button>
@@ -4431,19 +4446,19 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>¿Cómo te van a contactar?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>¿Cómo te van a contactar?</p>
             <div className="flex gap-2 mb-2">
               <button
                 onClick={() => setContactoTipo("whatsapp")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#DDE3EE"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#344054" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2350F5" : "#E3E7F1"), background: contactoTipo === "whatsapp" ? "#EDF1FF" : "#fff", color: contactoTipo === "whatsapp" ? "#2350F5" : "#2B3768" }}
               >
                 WhatsApp
               </button>
               <button
                 onClick={() => setContactoTipo("red_social")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#DDE3EE"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#344054" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2350F5" : "#E3E7F1"), background: contactoTipo === "red_social" ? "#EDF1FF" : "#fff", color: contactoTipo === "red_social" ? "#2350F5" : "#2B3768" }}
               >
                 Red social / link
               </button>
@@ -4451,11 +4466,11 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             <input
               value={contactoValor} onChange={(e) => setContactoValor(e.target.value)}
               placeholder={contactoTipo === "whatsapp" ? "Número con código de país, sin +" : "Link de Instagram, Facebook, etc."}
-              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
             />
           </div>
 
-          <button onClick={guardar} className="text-sm font-semibold py-3 mt-1" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+          <button onClick={guardar} className="text-sm font-semibold py-3 mt-1" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}>
             {existente ? "Guardar cambios" : "Publicar búsqueda"}
           </button>
           {existente && (
@@ -4479,29 +4494,29 @@ function DiscountForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onCancel}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1437cc" }} onClick={onCancel}>
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }} className="mb-4">
           {initial.title ? "Editar descuento" : "Nuevo descuento"}
         </h2>
         <div className="flex flex-col gap-3">
-          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Desde</p>
-              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Desde</p>
+              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Hasta</p>
-              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Hasta</p>
+              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
             </div>
           </div>
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>Cancelar</button>
-            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>Guardar</button>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>Cancelar</button>
+            <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 8 }}>Guardar</button>
           </div>
         </div>
       </div>
@@ -4517,35 +4532,35 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
   return (
     <div>
       <div>
-          <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", boxShadow: "0 8px 18px rgba(47,111,237,.3)" }}>
+          <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", boxShadow: "0 8px 18px rgba(35,80,245,.3)" }}>
             <Plus size={16} /> Crear promoción
           </button>
           {lista.length === 0 ? (
             <div className="text-center py-8">
               <span className="inline-flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 18, background: "#FBEBD1" }}><Tag size={22} color="#B8703F" /></span>
-              <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Todavía no creaste promociones</p>
-              <p className="text-xs mt-0.5" style={{ color: "#475467" }}>Un descuento atrae más clientes a tu negocio.</p>
+              <p className="text-sm font-semibold" style={{ color: "#0B1437" }}>Todavía no creaste promociones</p>
+              <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>Un descuento atrae más clientes a tu negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
               {lista.map((d) => {
                 const vigente = isDiscountActive(d);
                 return (
-                  <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E4E9F2", background: vigente ? "#FFFBF2" : "#fff" }}>
+                  <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E3E7F1", background: vigente ? "#FFFBF2" : "#fff" }}>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>{d.title}</h4>
-                      {d.percent && <span className="text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>{d.percent} OFF</span>}
+                      <h4 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 14, color: "#0B1437" }}>{d.title}</h4>
+                      {d.percent && <span className="text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 10, background: "#0B1437", color: "#fff" }}>{d.percent} OFF</span>}
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span>
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 mr-2" style={{ borderRadius: 8, background: vigente ? "#E4F3EA" : "#EEEDE7", color: vigente ? "#1E6B44" : "#7A7D87" }}>
                           {d.active ? (vigente ? "Vigente" : "Fuera de fecha") : "Pausada"}
                         </span>
-                        <span className="text-[11px]" style={{ color: "#475467" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
+                        <span className="text-[11px]" style={{ color: "#5B6482" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
                       </span>
                       <span className="flex gap-1.5 shrink-0">
-                        <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}><Pencil size={13} /></button>
-                        <button onClick={() => onToggle(d.id)} aria-label="Pausar o activar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}><Power size={13} /></button>
+                        <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}><Pencil size={13} /></button>
+                        <button onClick={() => onToggle(d.id)} aria-label="Pausar o activar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}><Power size={13} /></button>
                         <button onClick={() => { if (window.confirm("¿Eliminar esta promoción?")) onDelete(d.id); }} aria-label="Eliminar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={13} /></button>
                       </span>
                     </div>
@@ -4994,7 +5009,7 @@ export default function MiZona() {
   };
 
   if (loading) {
-    return <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#475467"}}>Cargando...</span></div>;
+    return <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#5B6482"}}>Cargando...</span></div>;
   }
 
   const globalStyle = (
@@ -5078,7 +5093,7 @@ export default function MiZona() {
   /* ---- vista del ranking ---- */
   if (showRanking) {
     return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
+      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <RankingScreen
           businesses={businesses}
@@ -5115,7 +5130,7 @@ export default function MiZona() {
   /* ---- vista de favoritos ---- */
   if (showFavoritos) {
     return (
-      <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
+      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
           <FavoritosScreen
@@ -5150,7 +5165,7 @@ export default function MiZona() {
 
   /* ---- vista pública: listado ---- */
   return (
-    <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
       {globalStyle}
 
       {errorMsg && (
@@ -5170,7 +5185,7 @@ export default function MiZona() {
         </div>
       )}
       {confirmandoPago && (
-        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#E8F0FE", color: "#0B2A54" }}>
+        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#EDF1FF", color: "#0B1437" }}>
           Confirmando tu pago con Mercado Pago...
         </div>
       )}
@@ -5253,24 +5268,24 @@ export default function MiZona() {
       )}
 
       {showAddSheet && (
-        <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={() => setShowAddSheet(false)}>
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B143766" }} onClick={() => setShowAddSheet(false)}>
           <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 30px #00000022" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 4, background: "#DDE3EE", margin: "0 auto 16px" }} />
+            <div style={{ width: 40, height: 4, borderRadius: 4, background: "#E3E7F1", margin: "0 auto 16px" }} />
             <div className="flex items-center justify-between mb-4">
-              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>¿Qué querés hacer?</span>
-              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#475467" /></button>
+              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1437" }}>¿Qué querés hacer?</span>
+              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#5B6482" /></button>
             </div>
             <button
               onClick={() => { setShowAddSheet(false); abrirAgregarNegocio(); }}
               className="w-full flex items-center gap-3 p-3.5 text-left"
-              style={{ borderRadius: 12, border: "1px solid #DDE3EE", boxShadow: "0 2px 8px #0000000d" }}
+              style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
             >
-              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#E8F0FE" }}>
-                <Building2 size={19} color="#2F6FED" />
+              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#EDF1FF" }}>
+                <Building2 size={19} color="#2350F5" />
               </span>
               <span>
-                <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Agregar mi negocio</span>
-                <span className="block text-xs" style={{ color: "#475467" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
+                <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Agregar mi negocio</span>
+                <span className="block text-xs" style={{ color: "#5B6482" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
               </span>
             </button>
           </div>
@@ -5287,16 +5302,16 @@ export default function MiZona() {
       )}
 
       {addBusinessDone && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={() => setAddBusinessDone(null)}>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1437cc" }} onClick={() => setAddBusinessDone(null)}>
           <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-center mx-auto mb-3" style={{ width: 48, height: 48, borderRadius: "50%", background: "#E4F3EA" }}>
               <Check size={24} color="#1E6B44" />
             </div>
-            <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
-            <p className="text-sm mb-5" style={{ color: "#344054" }}>
+            <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1437" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
+            <p className="text-sm mb-5" style={{ color: "#2B3768" }}>
               Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
-                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}>
               Entendido
             </button>
           </div>
@@ -5373,15 +5388,15 @@ export default function MiZona() {
               setShowMapa(true);
             }}
             className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 shrink-0"
-            style={{ borderRadius: 20, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", color: "#fff", boxShadow: "0 6px 14px rgba(11,42,84,.28)" }}
+            style={{ borderRadius: 20, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", color: "#fff", boxShadow: "0 6px 14px rgba(11,20,55,.28)" }}
           >
             <MapIcon size={13} /> Ver en el mapa
           </button>
         </div>
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3 mb-2.5">
-            <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
-              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#475467" }}>en {zone}</span>
+            <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>
+              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#5B6482" }}>en {zone}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
@@ -5389,14 +5404,14 @@ export default function MiZona() {
               <select
                 value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none font-medium pl-3.5 pr-8 py-2"
-                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #DDE3EE", color: "#0B1220", backgroundColor: "#fff" }}
+                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E3E7F1", color: "#0B1437", backgroundColor: "#fff" }}
               >
                 <option value="destacados">⭐ Destacados</option>
                 <option value="vistas">👁️ Más visitados</option>
                 <option value="descuentos">🏷️ Descuentos</option>
                 <option value="cercanos">📍 Más cercanos</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#475467" />
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#5B6482" />
             </div>
             {onlyFavorites && (
               <button
@@ -5419,9 +5434,9 @@ export default function MiZona() {
                 className="flex items-center gap-1.5 font-medium px-3.5 py-2"
                 style={{
                   fontSize: 13, borderRadius: 20,
-                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#E8F0FE") : "#fff",
-                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#344054",
-                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2F6FED") : "#DDE3EE"),
+                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#EDF1FF") : "#fff",
+                  color: c.activo ? (c.verde ? "#1E6B44" : "#2350F5") : "#2B3768",
+                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2350F5") : "#E3E7F1"),
                 }}
               >
                 {c.icono}
@@ -5432,19 +5447,19 @@ export default function MiZona() {
         </div>
 
         {sortBy === "cercanos" && locStatus === "idle" && (
-          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "#E8F0FE", borderRadius: 10 }}>
-            <p className="text-sm" style={{ color: "#0B2A54" }}>Activá tu ubicación para ver qué negocios tenés más cerca.</p>
+          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "#EDF1FF", borderRadius: 10 }}>
+            <p className="text-sm" style={{ color: "#0B1437" }}>Activá tu ubicación para ver qué negocios tenés más cerca.</p>
             <button
               onClick={requestLocation}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0"
-              style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}
+              style={{ borderRadius: 8, backgroundColor: "#0B1437", color: "#fff" }}
             >
               <LocateFixed size={14} /> Activar ubicación
             </button>
           </div>
         )}
         {sortBy === "cercanos" && locStatus === "loading" && (
-          <p className="text-xs mb-4" style={{ color: "#344054" }}>Ubicándote para ordenar por cercanía...</p>
+          <p className="text-xs mb-4" style={{ color: "#2B3768" }}>Ubicándote para ordenar por cercanía...</p>
         )}
         {sortBy === "cercanos" && locStatus === "denied" && (
           <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3 flex-wrap" style={{ background: "#FDF1EF", borderRadius: 10 }}>
@@ -5463,8 +5478,8 @@ export default function MiZona() {
         )}
 
         {filtered.length === 0 ? (
-          <div className="text-center py-16" style={{ color: "#475467" }}>
-            <p className="mb-1" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 19, color: "#0B1220" }}>
+          <div className="text-center py-16" style={{ color: "#5B6482" }}>
+            <p className="mb-1" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 19, color: "#0B1437" }}>
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : onlyVistos && vistosIds.length === 0 ? "Todavía no viste ningún negocio" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">
@@ -5493,8 +5508,8 @@ export default function MiZona() {
         className="fixed z-40 flex items-center justify-center"
         style={{
           right: 16, bottom: 78, width: 54, height: 54, borderRadius: "50%",
-          background: "linear-gradient(135deg, #2F6FED, #7FA8F5)",
-          boxShadow: "0 8px 20px rgba(47,111,237,0.45)",
+          background: "linear-gradient(135deg, #2350F5, #7FA8F5)",
+          boxShadow: "0 8px 20px rgba(35,80,245,0.45)",
         }}
         aria-label="Buscar con el asistente"
       >
