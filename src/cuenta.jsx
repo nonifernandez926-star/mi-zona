@@ -276,6 +276,134 @@ function estadoNegocio(n) {
   return { texto: `Activo hasta el ${fmtFecha(String(n.venceEl).slice(0, 10))}`, color: VERDE };
 }
 
+const fmtFechaCorta = (iso) => (iso ? new Date(iso).toLocaleDateString("es-AR", { month: "short", year: "numeric" }) : "—");
+
+// Encabezado de las subpantallas de Mi cuenta
+function CabeceraCuenta({ titulo, sub, onBack }) {
+  return (
+    <>
+      <BotonVolver texto="Volver a Mi cuenta" onClick={onBack} />
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{titulo}</h2>
+      {sub ? <p className="text-sm mt-1.5 mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{sub}</p> : <div className="mb-5" />}
+    </>
+  );
+}
+
+function Vacio({ Icon, texto }) {
+  return (
+    <div className="px-4 py-8 text-center" style={TARJETA_SEG}>
+      <Icon size={28} color="#94A3B8" className="mx-auto mb-2" />
+      <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>{texto}</p>
+    </div>
+  );
+}
+
+function CuentaDesde({ usuario, resumen, conCorreo, onBack }) {
+  const desde = resumen?.cuenta?.creadaEn;
+  const dias = desde ? Math.max(0, Math.floor((Date.now() - new Date(desde).getTime()) / 86400000)) : null;
+  const tiempo = dias === null ? "…" : dias < 1 ? "Desde hoy" : dias < 60 ? `${dias} ${dias === 1 ? "día" : "días"}` : `${Math.floor(dias / 30)} meses`;
+  const vence = resumen?.sesion?.venceEn;
+  return (
+    <div>
+      <CabeceraCuenta titulo="Miembro desde" sub="Cuándo y cómo empezaste en Mi Zona." onBack={onBack} />
+      <div className="overflow-hidden" style={TARJETA_SEG}>
+        <FilaDato Icon={CalendarDays} titulo="Te registraste el" valor={desde ? fmtFechaLarga(desde) : "…"} />
+        <FilaDato Icon={Clock} titulo="Tiempo en Mi Zona" valor={tiempo} />
+        <FilaDato Icon={KeyRound} titulo="Entrás con" valor={conCorreo ? "Correo y contraseña" : "Google"} />
+        <FilaDato Icon={Mail} titulo="Correo" valor={<span className="break-all">{usuario.email}</span>} />
+        <FilaDato Icon={Smartphone} titulo="Sesión de este dispositivo hasta" valor={vence ? fmtFechaLarga(vence) : "—"} ultimo />
+      </div>
+    </div>
+  );
+}
+
+function CuentaResenas({ onBack }) {
+  const [lista, setLista] = useState(null);
+  const [error, setError] = useState(false);
+  const cargar = () => { setError(false); privacidadApi.misResenas().then(setLista).catch(() => setError(true)); };
+  useEffect(cargar, []);
+  return (
+    <div>
+      <CabeceraCuenta titulo="Mis reseñas" sub="Las opiniones que dejaste en los negocios con tu cuenta. Se muestran con el nombre que pusiste al escribirlas." onBack={onBack} />
+      {lista === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {error && (
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+          <span>No pudimos cargar tus reseñas.</span>
+          <button onClick={cargar} className="font-bold shrink-0">Reintentar</button>
+        </div>
+      )}
+      {lista && lista.length === 0 && <Vacio Icon={Star} texto="Todavía no escribiste reseñas. Podés dejar una desde la ficha de cualquier negocio." />}
+      {lista && lista.length > 0 && (
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          {lista.map((r, i) => (
+            <div key={`${r.negocioId}-${i}`} className="px-4 py-3.5" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{r.negocio}</span>
+                <span className="text-xs shrink-0" style={{ color: "#4B5563" }}>{r.fecha ? fmtFecha(String(r.fecha).slice(0, 10)) : ""}</span>
+              </div>
+              <div className="flex gap-0.5 my-1" aria-label={`${r.valoracion} de 5`}>
+                {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={14} color="#E08A1E" fill={n <= r.valoracion ? "#E08A1E" : "none"} />)}
+              </div>
+              <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{r.texto}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CuentaFavoritos({ negocios, onAbrir, onBack }) {
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem("miZonaFavoritos") || "[]"); } catch { ids = []; }
+  const lista = (negocios || []).filter((b) => ids.includes(b.id));
+  return (
+    <div>
+      <CabeceraCuenta titulo="Mis favoritos" sub="Los negocios que guardaste en este dispositivo." onBack={onBack} />
+      {lista.length === 0 && <Vacio Icon={Heart} texto="Todavía no guardaste favoritos. Tocá el corazón en la ficha de un negocio para guardarlo." />}
+      {lista.length > 0 && (
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          {lista.map((b, i) => (
+            <button key={b.id} onClick={() => onAbrir && onAbrir(b.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+              <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#FBE9E7" }}><Heart size={17} color="#C1443A" fill="#C1443A" /></span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{b.name}</span>
+                {(b.cat || b.zone) && <span className="block text-xs mt-0.5 truncate" style={{ color: "#4B5563" }}>{[b.cat, b.zone].filter(Boolean).join(" · ")}</span>}
+              </span>
+              <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CuentaNegocios({ negocios, onBack }) {
+  return (
+    <div>
+      <CabeceraCuenta titulo="Mis negocios" sub="Los negocios registrados con tu cuenta y cómo está su suscripción. Los administrás desde Herramientas." onBack={onBack} />
+      {negocios.length === 0 && <Vacio Icon={Store} texto="No tenés negocios en tu cuenta. Tocá “+” en el inicio para registrar el tuyo." />}
+      {negocios.length > 0 && (
+        <div className="overflow-hidden" style={TARJETA_SEG}>
+          {negocios.map((n, i) => {
+            const e = estadoNegocio(n);
+            return (
+              <div key={n.id} className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: i === negocios.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#E8F0FE" }}><Store size={17} color="#2F6FED" /></span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombre}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: e.color }}>{e.texto}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FilaDato({ Icon, titulo, valor, ultimo }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
@@ -286,10 +414,11 @@ function FilaDato({ Icon, titulo, valor, ultimo }) {
   );
 }
 
-export function MiCuentaScreen({ usuario, local, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
+export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   const [resumen, setResumen] = useState(null); // lo que Mi Zona tiene de esta cuenta (cantidades, negocios, fecha de alta)
+  const [vista, setVista] = useState(null); // null | "desde" | "resenas" | "favoritos" | "negocios"
   useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
   useEffect(() => {
     if (!usuario) { setResumen(null); return; }
@@ -308,6 +437,14 @@ export function MiCuentaScreen({ usuario, local, onBack, onLogged, onUsuarioActu
   const negocios = resumen?.negocios || [];
   const inicial = (usuario?.nombre || usuario?.email || "?").trim().charAt(0).toUpperCase();
   const conCorreo = resumen ? resumen.cuenta.proveedor === "email" : !!usuario?.conClave;
+
+  if (usuario && vista) {
+    const atras = () => setVista(null);
+    if (vista === "desde") return <CuentaDesde usuario={usuario} resumen={resumen} conCorreo={conCorreo} onBack={atras} />;
+    if (vista === "resenas") return <CuentaResenas onBack={atras} />;
+    if (vista === "favoritos") return <CuentaFavoritos negocios={todosNegocios} onAbrir={onAbrirNegocio} onBack={atras} />;
+    if (vista === "negocios") return <CuentaNegocios negocios={negocios} onBack={atras} />;
+  }
 
   return (
     <div>
@@ -354,31 +491,11 @@ export function MiCuentaScreen({ usuario, local, onBack, onLogged, onUsuarioActu
 
           <Etiqueta>Tu actividad en Mi Zona</Etiqueta>
           <div className="overflow-hidden" style={TARJETA_SEG}>
-            <FilaDato Icon={CalendarDays} titulo="Miembro desde" valor={resumen ? fmtFechaLarga(resumen.cuenta.creadaEn) : "…"} />
-            <FilaDato Icon={Star} titulo="Reseñas que escribiste" valor={resumen ? resumen.resenas : "…"} />
-            <FilaDato Icon={Heart} titulo="Favoritos en este dispositivo" valor={local?.favoritos ?? 0} />
-            <FilaDato Icon={Store} titulo="Negocios en tu cuenta" valor={resumen ? negocios.length : "…"} ultimo />
+            <FilaMenu Icon={CalendarDays} color="#2F6FED" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
+            <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
+            <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => setVista("favoritos")} />
+            <FilaMenu Icon={Store} color="#0B2A54" titulo="Mis negocios" valor={resumen ? String(negocios.length) : null} onClick={() => setVista("negocios")} ultimo />
           </div>
-
-          {negocios.length > 0 && (
-            <>
-              <Etiqueta>Tus negocios</Etiqueta>
-              <div className="overflow-hidden" style={TARJETA_SEG}>
-                {negocios.map((n, i) => {
-                  const e = estadoNegocio(n);
-                  return (
-                    <div key={n.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i === negocios.length - 1 ? "none" : "1px solid #EEF2F7" }}>
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 11, background: "#E8F0FE" }}><Store size={16} color="#2F6FED" /></span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombre}</span>
-                        <span className="block text-xs mt-0.5" style={{ color: e.color }}>{e.texto}</span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
 
           <button
             onClick={onCerrarSesion}
@@ -474,8 +591,9 @@ function EliminarCuenta({ usuario, onEliminada }) {
    Menú corto como el de Google, Instagram o Mercado Pago: cada fila abre su propia pantalla.
    Contraseña · Alertas de inicio de sesión · Dispositivos con sesión · Actividad reciente (el estado general va arriba, sin pantalla aparte) */
 
-const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
-const VERDE = "#1E8A55", AMBAR = "#C77A0A";
+export const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
+export const VERDE = "#1E8A55";
+export const AMBAR = "#C77A0A";
 
 function hace(iso) {
   const ms = Date.now() - new Date(iso).getTime();
@@ -490,12 +608,12 @@ function hace(iso) {
 }
 const fechaHora = (iso) => new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-function Etiqueta({ children }) {
+export function Etiqueta({ children }) {
   return <h3 className="px-1 mb-2 mt-6" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "#4B5563" }}>{children}</h3>;
 }
 
 // Fila del menú: ícono de color, título, dato corto a la derecha y flecha (abre una pantalla)
-function FilaMenu({ Icon, color, titulo, desc, valor, tonoValor, onClick, ultimo }) {
+export function FilaMenu({ Icon, color, titulo, desc, valor, tonoValor, onClick, ultimo }) {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
       <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: color }}><Icon size={20} color="#fff" /></span>

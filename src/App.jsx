@@ -18,6 +18,7 @@ import {
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
+import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
   LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver, BotonAtras,
   PlanesModal, TarjetaSuscripcion, infoSuscripcion,
@@ -1927,7 +1928,7 @@ function BarraTitulo({ titulo }) {
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, notifSinLeer = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2025,6 +2026,8 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           onClose={() => setShowDrawer(false)}
           onHerramientas={() => { setShowDrawer(false); onHerramientas(); }}
           onAjustes={() => { setShowDrawer(false); onAjustes(); }}
+          onAyuda={() => { setShowDrawer(false); onAyuda(); }}
+          onSoporte={() => { setShowDrawer(false); onSoporte(); }}
           onOpenOwner={() => { setShowDrawer(false); onOpenOwner(); }}
         />
       )}
@@ -2082,7 +2085,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   );
 }
 
-function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
+function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner }) {
   const Item = ({ Icon, label, onClick, danger }) => (
     <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>
       <Icon size={18} color={danger ? "#9A3B34" : "#0B2A54"} />
@@ -2118,8 +2121,8 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onOpenOwner }) {
             else { try { await navigator.clipboard.writeText(window.location.origin); alert("Enlace copiado al portapapeles"); } catch {} }
             onClose();
           }} />
-          <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onClose} />
-          <Item Icon={Send} label="Soporte" onClick={onClose} />
+          <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onAyuda} />
+          <Item Icon={Send} label="Soporte" onClick={onSoporte} />
         </div>
         <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#4B5563", borderTop: "1px solid #EEF2F7" }}>
           <X size={13} /> Cerrar menú
@@ -3731,10 +3734,13 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   );
 }
 
-function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
+function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
   const [tema, setTemaEstado] = useState(() => getTema());
   // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
   useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
+  // Ayuda y Soporte se mandan entre sí (por ejemplo, "No me sirvió" → escribir a Soporte con el tema ya elegido)
+  const [soporteCtx, setSoporteCtx] = useState({ tema: null, directo: false, desde: null });
+  const irSoporte = (tema, desde, directo) => { setSoporteCtx({ tema: tema || null, directo: !!directo, desde: desde || null }); setSub("soporte"); };
 
   const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
     <button
@@ -3759,7 +3765,7 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
   if (sub === "cuenta") {
     return (
       <MiCuentaScreen
-        usuario={usuario} local={{ favoritos: getFavorites().length }} onBack={() => setSub(null)} onLogged={onLogged}
+        usuario={usuario} local={{ favoritos: getFavorites().length }} negocios={negocios} onAbrirNegocio={onAbrirNegocio} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
         onCerrarSesion={onCerrarSesion}
         onCuentaEliminada={onCuentaEliminada}
@@ -3825,27 +3831,22 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
     );
   }
 
-  if (sub) {
-    const content = {
-      acerca: {
-        title: "Acerca de Mi Zona",
-        body: "Mi Zona conecta a los clientes con los negocios de su localidad: descubrí, explorá y contactá al asistente de cada negocio en un solo lugar. Este proyecto está en construcción activa — nuevas funciones se agregan cada semana.",
-      },
-      ayuda: {
-        title: "Centro de ayuda",
-        body: "¿Sos cliente? Buscá el negocio que te interesa y abrí el chat con su asistente para consultar. ¿Sos dueño de un negocio? Iniciá sesión con Google, tocá \"+\" para registrarlo y administralo desde Herramientas.",
-      },
-      soporte: {
-        title: "Soporte",
-        body: "¿Encontraste un problema o tenés una sugerencia? Escribinos y te respondemos a la brevedad.",
-      },
-    }[sub];
+  if (sub === "acerca") {
+    return <AcercaScreen onBack={() => setSub(null)} onIrSoporte={() => irSoporte(null, "acerca", false)} />;
+  }
+  if (sub === "ayuda") {
+    return <AyudaScreen onBack={() => setSub(null)} onContactar={(tema) => irSoporte(tema, "ayuda", true)} />;
+  }
+  if (sub === "soporte") {
+    const desde = soporteCtx.desde;
     return (
-      <div>
-        <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
-        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-3">{content.title}</h2>
-        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.6 }}>{content.body}</p>
-      </div>
+      <SoporteScreen
+        usuario={usuario} temaInicial={soporteCtx.tema} directo={soporteCtx.directo}
+        textoVolver={desde === "acerca" ? "Volver a Acerca de Mi Zona" : desde === "ayuda" ? "Volver al Centro de ayuda" : "Volver a Ajustes"}
+        onBack={() => { setSoporteCtx({ tema: null, directo: false, desde: null }); setSub(desde || null); }}
+        onLogin={() => onLogin("login")}
+        onIrAyuda={() => setSub("ayuda")}
+      />
     );
   }
 
@@ -3863,9 +3864,9 @@ function AjustesScreen({ sub, setSub, usuario, onLogin, onLogged, onUsuarioActua
       </div>
 
       <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
-        <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Información de la aplicación" onClick={() => setSub("acerca")} />
-        <Row Icon={MessageCircle} title="Centro de ayuda" desc="Preguntas frecuentes y asistencia" onClick={() => setSub("ayuda")} />
-        <Row Icon={Send} title="Soporte" desc="Contactar al equipo de Mi Zona" onClick={() => setSub("soporte")} />
+        <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
+        <Row Icon={MessageCircle} title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
+        <Row Icon={Send} title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
       </div>
     </div>
   );
@@ -5082,6 +5083,8 @@ export default function MiZona() {
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
           onAjustes={() => irATab("ajustes")}
+          onAyuda={() => { irATab("ajustes"); setSubAjustes("ayuda"); }}
+          onSoporte={() => { irATab("ajustes"); setSubAjustes("soporte"); }}
           notifSinLeer={notifSinLeer}
           onOpenNotificaciones={() => setShowNotificaciones(true)}
         />
@@ -5183,6 +5186,7 @@ export default function MiZona() {
           <AjustesScreen
             sub={subAjustes} setSub={setSubAjustes}
             usuario={usuario}
+            negocios={businesses} onAbrirNegocio={openDetail}
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}

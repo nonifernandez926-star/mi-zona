@@ -1,9 +1,25 @@
-# Mi Zona — Seguridad sin repetir, Privacidad completa y Mi cuenta con datos reales (LEER PRIMERO · solo hay que volver a publicar la WEB)
+# Mi Zona — Acerca de, Centro de ayuda y Soporte (LEER PRIMERO · volver a publicar servidor Y web)
+
+**Qué hay:** Acerca de Mi Zona (cómo funciona, términos, política de privacidad, licencias, compartir), Centro de ayuda (34 artículos en 8 temas, buscador, "¿Te sirvió?") y Soporte (formulario con tema, "Mis consultas" con respuestas del equipo y estados). El menú lateral también abre Centro de ayuda y Soporte.
+
+**Configurar una sola vez:**
+1. **Render (servidor):** agregá `SOPORTE_ADMIN_KEY` con una clave larga. Sin esa variable nadie puede leer ni responder consultas.
+2. **Leer y responder consultas:** abrí `https://TU-SERVIDOR.onrender.com/api/soporte/panel`, pegá la clave y elegí Abiertas / Respondidas. Al responder, la persona con cuenta lo ve en Soporte → Mis consultas y recibe una notificación (si las activó). Las consultas **sin cuenta** se responden por correo a la dirección que dejaron (el panel la muestra).
+3. **Aviso de consulta nueva (opcional):** en `SOPORTE_AVISO_URL` poné el enlace (webhook) de un canal de Slack o Discord, o de Make/Zapier. Si no, entrá al panel de vez en cuando.
+4. **Netlify (web, opcional):** `VITE_SOPORTE_EMAIL` y `VITE_SOPORTE_WHATSAPP` (solo números con código de país, ej. 5491122334455) muestran los botones de Correo y WhatsApp en Soporte. Si no los cargás, esos botones no aparecen.
+
+**Antes de publicar:** los términos y la política (`src/legal.js`) son un texto base pensado para esta app. Pedí a un abogado o contador que los revise, completá el nombre legal/CUIT del titular si corresponde y actualizá `LEGAL_ACTUALIZADO` cuando cambien. Revisá en especial la regla de reembolsos (hoy: al eliminar la cuenta no se reembolsa el período pagado).
+**Para editar la ayuda:** los artículos están en `src/ayudaContenido.js`. Si cambiás algo de la app (precios, pantallas, pasos), actualizá el artículo que lo explica.
+**Servidor:** modelo `Consulta`, rutas `/api/soporte`. Las consultas se borran con la cuenta y van en "Descargar mis datos".
+
+---
+
+# Mi Zona — Seguridad sin repetir, Privacidad completa y Mi cuenta con datos reales (LEER PRIMERO · volver a publicar servidor Y web)
 
 - **Seguridad:** se quitó la pantalla "Revisión de seguridad", que repetía las mismas funciones de abajo (Dispositivos y Alertas). Ahora el estado va en un cartel arriba ("Tu cuenta está al día" / "N cosas para revisar") y cada fila de abajo se marca en ámbar cuando hay algo para mirar.
 - **Privacidad:** nuevo control "Guardar los negocios que vi"; "Lo que guardamos de vos" ahora incluye nombre, forma de acceso, dispositivos con notificaciones, chats ligados a la cuenta, vistos y búsquedas del dispositivo; nuevo bloque "Qué es público y qué es privado"; acciones nuevas: desactivar notificaciones en todos los dispositivos y borrar vistos y búsquedas; acceso directo a Seguridad.
 - **Mi cuenta:** tarjeta con tu inicial, nombre, correo y forma de acceso; "Tu actividad en Mi Zona" (miembro desde, reseñas, favoritos, negocios) y "Tus negocios" con su estado (activo, vence en N días, esperando el pago). Cerrar sesión y Eliminar cuenta siguen igual.
-- No cambió nada del servidor: todo usa las rutas que ya existían.
+- **Mi cuenta → Tu actividad en Mi Zona:** cada fila abre su subpantalla (Miembro desde, Mis reseñas, Mis favoritos, Mis negocios). Servidor: ruta nueva `GET /api/privacidad/resenas`.
 
 ---
 

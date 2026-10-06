@@ -120,6 +120,11 @@ export const registrarConCorreo = (nombre, email, password) => accesoConCorreo("
 export const entrarConCorreo = (email, password) => accesoConCorreo("/auth/login", { email, password });
 
 // Enlace para descargar Mi Asistente. Poné el link exacto en Netlify con la variable VITE_PLAY_STORE_URL.
+// Contacto directo opcional en Soporte: si no se configuran, esos botones no se muestran. VITE_SOPORTE_WHATSAPP va solo con números y código de país (ej. 5491122334455).
+export const SOPORTE_EMAIL = import.meta.env.VITE_SOPORTE_EMAIL || "";
+export const SOPORTE_WHATSAPP = String(import.meta.env.VITE_SOPORTE_WHATSAPP || "").replace(/\D/g, "");
+export const APP_VERSION = "1.0.0";
+
 export const PLAY_STORE_URL = import.meta.env.VITE_PLAY_STORE_URL || "https://play.google.com/store/search?q=Mi%20Asistente&c=apps";
 
 export async function traerMiSesion() {
@@ -253,6 +258,7 @@ export function setPrivacidadLocal(cambios) {
 
 export const privacidadApi = {
   resumen: () => getUsuarioJSON("/privacidad"),
+  misResenas: () => getUsuarioJSON("/privacidad/resenas").then((r) => r.resenas),
   guardarPreferencias: (prefs) => enviarUsuarioJSON("/privacidad/preferencias", "PUT", prefs),
   borrarAgenda: () => enviarUsuarioJSON("/privacidad/agenda", "DELETE", {}),
   borrarNotificaciones: () => enviarUsuarioJSON("/privacidad/notificaciones", "DELETE", {}),
@@ -268,4 +274,12 @@ export const privacidadApi = {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   },
+};
+
+/* ---------- soporte ---------- */
+
+export const soporteApi = {
+  enviar: (cuerpo) => enviarUsuarioJSON("/soporte", "POST", cuerpo).then((r) => r.consulta),
+  mias: () => getUsuarioJSON("/soporte/mias").then((r) => r.consultas),
+  cerrar: (id) => enviarUsuarioJSON(`/soporte/${id}/cerrar`, "POST", {}).then((r) => r.consulta),
 };

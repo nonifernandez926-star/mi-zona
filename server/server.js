@@ -10,6 +10,7 @@ import suscripcionRoutes from "./routes/suscripcion.js";
 import pushRoutes from "./routes/push.js";
 import agendaRoutes from "./routes/agenda.js";
 import privacidadRoutes from "./routes/privacidad.js";
+import soporteRoutes from "./routes/soporte.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
 import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 
@@ -49,6 +50,7 @@ app.use("/api/suscripcion", suscripcionRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/agenda", agendaRoutes);
 app.use("/api/privacidad", privacidadRoutes);
+app.use("/api/soporte", soporteRoutes);
 
 if (!process.env.JWT_SECRET) console.warn("⚠️  Falta JWT_SECRET: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("⚠️  Falta GOOGLE_CLIENT_ID: el inicio de sesión con Google no va a funcionar hasta configurarlo.");

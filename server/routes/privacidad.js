@@ -6,6 +6,7 @@ import PushSuscripcion from "../models/PushSuscripcion.js";
 import UsoFotoAgenda from "../models/UsoFotoAgenda.js";
 import Evento from "../models/Evento.js";
 import Sesion from "../models/Sesion.js";
+import Consulta from "../models/Consulta.js";
 import ActividadSeguridad from "../models/ActividadSeguridad.js";
 import { identificar, requiereUsuario, verificarAccessTokenGoogle, limitar } from "../utils/auth.js";
 import { verificarContrasena } from "../utils/contrasenas.js";
@@ -47,6 +48,21 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/privacidad/resenas → lista de las reseñas que escribió esta cuenta (para Mi cuenta → Tu actividad)
+router.get("/resenas", async (req, res) => {
+  try {
+    const lista = await Business.aggregate([
+      { $unwind: "$reviews" }, { $match: { "reviews.autorUid": huellaAutor(uid(req)) } },
+      { $project: { _id: 0, negocioId: "$id", negocio: "$name", valoracion: "$reviews.rating", texto: "$reviews.text", fecha: "$reviews.date" } },
+    ]);
+    lista.sort((a, b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
+    res.json({ resenas: lista });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudieron cargar tus reseñas." });
+  }
+});
+
 // PUT /api/privacidad/preferencias   { ubicacionBusqueda?, chatsBusqueda?, iaAgenda? }
 // Estos controles los respeta el servidor: la búsqueda con asistente ignora la ubicación y los chats, y la agenda no usa IA.
 router.put("/preferencias", async (req, res) => {
@@ -66,10 +82,11 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, agenda, push] = await Promise.all([
+    const [negocios, agenda, push, consultas] = await Promise.all([
       Business.find({ ownerId: id }),
       AgendaItem.find({ usuarioId: id }).lean(),
       PushSuscripcion.find({ usuarioId: id }).select("createdAt").lean(),
+      Consulta.find({ usuarioId: id }).select("motivo asunto mensaje estado respuesta createdAt -_id").lean(),
     ]);
     const huella = huellaAutor(id);
     const misResenas = await Business.aggregate([
@@ -90,6 +107,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       agenda: agenda.map(({ _id, __v, usuarioId, ...r }) => r),
       reseñasQueEscribí: misResenas,
       dispositivosConNotificaciones: push.length,
+      consultasASoporte: consultas,
     });
   } catch (e) {
     console.error(e);
@@ -164,6 +182,7 @@ router.delete("/cuenta", async (req, res) => {
       UsoFotoAgenda.deleteMany({ usuarioId: id }),
       Sesion.deleteMany({ usuarioId: id }),
       ActividadSeguridad.deleteMany({ usuarioId: id }),
+      Consulta.deleteMany({ usuarioId: id }),
     ]);
     await Usuario.deleteOne({ _id: u._id });
     res.json({ ok: true });
