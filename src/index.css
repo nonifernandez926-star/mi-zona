@@ -169,12 +169,9 @@ img[loading="lazy"], img.object-cover { background: linear-gradient(110deg, #EEF
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
 }
 /* buscador: el contenedor completo reacciona al foco */
-div:has(> input[placeholder^="Buscá"]) { transition: box-shadow .2s var(--zona-ease), transform .2s var(--zona-ease); }
-div:has(> input[placeholder^="Buscá"]):focus-within { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(127,168,245,.45), 0 16px 34px rgba(5,20,45,.38) !important; }
 div:has(> input[placeholder^="Buscá"]) > input { box-shadow: none !important; border: 0 !important; }
-div:has(> input[placeholder^="Buscá"]) > input:focus { box-shadow: none !important; }
+div:has(> input[placeholder^="Buscá"]) > input:focus, div:has(> input[placeholder^="Buscá"]) > input:focus-visible { box-shadow: none !important; outline: none !important; border: 0 !important; }
 /* barras inferiores fijas: respetan el borde del celular */
-.fixed.bottom-0 { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* chips y categorías: desplazamiento con inercia y encaje */
 [class*="overflow-x-auto"] { -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
 [class*="overflow-x-auto"] > * { scroll-snap-align: start; }
@@ -310,3 +307,15 @@ button[style*="background: rgb(255, 255, 255)"][style*="box-shadow"] { box-shado
 .text-red-500, .text-red-600 { color: #C1443A; font-weight: 500; }
 /* separadores: línea más fina y de tono coherente */
 hr { border: 0; border-top: 1px solid var(--zona-borde); }
+
+/* Hojas de la agenda: en pantallas anchas se centran y se redondean por completo */
+@media (min-width: 640px) { .fixed.inset-0.sm\:items-center > div.bg-white { border-radius: 26px !important; } }
+
+/* Campos "sin marco" (dentro de otra caja: buscadores, chats, preguntas): la caja manda, el campo no dibuja anillo ni fondo propio */
+input[class*="bg-transparent"], textarea[class*="bg-transparent"], input.outline-none, textarea.outline-none {
+  background-color: transparent !important; box-shadow: none !important; border-radius: 0 !important;
+}
+input[class*="bg-transparent"]:focus, textarea[class*="bg-transparent"]:focus, input.outline-none:focus, textarea.outline-none:focus,
+input[class*="bg-transparent"]:focus-visible, textarea[class*="bg-transparent"]:focus-visible, input.outline-none:focus-visible, textarea.outline-none:focus-visible {
+  box-shadow: none !important; outline: none !important; border-color: transparent !important;
+}

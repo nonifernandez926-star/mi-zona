@@ -8,14 +8,14 @@ import { getPrivacidad, setPrivacidadLocal, privacidadApi, desactivarPush } from
 
 // Mismo lenguaje visual que Ajustes: tarjetas blancas con borde suave, filas con ícono azul y texto legible.
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
-const TARJETA = { borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" };
-const LINEA = { borderBottom: "1px solid #EEF2F7" };
+const TARJETA = { borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 10px 24px -12px rgba(11,42,84,.14)" };
+const LINEA = { borderBottom: "1px solid #EDF0F6" };
 
 function Grupo({ titulo, desc, children }) {
   return (
     <section className="mb-5">
-      <h3 className="px-1 mb-1" style={{ ...TITULO, fontSize: 15 }}>{titulo}</h3>
-      {desc && <p className="px-1 mb-2 text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{desc}</p>}
+      <h3 className="px-1 mb-1" style={{ ...TITULO, fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#667085" }}>{titulo}</h3>
+      {desc && <p className="px-1 mb-2 text-sm" style={{ color: "#475467", lineHeight: 1.5 }}>{desc}</p>}
       <div className="overflow-hidden bg-white mt-2" style={TARJETA}>{children}</div>
     </section>
   );
@@ -23,7 +23,7 @@ function Grupo({ titulo, desc, children }) {
 
 function Icono({ Icon, danger }) {
   return (
-    <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: danger ? "#F7E7E5" : "#E8F0FE" }}>
+    <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: danger ? "linear-gradient(180deg,#FBEDEB,#F5DEDB)" : "linear-gradient(180deg,#EEF4FF,#E0EBFD)", boxShadow: danger ? "inset 0 0 0 1px #F0CBC7" : "inset 0 0 0 1px #D3E1FA" }}>
       <Icon size={17} color={danger ? "#9A3B34" : "#2F6FED"} />
     </span>
   );
@@ -33,10 +33,10 @@ function Interruptor({ activo, onChange, disabled, etiqueta }) {
   return (
     <button
       role="switch" aria-checked={activo} aria-label={etiqueta} disabled={disabled} onClick={() => onChange(!activo)}
-      className="shrink-0 relative transition-colors"
-      style={{ width: 48, height: 28, borderRadius: 14, background: activo ? "#2F6FED" : "#CBD5E1", opacity: disabled ? 0.55 : 1 }}
+      className="shrink-0 relative"
+      style={{ width: 50, height: 30, borderRadius: 15, background: activo ? "linear-gradient(180deg,#4A82F2,#2F6FED)" : "#CBD3E1", boxShadow: "inset 0 1px 2px rgba(11,18,32,.18)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer", transition: "background .22s ease, opacity .2s ease" }}
     >
-      <span className="absolute transition-all" style={{ top: 3, left: activo ? 23 : 3, width: 22, height: 22, borderRadius: 11, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
+      <span className="absolute" style={{ top: 3, left: activo ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.25), 0 3px 8px -1px rgba(0,0,0,.2)", transition: "left .24s cubic-bezier(0.22,1,0.36,1)" }} />
     </button>
   );
 }
@@ -47,7 +47,7 @@ function Control({ Icon, titulo, desc, activo, onChange, disabled, ultimo }) {
       <Icono Icon={Icon} />
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-        <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
+        <span className="block text-[13px] mt-0.5" style={{ color: "#475467", lineHeight: 1.45 }}>{desc}</span>
       </span>
       <Interruptor activo={activo} onChange={onChange} disabled={disabled} etiqueta={titulo} />
     </div>
@@ -57,7 +57,7 @@ function Control({ Icon, titulo, desc, activo, onChange, disabled, ultimo }) {
 function Dato({ etiqueta, valor, ultimo }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3" style={ultimo ? null : LINEA}>
-      <span className="text-sm" style={{ color: "#374151" }}>{etiqueta}</span>
+      <span className="text-sm" style={{ color: "#475467" }}>{etiqueta}</span>
       <span className="text-sm font-semibold text-right break-all" style={{ color: "#0B1220" }}>{valor}</span>
     </div>
   );
@@ -67,7 +67,7 @@ function Servicio({ nombre, desc, ultimo }) {
   return (
     <div className="px-4 py-3" style={ultimo ? null : LINEA}>
       <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{nombre}</span>
-      <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
+      <span className="block text-[13px] mt-0.5" style={{ color: "#475467", lineHeight: 1.45 }}>{desc}</span>
     </div>
   );
 }
@@ -81,7 +81,7 @@ function FilaIr({ Icon, titulo, desc, onClick, ultimo }) {
         <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
         <span className="block text-[13px] mt-0.5" style={{ color: "#374151" }}>{desc}</span>
       </span>
-      <ChevronDown size={16} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+      <ChevronDown size={18} color="#98A2B3" style={{ transform: "rotate(-90deg)" }} />
     </button>
   );
 }
@@ -104,29 +104,29 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
         <Icono Icon={Icon} danger={danger} />
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{titulo}</span>
-          <span className="block text-[13px] mt-0.5" style={{ color: "#374151", lineHeight: 1.45 }}>{desc}</span>
+          <span className="block text-[13px] mt-0.5" style={{ color: "#475467", lineHeight: 1.45 }}>{desc}</span>
         </span>
         {estado !== "confirmar" && (
           <button
             onClick={() => (confirmar ? setEstado("confirmar") : correr())} disabled={deshabilitada || estado === "trabajando"}
-            className="shrink-0 text-sm font-semibold px-3.5 py-2 flex items-center gap-1.5"
-            style={{ borderRadius: 10, border: `1px solid ${danger ? "#E3B4B0" : "#C9D9F8"}`, color, background: "#fff", opacity: deshabilitada || estado === "trabajando" ? 0.45 : 1 }}
+            className="shrink-0 text-sm font-semibold px-4 py-2 flex items-center gap-1.5"
+            style={{ borderRadius: 11, border: `1px solid ${danger ? "#EBC3BF" : "#C9D9F8"}`, color, background: danger ? "#FFF8F7" : "#F5F9FF", opacity: deshabilitada || estado === "trabajando" ? 0.45 : 1, minHeight: 38 }}
           >
             {estado === "trabajando" && <Loader2 size={14} className="animate-spin" />}{boton}
           </button>
         )}
       </div>
       {estado === "confirmar" && (
-        <div className="mt-3 p-3.5" style={{ borderRadius: 12, background: "#FBF3F2" }}>
+        <div className="mt-3 p-3.5" style={{ borderRadius: 14, background: "#FBF3F2", border: "1px solid #F3D6D2", animation: "zona-aparecer .28s cubic-bezier(0.22,1,0.36,1) both" }}>
           <p className="text-sm mb-3" style={{ color: "#7A3029", lineHeight: 1.5 }}>{confirmar}</p>
           <div className="flex gap-2">
-            <button onClick={() => setEstado(null)} className="flex-1 text-sm font-medium py-2.5 bg-white" style={{ borderRadius: 10, border: "1px solid #E2E8F0", color: "#0B1220" }}>Cancelar</button>
-            <button onClick={correr} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff" }}>{confirmarTexto}</button>
+            <button onClick={() => setEstado(null)} className="flex-1 text-sm font-medium py-2.5 bg-white" style={{ borderRadius: 11, border: "1px solid #DDE3EE", color: "#0B1220" }}>Cancelar</button>
+            <button onClick={correr} className="flex-1 text-sm font-semibold py-2.5" style={{ borderRadius: 11, background: "#C1443A", color: "#fff" }}>{confirmarTexto}</button>
           </div>
         </div>
       )}
       {estado?.error && <p className="text-sm mt-2" style={{ color: "#C1443A" }}>{estado.error}</p>}
-      {estado?.ok && <p className="text-sm mt-2 flex items-center gap-1.5" style={{ color: "#1E6B44" }}><Check size={15} /> {estado.ok}</p>}
+      {estado?.ok && <p className="text-sm mt-2.5 px-3 py-2 flex items-center gap-1.5 font-medium" style={{ color: "#1E6B44", background: "#EBF7F0", borderRadius: 10, animation: "zona-aparecer .28s cubic-bezier(0.22,1,0.36,1) both" }}><Check size={15} /> {estado.ok}</p>}
     </div>
   );
 }
@@ -169,13 +169,20 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }} className="mb-1.5">Privacidad</h2>
-      <p className="text-sm mb-5" style={{ color: "#374151", lineHeight: 1.5 }}>
-        Tu correo, tu agenda y tus pagos son privados. Los datos de un negocio (nombre, dirección, teléfono, fotos y reseñas) son públicos.
-      </p>
+      <div className="flex items-start gap-3.5 p-4 mb-6" style={{ borderRadius: 20, background: "linear-gradient(135deg,#F3F7FF,#E6EFFD)", border: "1px solid #D6E3FB" }}>
+        <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: "linear-gradient(135deg,#2F6FED,#6C9BF5)", boxShadow: "0 8px 18px -6px rgba(47,111,237,.6)" }}>
+          <ShieldCheck size={22} color="#fff" />
+        </span>
+        <div className="min-w-0">
+          <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }} className="mb-1">Privacidad</h2>
+          <p className="text-sm" style={{ color: "#475467", lineHeight: 1.5 }}>
+            Tu correo, tu agenda y tus pagos son privados. Los datos de un negocio (nombre, dirección, teléfono, fotos y reseñas) son públicos.
+          </p>
+        </div>
+      </div>
 
       {errorCarga && (
-        <div className="p-3.5 mb-5 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+        <div className="p-3.5 mb-5 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#FDF1EF", border: "1px solid #F3CFCB", color: "#9A3B34" }}>
           <span>No pudimos cargar los datos de tu cuenta.</span>
           <button onClick={cargar} className="font-semibold shrink-0">Reintentar</button>
         </div>
@@ -222,7 +229,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         ) : (
           <div className="px-4 py-3.5" style={LINEA}>
             <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>No iniciaste sesión: no tenemos ningún dato tuyo en el servidor.</p>
-            <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 10, background: "#2F6FED", color: "#fff" }}>Iniciar sesión</button>
+            <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 12, background: "#2F6FED", color: "#fff", boxShadow: "0 8px 18px -8px rgba(47,111,237,.7)" }}>Iniciar sesión</button>
           </div>
         )}
         <Dato etiqueta="Favoritos en este dispositivo" valor={contLocal.favoritos} />

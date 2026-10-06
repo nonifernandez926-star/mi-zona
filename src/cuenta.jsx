@@ -43,7 +43,7 @@ export function infoSuscripcion(negocio) {
 export function BotonAtras({ onClick, tono = "claro", size = 40, label = "Volver" }) {
   const estilos = {
     claro: { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.28)", color: "#fff" },
-    oscuro: { background: "#fff", border: "1px solid #DCE5F2", color: "#0B2A54", boxShadow: "0 1px 2px rgba(11,42,84,0.08)" },
+    oscuro: { background: "#fff", border: "1px solid #DDE3EE", color: "#0B2A54", boxShadow: "0 1px 2px rgba(11,42,84,0.08)" },
     foto: { background: "rgba(255,255,255,0.95)", border: "1px solid rgba(255,255,255,0.9)", color: "#0B2A54", boxShadow: "0 4px 14px rgba(0,0,0,0.25)" },
   }[tono];
   return (
@@ -64,7 +64,7 @@ export function BotonVolver({ texto, onClick }) {
     <button
       onClick={onClick} aria-label={texto}
       className="inline-flex items-center gap-2 mb-4 active:scale-95 transition-transform"
-      style={{ padding: "5px 16px 5px 5px", borderRadius: 999, background: "#fff", border: "1px solid #DCE5F2", boxShadow: "0 1px 2px rgba(11,42,84,0.08), 0 4px 12px rgba(11,42,84,0.06)", color: "#0B2A54" }}
+      style={{ padding: "5px 16px 5px 5px", borderRadius: 999, background: "#fff", border: "1px solid #DDE3EE", boxShadow: "0 1px 2px rgba(11,42,84,0.08), 0 4px 12px rgba(11,42,84,0.06)", color: "#0B2A54" }}
     >
       <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: "50%", background: "#0B2A54", color: "#fff" }}>
         <ChevronLeft size={18} strokeWidth={2.6} style={{ marginLeft: -1 }} />
@@ -95,8 +95,8 @@ function FormularioCorreo({ onLogged }) {
   const [ver, setVer] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const campo = { borderRadius: 12, borderColor: "#E2E8F0", background: "#fff" };
-  const boton = (activo) => ({ borderRadius: 14, background: "#2F6FED", color: "#fff", opacity: activo ? 1 : 0.55, boxShadow: "0 8px 18px rgba(47,111,237,.3)" });
+  const campo = { borderRadius: 12, borderColor: "#DDE3EE", background: "#fff" };
+  const boton = (activo) => ({ borderRadius: 14, background: "linear-gradient(180deg,#4A82F2,#2F6FED)", color: "#fff", opacity: activo ? 1 : 0.55, boxShadow: "0 1px 0 rgba(255,255,255,.18) inset, 0 10px 20px -8px rgba(47,111,237,.7)" });
 
   const continuar = async () => {
     if (enviando || !correo.trim()) return;
@@ -141,7 +141,7 @@ function FormularioCorreo({ onLogged }) {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#F3F6FB" }}>
-        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1220" }}><Mail size={14} color="#4B5563" /><span className="truncate">{correo.trim()}</span></span>
+        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1220" }}><Mail size={14} color="#475467" /><span className="truncate">{correo.trim()}</span></span>
         <button type="button" onClick={volver} className="text-xs font-semibold shrink-0" style={{ color: "#2F6FED" }}>Cambiar</button>
       </div>
       {esCrear && (
@@ -189,18 +189,18 @@ function PanelAcceso({ onLogged }) {
       <button
         onClick={() => conGoogle("login")} disabled={entrando}
         className="w-full flex items-center justify-center gap-2.5 text-sm font-semibold py-3.5"
-        style={{ borderRadius: 14, background: "#fff", border: "1px solid #DADCE0", color: "#1F2937", opacity: entrando ? 0.6 : 1 }}
+        style={{ borderRadius: 14, background: "#fff", border: "1px solid #DADCE0", color: "#1F2937", opacity: entrando ? 0.6 : 1, boxShadow: "0 1px 2px rgba(11,18,32,.08)" }}
       >
         <LogoG /> {entrando ? "Entrando..." : "Acceder con Google"}
       </button>
       {error && <p className="text-xs text-center mt-2" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
       <div className="flex items-center gap-3 my-4">
-        <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
+        <span className="flex-1" style={{ height: 1, background: "#DDE3EE" }} />
         <span className="text-xs" style={{ color: "#64748B" }}>o con tu correo</span>
-        <span className="flex-1" style={{ height: 1, background: "#E2E8F0" }} />
+        <span className="flex-1" style={{ height: 1, background: "#DDE3EE" }} />
       </div>
       <FormularioCorreo onLogged={onLogged} />
-      <p className="text-center mt-4" style={{ fontSize: 12, color: "#4B5563" }}>
+      <p className="text-center mt-4" style={{ fontSize: 12, color: "#475467" }}>
         ¿No tenés cuenta?{" "}
         <button onClick={() => conGoogle("registro")} disabled={entrando} className="font-semibold" style={{ color: "#2F6FED" }}>Registrarme</button>
       </p>
@@ -213,10 +213,13 @@ function PanelAcceso({ onLogged }) {
 export function LoginModal({ onClose, onLogged }) {
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6 overflow-y-auto" style={{ borderRadius: 20, maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ ...TITULO, fontSize: 20 }}>Iniciar sesión</h2>
-          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#4B5563" /></button>
+      <div className="bg-white w-full max-w-sm p-6 overflow-y-auto" style={{ borderRadius: 24, maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Iniciar sesión</h2>
+            <p className="text-sm mt-1" style={{ color: "#475467", lineHeight: 1.45 }}>Entrá para guardar favoritos, dejar reseñas y manejar tu negocio.</p>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#F1F4FA" }}><X size={17} color="#475467" /></button>
         </div>
         <PanelAcceso onLogged={onLogged} />
       </div>
@@ -239,21 +242,21 @@ export function NombreModal({ sugerido, onGuardado }) {
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }}>
-      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }}>
-        <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-1">¡Bienvenido a Mi Zona!</h2>
-        <p className="text-sm mb-4" style={{ color: "#374151" }}>¿Cómo te llamás? Después lo podés cambiar en Ajustes → Mi cuenta.</p>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 24 }}>
+        <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }} className="mb-1.5">¡Bienvenido a Mi Zona!</h2>
+        <p className="text-sm mb-4" style={{ color: "#344054" }}>¿Cómo te llamás? Después lo podés cambiar en Ajustes → Mi cuenta.</p>
         <input
           autoFocus value={nombre} maxLength={60}
           onChange={(e) => { setNombre(e.target.value); setError(null); }}
           onKeyDown={(e) => e.key === "Enter" && nombre.trim().length >= 2 && !guardando && guardar()}
           placeholder="Tu nombre"
-          className="w-full border px-3 py-2.5 text-sm mb-2" style={{ borderRadius: 8, borderColor: error ? "#C1443A" : "#E2E8F0" }}
+          className="w-full border px-3 py-2.5 text-sm mb-2" style={{ borderRadius: 12, borderColor: error ? "#C1443A" : "#DDE3EE" }}
         />
         {error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{error}</p>}
         <button
           onClick={guardar} disabled={nombre.trim().length < 2 || guardando}
           className="w-full text-sm font-semibold py-3 mt-1"
-          style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10, opacity: nombre.trim().length < 2 || guardando ? 0.5 : 1 }}
+          style={{ background: "linear-gradient(180deg,#4A82F2,#2F6FED)", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(47,111,237,.7)", opacity: nombre.trim().length < 2 || guardando ? 0.5 : 1 }}
         >
           {guardando ? "Guardando..." : "Continuar"}
         </button>
@@ -284,7 +287,7 @@ function CabeceraCuenta({ titulo, sub, onBack }) {
     <>
       <BotonVolver texto="Volver a Mi cuenta" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{titulo}</h2>
-      {sub ? <p className="text-sm mt-1.5 mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{sub}</p> : <div className="mb-5" />}
+      {sub ? <p className="text-sm mt-1.5 mb-5" style={{ color: "#475467", lineHeight: 1.5 }}>{sub}</p> : <div className="mb-5" />}
     </>
   );
 }
@@ -292,8 +295,8 @@ function CabeceraCuenta({ titulo, sub, onBack }) {
 function Vacio({ Icon, texto }) {
   return (
     <div className="px-4 py-8 text-center" style={TARJETA_SEG}>
-      <Icon size={28} color="#94A3B8" className="mx-auto mb-2" />
-      <p className="text-sm" style={{ color: "#4B5563", lineHeight: 1.5 }}>{texto}</p>
+      <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: 17, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E1E8F2" }}><Icon size={24} color="#8A94A8" /></span>
+      <p className="text-sm" style={{ color: "#475467", lineHeight: 1.5 }}>{texto}</p>
     </div>
   );
 }
@@ -325,9 +328,9 @@ function CuentaResenas({ onBack }) {
   return (
     <div>
       <CabeceraCuenta titulo="Mis reseñas" sub="Las opiniones que dejaste en los negocios con tu cuenta. Se muestran con el nombre que pusiste al escribirlas." onBack={onBack} />
-      {lista === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {lista === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#475467" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
       {error && (
-        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#FDF1EF", color: "#9A3B34" }}>
           <span>No pudimos cargar tus reseñas.</span>
           <button onClick={cargar} className="font-bold shrink-0">Reintentar</button>
         </div>
@@ -336,15 +339,15 @@ function CuentaResenas({ onBack }) {
       {lista && lista.length > 0 && (
         <div className="overflow-hidden" style={TARJETA_SEG}>
           {lista.map((r, i) => (
-            <div key={`${r.negocioId}-${i}`} className="px-4 py-3.5" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+            <div key={`${r.negocioId}-${i}`} className="px-4 py-3.5" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EDF0F6" }}>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{r.negocio}</span>
-                <span className="text-xs shrink-0" style={{ color: "#4B5563" }}>{r.fecha ? fmtFecha(String(r.fecha).slice(0, 10)) : ""}</span>
+                <span className="text-xs shrink-0" style={{ color: "#475467" }}>{r.fecha ? fmtFecha(String(r.fecha).slice(0, 10)) : ""}</span>
               </div>
               <div className="flex gap-0.5 my-1" aria-label={`${r.valoracion} de 5`}>
                 {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={14} color="#E08A1E" fill={n <= r.valoracion ? "#E08A1E" : "none"} />)}
               </div>
-              <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{r.texto}</p>
+              <p className="text-sm" style={{ color: "#344054", lineHeight: 1.5 }}>{r.texto}</p>
             </div>
           ))}
         </div>
@@ -364,13 +367,13 @@ function CuentaFavoritos({ negocios, onAbrir, onBack }) {
       {lista.length > 0 && (
         <div className="overflow-hidden" style={TARJETA_SEG}>
           {lista.map((b, i) => (
-            <button key={b.id} onClick={() => onAbrir && onAbrir(b.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+            <button key={b.id} onClick={() => onAbrir && onAbrir(b.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: i === lista.length - 1 ? "none" : "1px solid #EDF0F6" }}>
               <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#FBE9E7" }}><Heart size={17} color="#C1443A" fill="#C1443A" /></span>
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{b.name}</span>
-                {(b.cat || b.zone) && <span className="block text-xs mt-0.5 truncate" style={{ color: "#4B5563" }}>{[b.cat, b.zone].filter(Boolean).join(" · ")}</span>}
+                {(b.cat || b.zone) && <span className="block text-xs mt-0.5 truncate" style={{ color: "#475467" }}>{[b.cat, b.zone].filter(Boolean).join(" · ")}</span>}
               </span>
-              <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
+              <ChevronRight size={18} color="#98A2B3" className="shrink-0" />
             </button>
           ))}
         </div>
@@ -389,7 +392,7 @@ function CuentaNegocios({ negocios, onBack }) {
           {negocios.map((n, i) => {
             const e = estadoNegocio(n);
             return (
-              <div key={n.id} className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: i === negocios.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+              <div key={n.id} className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: i === negocios.length - 1 ? "none" : "1px solid #EDF0F6" }}>
                 <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#E8F0FE" }}><Store size={17} color="#2F6FED" /></span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{n.nombre}</span>
@@ -406,9 +409,9 @@ function CuentaNegocios({ negocios, onBack }) {
 
 function FilaDato({ Icon, titulo, valor, ultimo }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
+    <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: ultimo ? "none" : "1px solid #EDF0F6" }}>
       <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 11, background: "#E8F0FE" }}><Icon size={16} color="#2F6FED" /></span>
-      <span className="flex-1 min-w-0 text-sm" style={{ color: "#374151" }}>{titulo}</span>
+      <span className="flex-1 min-w-0 text-sm" style={{ color: "#344054" }}>{titulo}</span>
       <span className="text-sm font-semibold text-right" style={{ color: "#0B1220" }}>{valor}</span>
     </div>
   );
@@ -462,22 +465,22 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             <span className="flex items-center justify-center shrink-0 text-xl font-bold" style={{ width: 54, height: 54, borderRadius: "50%", background: "#0B2A54", color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{inicial}</span>
             <span className="flex-1 min-w-0">
               <span className="block text-base font-bold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{usuario.nombre || "Sin nombre"}</span>
-              <span className="block text-xs truncate mt-0.5" style={{ color: "#4B5563" }}>{usuario.email}</span>
+              <span className="block text-xs truncate mt-0.5" style={{ color: "#475467" }}>{usuario.email}</span>
               <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "#E8F0FE", color: "#2F6FED" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
             </span>
           </div>
 
           <Etiqueta>Tus datos</Etiqueta>
           <div className="p-4" style={TARJETA_SEG}>
-            <label className="text-xs font-medium block mb-1" style={{ color: "#374151" }}>Nombre</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "#344054" }}>Nombre</label>
             <input
               value={nombre} maxLength={60} onChange={(e) => { setNombre(e.target.value); setEstado(null); }}
               onKeyDown={(e) => e.key === "Enter" && cambio && nombre.trim().length >= 2 && guardar()}
-              className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+              className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
             />
-            <label className="text-xs font-medium block mb-1" style={{ color: "#374151" }}>Correo de tu cuenta</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "#344054" }}>Correo de tu cuenta</label>
             <div className="flex items-center gap-2 text-sm px-3 py-2.5 mb-3" style={{ borderRadius: 8, background: "#F3F6FB", color: "#0B1220" }}>
-              <Mail size={14} color="#4B5563" /> <span className="truncate">{usuario.email}</span>
+              <Mail size={14} color="#475467" /> <span className="truncate">{usuario.email}</span>
             </div>
             {estado?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estado.error}</p>}
             <button
@@ -556,10 +559,10 @@ function EliminarCuenta({ usuario, onEliminada }) {
   return (
     <div className="mt-5 p-4" style={{ borderRadius: 16, border: "1px solid #F0D3D0", background: "#fff" }}>
       <p className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: "#9A3B34" }}><AlertTriangle size={16} /> Eliminar mi cuenta</p>
-      <p className="text-sm mb-2" style={{ color: "#374151", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
+      <p className="text-sm mb-2" style={{ color: "#344054", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
       {negocios.length > 0 && (
         <>
-          <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>
+          <p className="text-sm mb-3" style={{ color: "#344054", lineHeight: 1.5 }}>
             También se elimina <b>{negocios.length === 1 ? "tu negocio" : `tus ${negocios.length} negocios`}</b> ({negocios.map((n) => n.nombre).join(", ")}). La suscripción pagada no se reembolsa.
           </p>
           <label className="flex items-start gap-2 text-sm mb-3" style={{ color: "#0B1220", lineHeight: 1.4 }}>
@@ -568,17 +571,17 @@ function EliminarCuenta({ usuario, onEliminada }) {
           </label>
         </>
       )}
-      <p className="text-[13px] mb-3" style={{ color: "#4B5563", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
+      <p className="text-[13px] mb-3" style={{ color: "#475467", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
       {esClave && (
         <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Tu contraseña" autoComplete="current-password" maxLength={100}
-          className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
+          className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#DDE3EE" }} />
       )}
       <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí ELIMINAR para confirmar" autoCapitalize="characters"
-        className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E2E8F0" }} />
-      {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#4B5563" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
+        className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#DDE3EE" }} />
+      {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#475467" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
       {error && <p className="text-sm mb-2.5" style={{ color: "#C1443A" }}>{error}</p>}
       <div className="flex gap-2">
-        <button onClick={() => { setAbierto(false); setTexto(""); setClave(""); setError(null); setConNegocios(false); }} disabled={trabajando} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #E2E8F0" }}>Cancelar</button>
+        <button onClick={() => { setAbierto(false); setTexto(""); setClave(""); setError(null); setConNegocios(false); }} disabled={trabajando} className="flex-1 text-sm font-medium py-2.5" style={{ borderRadius: 10, border: "1px solid #DDE3EE" }}>Cancelar</button>
         <button onClick={eliminar} disabled={!listo || trabajando} className="flex-1 text-sm font-semibold py-2.5 flex items-center justify-center gap-1.5" style={{ borderRadius: 10, background: "#C1443A", color: "#fff", opacity: !listo || trabajando ? 0.5 : 1 }}>
           {trabajando && <Loader2 size={14} className="animate-spin" />} Eliminar
         </button>
@@ -591,7 +594,7 @@ function EliminarCuenta({ usuario, onEliminada }) {
    Menú corto como el de Google, Instagram o Mercado Pago: cada fila abre su propia pantalla.
    Contraseña · Alertas de inicio de sesión · Dispositivos con sesión · Actividad reciente (el estado general va arriba, sin pantalla aparte) */
 
-export const TARJETA_SEG = { borderRadius: 18, border: "1px solid #E1E8F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,42,84,0.05), 0 8px 24px rgba(11,42,84,0.06)" };
+export const TARJETA_SEG = { borderRadius: 20, border: "1px solid #E4E9F2", background: "#fff", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 10px 24px -12px rgba(11,42,84,.14)" };
 export const VERDE = "#1E8A55";
 export const AMBAR = "#C77A0A";
 
@@ -609,20 +612,20 @@ function hace(iso) {
 const fechaHora = (iso) => new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export function Etiqueta({ children }) {
-  return <h3 className="px-1 mb-2 mt-6" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "#4B5563" }}>{children}</h3>;
+  return <h3 className="px-1 mb-2 mt-6" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#667085" }}>{children}</h3>;
 }
 
 // Fila del menú: ícono de color, título, dato corto a la derecha y flecha (abre una pantalla)
 export function FilaMenu({ Icon, color, titulo, desc, valor, tonoValor, onClick, ultimo }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-slate-50" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF2F7" }}>
-      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: color }}><Icon size={20} color="#fff" /></span>
+    <button onClick={onClick} className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left hover:bg-slate-50 active:bg-slate-100" style={{ borderBottom: ultimo ? "none" : "1px solid #EDF0F6" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: color, boxShadow: `inset 0 1px 0 rgba(255,255,255,.25), 0 6px 12px -6px ${color}` }}><Icon size={20} color="#fff" /></span>
       <span className="flex-1 min-w-0">
         <span className="block text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{titulo}</span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{desc}</span>}
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#475467", lineHeight: 1.4 }}>{desc}</span>}
       </span>
-      {valor && <span className="text-sm font-semibold shrink-0" style={{ color: tonoValor || "#4B5563" }}>{valor}</span>}
-      <ChevronRight size={18} color="#94A3B8" className="shrink-0" />
+      {valor && <span className="text-sm font-semibold shrink-0" style={{ color: tonoValor || "#475467" }}>{valor}</span>}
+      <ChevronRight size={18} color="#98A2B3" className="shrink-0" />
     </button>
   );
 }
@@ -630,7 +633,7 @@ export function FilaMenu({ Icon, color, titulo, desc, valor, tonoValor, onClick,
 function Interruptor({ activo, onChange, disabled }) {
   return (
     <button role="switch" aria-checked={activo} disabled={disabled} onClick={() => onChange(!activo)} className="shrink-0 relative transition-colors" style={{ width: 52, height: 32, borderRadius: 16, background: activo ? VERDE : "#CBD5E1", opacity: disabled ? 0.6 : 1 }}>
-      <span className="absolute transition-all" style={{ top: 3, left: activo ? 23 : 3, width: 26, height: 26, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+      <span className="absolute" style={{ top: 3, left: activo ? 23 : 3, width: 26, height: 26, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.25), 0 3px 8px -1px rgba(0,0,0,.2)", transition: "left .24s cubic-bezier(0.22,1,0.36,1)" }} />
     </button>
   );
 }
@@ -641,7 +644,7 @@ function CabeceraSeg({ titulo, sub, onBack }) {
     <>
       <BotonVolver texto="Volver a Seguridad" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{titulo}</h2>
-      {sub && <p className="text-sm mt-1.5 mb-5" style={{ color: "#4B5563", lineHeight: 1.5 }}>{sub}</p>}
+      {sub && <p className="text-sm mt-1.5 mb-5" style={{ color: "#475467", lineHeight: 1.5 }}>{sub}</p>}
       {!sub && <div className="mb-5" />}
     </>
   );
@@ -685,7 +688,7 @@ function SegContrasena({ usuario, onBack, onCambio }) {
           <input value={actual} onChange={cambia(setActual)} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
           <input value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
           <input value={repetir} onChange={cambia(setRepetir)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-          <label className="flex items-center gap-2 text-sm" style={{ color: "#374151" }}>
+          <label className="flex items-center gap-2 text-sm" style={{ color: "#344054" }}>
             <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
           </label>
           {repetir && nueva !== repetir && <p className="text-sm" style={{ color: "#C1443A" }}>Las contraseñas nuevas no coinciden.</p>}
@@ -729,9 +732,9 @@ function SegDispositivos({ sesiones, error, recargar, onBack }) {
   return (
     <div>
       <CabeceraSeg titulo="Dispositivos" sub="Los celulares y computadoras donde tenés la sesión abierta." onBack={onBack} />
-      {sesiones === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {sesiones === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#475467" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
       {error && (
-        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#FDF1EF", color: "#9A3B34" }}>
           <span>No pudimos cargar tus dispositivos.</span>
           <button onClick={recargar} className="font-bold shrink-0">Reintentar</button>
         </div>
@@ -755,17 +758,17 @@ function SegDispositivos({ sesiones, error, recargar, onBack }) {
         <>
           <Etiqueta>Otros dispositivos</Etiqueta>
           {otras.length === 0 ? (
-            <div className="px-4 py-5 text-sm text-center" style={{ ...TARJETA_SEG, color: "#4B5563" }}>No hay otros dispositivos con la sesión abierta.</div>
+            <div className="px-4 py-5 text-sm text-center" style={{ ...TARJETA_SEG, color: "#475467" }}>No hay otros dispositivos con la sesión abierta.</div>
           ) : (
             <>
               <div className="overflow-hidden" style={TARJETA_SEG}>
                 {otras.map((s, i) => (
-                  <div key={s.id} className="px-4 py-3.5" style={{ borderBottom: i === otras.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+                  <div key={s.id} className="px-4 py-3.5" style={{ borderBottom: i === otras.length - 1 ? "none" : "1px solid #EDF0F6" }}>
                     <div className="flex items-center gap-3.5">
                       <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "#EEF3FB", color: "#0B2A54" }}><IconoDispositivo tipo={s.tipo} /></span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-semibold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{s.dispositivo}</span>
-                        <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>Último uso {hace(s.ultimoUso)}</span>
+                        <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>Último uso {hace(s.ultimoUso)}</span>
                       </span>
                       {confirmar !== s.id && (
                         <button onClick={() => setConfirmar(s.id)} className="text-sm font-bold shrink-0 px-3 py-2" style={{ borderRadius: 10, color: "#C1443A", background: "#FBEDEC" }}>Cerrar sesión</button>
@@ -815,24 +818,24 @@ function SegActividad({ onBack, irDispositivos }) {
   return (
     <div>
       <CabeceraSeg titulo="Actividad reciente" sub="Inicios de sesión y cambios de seguridad de los últimos 90 días." onBack={onBack} />
-      {eventos === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#4B5563" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
+      {eventos === null && !error && <p className="text-sm flex items-center gap-2" style={{ color: "#475467" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
       {error && (
-        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#F7E7E5", color: "#9A3B34" }}>
+        <div className="p-4 text-sm flex items-center justify-between gap-3" style={{ borderRadius: 14, background: "#FDF1EF", color: "#9A3B34" }}>
           <span>No pudimos cargar la actividad.</span>
           <button onClick={cargar} className="font-bold shrink-0">Reintentar</button>
         </div>
       )}
-      {eventos && eventos.length === 0 && <div className="px-4 py-6 text-sm text-center" style={{ ...TARJETA_SEG, color: "#4B5563" }}>Todavía no hay actividad registrada.</div>}
+      {eventos && eventos.length === 0 && <div className="px-4 py-6 text-sm text-center" style={{ ...TARJETA_SEG, color: "#475467" }}>Todavía no hay actividad registrada.</div>}
       {eventos && eventos.length > 0 && (
         <div className="overflow-hidden" style={TARJETA_SEG}>
           {eventos.map((e, i) => {
             const m = ACTIVIDAD[e.tipo] || { Icon: History, color: "#64748B", texto: "Actividad de la cuenta" };
             return (
-              <div key={`${e.fecha}-${i}`} className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: i === eventos.length - 1 ? "none" : "1px solid #EEF2F7" }}>
+              <div key={`${e.fecha}-${i}`} className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: i === eventos.length - 1 ? "none" : "1px solid #EDF0F6" }}>
                 <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: m.color }}><m.Icon size={18} color="#fff" /></span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{m.texto}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{[e.dispositivo, fechaHora(e.fecha)].filter(Boolean).join(" · ")}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{[e.dispositivo, fechaHora(e.fecha)].filter(Boolean).join(" · ")}</span>
                 </span>
               </div>
             );
@@ -877,7 +880,7 @@ function SegAlertas({ alertas, setAlertas, push, recargarPush, onBack }) {
         <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: push === "activo" ? VERDE : "#94A3B8" }}><BellRing size={20} color="#fff" /></span>
         <span className="flex-1 min-w-0">
           <span className="block text-[15px] font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{push === "activo" ? "Activadas" : push === "bloqueado" ? "Bloqueadas" : push === "no-soportado" ? "No disponibles" : "Desactivadas"}</span>
-          {push !== "activo" && <span className="block text-xs mt-0.5" style={{ color: "#4B5563", lineHeight: 1.4 }}>{push === "bloqueado" ? "Habilitalas desde la configuración del navegador." : push === "no-soportado" ? "Este navegador no las permite." : "Sin ellas no te llegan las alertas."}</span>}
+          {push !== "activo" && <span className="block text-xs mt-0.5" style={{ color: "#475467", lineHeight: 1.4 }}>{push === "bloqueado" ? "Habilitalas desde la configuración del navegador." : push === "no-soportado" ? "Este navegador no las permite." : "Sin ellas no te llegan las alertas."}</span>}
         </span>
         {(push === "inactivo") && <button onClick={activar} className="text-sm font-bold shrink-0 px-3.5 py-2" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>Activar</button>}
       </div>
@@ -921,7 +924,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
       <div>
         <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
         <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800 }} className="mb-2">Seguridad</h2>
-        <p className="text-sm mb-4" style={{ color: "#374151", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
+        <p className="text-sm mb-4" style={{ color: "#344054", lineHeight: 1.5 }}>Iniciá sesión para ver y cambiar la seguridad de tu cuenta.</p>
         <button onClick={onLogin} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "#0B2A54", color: "#fff" }}>Iniciar sesión</button>
       </div>
     );
@@ -940,14 +943,14 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Seguridad</h2>
-      <p className="text-sm mt-1.5 mb-4 truncate" style={{ color: "#4B5563" }}>{usuario.email}</p>
+      <p className="text-sm mt-1.5 mb-4 truncate" style={{ color: "#475467" }}>{usuario.email}</p>
 
       {!est.cargando && (
         <div className="flex items-center gap-3.5 p-4 mb-1" data-conservar-color style={{ borderRadius: 18, background: est.pendientes ? "#FFF4E0" : "#E4F3EA", border: `1px solid ${est.pendientes ? "#F3D9A4" : "#BFE3CE"}` }}>
           <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: est.pendientes ? AMBAR : VERDE }}>{est.pendientes ? <AlertTriangle size={22} color="#fff" /> : <ShieldCheck size={23} color="#fff" />}</span>
           <span>
             <span className="block text-[16px] font-bold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{est.pendientes ? `${est.pendientes} ${est.pendientes === 1 ? "cosa para revisar" : "cosas para revisar"}` : "Tu cuenta está al día"}</span>
-            <span className="block text-xs mt-0.5" style={{ color: "#374151" }}>{est.pendientes ? "Mirá lo que está marcado en ámbar acá abajo." : "No hay nada para revisar."}</span>
+            <span className="block text-xs mt-0.5" style={{ color: "#344054" }}>{est.pendientes ? "Mirá lo que está marcado en ámbar acá abajo." : "No hay nada para revisar."}</span>
           </span>
         </div>
       )}
@@ -988,7 +991,7 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Notificaciones</h2>
-      <p className="text-sm mb-5" style={{ color: "#374151", lineHeight: 1.6 }}>
+      <p className="text-sm mb-5" style={{ color: "#344054", lineHeight: 1.6 }}>
         Recibí avisos en tu celular aunque Mi Zona esté cerrada, por ejemplo cuántos días le quedan a la suscripción de tu negocio.
       </p>
 
@@ -1001,25 +1004,25 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
           Este navegador no permite notificaciones. En iPhone, abrí Mi Zona en Safari → Compartir → "Agregar a pantalla de inicio" y activalas desde ahí.
         </p>
       ) : estado === "bloqueado" ? (
-        <p className="text-sm p-4" style={{ background: "#F7E7E5", color: "#9A3B34", borderRadius: 10 }}>
+        <p className="text-sm p-4" style={{ background: "#FDF1EF", color: "#9A3B34", borderRadius: 10 }}>
           Bloqueaste las notificaciones de este sitio. Habilitalas desde el candado de la barra del navegador (o los ajustes del sistema) y volvé a intentar.
         </p>
       ) : (
         <>
-          <div className="flex items-center gap-3 p-4 mb-3 bg-white" style={{ borderRadius: 12, border: "1px solid #E2E8F0" }}>
+          <div className="flex items-center gap-3 p-4 mb-3 bg-white" style={{ borderRadius: 12, border: "1px solid #DDE3EE" }}>
             <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: "50%", background: estado === "activo" ? "#E4F3EA" : "#E8F0FE" }}>
               {estado === "activo" ? <Bell size={17} color="#1E6B44" /> : <BellOff size={17} color="#2F6FED" />}
             </span>
             <div className="flex-1">
               <p className="text-sm font-medium" style={{ color: "#0B1220" }}>{estado === "activo" ? "Activadas en este dispositivo" : "Desactivadas"}</p>
-              <p className="text-xs" style={{ color: "#4B5563" }}>Se configuran por dispositivo.</p>
+              <p className="text-xs" style={{ color: "#475467" }}>Se configuran por dispositivo.</p>
             </div>
           </div>
           <button
             onClick={alternar} disabled={trabajando || estado === "cargando"}
             className="w-full text-sm font-semibold py-3"
             style={estado === "activo"
-              ? { borderRadius: 10, border: "1px solid #E2E8F0", color: "#0B1220", background: "#fff" }
+              ? { borderRadius: 10, border: "1px solid #DDE3EE", color: "#0B1220", background: "#fff" }
               : { borderRadius: 10, backgroundColor: "#2F6FED", color: "#fff", opacity: trabajando ? 0.6 : 1 }}
           >
             {trabajando ? "Un momento..." : estado === "activo" ? "Desactivar notificaciones" : "Activar notificaciones"}
@@ -1058,15 +1061,16 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
 
   return (
     <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center" style={{ background: "#0B1220aa" }} onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0" }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "26px 26px 0 0", paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))" }} onClick={(e) => e.stopPropagation()}>
+        <span className="sm:hidden block mx-auto mb-3" style={{ width: 40, height: 4, borderRadius: 2, background: "#D3DAEA" }} />
         <div className="flex items-center justify-between mb-1">
-          <h2 style={{ ...TITULO, fontSize: 17 }}>{gratis ? "Publicar mi negocio" : vencimientoActual ? "Agregar meses" : "Suscripción de tu negocio"}</h2>
-          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#4B5563" /></button>
+          <h2 style={{ ...TITULO, fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em" }}>{gratis ? "Publicar mi negocio" : vencimientoActual ? "Agregar meses" : "Suscripción de tu negocio"}</h2>
+          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#475467" /></button>
         </div>
-        {nombreNegocio && <p className="text-xs mb-3 truncate" style={{ color: "#4B5563" }}>{nombreNegocio}</p>}
+        {nombreNegocio && <p className="text-xs mb-3 truncate" style={{ color: "#475467" }}>{nombreNegocio}</p>}
 
         {gratis ? (
-          <div className="p-3.5 mb-4" style={{ borderRadius: 10, background: "#E4F3EA", color: "#1E6B44" }}>
+          <div className="p-3.5 mb-4" style={{ borderRadius: 14, background: "#E4F3EA", border: "1px solid #C6E6D3", color: "#1E6B44" }}>
             <p className="text-sm font-semibold flex items-center gap-1.5 mb-1"><Sparkles size={14} /> Ya pagaste Mi Asistente</p>
             <p className="text-xs" style={{ lineHeight: 1.5 }}>
               Con esta cuenta de Google no pagás Mi Zona: tu negocio se publica sin costo{hastaGratis ? ` hasta el ${fmtFecha(hastaGratis)}` : ""} y se renueva junto con tu suscripción de Mi Asistente.
@@ -1075,22 +1079,22 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
         ) : (
           <>
             {vencimientoActual && (
-              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#374151" }}>
+              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#344054" }}>
                 <Clock size={12} /> Hoy vence el {fmtFecha(vencimientoActual)}. Los meses nuevos se suman a esa fecha: no perdés nada.
               </p>
             )}
             {!vencimientoActual && (
-              <p className="text-xs mb-3" style={{ color: "#374151" }}>Elegí por cuánto tiempo querés publicar tu negocio. Podés agregar más meses cuando quieras.</p>
+              <p className="text-xs mb-3" style={{ color: "#344054" }}>Elegí por cuánto tiempo querés publicar tu negocio. Podés agregar más meses cuando quieras.</p>
             )}
             <div className="flex flex-col gap-2 mb-3">
-              {!planes && !error && <p className="text-xs py-4 text-center" style={{ color: "#4B5563" }}>Cargando planes...</p>}
+              {!planes && !error && <p className="text-xs py-4 text-center" style={{ color: "#475467" }}>Cargando planes...</p>}
               {planes && Object.entries(planes).map(([clave, p]) => {
                 const activo = plan === clave;
                 return (
                   <button
                     key={clave} onClick={() => setPlan(clave)}
-                    className="flex items-center gap-3 px-3.5 py-2.5 text-left"
-                    style={{ borderRadius: 10, border: `1.5px solid ${activo ? "#2F6FED" : "#E2E8F0"}`, background: activo ? "#F1F6FF" : "#fff" }}
+                    className="flex items-center gap-3 px-3.5 py-3 text-left"
+                    style={{ borderRadius: 14, border: `1.5px solid ${activo ? "#2F6FED" : "#DDE3EE"}`, background: activo ? "#F1F6FF" : "#fff", boxShadow: activo ? "0 0 0 3px rgba(47,111,237,.14)" : "none" }}
                   >
                     <span className="flex items-center justify-center shrink-0" style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${activo ? "#2F6FED" : "#CBD5E1"}` }}>
                       {activo && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2F6FED" }} />}
@@ -1099,10 +1103,10 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
                       <span className="flex items-center gap-2">
                         <span className="text-sm font-semibold" style={{ color: "#0B1220" }}>{p.label}</span>
                         {p.descuentoPorcentaje > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>{p.descuentoPorcentaje}% OFF</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 999, background: "#E4F3EA", color: "#1E6B44" }}>{p.descuentoPorcentaje}% OFF</span>
                         )}
                       </span>
-                      <span className="block text-[11px]" style={{ color: "#4B5563" }}>
+                      <span className="block text-[11px]" style={{ color: "#475467" }}>
                         {fmtPesos(p.precioPorMes)} por mes{p.ahorro > 0 ? ` · ahorrás ${fmtPesos(p.ahorro)}` : ""}
                       </span>
                     </span>
@@ -1112,7 +1116,7 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
               })}
             </div>
             {nuevoVencimiento && (
-              <p className="text-xs mb-3" style={{ color: "#374151" }}>Tu negocio quedaría activo hasta el <b>{fmtFecha(nuevoVencimiento)}</b>.</p>
+              <p className="text-xs mb-3" style={{ color: "#344054" }}>Tu negocio quedaría activo hasta el <b>{fmtFecha(nuevoVencimiento)}</b>.</p>
             )}
           </>
         )}
@@ -1121,7 +1125,7 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
         <button
           onClick={confirmar} disabled={enviando || (!gratis && !plan)}
           className="w-full text-sm font-semibold py-3"
-          style={{ backgroundColor: gratis ? "#2C9A5F" : "#2F6FED", color: "#fff", borderRadius: 10, opacity: enviando || (!gratis && !plan) ? 0.5 : 1 }}
+          style={{ background: gratis ? "linear-gradient(180deg,#38B06E,#2C9A5F)" : "linear-gradient(180deg,#4A82F2,#2F6FED)", color: "#fff", borderRadius: 14, boxShadow: gratis ? "0 10px 20px -8px rgba(44,154,95,.7)" : "0 10px 20px -8px rgba(47,111,237,.7)", opacity: enviando || (!gratis && !plan) ? 0.5 : 1 }}
         >
           {enviando ? (gratis ? "Publicando..." : "Abriendo Mercado Pago...") : gratis ? "Publicar mi negocio" : elegido ? `Pagar ${fmtPesos(elegido.precio)} con Mercado Pago` : "Elegí un plan"}
         </button>
@@ -1139,7 +1143,7 @@ export function TarjetaSuscripcion({ negocio, onAgregar }) {
     pendiente: { bg: "#FBEBD1", fg: "#8A5B12", etiqueta: "Falta pagar" },
     activa: { bg: "#E4F3EA", fg: "#1E6B44", etiqueta: "Activa" },
     por_vencer: { bg: "#FBEBD1", fg: "#8A5B12", etiqueta: "Por vencer" },
-    vencida: { bg: "#F7E7E5", fg: "#9A3B34", etiqueta: "Vencida" },
+    vencida: { bg: "#FDF1EF", fg: "#9A3B34", etiqueta: "Vencida" },
   }[info.estado];
   const fraccion = info.dias === null ? 0 : Math.max(0, Math.min(1, info.dias / 30));
   const texto = info.estado === "pendiente" ? "Tu negocio todavía no se muestra en Mi Zona."
@@ -1148,21 +1152,21 @@ export function TarjetaSuscripcion({ negocio, onAgregar }) {
   const origenAsistente = negocio.suscripcion?.origen === "asistente";
 
   return (
-    <div className="p-4 mb-3 bg-white" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+    <div className="p-4 mb-3 bg-white" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 10px 24px -12px rgba(11,42,84,.14)" }}>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-sm font-semibold" style={{ color: "#0B1220" }}>Mi suscripción</span>
-        <span className="text-[10px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: paleta.bg, color: paleta.fg }}>{paleta.etiqueta}</span>
+        <span className="text-[10px] font-bold px-2.5 py-0.5" style={{ borderRadius: 999, letterSpacing: ".02em", background: paleta.bg, color: paleta.fg }}>{paleta.etiqueta}</span>
       </div>
-      <p className="text-xs mb-2.5" style={{ color: "#374151" }}>{texto}</p>
+      <p className="text-xs mb-2.5" style={{ color: "#344054" }}>{texto}</p>
       {info.estado !== "pendiente" && (
-        <div className="mb-3" style={{ height: 6, borderRadius: 6, background: "#EEF2F7", overflow: "hidden" }}>
-          <div style={{ width: `${fraccion * 100}%`, height: "100%", background: paleta.fg, borderRadius: 6 }} />
+        <div className="mb-3" style={{ height: 8, borderRadius: 8, background: "#EDF0F6", overflow: "hidden" }}>
+          <div style={{ width: `${fraccion * 100}%`, height: "100%", background: paleta.fg, borderRadius: 8, transition: "width .6s cubic-bezier(0.22,1,0.36,1)" }} />
         </div>
       )}
       {origenAsistente && info.estado !== "pendiente" && (
         <p className="text-[11px] mb-2.5 flex items-center gap-1" style={{ color: "#7A4F9E" }}><Sparkles size={11} /> Incluida con tu suscripción de Mi Asistente</p>
       )}
-      <button onClick={onAgregar} className="w-full text-sm font-semibold py-2.5" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
+      <button onClick={onAgregar} className="w-full text-sm font-semibold py-2.5" style={{ background: "linear-gradient(180deg,#4A82F2,#2F6FED)", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(47,111,237,.7)" }}>
         {info.estado === "pendiente" ? "Elegir plan y pagar" : info.estado === "vencida" ? "Renovar suscripción" : "Agregar meses"}
       </button>
     </div>

@@ -10,7 +10,7 @@ import { BotonAtras } from "./cuenta.jsx";
 import { agendaApi, estadoPush, activarPush, pushSoportado, PLAY_STORE_URL } from "./api.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1220" };
-const CARD = { borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)", background: "#fff" };
+const CARD = { borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 8px 20px -10px rgba(11,42,84,.14)", background: "#fff" };
 
 const RECORDATORIOS = [
   { valor: "", texto: "Sin aviso" },
@@ -33,11 +33,11 @@ const minutosDe = (hora) => { const [h, m] = hora.split(":").map(Number); return
 
 function etiquetaFecha(iso) {
   const hoy = hoyISO();
-  if (!iso) return { texto: "Sin fecha", color: "#4B5563", bg: "#F1F4F9" };
+  if (!iso) return { texto: "Sin fecha", color: "#475467", bg: "#F1F4F9" };
   if (iso < hoy) return { texto: "Vencida", color: "#B42318", bg: "#FDE7E4" };
   if (iso === hoy) return { texto: "Hoy", color: "#1D4ED8", bg: "#DBEAFE" };
-  if (iso === sumarDias(hoy, 1)) return { texto: "Mañana", color: "#4B5563", bg: "#F1F4F9" };
-  return { texto: new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).replace(".", ""), color: "#4B5563", bg: "#F1F4F9" };
+  if (iso === sumarDias(hoy, 1)) return { texto: "Mañana", color: "#475467", bg: "#F1F4F9" };
+  return { texto: new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).replace(".", ""), color: "#475467", bg: "#F1F4F9" };
 }
 
 /* ---------- recordatorios dentro de la app ---------- */
@@ -66,7 +66,7 @@ export function RecordatoriosToast({ lista, onCerrar, onAbrir }) {
   return (
     <div className="fixed left-0 right-0 flex flex-col items-center gap-2 px-3 pointer-events-none" style={{ top: 10, zIndex: 120 }}>
       {lista.slice(0, 3).map((r) => (
-        <div key={r.id} className="pointer-events-auto w-full max-w-sm flex items-center gap-3 px-3.5 py-3" style={{ borderRadius: 16, background: "#0B2A54", color: "#fff", boxShadow: "0 12px 30px rgba(5,20,45,0.4)" }}>
+        <div key={r.id} className="pointer-events-auto w-full max-w-sm flex items-center gap-3 px-3.5 py-3" style={{ borderRadius: 16, background: "#0B2A54", color: "#fff", boxShadow: "0 12px 30px rgba(5,20,45,0.4)", animation: "zona-subir .35s cubic-bezier(0.22,1,0.36,1) both" }} data-conservar-color>
           <span className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#ffffff1f" }}><Bell size={17} color="#FFD27A" /></span>
           <button className="flex-1 min-w-0 text-left" onClick={() => onAbrir(r)}>
             <span className="block text-[11px] font-semibold" style={{ color: "#9BBBF7" }}>{r.tipo === "tarea" ? "Tarea pendiente" : "Evento próximo"}</span>
@@ -104,26 +104,27 @@ function Sheet({ titulo, onClose, children, ancho = 480 }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center" style={{ background: "#0B122099" }} onClick={onClose}>
       <div className="bg-white w-full flex flex-col" style={{ maxWidth: ancho, maxHeight: "92vh", borderRadius: "26px 26px 0 0" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-2">
-          <h2 style={{ ...TITULO, fontSize: 18 }}>{titulo}</h2>
+        <span className="sm:hidden block mx-auto mt-2.5 shrink-0" style={{ width: 40, height: 4, borderRadius: 2, background: "#D3DAEA" }} />
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <h2 style={{ ...TITULO, fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em" }}>{titulo}</h2>
           <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 12, background: "#F1F5F9" }}><X size={16} color="#475569" /></button>
         </div>
-        <div className="px-5 pb-6 overflow-y-auto">{children}</div>
+        <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>{children}</div>
       </div>
     </div>
   );
 }
 
-const Etiqueta = ({ children }) => <label className="block text-xs font-semibold mt-3 mb-1" style={{ color: "#374151" }}>{children}</label>;
+const Etiqueta = ({ children }) => <label className="block text-[13px] font-semibold mt-3.5 mb-1.5" style={{ color: "#344054" }}>{children}</label>;
 const inputCls = "w-full border px-3 py-2.5 text-sm";
-const inputStyle = { borderRadius: 12, borderColor: "#E2E8F0", background: "#fff" };
+const inputStyle = { borderRadius: 12, borderColor: "#DDE3EE", background: "#fff" };
 
 function Check2({ marcado, onClick, label = "Marcar" }) {
   return (
     <button
       onClick={onClick} aria-label={label}
       className="flex items-center justify-center shrink-0"
-      style={{ width: 26, height: 26, borderRadius: 9, border: `2px solid ${marcado ? "#16A34A" : "#C9D0E6"}`, background: marcado ? "#16A34A" : "#fff", marginTop: 1 }}
+      style={{ width: 26, height: 26, borderRadius: 9, border: `2px solid ${marcado ? "#16A34A" : "#C9D0E6"}`, background: marcado ? "#16A34A" : "#fff", marginTop: 1, boxShadow: marcado ? "0 4px 10px -3px rgba(22,163,74,.6)" : "none" }}
     >
       {marcado && <Check size={14} color="#fff" strokeWidth={3} />}
     </button>
@@ -131,7 +132,7 @@ function Check2({ marcado, onClick, label = "Marcar" }) {
 }
 
 function Chip({ children, color = "#2F6FED", bg = "#E8F0FE" }) {
-  return <span className="text-[11px] font-semibold px-2 py-0.5" style={{ borderRadius: 20, background: bg, color }}>{children}</span>;
+  return <span className="text-[11px] font-semibold px-2.5 py-0.5" style={{ borderRadius: 999, background: bg, color, letterSpacing: ".01em" }}>{children}</span>;
 }
 
 /* ---------- formulario de evento / tarea (crear o editar) ---------- */
@@ -180,7 +181,7 @@ function FormularioItem({ inicial, perfil, onClose, onGuardado, alDevolver }) {
       <div className="flex p-1 mt-1" style={{ borderRadius: 14, background: "#EEF2F8" }}>
         {[{ id: "evento", t: "Evento" }, { id: "tarea", t: "Tarea" }].map((o) => (
           <button key={o.id} onClick={() => setTipo(o.id)} className="flex-1 py-2 text-sm font-semibold"
-            style={{ borderRadius: 11, background: tipo === o.id ? "#fff" : "transparent", color: tipo === o.id ? "#0B2A54" : "#4B5563", boxShadow: tipo === o.id ? "0 2px 8px rgba(11,42,84,.12)" : "none" }}>
+            style={{ borderRadius: 11, background: tipo === o.id ? "#fff" : "transparent", color: tipo === o.id ? "#0B2A54" : "#475467", boxShadow: tipo === o.id ? "0 1px 2px rgba(11,18,32,.10), 0 4px 10px -2px rgba(11,42,84,.14)" : "none" }}>
             {o.t}
           </button>
         ))}
@@ -239,7 +240,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
   if (!items.length) {
     return (
       <Sheet titulo="No encontré nada" onClose={onClose}>
-        <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>{resultado.aclaraciones || "No pude encontrar eventos ni tareas. Probá con otra foto más nítida o escribilo de otra forma."}</p>
+        <p className="text-sm" style={{ color: "#344054", lineHeight: 1.5 }}>{resultado.aclaraciones || "No pude encontrar eventos ni tareas. Probá con otra foto más nítida o escribilo de otra forma."}</p>
         <button onClick={onClose} className="w-full py-3 mt-5 text-sm font-semibold" style={{ borderRadius: 14, background: "#2F6FED", color: "#fff" }}>Cerrar</button>
       </Sheet>
     );
@@ -258,7 +259,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
   return (
     <>
       <Sheet titulo={`Encontré ${items.length} ${items.length === 1 ? "elemento" : "elementos"}`} onClose={onClose} ancho={520}>
-        <p className="text-xs mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Revisalos antes de guardar: una letra mal leída puede cambiar una fecha o un horario. Tocá "Editar" para corregir.</p>
+        <p className="text-xs mb-3" style={{ color: "#344054", lineHeight: 1.5 }}>Revisalos antes de guardar: una letra mal leída puede cambiar una fecha o un horario. Tocá "Editar" para corregir.</p>
         {resultado.aclaraciones && (
           <div className="flex items-start gap-2 p-3 mb-3 text-xs" style={{ borderRadius: 14, background: "#FFF6E0", color: "#8A5B12" }}><AlertTriangle size={14} className="shrink-0 mt-0.5" /> {resultado.aclaraciones}</div>
         )}
@@ -268,11 +269,11 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
               <Check2 marcado={i._marcado} onClick={() => setItems((l) => l.map((x, k) => (k === n ? { ...x, _marcado: !x._marcado } : x)))} label="Incluir" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold leading-snug">{i.titulo} <Chip bg={i.tipo === "tarea" ? "#FFEDD5" : "#E8F0FE"} color={i.tipo === "tarea" ? "#C2410C" : "#2F6FED"}>{i.tipo === "tarea" ? "Tarea" : "Evento"}</Chip></p>
-                <p className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5" style={{ color: "#4B5563" }}>
+                <p className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5" style={{ color: "#475467" }}>
                   <span className="flex items-center gap-1"><Clock size={12} /> {i.fecha ? fechaLinda(i.fecha) : "Sin fecha"}{i.hora ? ` · ${i.hora}` : ""}</span>
                   {i.persona && <span className="flex items-center gap-1"><User size={12} /> {i.persona}</span>}
                 </p>
-                {i.notas && <p className="text-xs mt-1" style={{ color: "#4B5563" }}>{i.notas}</p>}
+                {i.notas && <p className="text-xs mt-1" style={{ color: "#475467" }}>{i.notas}</p>}
                 {i.confianza === "baja" && <p className="text-xs font-semibold mt-1.5" style={{ color: "#B45309" }}>No estoy seguro de esta lectura: revisala.</p>}
                 {i.textoOriginal && <p className="text-[11px] mt-1 italic" style={{ color: "#64748B" }}>Leí: “{i.textoOriginal}”</p>}
                 <button onClick={() => setEditando(n)} className="text-xs font-semibold mt-1.5" style={{ color: "#2F6FED" }}>Editar</button>
@@ -305,7 +306,7 @@ function FotoPrevia({ perfil, onElegir, onClose }) {
   const sinCupo = restantes <= 0;
   return (
     <Sheet titulo="Importar desde foto" onClose={onClose}>
-      <p className="text-sm" style={{ color: "#374151", lineHeight: 1.5 }}>
+      <p className="text-sm" style={{ color: "#344054", lineHeight: 1.5 }}>
         Sacale una foto a tu agenda de papel y la IA arma los eventos y tareas. Podés importar hasta {porDia} fotos por día.
       </p>
       <p className="text-sm font-semibold mt-3" style={{ color: sinCupo ? "#B42318" : "#0B2A54" }}>
@@ -340,7 +341,7 @@ function MensajeModal({ onClose, onResultado }) {
   };
   return (
     <Sheet titulo="Agregar desde un mensaje" onClose={onClose}>
-      <p className="text-xs mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>Escribí como hablás y la IA arma el evento o la tarea. Siempre vas a poder revisarlo antes de guardar.</p>
+      <p className="text-xs mb-3" style={{ color: "#344054", lineHeight: 1.5 }}>Escribí como hablás y la IA arma el evento o la tarea. Siempre vas a poder revisarlo antes de guardar.</p>
       <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={4} maxLength={2500} autoFocus className={inputCls} style={inputStyle}
         placeholder="Ej: El jueves a las 16 tengo que reunirme con Martín para hablar del nuevo pedido." />
       {error && <p className="text-xs mt-2" style={{ color: "#C1443A" }}>{error}</p>}
@@ -354,7 +355,7 @@ function MensajeModal({ onClose, onResultado }) {
 /* ---------- tarjetas ---------- */
 function TarjetaEvento({ e, proximo, pasado, onClick }) {
   return (
-    <button onClick={onClick} className="w-full flex gap-3 p-3 text-left" style={{ ...CARD, borderLeft: `4px solid ${proximo ? "#7A4F9E" : "#2F6FED"}`, opacity: pasado ? 0.55 : 1, background: proximo ? "linear-gradient(135deg,#FAF7FF,#fff)" : "#fff" }}>
+    <button onClick={onClick} className="zona-tarjeta w-full flex gap-3 p-3 text-left" style={{ ...CARD, borderLeft: `4px solid ${proximo ? "#7A4F9E" : "#2F6FED"}`, opacity: pasado ? 0.55 : 1, background: proximo ? "linear-gradient(135deg,#FAF7FF,#fff)" : "#fff" }}>
       <span className="shrink-0 text-center" style={{ width: 50 }}>
         <span className="block text-sm font-bold leading-tight" style={{ color: "#0B2A54", fontFamily: "var(--fuente-titulo)" }}>{e.hora || "Todo el día"}</span>
         {e.hora && e.duracionMinutos ? <span className="block text-[10px]" style={{ color: "#64748B" }}>{e.duracionMinutos} min</span> : null}
@@ -365,10 +366,10 @@ function TarjetaEvento({ e, proximo, pasado, onClick }) {
           {proximo && <span className="ml-2 text-[9px] font-bold uppercase px-2 py-0.5 align-middle" style={{ borderRadius: 20, background: "#7A4F9E", color: "#fff" }}>Próximo</span>}
         </span>
         <span className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5">
-          {e.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><User size={12} /> {e.persona}</span>}
-          {e.recordatorioMinutos !== null && e.recordatorioMinutos !== undefined && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><Bell size={12} /> Aviso</span>}
+          {e.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#475467" }}><User size={12} /> {e.persona}</span>}
+          {e.recordatorioMinutos !== null && e.recordatorioMinutos !== undefined && <span className="flex items-center gap-1 text-xs" style={{ color: "#475467" }}><Bell size={12} /> Aviso</span>}
         </span>
-        {e.notas && <span className="block text-xs mt-1" style={{ color: "#4B5563" }}>{e.notas}</span>}
+        {e.notas && <span className="block text-xs mt-1" style={{ color: "#475467" }}>{e.notas}</span>}
       </span>
     </button>
   );
@@ -377,30 +378,30 @@ function TarjetaEvento({ e, proximo, pasado, onClick }) {
 function TarjetaTarea({ t, onToggle, onClick }) {
   const et = t.completada ? { texto: "Hecha", color: "#15803D", bg: "#DCFCE7" } : etiquetaFecha(t.fecha);
   return (
-    <div className="flex items-start gap-3 p-3" style={CARD}>
+    <div className="zona-tarjeta flex items-start gap-3 p-3" style={CARD}>
       <Check2 marcado={t.completada} onClick={() => onToggle(t)} label="Marcar como hecha" />
       <button onClick={onClick} className="flex-1 min-w-0 text-left">
         <span className="block text-sm font-semibold leading-snug" style={{ textDecoration: t.completada ? "line-through" : "none", color: t.completada ? "#64748B" : "#0B1220" }}>{t.titulo}</span>
         <span className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5">
           <Chip color={et.color} bg={et.bg}>{t.fecha || t.completada ? et.texto : "Sin fecha"}{t.hora && !t.completada ? ` · ${t.hora}` : ""}</Chip>
-          {t.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#4B5563" }}><User size={12} /> {t.persona}</span>}
+          {t.persona && <span className="flex items-center gap-1 text-xs" style={{ color: "#475467" }}><User size={12} /> {t.persona}</span>}
         </span>
-        {t.notas && <span className="block text-xs mt-1" style={{ color: "#4B5563" }}>{t.notas}</span>}
+        {t.notas && <span className="block text-xs mt-1" style={{ color: "#475467" }}>{t.notas}</span>}
       </button>
     </div>
   );
 }
 
 const Vacio = ({ Icon = CalendarDays, titulo, texto }) => (
-  <div className="flex flex-col items-center text-center gap-1 py-7 px-4" style={{ borderRadius: 18, border: "1.5px dashed #D3DAEE", background: "#fff" }}>
-    <Icon size={30} color="#B7C0E0" className="mb-1" />
+  <div className="flex flex-col items-center text-center gap-1 py-8 px-4" style={{ borderRadius: 20, border: "1.5px dashed #C9D2E6", background: "linear-gradient(180deg,#FAFBFE,#F3F6FB)" }}>
+    <span className="flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 17, background: "#fff", boxShadow: "0 1px 2px rgba(11,18,32,.06), inset 0 0 0 1px #E1E8F2" }}><Icon size={24} color="#8A94A8" /></span>
     <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</p>
-    {texto && <p className="text-xs" style={{ color: "#4B5563" }}>{texto}</p>}
+    {texto && <p className="text-xs" style={{ color: "#475467" }}>{texto}</p>}
   </div>
 );
 
 const SeccionTitulo = ({ children, contador }) => (
-  <p className="flex items-center gap-2 mt-5 mb-2.5" style={{ ...TITULO, fontSize: 15 }}>
+  <p className="flex items-center gap-2 mt-6 mb-2.5 px-0.5" style={{ ...TITULO, fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#667085" }}>
     {children}
     {contador ? <span className="text-[11px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: "#2F6FED", color: "#fff" }}>{contador}</span> : null}
   </p>
@@ -494,9 +495,9 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F3F6FB", fontFamily: "'Work Sans', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#F3F6FB", fontFamily: "var(--fuente-texto)" }}>
       {/* portada */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 22px" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 60%,#1F55B3 120%)", padding: "16px 16px 26px" }}>
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
@@ -530,8 +531,8 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         {/* acciones rápidas */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           {acciones.map(({ Icon, t, color, bg, f }) => (
-            <button key={t} onClick={f} className="flex flex-col items-center gap-1.5 py-3" style={CARD}>
-              <span className="flex items-center justify-center" style={{ width: 38, height: 38, borderRadius: 13, background: bg }}><Icon size={18} color={color} /></span>
+            <button key={t} onClick={f} className="zona-tarjeta flex flex-col items-center gap-1.5 py-3.5" style={CARD}>
+              <span className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 13, background: bg, boxShadow: "inset 0 0 0 1px rgba(11,42,84,.06)" }}><Icon size={19} color={color} /></span>
               <span className="text-[11px] font-semibold" style={{ color: "#0B2A54" }}>{t}</span>
             </button>
           ))}
@@ -558,7 +559,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
           {!aiOk && perfil && <p className="text-[11px] mt-2" style={{ color: "#7A6FA8" }}>Las funciones con IA se habilitan cuando tu negocio tiene la suscripción activa.</p>}
           {ia && (
             <div className="mt-2.5 p-3.5 bg-white" style={{ borderRadius: 14, border: "1px solid #E4E6F5" }}>
-              {ia.cargando ? <p className="text-sm" style={{ color: "#4B5563" }}>Pensando...</p> : ia.error ? <p className="text-sm" style={{ color: "#C1443A" }}>{ia.error}</p> : (
+              {ia.cargando ? <p className="text-sm" style={{ color: "#475467" }}>Pensando...</p> : ia.error ? <p className="text-sm" style={{ color: "#C1443A" }}>{ia.error}</p> : (
                 <>
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <p className="text-sm font-semibold" style={{ color: "#5B3FD1" }}>{ia.titulo}</p>
@@ -575,14 +576,14 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <div className="flex p-1 mb-4" style={{ borderRadius: 16, background: "#E3E9F5" }}>
           {[{ id: "hoy", t: "Hoy" }, { id: "semana", t: "Semana" }, { id: "tareas", t: "Tareas" }].map((o) => (
             <button key={o.id} onClick={() => setVista(o.id)} className="flex-1 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "#2F6FED" : "#4B5563", boxShadow: vista === o.id ? "0 3px 10px rgba(11,42,84,.1)" : "none" }}>
+              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "#2F6FED" : "#475467", boxShadow: vista === o.id ? "0 1px 2px rgba(11,18,32,.10), 0 4px 10px -2px rgba(11,42,84,.14)" : "none" }}>
               {o.t}
             </button>
           ))}
         </div>
 
         {error && <p className="text-sm p-3 mb-3" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>{error}</p>}
-        {cargando && !datos && <p className="text-sm text-center py-8" style={{ color: "#4B5563" }}>Cargando...</p>}
+        {cargando && !datos && <p className="text-sm text-center py-10 flex flex-col items-center gap-3 font-medium" style={{ color: "#667085" }}><span style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid #DDE3EE", borderTopColor: "#2F6FED", animation: "zona-giro .8s linear infinite" }} />Cargando...</p>}
 
         {/* HOY */}
         {vista === "hoy" && hoy && (
@@ -666,7 +667,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
               <span style={{ width: 36, height: 36, borderRadius: "50%", border: "4px solid #E3E8FA", borderTopColor: "#2F6FED", animation: "agGirar 0.8s linear infinite" }} />
               <style>{"@keyframes agGirar { to { transform: rotate(360deg); } }"}</style>
               <p className="text-sm font-semibold">Analizando la foto...</p>
-              <p className="text-xs" style={{ color: "#4B5563" }}>Puede tardar unos segundos. Después vas a poder revisar todo antes de guardar.</p>
+              <p className="text-xs" style={{ color: "#475467" }}>Puede tardar unos segundos. Después vas a poder revisar todo antes de guardar.</p>
             </div>
           ) : (
             <>

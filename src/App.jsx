@@ -763,7 +763,7 @@ function Photo({ cat, src, height = 128, radius = "10px 10px 0 0", iconSize = 34
   return (
     <div
       className="flex flex-col items-center justify-center relative overflow-hidden shrink-0 gap-1 px-2 text-center"
-      style={{ height, background: failed ? "#F7E7E5" : `linear-gradient(135deg, ${c?.color}22, ${c?.color}08)`, borderRadius: radius }}
+      style={{ height, background: failed ? "#FDF1EF" : `linear-gradient(135deg, ${c?.color}22, ${c?.color}08)`, borderRadius: radius }}
     >
       {failed ? (
         <>
@@ -782,7 +782,7 @@ function OpenBadge({ weekHours }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1"
-      style={{ borderRadius: 20, color: open ? "#1E6B44" : "#9A3B34", background: open ? "#E4F3EA" : "#F7E7E5" }}
+      style={{ borderRadius: 20, color: open ? "#1E6B44" : "#9A3B34", background: open ? "#E4F3EA" : "#FDF1EF" }}
     >
       <span className="rounded-full" style={{ width: 6, height: 6, backgroundColor: open ? "#2C9A5F" : "#C1443A" }} />
       {open ? "Abierto ahora" : "Cerrado"}
@@ -846,7 +846,7 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
   const inputCls = "appearance-none text-sm px-3 py-2.5";
   const style = dark
     ? { borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }
-    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1220", border: "1px solid #E2E8F0" };
+    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1220", border: "1px solid #DDE3EE" };
 
   return (
     <div className={compact ? "flex gap-2" : "flex flex-col gap-2 sm:flex-row"}>
@@ -941,7 +941,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
                 maxWidth: "85%", borderRadius: 14,
                 backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
                 color: m.rol === "cliente" ? "#fff" : "#0B1220",
-                border: m.rol === "cliente" ? "none" : "1px solid #E2E8F0",
+                border: m.rol === "cliente" ? "none" : "1px solid #DDE3EE",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
                 borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
               }}
@@ -959,14 +959,14 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
                       key={id}
                       onClick={() => onOpenBusiness(id)}
                       className="flex items-center gap-3 p-3 text-left bg-white"
-                      style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 3px 10px rgba(11,42,84,0.07)" }}
+                      style={{ borderRadius: 12, border: "1px solid #DDE3EE", boxShadow: "0 3px 10px rgba(11,42,84,0.07)" }}
                     >
                       <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "#2F6FED" }}>
                         {c?.icon ? <c.icon size={18} color="#fff" /> : <Building2 size={18} color="#fff" />}
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</span>
-                        <span className="block text-xs truncate" style={{ color: "#4B5563" }}>{c?.label} · {biz.zone}</span>
+                        <span className="block text-xs truncate" style={{ color: "#475467" }}>{c?.label} · {biz.zone}</span>
                       </span>
                       <ChevronDown size={14} color="#2F6FED" style={{ transform: "rotate(-90deg)" }} />
                     </button>
@@ -978,21 +978,21 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#4B5563" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #DDE3EE", color: "#475467" }}>
               Buscando...
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ backgroundColor: "#fff", borderTop: "1px solid #E2E8F0" }}>
+      <div style={{ backgroundColor: "#fff", borderTop: "1px solid #DDE3EE" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
           <input
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Ej: quiero comer una hamburguesa..."
             className="flex-1 px-4 py-2.5 text-sm outline-none"
-            style={{ borderRadius: 24, border: "1px solid #E2E8F0", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+            style={{ borderRadius: 24, border: "1px solid #DDE3EE", backgroundColor: "#F3F6FB", color: "#0B1220" }}
           />
           <button
             onClick={enviar} disabled={sending || !text.trim()}
@@ -1121,7 +1121,7 @@ function ChatScreen({ biz, onBack }) {
                 maxWidth: "78%", borderRadius: 14,
                 backgroundColor: m.rol === "cliente" ? "#2F6FED" : "#fff",
                 color: m.rol === "cliente" ? "#fff" : "#0B1220",
-                border: m.rol === "cliente" ? "none" : "1px solid #E2E8F0",
+                border: m.rol === "cliente" ? "none" : "1px solid #DDE3EE",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
                 borderBottomLeftRadius: m.rol === "cliente" ? 14 : 4,
               }}
@@ -1131,7 +1131,7 @@ function ChatScreen({ biz, onBack }) {
             {m.imagenes && (
               <div className="flex gap-2 mt-1.5 overflow-x-auto" style={{ maxWidth: "78%" }}>
                 {m.imagenes.map((url, i) => (
-                  <img key={i} src={url} alt="" className="object-cover shrink-0" style={{ width: 100, height: 100, borderRadius: 10, border: "1px solid #E2E8F0" }} />
+                  <img key={i} src={url} alt="" className="object-cover shrink-0" style={{ width: 100, height: 100, borderRadius: 10, border: "1px solid #DDE3EE" }} />
                 ))}
               </div>
             )}
@@ -1147,21 +1147,21 @@ function ChatScreen({ biz, onBack }) {
         ))}
         {sending && (
           <div className="flex" style={{ justifyContent: "flex-start" }}>
-            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #E2E8F0", color: "#4B5563" }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ borderRadius: 14, borderBottomLeftRadius: 4, backgroundColor: "#fff", border: "1px solid #DDE3EE", color: "#475467" }}>
               Escribiendo...
             </div>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #E2E8F0" }}>
+      <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #DDE3EE" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
           <input
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Escribí tu mensaje..."
             className="flex-1 px-4 py-2.5 text-sm outline-none"
-            style={{ borderRadius: 24, border: "1px solid #E2E8F0", backgroundColor: "#F3F6FB", color: "#0B1220" }}
+            style={{ borderRadius: 24, border: "1px solid #DDE3EE", backgroundColor: "#F3F6FB", color: "#0B1220" }}
           />
           <button
             onClick={enviar} disabled={sending || !text.trim()}
@@ -1221,7 +1221,7 @@ function TagInput({ values, onChange, placeholder }) {
       {values.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1.5">
           {values.map((v) => (
-            <span key={v} className="text-xs px-2 py-1 flex items-center gap-1" style={{ background: "#EEF2F7", borderRadius: 20 }}>
+            <span key={v} className="text-xs px-2 py-1 flex items-center gap-1" style={{ background: "#EDF0F6", borderRadius: 20 }}>
               {v}
               <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}><X size={10} /></button>
             </span>
@@ -1233,7 +1233,7 @@ function TagInput({ values, onChange, placeholder }) {
           value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={placeholder}
-          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#E2E8F0" }}
+          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#DDE3EE" }}
         />
         <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#0B2A54", color: "#fff", borderRadius: 6 }}>
           Agregar
@@ -1246,15 +1246,15 @@ function TagInput({ values, onChange, placeholder }) {
 function ConfirmModal({ title, message, confirmLabel = "Confirmar", danger, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "#0B1220cc" }} onClick={onCancel}>
-      <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17 }}>{title}</h3>
-        <p className="text-sm mt-2 mb-5" style={{ color: "#374151" }}>{message}</p>
-        <div className="flex gap-2 justify-end">
-          <button onClick={onCancel} className="text-sm px-3 py-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
+      <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 24 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em", color: "#0B1220" }}>{title}</h3>
+        <p className="text-sm mt-2 mb-6" style={{ color: "#475467", lineHeight: 1.55 }}>{message}</p>
+        <div className="flex gap-2.5 justify-end">
+          <button onClick={onCancel} className="text-sm font-semibold px-4 py-2.5" style={{ borderRadius: 12, border: "1px solid #DDE3EE", background: "#fff", color: "#0B1220" }}>Cancelar</button>
           <button
             onClick={onConfirm}
-            className="text-sm font-medium px-3 py-1.5"
-            style={{ borderRadius: 8, backgroundColor: danger ? "#C1443A" : "#0B2A54", color: "#fff" }}
+            className="text-sm font-semibold px-4 py-2.5"
+            style={{ borderRadius: 12, backgroundColor: danger ? "#C1443A" : "#0B2A54", color: "#fff" }}
           >
             {confirmLabel}
           </button>
@@ -1349,13 +1349,13 @@ function WeekHoursEditor({ value, onChange }) {
                 <input
                   type="number" value={entry[0]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [Number(e.target.value), entry[1]] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E2E8F0" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#DDE3EE" }}
                 />
                 <span>a</span>
                 <input
                   type="number" value={entry[1]}
                   onChange={(e) => onChange(value.map((d, idx) => (idx === i ? [entry[0], Number(e.target.value)] : d)))}
-                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#E2E8F0" }}
+                  className="w-14 border px-1 py-0.5" style={{ borderRadius: 4, borderColor: "#DDE3EE" }}
                 />
               </>
             )}
@@ -1379,14 +1379,14 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
       onClick={() => onOpen(biz.id)}
       onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
       className="bg-white flex flex-col overflow-hidden text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl"
-      style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 8px 26px rgba(11,42,84,0.08)" }}
+      style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 14px 30px -14px rgba(11,42,84,.22)" }}
     >
       <div className="relative">
         <Photo cat={biz.cat} src={biz.portada || biz.logo || null} height={176} radius="0px" iconSize={42} clickable={false} />
         <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: 84, background: "linear-gradient(to top, rgba(8,18,38,0.62), rgba(8,18,38,0))" }} />
 
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1" style={{ background: "#ffffffee", color: "#0B1220", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,.15)" }}>
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1" style={{ background: "#ffffffee", color: "#0B1220", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,.15)", backdropFilter: "blur(6px)" }}>
             <span className="rounded-full" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label}
           </span>
           {discounts.length > 0 && (
@@ -1422,14 +1422,14 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
 
       <div className="px-4 pt-3.5 pb-3.5 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
-          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
+          <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 17, letterSpacing: "-0.015em", color: "#0B1220", lineHeight: 1.25 }}>{biz.name}</h3>
           {biz.featured && (
             <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 shrink-0" style={{ background: "#FFF3D6", color: "#8A5B12", borderRadius: 8 }}>
               <Star size={10} fill="#C98A14" color="#C98A14" /> Destacado
             </span>
           )}
         </div>
-        <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#5B6677", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
+        <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#667085", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <OpenBadge weekHours={biz.weekHours} />
@@ -1445,11 +1445,11 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EEF2F7" }}>
+        <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EDF0F6" }}>
           <a
             href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer"
             onClick={(e) => { e.stopPropagation(); onTrack && onTrack(biz.id, "ubicacion"); }}
-            className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#5B6677" }}
+            className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#667085" }}
           >
             <MapPin size={13} color="#2F6FED" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
           </a>
@@ -1534,7 +1534,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
     <button
       onClick={() => setTab(id)}
       className="flex-1 py-2 text-sm font-semibold transition-all"
-      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#4B5563", boxShadow: tab === id ? "0 3px 10px rgba(11,42,84,.12)" : "none" }}
+      style={{ borderRadius: 12, background: tab === id ? "#fff" : "transparent", color: tab === id ? "#0B2A54" : "#475467", boxShadow: tab === id ? "0 1px 2px rgba(11,18,32,.10), 0 4px 10px -2px rgba(11,42,84,.14)" : "none" }}
     >
       {label}
     </button>
@@ -1573,7 +1573,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
         <div className="px-4">
           {/* tarjeta de identidad del negocio */}
-          <div className="bg-white relative p-4 mb-4" style={{ borderRadius: 24, marginTop: -30, boxShadow: "0 12px 32px rgba(11,42,84,0.12)", border: "1px solid #E6ECF5" }}>
+          <div className="bg-white relative p-4 mb-4" style={{ borderRadius: 24, marginTop: -30, boxShadow: "0 12px 32px rgba(11,42,84,0.12)", border: "1px solid #E4E9F2" }}>
             <div className="flex items-start gap-3.5">
               <button
                 onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={cancelPress}
@@ -1596,7 +1596,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                     </span>
                   )}
                 </div>
-                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#4B5563" }}>
+                <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "#475467" }}>
                   <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
                 </p>
                 <div className="mt-1.5"><OpenBadge weekHours={biz.weekHours} /></div>
@@ -1613,7 +1613,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <span className="flex items-center justify-center gap-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>
                     <Icon size={13} color={color} fill={Icon === Star || Icon === Heart ? color : "none"} /> {valor}
                   </span>
-                  <span className="block text-[10px] mt-0.5" style={{ color: "#4B5563" }}>{etiqueta}</span>
+                  <span className="block text-[10px] mt-0.5" style={{ color: "#475467" }}>{etiqueta}</span>
                 </div>
               ))}
             </div>
@@ -1705,7 +1705,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#374151" }}>
+              <div className="flex flex-wrap items-center gap-3 mb-5 text-xs" style={{ color: "#344054" }}>
                 {biz.paymentMethods?.length > 0 && <span>Pagos: {biz.paymentMethods.join(", ")}</span>}
                 {biz.delivery && <span className="flex items-center gap-1"><Truck size={13} /> Hace envíos</span>}
               </div>
@@ -1715,7 +1715,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <a href={`https://instagram.com/${biz.ig}`} target="_blank" rel="noreferrer"
                     onClick={() => onTrack && onTrack(biz.id, "contacto")}
                     className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3"
-                    style={{ border: "1px solid #E2E8F0", color: "#0B1220", borderRadius: 10 }}
+                    style={{ border: "1px solid #DDE3EE", color: "#0B1220", borderRadius: 10 }}
                   >
                     <Instagram size={17} /> @{biz.ig}
                   </a>
@@ -1723,7 +1723,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               )}
 
               <a href={mapsLink(biz.loc, biz.zone)} target="_blank" rel="noreferrer" onClick={() => onTrack && onTrack(biz.id, "ubicacion")} className="flex items-center gap-1.5 text-sm mb-6 w-fit hover:underline" style={{ color: "#0B2A54" }}>
-                <MapPin size={15} /> {biz.loc} <span style={{ color: "#4B5563" }}>· ver en el mapa</span>
+                <MapPin size={15} /> {biz.loc} <span style={{ color: "#475467" }}>· ver en el mapa</span>
               </a>
 
               {puntos && (
@@ -1765,7 +1765,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                         </div>
                         {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
                         {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>Válido hasta el {fmtDate(d.endDate)}</p>
+                        <p className="text-[11px] mt-1" style={{ color: "#475467" }}>Válido hasta el {fmtDate(d.endDate)}</p>
                       </div>
                     ))}
                   </div>
@@ -1776,10 +1776,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <h2 className="flex items-center gap-2 mb-3" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
                   <Clock size={16} /> Horarios de atención
                 </h2>
-                <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+                <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
                   {DAYS.map((day, i) => (
                     <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
-                      style={{ borderTop: i === 0 ? "none" : "1px solid #EEF2F7", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
+                      style={{ borderTop: i === 0 ? "none" : "1px solid #EDF0F6", backgroundColor: i === todayIdx ? "#E8F0FE" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1220" }}
                     >
                       <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
                       <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#1F2937" }}>{fmtHours(biz.weekHours[i])}</span>
@@ -1792,16 +1792,16 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
           {tab === "opiniones" && (
             <div className="pb-6">
-              <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+              <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
                 <p className="text-sm font-semibold mb-2" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 <input
                   value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
-                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
                 />
                 <textarea
                   value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
-                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
                 />
                 <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>
                   Publicar reseña
@@ -1811,10 +1811,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               {biz.reviews?.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {[...biz.reviews].reverse().map((r) => (
-                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
+                    <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{r.name}</span>
-                        <span className="text-xs" style={{ color: "#4B5563" }}>{fmtDate(r.date)}</span>
+                        <span className="text-xs" style={{ color: "#475467" }}>{fmtDate(r.date)}</span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
@@ -1838,7 +1838,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                           <textarea
                             value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={2}
                             placeholder="Escribí una respuesta..."
-                            className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                            className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
                           />
                           <div className="flex gap-2">
                             <button
@@ -1847,7 +1847,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                             >
                               Responder
                             </button>
-                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#4B5563" }}>
+                            <button onClick={() => { setReplyingId(null); setReplyText(""); }} className="text-xs font-medium px-3 py-1.5" style={{ color: "#475467" }}>
                               Cancelar
                             </button>
                           </div>
@@ -1861,7 +1861,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="text-sm" style={{ color: "#4B5563" }}>Sé el primero en dejar una reseña.</p>
+                <p className="text-sm" style={{ color: "#475467" }}>Sé el primero en dejar una reseña.</p>
               )}
             </div>
           )}
@@ -1875,7 +1875,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   ))}
                 </div>
               ) : (
-                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#4B5563" }}>
+                <p className="flex items-center gap-1.5 text-sm" style={{ color: "#475467" }}>
                   <ImageIcon size={15} /> Este negocio todavía no cargó fotos
                 </p>
               )}
@@ -1909,7 +1909,7 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
     <div>
       <BotonVolver texto={`Volver a ${volverA}`} onClick={onBack} />
       <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{titulo}</h2>
-      {desc && <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</p>}
+      {desc && <p className="text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</p>}
       <div className="mt-4">{children}</div>
     </div>
   );
@@ -1994,7 +1994,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               placeholder="Buscá un negocio, producto o servicio..."
               className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1220" }}
             />
-            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#4B5563" /></button>}
+            {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#475467" /></button>}
           </div>
 
           {!query && historial.length > 0 && (
@@ -2037,7 +2037,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14, boxShadow: "0 12px 40px #00000033" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>¿Dónde estás?</span>
-              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#4B5563" /></button>
+              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#475467" /></button>
             </div>
             <ZonePicker value={pendingZone} onChange={setPendingZone} />
             <button
@@ -2054,7 +2054,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
 
       {/* categorías: tarjeta flotante que se superpone a la portada */}
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
-        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E6ECF5", boxShadow: "0 12px 32px rgba(11,42,84,0.12)" }}>
+        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 12px 32px rgba(11,42,84,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>Categorías</span>
             <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2F6FED", background: "#E8F0FE", borderRadius: 20 }}>Ver todas</button>
@@ -2064,7 +2064,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2F6FED,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2F6FED55" : "none", transition: "all .2s" }}>
                 <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2F6FED"} />
               </span>
-              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#374151" }}>Todos</span>
+              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B2A54" : "#344054" }}>Todos</span>
             </button>
             {QUICK_CATEGORIES.map((c) => {
               const Icon = c.icon;
@@ -2074,7 +2074,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
                   <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: active ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
                     <Icon size={21} color={active ? "#fff" : c.color} />
                   </span>
-                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#374151" }}>{c.label.split(" ")[0]}</span>
+                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B2A54" : "#344054" }}>{c.label.split(" ")[0]}</span>
                 </button>
               );
             })}
@@ -2114,7 +2114,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
           <Item Icon={Settings} label="Ajustes" onClick={onAjustes} />
           <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
-          <div style={{ borderTop: "1px solid #EEF2F7", margin: "8px 0" }} />
+          <div style={{ borderTop: "1px solid #EDF0F6", margin: "8px 0" }} />
           <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
             const data = { title: "Mi Zona", text: "Descubrí negocios de tu zona con Mi Zona", url: window.location.origin };
             if (navigator.share) { try { await navigator.share(data); } catch {} }
@@ -2124,7 +2124,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onAyuda} />
           <Item Icon={Send} label="Soporte" onClick={onSoporte} />
         </div>
-        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#4B5563", borderTop: "1px solid #EEF2F7" }}>
+        <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#475467", borderTop: "1px solid #EDF0F6" }}>
           <X size={13} /> Cerrar menú
         </button>
       </div>
@@ -2163,7 +2163,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Tus conversaciones con negocios</p>
+      <p className="text-xs mb-4" style={{ color: "#475467" }}>Tus conversaciones con negocios</p>
 
       {conversaciones.length === 0 ? (
         <div className="text-center py-16">
@@ -2171,7 +2171,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
             <MessageCircle size={24} color="#2F6FED" />
           </span>
           <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés conversaciones</p>
-          <p className="text-xs px-8" style={{ color: "#4B5563" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+          <p className="text-xs px-8" style={{ color: "#475467" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
         </div>
       ) : (
         <div className="flex flex-col">
@@ -2182,7 +2182,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
                 key={biz.id}
                 onClick={() => onOpenChat(biz)}
                 className="w-full flex items-center gap-3 py-3 text-left bg-white active:bg-gray-50"
-                style={{ borderBottom: "1px solid #EEF2F7" }}
+                style={{ borderBottom: "1px solid #EDF0F6" }}
               >
                 <div className="relative shrink-0">
                   {biz.logo ? (
@@ -2202,7 +2202,7 @@ function ChatsScreen({ businesses, onOpenChat }) {
                     <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#64748B", fontWeight: noLeido ? 600 : 400 }}>{fmtChatTime(ultimo.hora)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#4B5563", fontWeight: noLeido ? 600 : 400 }}>
+                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#475467", fontWeight: noLeido ? 600 : 400 }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
                     {noLeido && (
@@ -2233,15 +2233,15 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
         <BotonAtras onClick={onBack} tono="oscuro" size={36} />
         <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1220" }}>Favoritos</p>
       </div>
-      <p className="text-xs mb-5" style={{ color: "#4B5563" }}>Tus negocios guardados</p>
+      <p className="text-xs mb-5" style={{ color: "#475467" }}>Tus negocios guardados</p>
 
       {guardados.length === 0 ? (
         <div className="text-center py-14">
-          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#F7E7E5" }}>
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: "50%", background: "#FDF1EF" }}>
             <Heart size={22} color="#C1443A" />
           </span>
           <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no guardaste ningún negocio</p>
-          <p className="text-xs" style={{ color: "#4B5563" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
+          <p className="text-xs" style={{ color: "#475467" }}>Tocá el corazón en cualquier negocio para guardarlo acá.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -2253,17 +2253,17 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
                 key={biz.id}
                 onClick={() => onOpenBusiness(biz.id)}
                 className="w-full flex items-center gap-3 p-3 text-left bg-white"
-                style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+                style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
               >
                 <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
                   <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={52} radius="12px" iconSize={22} clickable={false} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
-                  <p className="text-xs truncate mb-1" style={{ color: "#4B5563" }}>{c?.label} · {biz.zone}</p>
+                  <p className="text-xs truncate mb-1" style={{ color: "#475467" }}>{c?.label} · {biz.zone}</p>
                   <div className="flex items-center gap-2">
                     {rating && (
-                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#374151" }}>
+                      <span className="flex items-center gap-0.5 text-xs" style={{ color: "#344054" }}>
                         <Star size={11} fill="#F5A623" color="#F5A623" /> {rating}
                       </span>
                     )}
@@ -2273,7 +2273,7 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
                 <button
                   onClick={(e) => { e.stopPropagation(); onToggleFavorite(biz.id); }}
                   className="flex items-center justify-center shrink-0"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: "#F7E7E5" }}
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: "#FDF1EF" }}
                 >
                   <Heart size={16} color="#C1443A" fill="#C1443A" />
                 </button>
@@ -2326,7 +2326,7 @@ function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const etiqueta = mostrarNombre || seleccionado
     ? `<div style="position:absolute;left:50%;top:${size + 12}px;transform:translateX(-50%);white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;
         background:#fff;color:#0B1220;font:600 11px 'Work Sans',sans-serif;padding:3px 8px;border-radius:10px;
-        box-shadow:0 2px 8px rgba(11,42,84,.28);border:1px solid #E2E8F0">${nombre}</div>`
+        box-shadow:0 2px 8px rgba(11,42,84,.28);border:1px solid #DDE3EE">${nombre}</div>`
     : "";
   const html = `
     <div style="position:relative;width:${size}px;height:${size + 10}px">
@@ -2530,7 +2530,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#374151", border: "1px solid " + (active ? activeBorder : "#E2E8F0") }}
+      style={{ borderRadius: 20, backgroundColor: active ? activeBg : "#fff", color: active ? activeColor : "#344054", border: "1px solid " + (active ? activeBorder : "#DDE3EE") }}
     >
       {Icon && <Icon size={13} />} {label}
     </button>
@@ -2578,12 +2578,12 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
       </div>
 
       {/* filtros */}
-      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #E2E8F0" }}>
+      <div style={{ backgroundColor: "#fff", borderBottom: "1px solid #DDE3EE" }}>
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setShowCats(true)}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
-            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#374151", border: "1px solid " + (catActual ? catActual.color : "#E2E8F0") }}
+            style={{ borderRadius: 20, backgroundColor: catActual ? catActual.color : "#fff", color: catActual ? "#fff" : "#344054", border: "1px solid " + (catActual ? catActual.color : "#DDE3EE") }}
           >
             {catActual ? <catActual.icon size={13} /> : <Grid3x3 size={13} />} {catActual ? catActual.label : "Rubro"}
             {catActual ? <X size={12} onClick={(e) => { e.stopPropagation(); setFiltro("cat", null); }} /> : <ChevronDown size={12} />}
@@ -2593,7 +2593,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
           <Chip label="Promociones" Icon={Tag} active={filtros.promos} onClick={() => setFiltro("promos", !filtros.promos)} />
           <Chip label="Con asistente" Icon={Sparkles} active={filtros.asistente} onClick={() => setFiltro("asistente", !filtros.asistente)} activeBg="#F3ECFC" activeColor="#7A4F9E" activeBorder="#7A4F9E" />
           <Chip label="Nuevos" Icon={Sparkles} active={filtros.nuevos} onClick={() => setFiltro("nuevos", !filtros.nuevos)} />
-          <Chip label="Favoritos" Icon={Heart} active={filtros.favoritos} onClick={() => setFiltro("favoritos", !filtros.favoritos)} activeBg="#F7E7E5" activeColor="#9A3B34" activeBorder="#C1443A" />
+          <Chip label="Favoritos" Icon={Heart} active={filtros.favoritos} onClick={() => setFiltro("favoritos", !filtros.favoritos)} activeBg="#FDF1EF" activeColor="#9A3B34" activeBorder="#C1443A" />
         </div>
       </div>
 
@@ -2615,7 +2615,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               <p className="text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>
                 Ubicando los negocios...
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>
+              <p className="text-xs mt-0.5" style={{ color: "#475467" }}>
                 Estamos buscando sus direcciones en el mapa, puede tardar unos segundos.
               </p>
             </div>
@@ -2628,7 +2628,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
             <div className="absolute flex flex-col gap-2" style={{ right: 12, top: 12, zIndex: 20 }}>
               <div className="flex flex-col overflow-hidden" style={{ borderRadius: 12, boxShadow: "0 3px 12px rgba(11,42,84,0.22)" }}>
                 <CtrlBtn onClick={() => mapRef.current?.zoomIn()} label="Acercar"><Plus size={18} color="#0B2A54" /></CtrlBtn>
-                <div style={{ height: 1, background: "#E2E8F0" }} />
+                <div style={{ height: 1, background: "#DDE3EE" }} />
                 <CtrlBtn onClick={() => mapRef.current?.zoomOut()} label="Alejar"><Minus size={18} color="#0B2A54" /></CtrlBtn>
               </div>
               <div className="relative">
@@ -2644,7 +2644,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                     {Object.entries(CAPAS_MAPA).map(([id, c]) => (
                       <button key={id} onClick={() => { setCapa(id); setCapasAbierto(false); }} className="flex flex-col items-center gap-1">
                         <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2F6FED" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#374151" }}>{c.label}</span>
+                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2F6FED" : "#344054" }}>{c.label}</span>
                       </button>
                     ))}
                   </div>
@@ -2660,7 +2660,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
             </div>
 
             {aviso && (
-              <div className="absolute left-3 right-3 px-4 py-2.5 text-xs" style={{ top: 12, zIndex: 25, maxWidth: 420, margin: "0 auto", borderRadius: 10, background: "#F7E7E5", color: "#9A3B34", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", paddingRight: 60 }}>
+              <div className="absolute left-3 right-3 px-4 py-2.5 text-xs" style={{ top: 12, zIndex: 25, maxWidth: 420, margin: "0 auto", borderRadius: 10, background: "#FDF1EF", color: "#9A3B34", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", paddingRight: 60 }}>
                 {aviso}
               </div>
             )}
@@ -2668,7 +2668,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
             {lista.length === 0 && (
               <div className="absolute left-4 right-4 text-center p-5" style={{ top: "30%", zIndex: 15, maxWidth: 340, margin: "0 auto", borderRadius: 14, background: "#fff", boxShadow: "0 8px 24px rgba(11,42,84,0.2)" }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                <p className="text-xs mb-3" style={{ color: "#475467" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
                 {hayFiltros && (
                   <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>
                 )}
@@ -2690,26 +2690,26 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               ].filter(Boolean);
               return (
                 <div className="absolute left-3 right-3" style={{ bottom: 14, zIndex: 20, maxWidth: 440, margin: "0 auto" }}>
-                  <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #E2E8F0", boxShadow: "0 10px 30px rgba(11,42,84,0.28)" }}>
+                  <div className="bg-white p-4 relative" style={{ borderRadius: 16, border: "1px solid #DDE3EE", boxShadow: "0 10px 30px rgba(11,42,84,0.28)" }}>
                     <button onClick={() => setSelectedId(null)} className="absolute" style={{ top: 10, right: 10 }} aria-label="Cerrar"><X size={16} color="#64748B" /></button>
                     <div className="flex items-start gap-3 pr-5">
-                      <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #E2E8F0" }}>
+                      <div className="shrink-0 overflow-hidden" style={{ width: 58, height: 58, borderRadius: 14, border: "1px solid #DDE3EE" }}>
                         <Photo cat={selected.cat} src={selected.logo || selected.photos?.[0]} height={58} radius="14px" iconSize={22} clickable={false} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>{selected.name}</h3>
-                        <p className="text-xs truncate" style={{ color: "#4B5563" }}>
+                        <p className="text-xs truncate" style={{ color: "#475467" }}>
                           <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>
                           {km !== null ? ` · A ${fmtDistance(km)} de vos` : ""}
                         </p>
                         {selected.loc && (
-                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#374151" }}>
+                          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#344054" }}>
                             <MapPin size={11} className="shrink-0" /> <span className="truncate">{selected.loc}</span>
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {rating ? (
-                            <span className="flex items-center gap-1 text-xs" style={{ color: "#374151" }}>
+                            <span className="flex items-center gap-1 text-xs" style={{ color: "#344054" }}>
                               <Star size={12} fill="#F5A623" color="#F5A623" /> {rating} ({selected.reviews.length})
                             </span>
                           ) : (
@@ -2747,7 +2747,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                       <button
                         onClick={() => onToggleFavorite(selected.id)} aria-label="Guardar"
                         className="flex items-center justify-center shrink-0"
-                        style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#F7E7E5" : "#F3F6FB" }}
+                        style={{ width: 40, height: 40, borderRadius: 10, background: esFav ? "#FDF1EF" : "#F3F6FB" }}
                       >
                         <Heart size={17} color={esFav ? "#C1443A" : "#64748B"} fill={esFav ? "#C1443A" : "none"} />
                       </button>
@@ -2766,7 +2766,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               {lista.length === 0 ? (
                 <div className="text-center py-14">
                   <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No hay negocios con estos filtros</p>
-                  <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
+                  <p className="text-xs mb-3" style={{ color: "#475467" }}>Probá quitando alguno para ver más resultados en {zone}.</p>
                   {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-semibold px-4 py-2" style={{ borderRadius: 8, backgroundColor: "#0B2A54", color: "#fff" }}>Quitar filtros</button>}
                 </div>
               ) : lista.map((biz) => {
@@ -2779,7 +2779,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                     onClick={() => onOpenBusiness(biz.id)}
                     onKeyDown={(e) => (e.key === "Enter" ? onOpenBusiness(biz.id) : null)}
                     className="w-full flex items-center gap-3 p-3 text-left bg-white cursor-pointer"
-                    style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
+                    style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}
                   >
                     <div className="shrink-0 overflow-hidden" style={{ width: 54, height: 54, borderRadius: 12 }}>
                       <Photo cat={biz.cat} src={biz.logo || biz.photos?.[0]} height={54} radius="12px" iconSize={22} clickable={false} />
@@ -2789,12 +2789,12 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         <p className="text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{biz.name}</p>
                         {esNegocioNuevo(biz) && <span className="text-[10px] font-semibold px-1.5 py-0.5 shrink-0" style={{ borderRadius: 6, background: "#E4F3EA", color: "#1E6B44" }}>Nuevo</span>}
                       </div>
-                      <p className="text-xs truncate" style={{ color: "#4B5563" }}>
+                      <p className="text-xs truncate" style={{ color: "#475467" }}>
                         <span style={{ color: c?.color, fontWeight: 500 }}>{c?.label}</span>{km !== null ? ` · A ${fmtDistance(km)}` : ""}
                       </p>
                       {biz.loc && <p className="text-[11px] truncate mb-1" style={{ color: "#64748B" }}>{biz.loc}</p>}
                       <div className="flex items-center gap-2 flex-wrap">
-                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#374151" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
+                        {rating && <span className="flex items-center gap-0.5 text-xs" style={{ color: "#344054" }}><Star size={11} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                         <OpenBadge weekHours={biz.weekHours} />
                         {biz.delivery && <Truck size={13} color="#0B2A54" />}
                         {biz.asistenteCodigoPublico && biz.asistenteActivo && <Sparkles size={13} color="#7A4F9E" />}
@@ -2876,7 +2876,7 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
   return (
     <div
       className="relative overflow-hidden"
-      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EEF2F7" }}
+      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EDF0F6" }}
     >
       {/* fondo que se descubre al deslizar */}
       <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#C1443A" }}>
@@ -2902,7 +2902,7 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
             <p className="text-sm" style={{ color: "#0B1220", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
             {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2F6FED" }} />}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: "#374151", wordBreak: "break-word" }}>{n.descripcion}</p>
+          <p className="text-xs mt-0.5" style={{ color: "#344054", wordBreak: "break-word" }}>{n.descripcion}</p>
           <p className="text-[11px] mt-1" style={{ color: leida ? "#64748B" : "#2F6FED", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
       </div>
@@ -2946,15 +2946,15 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
               <BellOff size={24} color="#2F6FED" />
             </span>
             <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No tenés notificaciones</p>
-            <p className="text-xs" style={{ color: "#4B5563" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
+            <p className="text-xs" style={{ color: "#475467" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
           </div>
         ) : (
           <>
             <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#64748B" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#4B5563", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
-                <div style={{ borderTop: "1px solid #EEF2F7" }}>
+                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#475467", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
+                <div style={{ borderTop: "1px solid #EDF0F6" }}>
                   {g.items.map((n) => (
                     <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
                   ))}
@@ -2975,7 +2975,7 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
   const progreso = Math.min(100, Math.round(((r.puntos - r.faltan) / r.puntos) * 100));
   const bloqueoTexto = r.bloqueo === "agotada" ? "Agotada" : r.bloqueo === "limite" ? "Ya canjeaste el máximo permitido" : null;
   return (
-    <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
+    <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
       <div className="flex items-start gap-3">
         {r.imagen ? (
           <img src={r.imagen} alt="" className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 12 }} />
@@ -2991,19 +2991,19 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
               <Coins size={11} /> {fmtNum(r.puntos)}
             </span>
           </div>
-          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#374151" }}>{r.descripcion}</p>}
+          {r.descripcion && <p className="text-xs mt-0.5" style={{ color: "#344054" }}>{r.descripcion}</p>}
         </div>
       </div>
 
       {(r.compraMinima > 0 || r.fechaVencimiento || r.cantidadDisponible !== null || r.limitePorCliente || r.condiciones) && (
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
-          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
-          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
-          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EEF2F7", color: "#374151" }}>Máx. {r.limitePorCliente} por persona</span>}
+          {r.compraMinima > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Compra mínima {fmtPesos(r.compraMinima)}</span>}
+          {r.fechaVencimiento && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Canjeable hasta el {fmtFechaAR(r.fechaVencimiento)}</span>}
+          {r.cantidadDisponible !== null && r.cantidadDisponible > 0 && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Quedan {fmtNum(r.cantidadDisponible)}</span>}
+          {r.limitePorCliente && <span className="text-[11px] px-2 py-0.5" style={{ borderRadius: 20, background: "#EDF0F6", color: "#344054" }}>Máx. {r.limitePorCliente} por persona</span>}
         </div>
       )}
-      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#4B5563" }}>Condiciones: {r.condiciones}</p>}
+      {r.condiciones && <p className="text-[11px] mt-2" style={{ color: "#475467" }}>Condiciones: {r.condiciones}</p>}
 
       <div className="mt-3.5">
         {bloqueoTexto ? (
@@ -3018,10 +3018,10 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
           </button>
         ) : (
           <>
-            <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
+            <div style={{ height: 7, borderRadius: 4, background: "#EDF0F6", overflow: "hidden" }}>
               <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)", borderRadius: 4 }} />
             </div>
-            <p className="text-xs mt-1.5" style={{ color: "#374151" }}>
+            <p className="text-xs mt-1.5" style={{ color: "#344054" }}>
               Te {r.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(r.faltan)} {r.faltan === 1 ? "punto" : "puntos"}</b>.
             </p>
           </>
@@ -3039,28 +3039,28 @@ function CanjeModal({ canje, onClose }) {
       <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>Tu canje</span>
-          <button onClick={onClose}><X size={18} color="#4B5563" /></button>
+          <button onClick={onClose}><X size={18} color="#475467" /></button>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#4B5563" : "#1E6B44" }}>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#475467" : "#1E6B44" }}>
           {usado ? <Check size={12} /> : <Ticket size={12} />} {usado ? "Ya utilizado" : "Listo para usar"}
         </span>
         <p className="text-base font-semibold" style={{ color: "#0B1220" }}>{canje.recompensa}</p>
-        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#4B5563" }}>{canje.negocio}</p>}
+        {canje.negocio && <p className="text-xs mb-3" style={{ color: "#475467" }}>{canje.negocio}</p>}
         {!usado && (
           <img
             alt="Código QR del canje" className="mx-auto mb-3"
-            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #E2E8F0" }}
+            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #DDE3EE" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(canje.codigo)}`}
           />
         )}
         <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#64748B" : "#0B2A54", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
         {usado ? (
-          <p className="text-xs" style={{ color: "#4B5563" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
+          <p className="text-xs" style={{ color: "#475467" }}>Utilizado el {fmtFechaAR(canje.utilizadoEn)}. Este código ya no sirve.</p>
         ) : (
-          <p className="text-xs" style={{ color: "#4B5563" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
+          <p className="text-xs" style={{ color: "#475467" }}>Mostrale este código al negocio para retirar tu recompensa. Se puede usar una sola vez.</p>
         )}
         {(canje.condiciones || canje.compraMinima > 0) && (
-          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#374151" }}>
+          <p className="text-[11px] mt-3 p-2.5 text-left" style={{ borderRadius: 8, background: "#F3F6FB", color: "#344054" }}>
             {canje.compraMinima > 0 && <>Compra mínima: {fmtPesos(canje.compraMinima)}. </>}
             {canje.condiciones && <>Condiciones: {canje.condiciones}</>}
           </p>
@@ -3163,13 +3163,13 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
         {cabecera("Recompensas", detalle?.nombreNegocio || biz?.name || "", () => (initialCodigo ? onBack() : setCodigo(null)))}
         <div className="max-w-3xl mx-auto px-4 py-5" style={{ paddingBottom: 60 }}>
           {loadingDetalle && !detalle ? (
-            <p className="text-sm text-center py-16" style={{ color: "#4B5563" }}>Cargando...</p>
+            <p className="text-sm text-center py-16" style={{ color: "#475467" }}>Cargando...</p>
           ) : error && !detalle ? (
             <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
           ) : detalle && !detalle.activo ? (
             <div className="text-center py-16 px-6">
               <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Este negocio no tiene programa de puntos</p>
-              <p className="text-xs" style={{ color: "#4B5563" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
+              <p className="text-xs" style={{ color: "#475467" }}>Cuando lo active vas a poder ver acá sus recompensas.</p>
             </div>
           ) : detalle && (
             <>
@@ -3182,14 +3182,14 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   </p>
                 </div>
               </div>
-              <p className="text-xs mb-4 px-1" style={{ color: "#374151" }}>
+              <p className="text-xs mb-4 px-1" style={{ color: "#344054" }}>
                 Ganás <b>1 punto</b> por cada <b>{fmtPesos(detalle.pesosPorPunto)}</b> que gastás. Los puntos se suman cuando tu pedido se entrega y solo sirven en este negocio.
               </p>
               {errorCanje && (
-                <p className="text-xs mb-3 px-3 py-2.5" style={{ borderRadius: 10, background: "#F7E7E5", color: "#9A3B34" }}>{errorCanje}</p>
+                <p className="text-xs mb-3 px-3 py-2.5" style={{ borderRadius: 10, background: "#FDF1EF", color: "#9A3B34" }}>{errorCanje}</p>
               )}
               {detalle.recompensas.length === 0 ? (
-                <p className="text-sm text-center py-10" style={{ color: "#4B5563" }}>Este negocio todavía no cargó recompensas.</p>
+                <p className="text-sm text-center py-10" style={{ color: "#475467" }}>Este negocio todavía no cargó recompensas.</p>
               ) : (
                 <div className="flex flex-col gap-3">
                   {detalle.recompensas.map((r) => (
@@ -3227,9 +3227,9 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
     <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }}>
       {cabecera("Mis puntos", "Cada negocio tiene sus propios puntos", onBack)}
       <div className="max-w-3xl mx-auto px-4 py-4" style={{ paddingBottom: 60 }}>
-        <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+        <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #DDE3EE" }}>
           {[{ id: "puntos", label: "Mis puntos" }, { id: "canjes", label: `Mis canjes${pendientes ? ` (${pendientes})` : ""}` }].map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#4B5563" }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2F6FED" : "#475467" }}>
               {t.label}
               {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2F6FED", borderRadius: 2 }} />}
             </button>
@@ -3237,7 +3237,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
         </div>
 
         {loading ? (
-          <p className="text-sm text-center py-16" style={{ color: "#4B5563" }}>Cargando...</p>
+          <p className="text-sm text-center py-16" style={{ color: "#475467" }}>Cargando...</p>
         ) : error ? (
           <p className="text-sm text-center py-16" style={{ color: "#9A3B34" }}>{error}</p>
         ) : tab === "puntos" ? (
@@ -3247,12 +3247,12 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                 <Coins size={24} color="#B7791F" />
               </span>
               <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés puntos</p>
-              <p className="text-xs" style={{ color: "#4B5563" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
+              <p className="text-xs" style={{ color: "#475467" }}>Los negocios con programa de puntos te suman puntos por tus compras. Cuando tengas, los vas a ver acá, separados por negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               {negocios.map((n) => (
-                <div key={n.codigoPublico} className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
+                <div key={n.codigoPublico} className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 14px rgba(11,42,84,0.07)" }}>
                   <div className="flex items-center gap-3">
                     <Logo nombre={n.nombreNegocio} logoUrl={n.logoUrl} cp={n.codigoPublico} />
                     <div className="flex-1 min-w-0">
@@ -3262,13 +3262,13 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   </div>
                   {n.proxima ? (
                     <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#374151" }}>
+                      <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#344054" }}>
                         <span className="truncate pr-2">{n.proxima.nombre} · {fmtNum(n.proxima.puntos)} puntos</span>
                       </div>
-                      <div style={{ height: 7, borderRadius: 4, background: "#EEF2F7", overflow: "hidden" }}>
+                      <div style={{ height: 7, borderRadius: 4, background: "#EDF0F6", overflow: "hidden" }}>
                         <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2F6FED, #7FA8F5)" }} />
                       </div>
-                      <p className="text-xs mt-1.5" style={{ color: "#374151" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
+                      <p className="text-xs mt-1.5" style={{ color: "#344054" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
                     </div>
                   ) : n.recompensas.some((r) => r.puedeCanjear) ? (
                     <p className="text-xs mt-3 font-medium" style={{ color: "#1E6B44" }}>¡Ya podés canjear una recompensa!</p>
@@ -3290,23 +3290,23 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
               <Ticket size={24} color="#7A4F9E" />
             </span>
             <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no canjeaste nada</p>
-            <p className="text-xs" style={{ color: "#4B5563" }}>Tus cupones aparecen acá, con su código y su estado.</p>
+            <p className="text-xs" style={{ color: "#475467" }}>Tus cupones aparecen acá, con su código y su estado.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {canjes.map((c) => {
               const usado = c.estado === "utilizado";
               return (
-                <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: usado ? 0.7 : 1 }}>
+                <button key={c.id} onClick={() => setCupon(c)} className="w-full flex items-center gap-3 p-3.5 text-left bg-white" style={{ borderRadius: 14, border: "1px solid #DDE3EE", boxShadow: "0 3px 12px rgba(11,42,84,0.06)", opacity: usado ? 0.7 : 1 }}>
                   <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: usado ? "#EEEDE7" : "#F3ECFC" }}>
-                    {usado ? <Check size={19} color="#4B5563" /> : <Ticket size={19} color="#7A4F9E" />}
+                    {usado ? <Check size={19} color="#475467" /> : <Ticket size={19} color="#7A4F9E" />}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220" }}>{c.recompensa}</span>
-                    <span className="block text-xs truncate" style={{ color: "#4B5563" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
+                    <span className="block text-xs truncate" style={{ color: "#475467" }}>{c.negocio} · {fmtFechaAR(c.creadoEn)}</span>
                     <span className="block text-xs font-mono mt-0.5" style={{ color: usado ? "#64748B" : "#0B2A54", textDecoration: usado ? "line-through" : "none" }}>{c.codigo}</span>
                   </span>
-                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#4B5563" : "#1E6B44" }}>
+                  <span className="text-[11px] font-semibold px-2 py-1 shrink-0" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#475467" : "#1E6B44" }}>
                     {usado ? "Utilizado" : "Pendiente de uso"}
                   </span>
                 </button>
@@ -3429,7 +3429,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <button
                 onClick={() => setCatFiltro(null)}
                 className="text-xs font-semibold px-3 py-1.5"
-                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#374151", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#E2E8F0") }}
+                style={{ borderRadius: 20, background: catFiltro === null ? "#0B2A54" : "#fff", color: catFiltro === null ? "#fff" : "#344054", border: "1px solid " + (catFiltro === null ? "#0B2A54" : "#DDE3EE") }}
               >
                 Todas
               </button>
@@ -3440,7 +3440,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                   <button
                     key={c.id} onClick={() => setCatFiltro(act ? null : c.id)}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5"
-                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#374151", border: "1px solid " + (act ? c.color : "#E2E8F0") }}
+                    style={{ borderRadius: 20, background: act ? c.color : "#fff", color: act ? "#fff" : "#344054", border: "1px solid " + (act ? c.color : "#DDE3EE") }}
                   >
                     <Icon size={13} color={act ? "#fff" : c.color} /> {c.label}
                   </button>
@@ -3455,14 +3455,14 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 <Trophy size={32} color="#2F6FED" />
               </span>
               <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>Todavía no hay ranking</p>
-              <p className="text-sm mt-1" style={{ color: "#4B5563" }}>
+              <p className="text-sm mt-1" style={{ color: "#475467" }}>
                 {catFiltro ? "No hay negocios de esta categoría en tu zona." : "Cuando los negocios de tu zona reciban visitas, reseñas y favoritos, van a aparecer acá."}
               </p>
             </div>
           ) : (
             <>
               {resto.length > 0 && (
-                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#4B5563", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
+                <p className="text-xs font-semibold mb-2.5 mt-1" style={{ color: "#475467", letterSpacing: 0.6 }}>DEL PUESTO 4 AL {ranking.length}</p>
               )}
               <div className="flex flex-col gap-2.5">
                 {resto.map((biz, i) => {
@@ -3476,7 +3476,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                     <button
                       key={biz.id} onClick={() => onOpenBusiness(biz.id)}
                       className="w-full flex items-center gap-3 p-3 text-left bg-white transition-shadow hover:shadow-lg"
-                      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+                      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
                     >
                       <span className="flex items-center justify-center shrink-0 text-sm font-bold" style={{ width: 32, height: 32, borderRadius: 11, background: destacado ? "#0B2A54" : "#EEF3FB", color: destacado ? "#fff" : "#6B7A90", fontFamily: "var(--fuente-titulo)" }}>
                         {puesto}
@@ -3486,13 +3486,13 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                       </div>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</span>
-                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#4B5563" }}>
+                        <span className="flex items-center gap-2 text-[11px] mt-0.5" style={{ color: "#475467" }}>
                           <span className="font-medium truncate" style={{ color: c?.color }}>{c?.label}</span>
                           {rating && <span className="flex items-center gap-0.5 shrink-0"><Star size={10} fill="#F5A623" color="#F5A623" /> {rating}</span>}
                           <span className="flex items-center gap-0.5 shrink-0"><Eye size={10} /> {fmtNum(biz.views || 0)}</span>
                           {(biz.vecesFavorito || 0) > 0 && <span className="flex items-center gap-0.5 shrink-0"><Heart size={10} color="#C1443A" fill="#C1443A" /> {biz.vecesFavorito}</span>}
                         </span>
-                        <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EEF2F7", overflow: "hidden" }}>
+                        <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EDF0F6", overflow: "hidden" }}>
                           <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "#2F6FED"}, ${c?.color || "#2F6FED"}aa)` }} />
                         </span>
                       </span>
@@ -3508,13 +3508,13 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
               <button
                 onClick={() => setVerComo((v) => !v)}
                 className="w-full flex items-center justify-between mt-5 px-4 py-3 bg-white"
-                style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}
+                style={{ borderRadius: 16, border: "1px solid #E4E9F2" }}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B2A54" }}><Medal size={16} color="#2F6FED" /> ¿Cómo se calcula el ranking?</span>
-                <ChevronDown size={16} color="#4B5563" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+                <ChevronDown size={16} color="#475467" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {verComo && (
-                <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5" }}>
+                <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E4E9F2" }}>
                   {[
                     { Icon: Eye, color: "#2F6FED", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
                     { Icon: Star, color: "#F5A623", titulo: "Reseñas y valoración", texto: "Más reseñas y mejores estrellas suman más puntos." },
@@ -3524,7 +3524,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                       <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
                       <span>
                         <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>{titulo}</span>
-                        <span className="block text-xs" style={{ color: "#4B5563" }}>{texto}</span>
+                        <span className="block text-xs" style={{ color: "#475467" }}>{texto}</span>
                       </span>
                     </div>
                   ))}
@@ -3562,14 +3562,14 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
     >
       <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `0 6px 14px ${bg}55` }}>
         <Icon size={20} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-semibold" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-        <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>
       </span>
       <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -3580,7 +3580,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <button
       onClick={onClick}
       className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E6ECF5", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
+      style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
     >
       <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: `${color}1A` }}>
         <Icon size={19} color={color} />
@@ -3591,14 +3591,14 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
         </span>
       )}
       <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1220", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#4B5563" }}>{desc}</span>
+      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#475467" }}>{desc}</span>
     </button>
   );
 
   const Titulo = ({ children, sub }) => (
     <div className="mb-3 mt-6">
       <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>{children}</p>
-      {sub && <p className="text-xs" style={{ color: "#4B5563" }}>{sub}</p>}
+      {sub && <p className="text-xs" style={{ color: "#475467" }}>{sub}</p>}
     </div>
   );
 
@@ -3614,7 +3614,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   if (!ownerBiz) {
     return (
       <div>
-        <p className="text-xs mb-5" style={{ color: "#4B5563" }}>Todo lo que necesitás en Mi Zona</p>
+        <p className="text-xs mb-5" style={{ color: "#475467" }}>Todo lo que necesitás en Mi Zona</p>
 
         {herramientasDeTodos}
       </div>
@@ -3625,17 +3625,17 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   const c = catInfo(ownerBiz.cat);
   const inf = infoSuscripcion(ownerBiz);
   const estadoTexto = !inf ? "Activo" : inf.estado === "pendiente" ? "Falta pagar" : inf.estado === "vencida" ? "Vencida" : inf.estado === "por_vencer" ? "Por vencer" : "Activo";
-  const estadoColor = !inf || inf.estado === "activa" ? { bg: "#E4F3EA", fg: "#1E6B44" } : inf.estado === "por_vencer" || inf.estado === "pendiente" ? { bg: "#FBEBD1", fg: "#8A5B12" } : { bg: "#F7E7E5", fg: "#9A3B34" };
+  const estadoColor = !inf || inf.estado === "activa" ? { bg: "#E4F3EA", fg: "#1E6B44" } : inf.estado === "por_vencer" || inf.estado === "pendiente" ? { bg: "#FBEBD1", fg: "#8A5B12" } : { bg: "#FDF1EF", fg: "#9A3B34" };
   const rating = avgRating(ownerBiz.reviews);
   const promosVigentes = activeDiscounts(ownerBiz).length;
   const resenasSinVer = countUnseenReviews(ownerBiz);
   const tieneAsistente = !!ownerBiz.asistenteCodigoPublico && !!ownerBiz.asistenteActivo;
 
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
-    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E6ECF5", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
+    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E4E9F2", boxShadow: "0 4px 14px rgba(11,42,84,0.05)" }}>
       <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
       <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>{valor}</span>
-      <span className="block text-[11px] mt-1" style={{ color: "#4B5563" }}>{etiqueta}</span>
+      <span className="block text-[11px] mt-1" style={{ color: "#475467" }}>{etiqueta}</span>
     </div>
   );
 
@@ -3661,14 +3661,14 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   if (sub === "qr") {
     return (
       <SubPantalla titulo="Mi código QR" onBack={() => setSub(null)}>
-        <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E6ECF5" }}>
+        <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E4E9F2" }}>
           <img
             alt="Código QR de tu negocio"
             className="mx-auto mb-4"
-            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E2E8F0" }}
+            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #DDE3EE" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
           />
-          <p className="text-xs mb-3" style={{ color: "#4B5563" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
+          <p className="text-xs mb-3" style={{ color: "#475467" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
           <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2F6FED,#5B91F7)", color: "#fff", borderRadius: 14 }}>
             Compartir enlace
           </button>
@@ -3679,7 +3679,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Controlá y mejorá tu negocio en Mi Zona</p>
+      <p className="text-xs mb-4" style={{ color: "#475467" }}>Controlá y mejorá tu negocio en Mi Zona</p>
 
       {/* tarjeta de identidad */}
       <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
@@ -3746,9 +3746,9 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
     <button
       onClick={onClick} disabled={disabled}
       className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white"
-      style={{ borderBottom: "1px solid #EEF2F7", opacity: disabled ? 0.55 : 1 }}
+      style={{ borderBottom: "1px solid #EDF0F6", opacity: disabled ? 0.55 : 1 }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: danger ? "#F7E7E5" : "#E8F0FE" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: danger ? "#FDF1EF" : "#E8F0FE" }}>
         <Icon size={17} color={danger ? "#9A3B34" : "#2F6FED"} />
       </span>
       <span className="flex-1 min-w-0">
@@ -3756,7 +3756,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
           <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{title}</span>
           {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
         </span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>}
+        {desc && <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>}
       </span>
       <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
     </button>
@@ -3790,22 +3790,22 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
       <div>
         <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
         <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-1">Apariencia</h2>
-        <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Elegí cómo querés ver Mi Zona</p>
-        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+        <p className="text-xs mb-4" style={{ color: "#475467" }}>Elegí cómo querés ver Mi Zona</p>
+        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
           {opciones.map(({ id, titulo, desc, Icon }) => {
             const activa = tema === id;
             return (
               <button
                 key={id} onClick={() => { guardarTema(id); setTemaEstado(id); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
-                style={{ borderBottom: "1px solid #EEF2F7" }}
+                style={{ borderBottom: "1px solid #EDF0F6" }}
               >
                 <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: activa ? "#2F6FED" : "#E8F0FE" }}>
                   <Icon size={17} color={activa ? "#fff" : "#2F6FED"} />
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-medium" style={{ color: "#0B1220" }}>{titulo}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{desc}</span>
+                  <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>
                 </span>
                 {activa && <Check size={18} color="#2F6FED" />}
               </button>
@@ -3852,9 +3852,9 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#4B5563" }}>Configurá tu cuenta y preferencias</p>
+      <p className="text-xs mb-4" style={{ color: "#475467" }}>Configurá tu cuenta y preferencias</p>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
         <Row Icon={ShieldCheck} title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
@@ -3863,7 +3863,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E6ECF5", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
         <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
         <Row Icon={MessageCircle} title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
         <Row Icon={Send} title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
@@ -3877,9 +3877,9 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
   const Item = ({ id, label, Icon, onClick, badge }) => {
     const on = active === id;
     return (
-      <button onClick={onClick} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
-        <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 14, background: on ? "#E8F0FE" : "transparent", transition: "background .2s" }}>
-          <Icon size={20} color={on ? "#2F6FED" : "#8A97AB"} strokeWidth={on ? 2.3 : 1.9} />
+      <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
+        <span className="relative flex items-center justify-center" style={{ width: 52, height: 30, borderRadius: 15, background: on ? "#E8F0FE" : "transparent", transition: "background .25s cubic-bezier(0.22,1,0.36,1)" }}>
+          <Icon size={20} color={on ? "#2F6FED" : "#8A94A8"} strokeWidth={on ? 2.3 : 1.9} />
           {badge > 0 && (
             <span
               className="absolute flex items-center justify-center text-[9px] font-bold"
@@ -3889,19 +3889,19 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
             </span>
           )}
         </span>
-        <span className="text-[10px]" style={{ color: on ? "#2F6FED" : "#8A97AB", fontWeight: on ? 700 : 500 }}>{label}</span>
+        <span className="text-[10px]" style={{ color: on ? "#2F6FED" : "#8A94A8", fontWeight: on ? 700 : 500 }}>{label}</span>
       </button>
     );
   };
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "0 -10px 30px rgba(11,42,84,0.12)", borderTop: "1px solid #EEF2F7" }}>
+    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "0 -12px 32px -12px rgba(11,42,84,0.2)", borderTop: "1px solid #E4E9F2" }}>
       {/* botón flotante "+", elevado por encima de la barra, centrado */}
       <button
         onClick={onAdd} aria-label="Agregar mi negocio"
         className="fixed flex items-center justify-center"
         style={{
           left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg,#2F6FED,#5B91F7)", boxShadow: "0 10px 24px rgba(47,111,237,0.5)", border: "4px solid #fff", zIndex: 41,
+          background: "linear-gradient(135deg,#2F6FED,#5B91F7)", boxShadow: "0 12px 24px -6px rgba(47,111,237,0.6), 0 0 0 1px rgba(47,111,237,0.18)", border: "4px solid #fff", zIndex: 41,
         }}
       >
         <Plus size={24} color="#fff" strokeWidth={2.6} />
@@ -4019,28 +4019,28 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
         <h2 className="mb-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1220" }}>
           {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
         </h2>
-        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
+        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
 
         <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
 
-          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
+          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}>
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
           <ZonePicker value={form.zone} onChange={(z) => setForm((f) => ({ ...f, zone: z }))} />
 
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Servicios disponibles</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Servicios disponibles</p>
             <TagInput values={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="Ej: reparación de celulares" />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Especialidades</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Especialidades</p>
             <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
           </div>
 
-          <div className="p-3" style={{ borderRadius: 8, background: "#F3F6FB", border: "1px solid #E2E8F0" }}>
+          <div className="p-3" style={{ borderRadius: 8, background: "#F3F6FB", border: "1px solid #DDE3EE" }}>
             <p className="text-xs font-semibold mb-2.5" style={{ color: "#0B2A54" }}>
               Preguntas sobre tu rubro ({CATEGORIES.find((c) => c.id === form.cat)?.label})
             </p>
@@ -4058,12 +4058,12 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
                     </label>
                   ) : (
                     <>
-                      <p className="text-xs mb-1" style={{ color: "#374151" }}>{q.label}</p>
+                      <p className="text-xs mb-1" style={{ color: "#344054" }}>{q.label}</p>
                       <input
                         placeholder={q.placeholder}
                         value={form.extra?.[q.key] || ""}
                         onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.value } }))}
-                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
                       />
                     </>
                   )}
@@ -4073,14 +4073,14 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Métodos de pago</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Métodos de pago</p>
             <div className="flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const active = form.paymentMethods.includes(m);
                 return (
                   <button key={m} type="button" onClick={() => togglePayment(m)}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#0B2A54" : "#E2E8F0"), backgroundColor: active ? "#0B2A54" : "#fff", color: active ? "#fff" : "#0B1220" }}
+                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#0B2A54" : "#DDE3EE"), backgroundColor: active ? "#0B2A54" : "#fff", color: active ? "#fff" : "#0B1220" }}
                   >
                     {active && <Check size={12} />} {m}
                   </button>
@@ -4091,16 +4091,16 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
 
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.delivery} onChange={setBool("delivery")} /> Hace envíos</label>
 
-          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Logo (obligatorio)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Logo (obligatorio)</p>
             <div className="flex items-center gap-3">
               {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
                 {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
               </label>
@@ -4111,10 +4111,10 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
             {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
             <div className="flex items-center gap-3">
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
                 {uploadingPortada ? "Subiendo..." : form.portada ? "Cambiar" : "Elegir foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePortadaUpload} disabled={uploadingPortada} />
               </label>
@@ -4122,36 +4122,36 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Fotos de productos</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Fotos de productos</p>
             {form.photos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.photos.map((url) => (
                   <div key={url} className="relative">
                     <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
-                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #E2E8F0" }}>
+                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #DDE3EE" }}>
                       <X size={12} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>
+            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>
               {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
               <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
             </label>
             {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
 
-          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
 
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "#374151" }}>Horarios de la semana</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: "#344054" }}>Horarios de la semana</p>
             <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
           </div>
 
           {formError && <p className="text-xs font-medium" style={{ color: "#C1443A" }}>{formError}</p>}
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>Cancelar</button>
             <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
               {saving ? "Ubicando dirección..." : publicMode && !initial.name ? "Aceptar" : "Guardar"}
             </button>
@@ -4238,7 +4238,7 @@ function EmpleoDetalleModal({ business, onClose }) {
           <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1220" }}>
             <Briefcase size={17} color="#2F6FED" /> Buscan personal
           </span>
-          <button onClick={onClose}><X size={18} color="#4B5563" /></button>
+          <button onClick={onClose}><X size={18} color="#475467" /></button>
         </div>
         <p className="text-xs font-semibold mb-1" style={{ color: "#2F6FED" }}>{e.puesto}</p>
         <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
@@ -4279,34 +4279,34 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
 
   return (
     <div>
-      <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E6ECF5" }}>
+      <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E4E9F2" }}>
 
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Tipo de puesto</p>
-            <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Tipo de puesto</p>
+            <select value={puesto} onChange={(e) => setPuesto(e.target.value)} className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}>
               {TIPOS_PUESTO.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           {puesto === "Otro" && (
-            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
           )}
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Descripción del trabajo</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Descripción del trabajo</p>
             <textarea
               value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3}
               placeholder="Contá qué va a hacer la persona, horarios, requisitos..."
-              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
             />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>¿Cuánto tiempo va a estar publicada?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>¿Cuánto tiempo va a estar publicada?</p>
             <div className="flex gap-2 flex-wrap">
               {DURACIONES_BUSQUEDA.map((d) => (
                 <button
                   key={d.dias} onClick={() => setDias(d.dias)}
                   className="text-xs font-medium px-3 py-1.5"
-                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#E2E8F0"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#374151" }}
+                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2F6FED" : "#DDE3EE"), background: dias === d.dias ? "#E8F0FE" : "#fff", color: dias === d.dias ? "#2F6FED" : "#344054" }}
                 >
                   {d.label}
                 </button>
@@ -4314,19 +4314,19 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>¿Cómo te van a contactar?</p>
+            <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>¿Cómo te van a contactar?</p>
             <div className="flex gap-2 mb-2">
               <button
                 onClick={() => setContactoTipo("whatsapp")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#374151" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2F6FED" : "#DDE3EE"), background: contactoTipo === "whatsapp" ? "#E8F0FE" : "#fff", color: contactoTipo === "whatsapp" ? "#2F6FED" : "#344054" }}
               >
                 WhatsApp
               </button>
               <button
                 onClick={() => setContactoTipo("red_social")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#E2E8F0"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#374151" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2F6FED" : "#DDE3EE"), background: contactoTipo === "red_social" ? "#E8F0FE" : "#fff", color: contactoTipo === "red_social" ? "#2F6FED" : "#344054" }}
               >
                 Red social / link
               </button>
@@ -4334,7 +4334,7 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             <input
               value={contactoValor} onChange={(e) => setContactoValor(e.target.value)}
               placeholder={contactoTipo === "whatsapp" ? "Número con código de país, sin +" : "Link de Instagram, Facebook, etc."}
-              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }}
+              className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }}
             />
           </div>
 
@@ -4368,22 +4368,22 @@ function DiscountForm({ initial, onSave, onCancel }) {
           {initial.title ? "Editar descuento" : "Nuevo descuento"}
         </h2>
         <div className="flex flex-col gap-3">
-          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
+          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Desde</p>
-              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Desde</p>
+              <input type="date" value={form.startDate} onChange={set("startDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
             </div>
             <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>Hasta</p>
-              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E2E8F0" }} />
+              <p className="text-xs font-medium mb-1" style={{ color: "#344054" }}>Hasta</p>
+              <input type="date" value={form.endDate} onChange={set("endDate")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#DDE3EE" }} />
             </div>
           </div>
           <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}>Cancelar</button>
+            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}>Cancelar</button>
             <button onClick={submit} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B2A54", color: "#fff", borderRadius: 8 }}>Guardar</button>
           </div>
         </div>
@@ -4407,14 +4407,14 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
             <div className="text-center py-8">
               <span className="inline-flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 18, background: "#FBEBD1" }}><Tag size={22} color="#B8703F" /></span>
               <p className="text-sm font-semibold" style={{ color: "#0B1220" }}>Todavía no creaste promociones</p>
-              <p className="text-xs mt-0.5" style={{ color: "#4B5563" }}>Un descuento atrae más clientes a tu negocio.</p>
+              <p className="text-xs mt-0.5" style={{ color: "#475467" }}>Un descuento atrae más clientes a tu negocio.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
               {lista.map((d) => {
                 const vigente = isDiscountActive(d);
                 return (
-                  <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E6ECF5", background: vigente ? "#FFFBF2" : "#fff" }}>
+                  <div key={d.id} className="p-3.5" style={{ borderRadius: 16, border: "1px solid #E4E9F2", background: vigente ? "#FFFBF2" : "#fff" }}>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h4 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 14, color: "#0B1220" }}>{d.title}</h4>
                       {d.percent && <span className="text-[11px] font-bold px-2 py-0.5 shrink-0" style={{ borderRadius: 10, background: "#0B2A54", color: "#fff" }}>{d.percent} OFF</span>}
@@ -4424,11 +4424,11 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 mr-2" style={{ borderRadius: 8, background: vigente ? "#E4F3EA" : "#EEEDE7", color: vigente ? "#1E6B44" : "#7A7D87" }}>
                           {d.active ? (vigente ? "Vigente" : "Fuera de fecha") : "Pausada"}
                         </span>
-                        <span className="text-[11px]" style={{ color: "#4B5563" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
+                        <span className="text-[11px]" style={{ color: "#475467" }}>{fmtDate(d.startDate)} → {fmtDate(d.endDate)}</span>
                       </span>
                       <span className="flex gap-1.5 shrink-0">
-                        <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}><Pencil size={13} /></button>
-                        <button onClick={() => onToggle(d.id)} aria-label="Pausar o activar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #E2E8F0" }}><Power size={13} /></button>
+                        <button onClick={() => setEditing(d)} aria-label="Editar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}><Pencil size={13} /></button>
+                        <button onClick={() => onToggle(d.id)} aria-label="Pausar o activar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #DDE3EE" }}><Power size={13} /></button>
                         <button onClick={() => { if (window.confirm("¿Eliminar esta promoción?")) onDelete(d.id); }} aria-label="Eliminar" className="p-1.5" style={{ borderRadius: 8, border: "1px solid #F3D9D5", color: "#C1443A" }}><Trash2 size={13} /></button>
                       </span>
                     </div>
@@ -4876,7 +4876,7 @@ export default function MiZona() {
   };
 
   if (loading) {
-    return <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#4B5563"}}>Cargando...</span></div>;
+    return <div style={{ backgroundColor: "#F3F6FB", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#475467"}}>Cargando...</span></div>;
   }
 
   const globalStyle = (
@@ -5036,7 +5036,7 @@ export default function MiZona() {
       {globalStyle}
 
       {errorMsg && (
-        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#F7E7E5", color: "#9A3B34" }}>
+        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#FDF1EF", color: "#9A3B34" }}>
           {errorMsg} <button onClick={() => setErrorMsg(null)} className="underline ml-2">cerrar</button>
         </div>
       )}
@@ -5065,7 +5065,7 @@ export default function MiZona() {
           : inf.dias === 0 ? "Tu suscripción vence hoy." : inf.dias === 1 ? "Tu suscripción vence mañana." : `Tu suscripción vence en ${inf.dias} días.`;
         const urgente = inf.estado === "vencida" || (inf.dias !== null && inf.dias <= 3);
         return (
-          <div className="px-4 py-2 flex items-center justify-center gap-3 flex-wrap text-sm font-medium" style={{ background: urgente ? "#F7E7E5" : "#FBEBD1", color: urgente ? "#9A3B34" : "#8A5B12" }}>
+          <div className="px-4 py-2 flex items-center justify-center gap-3 flex-wrap text-sm font-medium" style={{ background: urgente ? "#FDF1EF" : "#FBEBD1", color: urgente ? "#9A3B34" : "#8A5B12" }}>
             <span>{texto}</span>
             <button onClick={abrirAgregarMeses} className="text-xs font-semibold px-3 py-1" style={{ borderRadius: 20, background: urgente ? "#9A3B34" : "#8A5B12", color: "#fff" }}>
               {inf.estado === "pendiente" ? "Pagar ahora" : inf.estado === "vencida" ? "Renovar" : "Agregar meses"}
@@ -5133,22 +5133,22 @@ export default function MiZona() {
       {showAddSheet && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B122066" }} onClick={() => setShowAddSheet(false)}>
           <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 30px #00000022" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 4, background: "#E2E8F0", margin: "0 auto 16px" }} />
+            <div style={{ width: 40, height: 4, borderRadius: 4, background: "#DDE3EE", margin: "0 auto 16px" }} />
             <div className="flex items-center justify-between mb-4">
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1220" }}>¿Qué querés hacer?</span>
-              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#4B5563" /></button>
+              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#475467" /></button>
             </div>
             <button
               onClick={() => { setShowAddSheet(false); abrirAgregarNegocio(); }}
               className="w-full flex items-center gap-3 p-3.5 text-left"
-              style={{ borderRadius: 12, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px #0000000d" }}
+              style={{ borderRadius: 12, border: "1px solid #DDE3EE", boxShadow: "0 2px 8px #0000000d" }}
             >
               <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#E8F0FE" }}>
                 <Building2 size={19} color="#2F6FED" />
               </span>
               <span>
                 <span className="block text-sm font-semibold" style={{ color: "#0B1220" }}>Agregar mi negocio</span>
-                <span className="block text-xs" style={{ color: "#4B5563" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
+                <span className="block text-xs" style={{ color: "#475467" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
               </span>
             </button>
           </div>
@@ -5171,7 +5171,7 @@ export default function MiZona() {
               <Check size={24} color="#1E6B44" />
             </div>
             <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1220" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
-            <p className="text-sm mb-5" style={{ color: "#374151" }}>
+            <p className="text-sm mb-5" style={{ color: "#344054" }}>
               Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
                         <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2F6FED", color: "#fff", borderRadius: 10 }}>
@@ -5258,7 +5258,7 @@ export default function MiZona() {
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1220" }}>
-              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#4B5563" }}>en {zone}</span>
+              {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#475467" }}>en {zone}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
@@ -5266,20 +5266,20 @@ export default function MiZona() {
               <select
                 value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none font-medium pl-3.5 pr-8 py-2"
-                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E2E8F0", color: "#0B1220", backgroundColor: "#fff" }}
+                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #DDE3EE", color: "#0B1220", backgroundColor: "#fff" }}
               >
                 <option value="destacados">⭐ Destacados</option>
                 <option value="vistas">👁️ Más visitados</option>
                 <option value="descuentos">🏷️ Descuentos</option>
                 <option value="cercanos">📍 Más cercanos</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#4B5563" />
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#475467" />
             </div>
             {onlyFavorites && (
               <button
                 onClick={() => setOnlyFavorites(false)}
                 className="flex items-center gap-1.5 font-medium px-3.5 py-2"
-                style={{ fontSize: 13, borderRadius: 20, backgroundColor: "#F7E7E5", color: "#9A3B34", border: "1px solid #C1443A" }}
+                style={{ fontSize: 13, borderRadius: 20, backgroundColor: "#FDF1EF", color: "#9A3B34", border: "1px solid #C1443A" }}
               >
                 <Heart size={14} fill="#9A3B34" /> Solo favoritos <X size={14} />
               </button>
@@ -5297,8 +5297,8 @@ export default function MiZona() {
                 style={{
                   fontSize: 13, borderRadius: 20,
                   backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#E8F0FE") : "#fff",
-                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#374151",
-                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2F6FED") : "#E2E8F0"),
+                  color: c.activo ? (c.verde ? "#1E6B44" : "#2F6FED") : "#344054",
+                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2F6FED") : "#DDE3EE"),
                 }}
               >
                 {c.icono}
@@ -5321,10 +5321,10 @@ export default function MiZona() {
           </div>
         )}
         {sortBy === "cercanos" && locStatus === "loading" && (
-          <p className="text-xs mb-4" style={{ color: "#374151" }}>Ubicándote para ordenar por cercanía...</p>
+          <p className="text-xs mb-4" style={{ color: "#344054" }}>Ubicándote para ordenar por cercanía...</p>
         )}
         {sortBy === "cercanos" && locStatus === "denied" && (
-          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3 flex-wrap" style={{ background: "#F7E7E5", borderRadius: 10 }}>
+          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3 flex-wrap" style={{ background: "#FDF1EF", borderRadius: 10 }}>
             <p className="text-sm" style={{ color: "#9A3B34" }}>
               Rechazaste el permiso de ubicación. Para usar "Más cercanos" habilitalo desde el ícono de candado/ubicación en la barra del navegador, y tocá reintentar.
             </p>
@@ -5334,13 +5334,13 @@ export default function MiZona() {
           </div>
         )}
         {sortBy === "cercanos" && locStatus === "error" && (
-          <p className="text-xs mb-4 px-3 py-2" style={{ background: "#F7E7E5", color: "#9A3B34", borderRadius: 8 }}>
+          <p className="text-xs mb-4 px-3 py-2" style={{ background: "#FDF1EF", color: "#9A3B34", borderRadius: 8 }}>
             Tu navegador no permite obtener la ubicación. Te mostramos el orden habitual.
           </p>
         )}
 
         {filtered.length === 0 ? (
-          <div className="text-center py-16" style={{ color: "#4B5563" }}>
+          <div className="text-center py-16" style={{ color: "#475467" }}>
             <p className="mb-1" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 19, color: "#0B1220" }}>
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : onlyVistos && vistosIds.length === 0 ? "Todavía no viste ningún negocio" : `No hay resultados en ${zone}`}
             </p>
