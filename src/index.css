@@ -319,3 +319,6 @@ input[class*="bg-transparent"]:focus, textarea[class*="bg-transparent"]:focus, i
 input[class*="bg-transparent"]:focus-visible, textarea[class*="bg-transparent"]:focus-visible, input.outline-none:focus-visible, textarea.outline-none:focus-visible {
   box-shadow: none !important; outline: none !important; border-color: transparent !important;
 }
+
+/* Texto de ayuda dentro de campos sobre fondo azul (cabeceras) */
+[data-conservar-color] input::placeholder { color: rgba(255,255,255,.66); }

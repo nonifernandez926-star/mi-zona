@@ -10,7 +10,7 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2,
+  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
@@ -1402,12 +1402,6 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
           </span>
         )}
 
-        {rating && (
-          <span className="absolute bottom-3 left-3 flex items-center gap-1 text-xs font-semibold px-2.5 py-1" style={{ background: "#0B1220b3", color: "#fff", borderRadius: 20, backdropFilter: "blur(4px)" }}>
-            <Star size={12} fill="#F5B83D" color="#F5B83D" /> {rating} <span style={{ opacity: 0.7, fontWeight: 500 }}>({biz.reviews.length})</span>
-          </span>
-        )}
-
         {onToggleFavorite && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(biz.id); }}
@@ -1429,7 +1423,17 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
             </span>
           )}
         </div>
-        <p className="text-sm mt-1 mb-3 flex-1" style={{ color: "#667085", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
+        <p className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[13px] mt-1.5" style={{ color: "#475467" }}>
+          {rating ? (
+            <>
+              <Star size={14} fill="#F5B83D" color="#F5B83D" />
+              <b style={{ color: "#0B1220" }}>{String(rating).replace(".", ",")}</b>
+              <span>({biz.reviews.length} {biz.reviews.length === 1 ? "reseña" : "reseñas"})</span>
+            </>
+          ) : <span>Sin reseñas todavía</span>}
+          {typeof distanceKm === "number" && <><span aria-hidden="true">·</span><span className="flex items-center gap-1 font-semibold" style={{ color: "#0B2A54" }}><Navigation size={12} /> A {fmtDistance(distanceKm)} de vos</span></>}
+        </p>
+        <p className="text-sm mt-2 mb-3 flex-1" style={{ color: "#667085", lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{biz.desc}</p>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <OpenBadge weekHours={biz.weekHours} />
@@ -1438,11 +1442,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
               <Sparkles size={11} /> Nuevo
             </span>
           )}
-          {typeof distanceKm === "number" && (
-            <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#0B2A54" }}>
-              <Navigation size={12} /> {fmtDistance(distanceKm)}
-            </span>
-          )}
+          {c?.label && <span className="text-[11px] font-semibold px-2.5 py-1" style={{ borderRadius: 20, background: "#F1F4FA", color: "#475467" }}>{c.label}</span>}
         </div>
 
         <div className="flex items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid #EDF0F6" }}>
@@ -1916,11 +1916,76 @@ function SubPantalla({ titulo, desc, onBack, volverA = "Herramientas", children 
 }
 
 // Barra de arriba de Chats, Herramientas y Ajustes: solo el título (son pestañas, como Inicio, no llevan flecha)
-function BarraTitulo({ titulo }) {
+
+/* Icono de Apariencia: mitad sol, mitad luna */
+function IconoSolLuna({ size = 20 }) {
   return (
-    <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B2A54", boxShadow: "0 2px 14px rgba(11,42,84,0.25)" }}>
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-        <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{titulo}</span>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <defs>
+        <clipPath id="zonaMitadSol"><rect x="0" y="0" width="12" height="24" /></clipPath>
+        <clipPath id="zonaMitadLuna"><rect x="12" y="0" width="12" height="24" /></clipPath>
+      </defs>
+      <g clipPath="url(#zonaMitadSol)" stroke="#E08A12">
+        <circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m6.34 17.66-1.41 1.41" /><path d="M2 12h2" />
+      </g>
+      <g clipPath="url(#zonaMitadLuna)" stroke="#5B5BD6">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      </g>
+    </svg>
+  );
+}
+
+/* Montañas de la portada: ilustración propia, en capas, que se desvanece hacia el texto */
+function PaisajePortada() {
+  return (
+    <svg aria-hidden="true" className="absolute pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMax slice"
+      style={{ right: 0, bottom: 0, width: "100%", height: "100%", WebkitMaskImage: "linear-gradient(to right, transparent 12%, #000 62%)", maskImage: "linear-gradient(to right, transparent 12%, #000 62%)" }}>
+      <circle cx="318" cy="52" r="34" fill="#ffffff" opacity=".07" />
+      <path d="M0 150 L40 120 L70 138 L120 85 L150 110 L190 70 L235 118 L270 92 L320 130 L360 100 L400 125 L400 220 L0 220Z" fill="#9DBBF2" opacity=".26" />
+      <path d="M120 85 L107 101 L116 97 L121 105 L128 97 L135 102Z M190 70 L176 90 L186 85 L191 94 L199 86 L206 92Z M270 92 L259 106 L267 103 L271 110 L277 103 L283 107Z" fill="#fff" opacity=".42" />
+      <path d="M0 175 L50 140 L95 160 L150 120 L205 160 L255 135 L310 165 L360 140 L400 158 L400 220 L0 220Z" fill="#4C7FD6" opacity=".34" />
+      <path d="M0 200 L60 172 L120 190 L190 160 L260 188 L330 168 L400 192 L400 220 L0 220Z" fill="#0F3470" opacity=".6" />
+    </svg>
+  );
+}
+
+function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, buscador }) {
+  return (
+    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 62%,#1F55B3 130%)", borderRadius: "0 0 28px 28px", boxShadow: "0 12px 28px -14px rgba(5,20,45,.6)" }}>
+      <div className="max-w-6xl mx-auto px-4 pt-3 pb-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 11, background: "linear-gradient(135deg,#2F6FED,#7FA8F5)", boxShadow: "0 4px 12px rgba(47,111,237,.5)" }}>
+              <MapPin size={17} color="#fff" />
+            </span>
+            <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
+              Mi<span style={{ color: "#7FA8F5" }}>Zona</span>
+            </span>
+          </div>
+          {onOpenNotificaciones && (
+            <button onClick={onOpenNotificaciones} aria-label="Notificaciones" className="relative flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
+              <Bell size={17} color="#fff" />
+              {notifSinLeer > 0 && (
+                <span className="absolute flex items-center justify-center text-[9px] font-bold" style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B2A54" }}>
+                  {notifSinLeer > 9 ? "9+" : notifSinLeer}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+        <h1 className="mt-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 28, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{titulo}</h1>
+        {sub && <p className="text-sm mt-1" style={{ color: "#BBD1FB" }}>{sub}</p>}
+        {buscador && (
+          <div className="flex items-center gap-2.5 px-4 mt-4" style={{ borderRadius: 16, background: "#ffffff1f", border: "1px solid #ffffff33" }}>
+            <Search size={17} color="#BBD1FB" className="shrink-0" />
+            <input
+              value={buscador.valor} onChange={(e) => buscador.onChange(e.target.value)} maxLength={60}
+              placeholder={buscador.placeholder} aria-label={buscador.placeholder}
+              className="w-full outline-none text-sm bg-transparent py-3" style={{ color: "#fff" }}
+            />
+            {buscador.valor && <button onClick={() => buscador.onChange("")} aria-label="Borrar búsqueda" className="shrink-0"><X size={16} color="#BBD1FB" /></button>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1977,6 +2042,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       <div data-conservar-color className="relative overflow-hidden" style={{ background: "linear-gradient(165deg,#0B2A54 0%,#14407F 58%,#1F55B3 125%)" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
+        <PaisajePortada />
         <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
           <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
             Descubrí lo mejor<br />de tu zona
@@ -2144,7 +2210,38 @@ function fmtChatTime(iso) {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
 }
 
-function ChatsScreen({ businesses, onOpenChat }) {
+const normalizar = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// Hora del día si es de hoy · "Ayer" · día de la semana con hora (últimos 6 días) · fecha
+function fmtChatLista(iso) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === hoy.toDateString()) return hora;
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+  if (d.toDateString() === ayer.toDateString()) return "Ayer";
+  const dias = Math.floor((hoy - d) / 86400000);
+  if (dias < 7) return `${d.toLocaleDateString("es-AR", { weekday: "short" }).replace(".", "").replace(/^./, (x) => x.toUpperCase())}. ${hora}`;
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+}
+
+function IlustracionChats() {
+  return (
+    <svg width="168" height="132" viewBox="0 0 168 132" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="zcA" x1="20" y1="14" x2="96" y2="84" gradientUnits="userSpaceOnUse"><stop stopColor="#6FA0FF" /><stop offset="1" stopColor="#2F6FED" /></linearGradient>
+        <linearGradient id="zcB" x1="70" y1="48" x2="140" y2="116" gradientUnits="userSpaceOnUse"><stop stopColor="#F4F8FF" /><stop offset="1" stopColor="#CFE0FB" /></linearGradient>
+      </defs>
+      <ellipse cx="84" cy="116" rx="62" ry="10" fill="#2F6FED" opacity=".10" />
+      <path d="M78 50a20 20 0 0 1 20-20h28a20 20 0 0 1 20 20v22a20 20 0 0 1-20 20h-6l-12 14v-14h-10a20 20 0 0 1-20-20Z" fill="url(#zcB)" />
+      <path d="M22 36a22 22 0 0 1 22-22h40a22 22 0 0 1 22 22v28a22 22 0 0 1-22 22H62L44 106V86h0a22 22 0 0 1-22-22Z" fill="url(#zcA)" />
+      <circle cx="46" cy="50" r="5" fill="#fff" /><circle cx="64" cy="50" r="5" fill="#fff" /><circle cx="82" cy="50" r="5" fill="#fff" />
+      <path d="M126 14l6-9M136 24l10-5M138 36l11 0" stroke="#6FA0FF" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChatsScreen({ businesses, onOpenChat, query = "" }) {
   const conversaciones = useMemo(() => {
     return getAllConversationIds()
       .map((id) => {
@@ -2154,67 +2251,71 @@ function ChatsScreen({ businesses, onOpenChat }) {
         if (mensajes.length === 0) return null;
         const ultimo = mensajes[mensajes.length - 1];
         const visto = getLastSeen(id);
+        const sinLeer = mensajes.filter((m) => m.rol === "asistente" && (!visto || new Date(m.hora) > new Date(visto))).length;
         const noLeido = ultimo.rol === "asistente" && (!visto || new Date(ultimo.hora) > new Date(visto));
-        return { biz, ultimo, noLeido };
+        return { biz, ultimo, noLeido, sinLeer: Math.max(sinLeer, noLeido ? 1 : 0) };
       })
       .filter(Boolean)
       .sort((a, b) => new Date(b.ultimo.hora) - new Date(a.ultimo.hora));
   }, [businesses]);
 
+  const q = normalizar(query.trim());
+  const visibles = q ? conversaciones.filter(({ biz, ultimo }) => normalizar(biz.name).includes(q) || normalizar(ultimo.texto).includes(q)) : conversaciones;
+
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#475467" }}>Tus conversaciones con negocios</p>
-
       {conversaciones.length === 0 ? (
-        <div className="text-center py-16">
-          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#E8F0FE" }}>
-            <MessageCircle size={24} color="#2F6FED" />
-          </span>
-          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>Todavía no tenés conversaciones</p>
-          <p className="text-xs px-8" style={{ color: "#475467" }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+        <div className="text-center flex flex-col items-center" style={{ paddingTop: 36 }}>
+          <IlustracionChats />
+          <p className="mt-4 mb-1.5" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em", color: "#0B2A54" }}>Todavía no tenés conversaciones</p>
+          <p className="text-sm px-6" style={{ color: "#667085", lineHeight: 1.55, maxWidth: 340 }}>Abrí el chat con el asistente de un negocio y la conversación va a aparecer acá.</p>
+        </div>
+      ) : visibles.length === 0 ? (
+        <div className="text-center py-14">
+          <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: 18, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E1E8F2" }}><Search size={24} color="#8A94A8" /></span>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#0B1220" }}>No encontramos chats para “{query.trim()}”</p>
+          <p className="text-xs px-8" style={{ color: "#667085" }}>Probá con el nombre del negocio o con otra palabra del mensaje.</p>
         </div>
       ) : (
         <div className="flex flex-col">
-          {conversaciones.map(({ biz, ultimo, noLeido }) => {
+          {visibles.map(({ biz, ultimo, noLeido, sinLeer }, i) => {
             const c = catInfo(biz.cat);
+            const CatIcon = c?.icon;
+            const abierto = isOpenNow(biz.weekHours);
             return (
               <button
                 key={biz.id}
                 onClick={() => onOpenChat(biz)}
-                className="w-full flex items-center gap-3 py-3 text-left bg-white active:bg-gray-50"
-                style={{ borderBottom: "1px solid #EDF0F6" }}
+                className="w-full flex items-center gap-3.5 px-3 py-3.5 text-left"
+                style={{ borderRadius: noLeido ? 18 : 0, background: noLeido ? "#EEF4FF" : "transparent", borderBottom: !noLeido && i < visibles.length - 1 && !(visibles[i + 1] && visibles[i + 1].noLeido) ? "1px solid #EDF0F6" : "1px solid transparent" }}
               >
                 <div className="relative shrink-0">
                   {biz.logo ? (
-                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 52, height: 52, borderRadius: "50%" }} />
+                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,42,84,.08)" }} />
                   ) : (
-                    <div
-                      className="flex items-center justify-center text-base font-bold"
-                      style={{ width: 52, height: 52, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff" }}
-                    >
-                      {biz.name?.[0]?.toUpperCase()}
+                    <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "#2F6FED", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
+                      {CatIcon ? <CatIcon size={24} color="#fff" /> : <span className="text-lg font-bold">{biz.name?.[0]?.toUpperCase()}</span>}
                     </div>
                   )}
+                  {abierto && <span aria-label="Abierto ahora" className="absolute" style={{ right: 0, bottom: 1, width: 14, height: 14, borderRadius: "50%", background: "#22C55E", border: "2.5px solid #fff" }} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm truncate" style={{ color: "#0B1220", fontWeight: noLeido ? 700 : 500 }}>{biz.name}</span>
-                    <span className="text-[11px] shrink-0" style={{ color: noLeido ? "#2F6FED" : "#64748B", fontWeight: noLeido ? 600 : 400 }}>{fmtChatTime(ultimo.hora)}</span>
+                    <span className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 16, color: "#0B1220", fontWeight: noLeido ? 800 : 700 }}>{biz.name}</span>
+                    <span className="text-xs shrink-0" style={{ color: noLeido ? "#2F6FED" : "#667085", fontWeight: noLeido ? 600 : 400 }}>{fmtChatLista(ultimo.hora)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <span className="text-xs truncate" style={{ color: noLeido ? "#1F2937" : "#475467", fontWeight: noLeido ? 600 : 400 }}>
+                    <span className="text-[13px]" style={{ color: noLeido ? "#1D2939" : "#667085", fontWeight: noLeido ? 500 : 400, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
-                    {noLeido && (
-                      <span
-                        className="shrink-0 flex items-center justify-center text-[10px] font-bold"
-                        style={{ minWidth: 18, height: 18, borderRadius: 9, background: "#2F6FED", color: "#fff", padding: "0 5px" }}
-                      >
-                        1
-                      </span>
-                    )}
+                    {noLeido ? (
+                      <span className="shrink-0 flex items-center justify-center text-xs font-bold" style={{ minWidth: 24, height: 24, borderRadius: 12, background: "#2F6FED", color: "#fff", padding: "0 7px", boxShadow: "0 4px 10px -3px rgba(47,111,237,.7)" }}>{sinLeer}</span>
+                    ) : ultimo.rol === "asistente" ? (
+                      <CheckCheck size={16} color="#2F6FED" className="shrink-0" />
+                    ) : null}
                   </div>
                 </div>
+                <ChevronDown size={16} color="#98A2B3" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />
               </button>
             );
           })}
@@ -3564,7 +3665,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
       className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
       style={{ borderRadius: 18, border: "1px solid #E4E9F2", boxShadow: "0 4px 16px rgba(11,42,84,0.06)" }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `0 6px 14px ${bg}55` }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `inset 0 1px 0 rgba(255,255,255,.3), 0 6px 14px ${bg}55` }}>
         <Icon size={20} color="#fff" />
       </span>
       <span className="flex-1 min-w-0">
@@ -3605,8 +3706,8 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   const herramientasDeTodos = (
     <>
       <Tool Icon={Heart} bg="#E5484D" title="Favoritos" desc="Los negocios que guardaste." onClick={onOpenFavoritos} />
-      <Tool Icon={Coins} bg="#C98A14" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
-      <Tool Icon={Trophy} bg="#F5A623" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
+      <Tool Icon={Coins} bg="#F59E0B" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
+      <Tool Icon={Trophy} bg="#8B5CF6" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
     </>
   );
 
@@ -3614,7 +3715,6 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   if (!ownerBiz) {
     return (
       <div>
-        <p className="text-xs mb-5" style={{ color: "#475467" }}>Todo lo que necesitás en Mi Zona</p>
 
         {herramientasDeTodos}
       </div>
@@ -3679,7 +3779,6 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#475467" }}>Controlá y mejorá tu negocio en Mi Zona</p>
 
       {/* tarjeta de identidad */}
       <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "linear-gradient(135deg,#0B2A54,#1F55B3)", boxShadow: "0 14px 30px rgba(11,42,84,.28)" }}>
@@ -3711,10 +3810,10 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
       <Titulo sub="Todo para controlar los datos de tu negocio">Gestionar mi negocio</Titulo>
       <div className="grid grid-cols-2 gap-2.5">
-        <Mosaico Icon={CalendarCheck} color="#0B2A54" title="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onOpenAgenda} />
-        <Mosaico Icon={Pencil} color="#2F6FED" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditBusiness} />
-        <Mosaico Icon={Tag} color="#B8703F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setSub("promos")} />
-        <Mosaico Icon={MessageCircle} color="#F5A623" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
+        <Mosaico Icon={CalendarCheck} color="#E5484D" title="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onOpenAgenda} />
+        <Mosaico Icon={Store} color="#1E8A55" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditBusiness} />
+        <Mosaico Icon={Megaphone} color="#13897F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setSub("promos")} />
+        <Mosaico Icon={MessageCircle} color="#7A4FD6" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
         <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
         <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
         <Mosaico Icon={QrCode} color="#0B2A54" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
@@ -3742,24 +3841,42 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
   const [soporteCtx, setSoporteCtx] = useState({ tema: null, directo: false, desde: null });
   const irSoporte = (tema, desde, directo) => { setSoporteCtx({ tema: tema || null, directo: !!directo, desde: desde || null }); setSub("soporte"); };
 
-  const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false }) => (
+  const TONOS = {
+    azul: { bg: "linear-gradient(180deg,#EEF4FF,#DCE8FD)", fg: "#2F6FED", aro: "#D3E1FA" },
+    violeta: { bg: "linear-gradient(180deg,#F5EFFE,#E8DDFB)", fg: "#7A4FD6", aro: "#E0D2F8" },
+    verde: { bg: "linear-gradient(180deg,#E9F8F0,#D4F0E1)", fg: "#1E8A55", aro: "#C3E8D3" },
+    naranja: { bg: "linear-gradient(180deg,#FFF5E3,#FFE8C2)", fg: "#E08A12", aro: "#FADFAE" },
+    rojo: { bg: "linear-gradient(180deg,#FEEFED,#FADBD7)", fg: "#D9423A", aro: "#F5C6C1" },
+    agua: { bg: "linear-gradient(180deg,#E4F7F6,#CCEEEC)", fg: "#13897F", aro: "#BDE6E3" },
+  };
+  const Row = ({ Icon, title, desc, onClick, danger = false, badge, disabled = false, tono = "azul" }) => {
+    const t = TONOS[danger ? "rojo" : tono];
+    return (
     <button
       onClick={onClick} disabled={disabled}
-      className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white"
+      className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left bg-white hover:bg-slate-50"
       style={{ borderBottom: "1px solid #EDF0F6", opacity: disabled ? 0.55 : 1 }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: danger ? "#FDF1EF" : "#E8F0FE" }}>
-        <Icon size={17} color={danger ? "#9A3B34" : "#2F6FED"} />
+      <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: t.bg, boxShadow: `inset 0 0 0 1px ${t.aro}` }}>
+        <Icon size={21} color={t.fg} />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2">
           <span className="text-sm font-medium" style={{ color: danger ? "#9A3B34" : "#0B1220" }}>{title}</span>
           {badge && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>{badge}</span>}
         </span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#475467" }}>{desc}</span>}
+        {desc && <span className="block text-[13px] mt-0.5" style={{ color: "#667085", lineHeight: 1.4 }}>{desc}</span>}
       </span>
-      <ChevronDown size={14} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+      <ChevronDown size={16} color="#98A2B3" style={{ transform: "rotate(-90deg)" }} />
     </button>
+    );
+  };
+  const SeccionAjustes = ({ Icon, children }) => (
+    <div className="flex items-center gap-2.5 mb-2.5 px-0.5">
+      <Icon size={19} color="#0B2A54" />
+      <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 16, color: "#0B1220" }}>{children}</span>
+      <span className="flex-1" style={{ height: 1, background: "#DDE3EE" }} />
+    </div>
   );
 
   if (sub === "cuenta") {
@@ -3852,21 +3969,21 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
 
   return (
     <div>
-      <p className="text-xs mb-4" style={{ color: "#475467" }}>Configurá tu cuenta y preferencias</p>
-
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
-        <Row Icon={User} title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
-        <Row Icon={Bell} title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
-        <Row Icon={ShieldCheck} title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
-        <Row Icon={Settings} title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
-        <Row Icon={Lock} title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
+      <SeccionAjustes Icon={User}>Cuenta y personalización</SeccionAjustes>
+      <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 12px 26px -14px rgba(11,42,84,.18)" }}>
+        <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
+        <Row Icon={Bell} tono="violeta" title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
+        <Row Icon={ShieldCheck} tono="verde" title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
+        <Row Icon={IconoSolLuna} tono="naranja" title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
+        <Row Icon={Lock} tono="violeta" title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
-      <div className="overflow-hidden mb-4" style={{ borderRadius: 20, border: "1px solid #E4E9F2", boxShadow: "0 6px 20px rgba(11,42,84,0.07)" }}>
-        <Row Icon={Grid3x3} title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
-        <Row Icon={MessageCircle} title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
-        <Row Icon={Send} title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
+      <SeccionAjustes Icon={Info}>Soporte y más</SeccionAjustes>
+      <div className="overflow-hidden mb-4" style={{ borderRadius: 22, border: "1px solid #E4E9F2", boxShadow: "0 1px 2px rgba(11,18,32,.04), 0 12px 26px -14px rgba(11,42,84,.18)" }}>
+        <Row Icon={BookOpen} tono="azul" title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
+        <Row Icon={MessageCircle} tono="agua" title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
+        <Row Icon={Send} tono="violeta" title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
       </div>
     </div>
   );
@@ -4594,6 +4711,7 @@ export default function MiZona() {
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
   const [activeTab, setActiveTab] = useState("inicio");
+  const [chatQuery, setChatQuery] = useState("");
   const [confirmarSalida, setConfirmarSalida] = useState(false);
   // aplica la apariencia elegida y, en modo automático, la sigue cuando el celular cambia de claro a oscuro
   useEffect(() => {
@@ -5091,6 +5209,10 @@ export default function MiZona() {
       ) : (subHerramientas || subAjustes) ? null : (
         <BarraTitulo
           titulo={activeTab === "chats" ? "Chats" : activeTab === "herramientas" ? (ownerBiz ? "Mi negocio" : "Herramientas") : "Ajustes"}
+          sub={activeTab === "chats" ? "Tus conversaciones con negocios" : activeTab === "herramientas" ? (ownerBiz ? "Controlá y mejorá tu negocio en Mi Zona" : "Todo lo que necesitás en Mi Zona") : "Configurá tu cuenta y preferencias"}
+          notifSinLeer={notifSinLeer}
+          onOpenNotificaciones={() => setShowNotificaciones(true)}
+          buscador={activeTab === "chats" ? { valor: chatQuery, onChange: setChatQuery, placeholder: "Buscar chats..." } : undefined}
         />
       )}
 
@@ -5215,6 +5337,7 @@ export default function MiZona() {
           <ChatsScreen
             businesses={businesses}
             onOpenChat={abrirChat}
+            query={chatQuery}
           />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
