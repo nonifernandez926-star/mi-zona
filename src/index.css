@@ -32,3 +32,281 @@ html.tema-oscuro [data-conservar-color] img { filter: none; }
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
 input, textarea, select { font-size: 16px; }
+
+/* =====================================================================
+   SISTEMA DE DISEÑO — Mi Zona
+   Capa global: tokens, tipografía, componentes, estados y movimiento.
+   Todo es visual: no toca lógica ni estructura.
+   ===================================================================== */
+:root {
+  --zona-marino: #0B2A54;
+  --zona-marino-2: #14407F;
+  --zona-azul: #2F6FED;
+  --zona-borde: #DDE3EE;
+  --zona-borde-fuerte: #C3CCDC;
+  --zona-anillo: rgba(47, 111, 237, 0.22);
+  --zona-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --zona-sombra-sm: 0 1px 2px rgba(11, 18, 32, .06), 0 1px 1px rgba(11, 18, 32, .04);
+  --zona-sombra-md: 0 4px 12px -2px rgba(11, 42, 84, .10), 0 2px 4px -2px rgba(11, 18, 32, .06);
+  --zona-sombra-lg: 0 18px 40px -12px rgba(11, 42, 84, .28), 0 6px 14px -6px rgba(11, 18, 32, .12);
+}
+
+html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; color-scheme: light; }
+body {
+  font-feature-settings: "cv11", "ss01", "tnum" 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overscroll-behavior-y: none;
+}
+h1, h2, h3 { font-weight: 800; line-height: 1.15; text-wrap: balance; }
+p { text-wrap: pretty; }
+::selection { background: rgba(47, 111, 237, .22); }
+
+/* ---------- foco accesible y coherente ---------- */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--zona-azul); outline-offset: 2px; border-radius: 8px; }
+
+/* ---------- botones: respuesta táctil, hover, disabled ---------- */
+button, a, [role="button"], summary, label[for] {
+  transition: background-color .18s var(--zona-ease), color .18s var(--zona-ease), border-color .18s var(--zona-ease),
+              box-shadow .18s var(--zona-ease), transform .18s var(--zona-ease), opacity .18s var(--zona-ease), filter .18s var(--zona-ease);
+  touch-action: manipulation;
+}
+button:not(:disabled):active, [role="button"]:active { transform: scale(0.97); }
+button:disabled, button[aria-disabled="true"] { opacity: .5; cursor: not-allowed; filter: saturate(.6); }
+button:not(:disabled) { cursor: pointer; }
+
+/* botón principal (marino) y de peligro (rojo): degradado, profundidad y brillo al pasar */
+button[style*="background: rgb(11, 42, 84)"], button[style*="background-color: rgb(11, 42, 84)"],
+a[style*="background: rgb(11, 42, 84)"], a[style*="background-color: rgb(11, 42, 84)"] {
+  background-image: linear-gradient(180deg, #17407F 0%, #0B2A54 100%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.14) inset, 0 6px 14px -6px rgba(11, 42, 84, .55);
+}
+button[style*="background-color: rgb(193, 68, 58)"], button[style*="background: rgb(193, 68, 58)"] {
+  background-image: linear-gradient(180deg, #D2554A 0%, #C1443A 100%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.16) inset, 0 6px 14px -6px rgba(193, 68, 58, .55);
+}
+button[style*="background: rgb(11, 42, 84)"]:not(:disabled):hover, button[style*="background-color: rgb(11, 42, 84)"]:not(:disabled):hover,
+a[style*="background-color: rgb(11, 42, 84)"]:hover { filter: brightness(1.12); box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 10px 20px -8px rgba(11, 42, 84, .6); }
+button[style*="background-color: rgb(193, 68, 58)"]:not(:disabled):hover { filter: brightness(1.08); }
+
+/* ---------- campos de formulario ---------- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select {
+  border-radius: 12px !important;
+  border-color: var(--zona-borde);
+  background-color: #fff;
+  box-shadow: var(--zona-sombra-sm);
+  transition: border-color .18s var(--zona-ease), box-shadow .18s var(--zona-ease), background-color .18s var(--zona-ease);
+}
+input:not([type="checkbox"]):not([type="radio"]):hover, textarea:hover, select:hover { border-color: var(--zona-borde-fuerte); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus, textarea:focus, select:focus {
+  border-color: var(--zona-azul) !important;
+  box-shadow: 0 0 0 4px var(--zona-anillo);
+}
+input::placeholder, textarea::placeholder { color: #8A94A8; }
+input:disabled, textarea:disabled, select:disabled { background-color: #F1F3F8; color: #8A94A8; cursor: not-allowed; box-shadow: none; }
+input[aria-invalid="true"], .campo-error { border-color: #C1443A !important; box-shadow: 0 0 0 4px rgba(193, 68, 58, .14); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--zona-azul); }
+
+/* ---------- ventanas modales y paneles: fondo difuminado y entrada suave ---------- */
+@keyframes zona-fondo { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zona-subir { from { opacity: 0; translate: 0 14px; scale: .985; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes zona-aparecer { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+.fixed.inset-0 { animation: zona-fondo .22s ease-out both; }
+.fixed.inset-0[class*="bg-black"], .fixed.inset-0[style*="rgba(0"], .fixed.inset-0[style*="rgba(11"] { backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1); }
+.fixed.inset-0 > div[style*="background"], .fixed.inset-0 > div.bg-white, .fixed.inset-0 > div > div.bg-white {
+  animation: zona-subir .32s var(--zona-ease) both;
+  box-shadow: var(--zona-sombra-lg);
+}
+main > *, .zona-pantalla > * { animation: zona-aparecer .35s var(--zona-ease) both; }
+
+/* ---------- tarjetas y superficies ---------- */
+a.block, button.w-full.text-left, .zona-tarjeta { transition: transform .2s var(--zona-ease), box-shadow .2s var(--zona-ease), border-color .2s var(--zona-ease); }
+@media (hover: hover) {
+  a.block:hover, .zona-tarjeta:hover { transform: translateY(-2px); box-shadow: var(--zona-sombra-md); }
+}
+img { image-rendering: auto; }
+img[loading="lazy"], img.object-cover { background: linear-gradient(110deg, #EEF1F7 30%, #F7F9FC 50%, #EEF1F7 70%); background-size: 200% 100%; }
+
+/* ---------- carga: esqueletos suaves ---------- */
+@keyframes zona-brillo { to { background-position: -200% 0; } }
+.animate-pulse { animation-duration: 1.6s; }
+.zona-esqueleto { border-radius: 10px; background: linear-gradient(110deg, #EEF1F7 30%, #F7F9FC 50%, #EEF1F7 70%); background-size: 200% 100%; animation: zona-brillo 1.4s linear infinite; }
+
+/* ---------- barras fijas y zonas seguras de celular ---------- */
+.sticky.top-0 { padding-top: env(safe-area-inset-top, 0px); }
+
+/* ---------- barras de desplazamiento discretas ---------- */
+* { scrollbar-width: thin; scrollbar-color: #C3CCDC transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #C3CCDC; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #A6B2C8; background-clip: content-box; border: 2px solid transparent; }
+.no-scrollbar::-webkit-scrollbar, [class*="overflow-x-auto"]::-webkit-scrollbar { display: none; }
+[class*="overflow-x-auto"] { scrollbar-width: none; }
+
+/* ---------- mapa ---------- */
+.leaflet-container { font-family: var(--fuente-texto); }
+.leaflet-control-attribution { font-size: 10px; border-top-left-radius: 8px; backdrop-filter: blur(6px); }
+.leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: var(--zona-sombra-lg); }
+.leaflet-popup-tip { box-shadow: none; }
+
+/* ---------- escritorio: columna de lectura cómoda ---------- */
+@media (min-width: 1024px) { body { font-size: 16px; } }
+
+/* ---------- movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* =====================================================================
+   PANTALLA PRINCIPAL Y NAVEGACIÓN — detalles de producto
+   ===================================================================== */
+/* portada: textura sutil de puntos para dar profundidad al degradado */
+[data-conservar-color].relative.overflow-hidden::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.10) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+/* buscador: el contenedor completo reacciona al foco */
+div:has(> input[placeholder^="Buscá"]) { transition: box-shadow .2s var(--zona-ease), transform .2s var(--zona-ease); }
+div:has(> input[placeholder^="Buscá"]):focus-within { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(127,168,245,.45), 0 16px 34px rgba(5,20,45,.38) !important; }
+div:has(> input[placeholder^="Buscá"]) > input { box-shadow: none !important; border: 0 !important; }
+div:has(> input[placeholder^="Buscá"]) > input:focus { box-shadow: none !important; }
+/* barras inferiores fijas: respetan el borde del celular */
+.fixed.bottom-0 { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* chips y categorías: desplazamiento con inercia y encaje */
+[class*="overflow-x-auto"] { -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+[class*="overflow-x-auto"] > * { scroll-snap-align: start; }
+/* iconos de lucide: trazo uniforme y alineación óptica */
+svg.lucide { stroke-width: 2; flex-shrink: 0; }
+/* texto numérico estable en precios, puntajes y contadores */
+.tabular, [class*="font-bold"] { font-variant-numeric: tabular-nums; }
+/* enlaces dentro de textos largos */
+p a, li a { text-underline-offset: 3px; }
+/* imágenes: aparición suave al cargar */
+img { animation: zona-fondo .4s ease-out both; }
+
+/* =====================================================================
+   ESTADOS: carga, error y pantallas vacías con el mismo nivel de acabado
+   ===================================================================== */
+@keyframes zona-giro { to { transform: rotate(360deg); } }
+@keyframes zona-halo { 0%, 100% { box-shadow: 0 0 0 0 rgba(47,111,237,.18); } 50% { box-shadow: 0 0 0 10px rgba(47,111,237,0); } }
+
+/* carga: indicador circular sobre el texto */
+p.text-center.py-16[style*="rgb(75, 85, 99)"] { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #667085 !important; font-weight: 500; }
+p.text-center.py-16[style*="rgb(75, 85, 99)"]::before {
+  content: ""; width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid #DDE3EE; border-top-color: var(--zona-azul);
+  animation: zona-giro .8s linear infinite;
+}
+
+/* error: tarjeta con tono propio y señal clara */
+p.text-center.py-16[style*="rgb(154, 59, 52)"] {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  margin: 24px auto; max-width: 420px; padding: 24px 20px !important;
+  background: #FDF1EF; border: 1px solid #F3CFCB; border-radius: 16px;
+  font-weight: 500; line-height: 1.5;
+}
+p.text-center.py-16[style*="rgb(154, 59, 52)"]::before {
+  content: "!"; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: #C1443A; color: #fff; font: 800 18px var(--fuente-titulo); box-shadow: 0 6px 14px -4px rgba(193,68,58,.5);
+}
+
+/* pantallas vacías: tarjeta punteada, icono con halo suave y texto equilibrado */
+div.text-center.py-14.px-6 {
+  margin: 8px 0; padding-top: 44px !important; padding-bottom: 44px !important;
+  background: linear-gradient(180deg, #FAFBFE, #F3F6FB); border: 1.5px dashed var(--zona-borde-fuerte); border-radius: 22px;
+}
+div.text-center.py-14.px-6 > .flex.items-center.justify-center.mx-auto { animation: zona-halo 2.8s ease-in-out infinite; border-radius: 22px; }
+div.text-center.py-14.px-6 > p:first-of-type, div.text-center.py-14.px-6 > h3 { font-family: var(--fuente-titulo); font-weight: 700; color: #0B1220; }
+div.text-center.py-14.px-6 > p + p { max-width: 320px; margin-inline: auto; color: #667085; }
+
+/* =====================================================================
+   ENCABEZADO Y MENÚ LATERAL
+   ===================================================================== */
+/* barra superior: degradado vertical sutil y línea de luz inferior */
+.sticky.top-0[data-conservar-color] {
+  background-image: linear-gradient(180deg, #0F3366 0%, #0B2A54 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 8px 24px -12px rgba(5,20,45,.55) !important;
+}
+/* botones translúcidos de la barra (menú, notificaciones): estados claros */
+[data-conservar-color] button[style*="rgba(255, 255, 255, 0.1"] { box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+[data-conservar-color] button[style*="rgba(255, 255, 255, 0.1"]:hover { background: rgba(255,255,255,.20) !important; }
+[data-conservar-color] button[style*="rgba(255, 255, 255, 0.1"]:active { background: rgba(255,255,255,.28) !important; }
+/* insignia de notificaciones: aparece con rebote corto */
+@keyframes zona-rebote { 0% { scale: .4; } 60% { scale: 1.18; } 100% { scale: 1; } }
+button[aria-label="Notificaciones"] > span.absolute { animation: zona-rebote .45s var(--zona-ease) both; box-shadow: 0 2px 6px rgba(229,72,77,.5); }
+
+/* menú lateral: el panel entra deslizando; el fondo solo se atenúa */
+@keyframes zona-deslizar { from { translate: -100% 0; } to { translate: 0 0; } }
+.fixed.inset-0 > div.absolute.inset-0 { animation: zona-fondo .25s ease-out both !important; box-shadow: none !important; backdrop-filter: blur(3px); }
+.fixed.inset-0 > div.absolute.top-0.left-0.bottom-0 {
+  animation: zona-deslizar .32s var(--zona-ease) both !important;
+  border-radius: 0 24px 24px 0; overflow: hidden;
+  box-shadow: 24px 0 60px -12px rgba(5,20,45,.45) !important;
+}
+/* opciones del menú: píldoras con hover, foco y presión */
+.fixed.inset-0 .overflow-y-auto > button.w-full {
+  width: calc(100% - 20px); margin: 2px 10px; padding-inline: 12px !important; border-radius: 12px;
+}
+.fixed.inset-0 .overflow-y-auto > button.w-full:hover { background: #F1F4FA; }
+.fixed.inset-0 .overflow-y-auto > button.w-full:active { background: #E6ECF7; }
+.fixed.inset-0 .overflow-y-auto > button.w-full svg { transition: transform .2s var(--zona-ease); }
+.fixed.inset-0 .overflow-y-auto > button.w-full:hover svg { transform: translateX(2px) scale(1.06); }
+/* botón "Cerrar menú" al pie */
+.fixed.inset-0 .absolute.bottom-0 > button:last-child:hover, .fixed.inset-0 > div.bg-white.flex-col > button:last-child:hover { background: #F7F8FB; }
+
+/* =====================================================================
+   MODO OSCURO REFINADO
+   Se mantiene el mecanismo actual (inversión) para no romper nada, pero se
+   afina: negros menos duros, sombras que siguen siendo sombras y no halos.
+   ===================================================================== */
+html.tema-oscuro { filter: invert(1) hue-rotate(180deg) contrast(.9) brightness(1.02); }
+/* una sombra blanca se invierte a sombra negra: así la profundidad se conserva de noche */
+html.tema-oscuro {
+  --zona-sombra-sm: 0 1px 2px rgba(255,255,255,.10);
+  --zona-sombra-md: 0 6px 16px -4px rgba(255,255,255,.14), 0 2px 4px -2px rgba(255,255,255,.08);
+  --zona-sombra-lg: 0 22px 48px -12px rgba(255,255,255,.30), 0 6px 14px -6px rgba(255,255,255,.14);
+}
+html.tema-oscuro .shadow-sm { box-shadow: var(--zona-sombra-sm); }
+html.tema-oscuro .shadow, html.tema-oscuro .shadow-md { box-shadow: var(--zona-sombra-md); }
+html.tema-oscuro .shadow-lg, html.tema-oscuro .shadow-xl, html.tema-oscuro .shadow-2xl { box-shadow: var(--zona-sombra-lg); }
+html.tema-oscuro input::placeholder, html.tema-oscuro textarea::placeholder { color: #6B7690; }
+html.tema-oscuro ::selection { background: rgba(255, 190, 90, .30); }
+html.tema-oscuro { scrollbar-color: #3A4458 transparent; }
+html.tema-oscuro ::-webkit-scrollbar-thumb { background: #3A4458; background-clip: content-box; }
+
+/* =====================================================================
+   RESPONSIVE: tableta y escritorio
+   ===================================================================== */
+/* hojas inferiores y barras fijas: columna centrada en pantallas anchas, no estiradas de lado a lado */
+@media (min-width: 768px) {
+  .fixed.bottom-0.left-0.right-0 { max-width: 720px; margin-inline: auto; border-radius: 24px 24px 0 0; }
+  .fixed.inset-0 > div.bg-white:not(.absolute) { max-width: 560px; }
+}
+/* escritorio: cursor y foco más visibles, texto cómodo, sin saltos de scroll horizontal */
+@media (min-width: 1024px) {
+  html { scroll-padding-top: 72px; }
+  .max-w-6xl { padding-inline: 28px; }
+  [class*="overflow-x-auto"] { scroll-snap-type: none; }
+}
+/* teléfonos pequeños: objetivos táctiles mínimos de 40 px en iconos sueltos */
+@media (pointer: coarse) {
+  button:not([class*="w-full"]):not(.text-xs):not([class*="text-[11px]"]) { min-width: 36px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+}
+/* pantallas bajas (celular en horizontal): menos aire vertical en portadas */
+@media (max-height: 480px) and (orientation: landscape) { .pt-3.pb-12 { padding-bottom: 28px !important; } }
+
+/* =====================================================================
+   COMPONENTES SUELTOS: insignias, pestañas segmentadas y avisos
+   ===================================================================== */
+/* pastillas y etiquetas: peso y espaciado de letra uniformes */
+span.px-2.py-0\.5, span.px-2.py-1 { letter-spacing: .01em; font-weight: 600; }
+/* pestañas segmentadas (fondo gris con la activa en blanco) */
+button[style*="background: rgb(255, 255, 255)"][style*="box-shadow"] { box-shadow: 0 1px 2px rgba(11,18,32,.10), 0 4px 10px -2px rgba(11,42,84,.14) !important; }
+/* texto de ayuda y errores de campo */
+.text-red-500, .text-red-600 { color: #C1443A; font-weight: 500; }
+/* separadores: línea más fina y de tono coherente */
+hr { border: 0; border-top: 1px solid var(--zona-borde); }
