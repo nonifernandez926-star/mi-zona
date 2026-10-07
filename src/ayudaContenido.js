@@ -3,7 +3,7 @@
 
 export const CATEGORIAS = [
   { id: "empezar", titulo: "Primeros pasos", desc: "Buscar negocios, mapa y favoritos", icono: "Compass", color: "#2F6FED", motivo: "otro" },
-  { id: "cuenta", titulo: "Mi cuenta y acceso", desc: "Iniciar sesión, nombre y contraseña", icono: "User", color: "#0B2A54", motivo: "cuenta" },
+  { id: "cuenta", titulo: "Mi cuenta y acceso", desc: "Registrarte, usuario, nombre y contraseña", icono: "User", color: "#0B2A54", motivo: "cuenta" },
   { id: "negocio", titulo: "Mi negocio", desc: "Registrar, editar y administrar", icono: "Store", color: "#1E8A55", motivo: "negocio" },
   { id: "pagos", titulo: "Pagos y suscripción", desc: "Planes, pagos y vencimientos", icono: "CreditCard", color: "#C77A0A", motivo: "pagos" },
   { id: "asistente", titulo: "Chats y Mi Asistente", desc: "Hablar con un negocio", icono: "MessageCircle", color: "#7A4F9E", motivo: "asistente" },
@@ -69,9 +69,9 @@ export const ARTICULOS = [
     id: "crear-cuenta", cat: "cuenta", titulo: "Crear una cuenta",
     claves: "registrarme registro google correo",
     cuerpo: [
-      "Podés crear tu cuenta con Google o con un correo y una contraseña.",
-      { pasos: ["Tocá “Iniciar sesión” o cualquier acción que lo pida, como chatear con un negocio.", "Con Google: elegí tu cuenta de la lista. Si es tu primera vez, te pedimos tu nombre.", "Con correo: escribí tu correo. Si no tiene cuenta, te pedimos un nombre y una contraseña para crearla."] },
-      { nota: "Las cuentas con correo no tienen el correo verificado. Si ya usabas Mi Asistente o tenías un negocio cargado antes, entrá con Google para que se reconozca." },
+      "Para usar Mi Zona necesitás una cuenta. Se crea en dos pasos: primero elegís tu cuenta de Google y después inventás tu usuario y tu contraseña.",
+      { pasos: ["En la primera pantalla tocá “Empezar” y después “Registrarme”.", "Elegí la cuenta de Google con la que querés registrarte.", "Escribí tu usuario: de 5 a 20 caracteres, empieza con una letra y lleva al menos un número. Si alguien ya lo usa, te avisamos para que elijas otro.", "Creá tu contraseña: 8 caracteres o más, con una mayúscula, una minúscula y un número.", "Tocá “Crear mi cuenta”. Desde ese momento entrás directo a la app cada vez que la abrís."] },
+      { nota: "Si ya usabas Mi Asistente o tenías un negocio cargado antes, registrate con la misma cuenta de Google para que se reconozca." },
     ],
     relacionados: ["no-puedo-entrar", "cambiar-nombre"],
   },
@@ -80,7 +80,7 @@ export const ARTICULOS = [
     claves: "error google contrasena olvide no entra acceso ventana",
     cuerpo: [
       "Probá primero con lo más común:",
-      { pasos: ["Revisá que estés usando la misma forma de entrar con la que creaste la cuenta: Google o correo y contraseña.", "Si usás correo, escribí tu correo primero y después la contraseña. Tras varios intentos fallidos hay que esperar un rato antes de volver a probar.", "Si usás Google y la ventana de cuentas no abre o da error, actualizá la página y desactivá bloqueadores de ventanas emergentes para este sitio.", "Probá desde otro navegador o desde el modo incógnito."] },
+      { pasos: ["Tocá “Iniciar sesión” y escribí tu usuario y tu contraseña, o entrá con la cuenta de Google con la que te registraste.", "Si usás usuario y contraseña, revisá las mayúsculas. Tras varios intentos fallidos hay que esperar un rato antes de volver a probar.", "Si usás Google y la ventana de cuentas no abre o da error, actualizá la página y desactivá bloqueadores de ventanas emergentes para este sitio.", "Probá desde otro navegador o desde el modo incógnito."] },
       "Si nada funciona, escribinos desde Soporte y contanos qué mensaje te aparece. Si no podés entrar, podés enviar la consulta igual: solo necesitamos tu correo para responderte.",
     ],
     relacionados: ["crear-cuenta", "cambiar-clave"],
@@ -90,14 +90,23 @@ export const ARTICULOS = [
     id: "cambiar-nombre", cat: "cuenta", titulo: "Cambiar mi nombre",
     claves: "perfil editar",
     cuerpo: [{ pasos: ["Andá a Ajustes → Mi cuenta.", "Escribí tu nombre nuevo en el campo Nombre.", "Tocá “Guardar nombre”."] }, "Tu correo no se puede cambiar desde la app."],
-    relacionados: ["cambiar-clave"],
+    relacionados: ["cambiar-usuario", "cambiar-clave"],
+  },
+  {
+    id: "cambiar-usuario", cat: "cuenta", titulo: "Cambiar mi usuario",
+    claves: "usuario nombre de usuario ocupado editar",
+    cuerpo: [
+      { pasos: ["Andá a Ajustes → Mi cuenta.", "Escribí tu usuario nuevo en el campo Usuario. Mientras escribís te avisamos si es válido y si está libre.", "Tocá “Guardar usuario”."] },
+      "Tiene que tener entre 5 y 20 caracteres, empezar con una letra y llevar al menos un número. Podés usar letras, números, punto y guion bajo. Si ya lo usa otra persona, vas a ver el aviso “Ese usuario ya está ocupado”.",
+    ],
+    relacionados: ["cambiar-clave", "no-puedo-entrar"],
   },
   {
     id: "cambiar-clave", cat: "cuenta", titulo: "Cambiar la contraseña y cerrar sesión en otros dispositivos",
     claves: "seguridad contrasena dispositivos sesion otro celular robaron",
     cuerpo: [
       "Entrá a Ajustes → Seguridad.",
-      { pasos: ["Contraseña: si tu cuenta es con correo, podés cambiarla ahí. Las cuentas de Google no tienen contraseña propia en Mi Zona.", "Dispositivos: ves todos los dispositivos con tu sesión abierta y podés cerrar la sesión de cualquiera.", "Si no reconocés alguno, cerralo y cambiá tu contraseña."] },
+      { pasos: ["Contraseña: escribí la actual y la nueva (8 caracteres o más, con mayúscula, minúscula y número).", "Dispositivos: ves todos los dispositivos con tu sesión abierta y podés cerrar la sesión de cualquiera.", "Si no reconocés alguno, cerralo y cambiá tu contraseña."] },
       "Al cambiar la contraseña se cierran las sesiones de los demás dispositivos.",
     ],
     relacionados: ["alertas-inicio", "no-puedo-entrar"],

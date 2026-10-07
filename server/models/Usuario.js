@@ -5,6 +5,8 @@ const usuarioSchema = new mongoose.Schema(
   {
     googleId: { type: String, required: true, unique: true },
     email: { type: String, required: true, index: true },
+    // Nombre de usuario público y único (minúsculas). Las cuentas viejas de Google lo eligen la próxima vez que entran.
+    usuario: { type: String, default: "", lowercase: true, trim: true },
     nombre: { type: String, default: "" }, // lo elige la persona al registrarse; se puede editar en "Mi cuenta"
     // Id con el que Mi Asistente reconoce a esta persona (chats, memoria, puntos). Ligarlo a la cuenta hace que
     // sus conversaciones la sigan a cualquier dispositivo y reaparezcan cuando un negocio renueva Mi Asistente.
@@ -30,6 +32,7 @@ const usuarioSchema = new mongoose.Schema(
 );
 
 // Un id de cliente no puede estar en dos cuentas (evita que alguien "adopte" el historial de otra persona)
+usuarioSchema.index({ usuario: 1 }, { unique: true, partialFilterExpression: { usuario: { $type: "string", $gt: "" } } });
 usuarioSchema.index({ sesionClienteId: 1 }, { unique: true, partialFilterExpression: { sesionClienteId: { $type: "string", $gt: "" } } });
 
 export default mongoose.model("Usuario", usuarioSchema);

@@ -2,6 +2,9 @@ import express from "express";
 import Consulta from "../models/Consulta.js";
 import { identificar, limitar } from "../utils/auth.js";
 import { enviarPushAUsuario } from "../utils/push.js";
+import Business from "../models/Business.js";
+import Usuario from "../models/Usuario.js";
+import { huellaAutor } from "../utils/negocios.js";
 
 const router = express.Router();
 router.use(identificar);
@@ -88,8 +91,65 @@ router.get("/admin", async (req, res) => {
   if (!claveOk(req)) return res.status(401).json({ error: "Clave incorrecta." });
   const filtro = ["abierta", "respondida", "cerrada"].includes(req.query.estado) ? { estado: req.query.estado } : {};
   const lista = await Consulta.find(filtro).sort({ createdAt: -1 }).limit(100);
-  res.json({ consultas: lista.map((c) => ({ ...publica(c), email: c.email, nombre: c.nombre, conCuenta: !!c.usuarioId, tecnico: c.tecnico })) });
+  res.json({ consultas: lista.map((c) => ({ ...publica(c), email: c.email, nombre: c.nombre, conCuenta: !!c.usuarioId, tecnico: c.tecnico, resena: datosResena(c) })) });
 });
+
+/* ---------- Moderación de reseñas reportadas ---------- */
+// La app manda en "tecnico" un JSON { negocioId, resenaId } cuando la consulta es el reporte de una reseña.
+function datosResena(c) {
+  if (c.motivo !== "resenas") return null;
+  try {
+    const d = JSON.parse(c.tecnico || "");
+    return d && d.negocioId && d.resenaId !== undefined ? { negocioId: String(d.negocioId), resenaId: d.resenaId } : null;
+  } catch { return null; }
+}
+// Las reseñas guardan solo una "huella" del autor (no su id). Para avisarle se busca la cuenta cuya huella coincide.
+async function buscarAutor(huella) {
+  if (!huella) return null;
+  for await (const u of Usuario.find({}, "_id email nombre").lean().cursor()) if (huellaAutor(String(u._id)) === huella) return u;
+  return null;
+}
+// Crea una consulta a nombre del autor con el mensaje del equipo: la ve en Soporte y le llega una notificación.
+async function avisarAutor(autor, negocio, resena, mensaje) {
+  const c = await Consulta.create({
+    usuarioId: String(autor._id), email: autor.email, nombre: autor.nombre || "", motivo: "resenas",
+    asunto: `Sobre tu reseña en ${negocio.name || "un negocio"}`.slice(0, 120),
+    mensaje: `El equipo de Mi Zona revisó tu reseña: "${String(resena.text || "").slice(0, 200)}"`,
+    respuesta: mensaje, estado: "respondida", respondidaEn: new Date(),
+  });
+  enviarPushAUsuario(String(autor._id), { titulo: "El equipo te escribió sobre tu reseña", cuerpo: mensaje.slice(0, 120) }).catch(() => {});
+  return c;
+}
+async function moderarResena(req, res, borrar) {
+  if (!claveOk(req)) return res.status(401).json({ error: "Clave incorrecta." });
+  try {
+    const mensaje = limpiar(req.body?.mensaje, 1500);
+    const reporte = await Consulta.findById(req.params.id);
+    const d = reporte && datosResena(reporte);
+    if (!d) return res.status(400).json({ error: "Esta consulta no es el reporte de una reseña." });
+    const negocio = await Business.findOne({ id: d.negocioId });
+    const resena = negocio && (negocio.reviews || []).find((r) => r.id === d.resenaId);
+    if (!resena) return res.status(404).json({ error: "Esa reseña ya no existe (quizá ya se eliminó)." });
+    if (!borrar && mensaje.length < 2) return res.status(400).json({ error: "Escribí el mensaje para el autor en el cuadro de respuesta." });
+    let aviso = borrar ? "Reseña eliminada." : "";
+    if (borrar) await Business.updateOne({ id: d.negocioId }, { $pull: { reviews: { id: d.resenaId } } });
+    if (mensaje.length >= 2) {
+      const autor = await buscarAutor(resena.autorUid);
+      if (autor) { await avisarAutor(autor, negocio, resena, mensaje); aviso += " Le avisamos al autor."; }
+      else aviso += " No encontramos la cuenta del autor (la reseña es anterior o su cuenta ya no existe), así que no se le pudo avisar.";
+    }
+    reporte.estado = "respondida"; reporte.respondidaEn = new Date();
+    reporte.respuesta = borrar ? "Revisamos tu reporte y eliminamos la reseña. Gracias por avisarnos." : "Revisamos tu reporte. Gracias por avisarnos.";
+    await reporte.save();
+    if (reporte.usuarioId) enviarPushAUsuario(reporte.usuarioId, { titulo: "Revisamos tu reporte", cuerpo: reporte.respuesta }).catch(() => {});
+    res.json({ ok: true, aviso: aviso.trim() });
+  } catch (e) {
+    console.error("Error moderando reseña:", e.message);
+    res.status(500).json({ error: "No se pudo completar la acción." });
+  }
+}
+router.post("/admin/:id/resena-eliminar", (req, res) => moderarResena(req, res, true));
+router.post("/admin/:id/resena-avisar", (req, res) => moderarResena(req, res, false));
 
 // POST /api/soporte/admin/:id/responder  { respuesta }  → guarda la respuesta y avisa por notificación si la persona tiene cuenta
 router.post("/admin/:id/responder", async (req, res) => {
@@ -125,7 +185,8 @@ const H=()=>({'x-soporte-key':$('k').value,'Content-Type':'application/json'});
 async function cargar(){$('m').textContent='Cargando...';const r=await fetch('/api/soporte/admin?estado='+$('e').value,{headers:H()});const d=await r.json();
 if(!r.ok){$('m').textContent=d.error||'Error';$('l').innerHTML='';return}
 $('m').textContent=d.consultas.length+' consulta(s)';
-$('l').innerHTML=d.consultas.map(c=>'<div class="card"><div><b>'+esc(c.codigo)+'</b> · '+esc(c.asunto)+' <span class="est">'+esc(c.estado)+'</span></div><div class="meta">'+esc(c.email)+(c.conCuenta?' · con cuenta (ve la respuesta en la app)':' · SIN cuenta: respondele por correo a esa dirección')+' · '+esc(c.motivo)+' · '+new Date(c.creadaEn).toLocaleString('es-AR')+'</div><div class="msg">'+esc(c.mensaje)+'</div>'+(c.tecnico?'<div class="meta">'+esc(c.tecnico)+'</div>':'')+(c.respuesta?'<div class="resp">'+esc(c.respuesta)+'</div>':'')+'<textarea id="r'+c.id+'" rows="3" placeholder="Tu respuesta"></textarea><button style="margin-top:8px" onclick="resp(\\''+c.id+'\\')">Responder</button></div>').join('')}
+$('l').innerHTML=d.consultas.map(c=>'<div class="card"><div><b>'+esc(c.codigo)+'</b> · '+esc(c.asunto)+' <span class="est">'+esc(c.estado)+'</span></div><div class="meta">'+esc(c.email)+(c.conCuenta?' · con cuenta (ve la respuesta en la app)':' · SIN cuenta: respondele por correo a esa dirección')+' · '+esc(c.motivo)+' · '+new Date(c.creadaEn).toLocaleString('es-AR')+'</div><div class="msg">'+esc(c.mensaje)+'</div>'+(c.tecnico?'<div class="meta">'+esc(c.tecnico)+'</div>':'')+(c.respuesta?'<div class="resp">'+esc(c.respuesta)+'</div>':'')+'<textarea id="r'+c.id+'" rows="3" placeholder="Tu respuesta"></textarea><button style="margin-top:8px" onclick="resp(\\''+c.id+'\\')">Responder</button>'+(c.resena?' <button style="margin-top:8px;background:#C93030;border-color:#C93030" onclick="elim(\\''+c.id+'\\',1)">Eliminar reseña y avisar al autor</button> <button style="margin-top:8px;background:#fff;color:#0B1437" onclick="elim(\\''+c.id+'\\',0)">Solo avisar al autor</button><div class="meta">Lo que escribas arriba se le envía al autor de la reseña.</div>':'')+'</div>').join('')}
+async function elim(id,borrar){const m=$('r'+id).value;if(borrar&&!confirm('¿Eliminar esta reseña? No se puede deshacer.'))return;const r=await fetch('/api/soporte/admin/'+id+'/resena-'+(borrar?'eliminar':'avisar'),{method:'POST',headers:H(),body:JSON.stringify({mensaje:m})});const d=await r.json();if(!r.ok)return alert(d.error||'Error');alert(d.aviso||'Listo');cargar()}
 async function resp(id){const t=$('r'+id).value;const r=await fetch('/api/soporte/admin/'+id+'/responder',{method:'POST',headers:H(),body:JSON.stringify({respuesta:t})});const d=await r.json();if(!r.ok)return alert(d.error||'Error');cargar()}
 </script></body></html>`;
 

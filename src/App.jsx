@@ -10,14 +10,15 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen,
+  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, seguridadApi, vincularSesionCliente, traerMisConversaciones,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, seguridadApi, vincularSesionCliente, traerMisConversaciones, soporteApi,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
+import { PantallaBienvenida, PantallaCrearUsuario } from "./bienvenida.jsx";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
   LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver, BotonAtras,
@@ -1482,6 +1483,27 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   const [reviewName, setReviewName] = useState("");
   const [tab, setTab] = useState("info"); // info | opiniones | fotos
   const [replyingId, setReplyingId] = useState(null);
+  const [reportandoId, setReportandoId] = useState(null);
+  const [avisoReporte, setAvisoReporte] = useState("");
+  const [ocultas, setOcultas] = useState(() => { try { return JSON.parse(localStorage.getItem("zona_resenas_ocultas") || "[]"); } catch { return []; } });
+  const MOTIVOS_REPORTE = ["Insultos u ofensas", "Spam o publicidad", "Falsa o engañosa", "Datos personales", "Otro motivo"];
+  const ocultarResena = (id) => {
+    const nuevas = [...ocultas, id];
+    setOcultas(nuevas);
+    try { localStorage.setItem("zona_resenas_ocultas", JSON.stringify(nuevas)); } catch { /* sin almacenamiento: queda oculta en esta sesión */ }
+  };
+  // Envía el reporte al equipo por Soporte y deja de mostrar la reseña en este dispositivo.
+  const reportarResena = async (r, motivo) => {
+    setReportandoId(null);
+    ocultarResena(r.id);
+    setAvisoReporte("Gracias. Ocultamos la reseña en este dispositivo y avisamos al equipo.");
+    try {
+      await soporteApi.enviar({ motivo: "resenas", tecnico: JSON.stringify({ negocioId: biz.id, resenaId: r.id }), asunto: `Reporte de reseña en ${biz.name}`, mensaje: `Motivo: ${motivo}\nNegocio: ${biz.name} (${biz.id})\nReseña: ${r.id} de ${r.name}\nTexto: ${String(r.text || "").slice(0, 300)}` });
+    } catch {
+      setAvisoReporte("Ocultamos la reseña en este dispositivo. No pudimos avisar al equipo: escribinos desde Ajustes → Soporte.");
+    }
+    setTimeout(() => setAvisoReporte(""), 6000);
+  };
   const [replyText, setReplyText] = useState("");
   const rating = avgRating(biz.reviews);
 
@@ -1808,13 +1830,19 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 </button>
               </div>
 
+              {avisoReporte && <p role="status" className="text-sm font-medium mb-3 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#EDF1FF", color: "#2B3768", border: "1px solid #D6E3FB" }}>{avisoReporte}</p>}
               {biz.reviews?.length > 0 ? (
                 <div className="flex flex-col gap-3">
-                  {[...biz.reviews].reverse().map((r) => (
+                  {[...biz.reviews].reverse().filter((r) => !ocultas.includes(r.id)).map((r) => (
                     <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{r.name}</span>
-                        <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
+                          <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 9, background: reportandoId === r.id ? "#EDF1FF" : "transparent" }}>
+                            <Flag size={14} color="#8D95B0" />
+                          </button>
+                        </span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
@@ -1822,6 +1850,16 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                         ))}
                       </div>
                       <p className="text-sm mb-2" style={{ color: "#1F2937" }}>{r.text}</p>
+                      {reportandoId === r.id && (
+                        <div className="mb-2 p-3" style={{ borderRadius: 14, background: "#F3F5FA", border: "1px solid #E3E7F1", animation: "zona-aparecer .25s cubic-bezier(0.22,1,0.36,1) both" }}>
+                          <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: "#0B1437" }}><EyeOff size={13} /> ¿Por qué querés reportarla? También la vas a dejar de ver.</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {MOTIVOS_REPORTE.map((m) => (
+                              <button key={m} onClick={() => reportarResena(r, m)} className="text-xs font-semibold px-3 py-1.5" style={{ borderRadius: 999, background: "#fff", border: "1px solid #E3E7F1", color: "#0B1437" }}>{m}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {r.respuesta ? (
                         <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F5FA", borderLeft: "3px solid #2350F5" }}>
@@ -4600,6 +4638,8 @@ export default function MiZona() {
 
   // cuenta de Google
   const [usuario, setUsuario] = useState(null);
+  // true cuando ya se revisó si este dispositivo tiene una sesión guardada (evita mostrar la bienvenida un instante a quien ya entró)
+  const [sesionRevisada, setSesionRevisada] = useState(() => { try { return !localStorage.getItem("miZonaToken") && !localStorage.getItem("token"); } catch { return true; } });
   const [showLogin, setShowLogin] = useState(null); // null | { motivo, despues }
   const [nombrePendiente, setNombrePendiente] = useState(null); // { sugerido, despues } mientras se le pide el nombre
   const [misNegocios, setMisNegocios] = useState([]); // negocios de esta cuenta (incluye los que esperan el pago)
@@ -4793,10 +4833,12 @@ export default function MiZona() {
   // Restaura la sesión de Google guardada en este dispositivo
   useEffect(() => {
     (async () => {
-      const u = await traerMiSesion();
-      if (!u) return;
-      setUsuario(u);
-      if (!u.nombre) setNombrePendiente({ sugerido: "", despues: null });
+      try {
+        const u = await traerMiSesion();
+        if (!u) return;
+        setUsuario(u);
+        if (!u.nombre && u.usuario) setNombrePendiente({ sugerido: "", despues: null });
+      } finally { setSesionRevisada(true); }
     })();
   }, []);
 
@@ -5007,6 +5049,11 @@ export default function MiZona() {
   const deleteOwnerDiscount = (discountId) => {
     persistOne(ownerBizId, (b) => ({ ...b, discounts: b.discounts.filter((d) => d.id !== discountId) }));
   };
+
+  // Puerta de entrada: sin sesión se ve la bienvenida (Empezar → Registrarme / Iniciar sesión); con sesión abierta se entra directo al inicio.
+  if (!sesionRevisada) return <div style={{ position: "fixed", inset: 0, background: "#050b2a" }} aria-hidden="true" />;
+  if (!usuario) return <PantallaBienvenida onLogged={(u) => setUsuario(u)} />;
+  if (!usuario.usuario) return <PantallaCrearUsuario usuario={usuario} onListo={(u) => setUsuario(u)} onSalir={cerrarSesion} />;
 
   if (loading) {
     return <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#5B6482"}}>Cargando...</span></div>;

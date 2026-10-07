@@ -11,10 +11,11 @@ import {
 import { iniciarSesion, crearSesion, registrarActividad, avisarSeguridad } from "../utils/sesiones.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
 import { permitir, olvidar } from "../utils/limitador.js";
+import { validarUsuario, validarContrasena, normalizarUsuario } from "../utils/credenciales.js";
 
 const router = express.Router();
 
-const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, nombre: u.nombre, conClave: !!u.passwordHash });
+const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, usuario: u.usuario || "", nombre: u.nombre, conClave: !!u.passwordHash });
 
 // Une a la cuenta los negocios que tengan su email como dueño (negocios cargados antes de que existiera el login).
 async function vincularNegociosPorEmail(usuario) {
@@ -108,20 +109,27 @@ router.post("/registro", async (req, res) => {
     const email = normalizarCorreo(req.body?.email);
     const password = String(req.body?.password || "");
     const nombre = String(req.body?.nombre || "").replace(/\s+/g, " ").trim();
+    const usuarioNombre = normalizarUsuario(req.body?.usuario);
     if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
-    if (password.length < 8) return res.status(400).json({ error: "La contraseña tiene que tener al menos 8 caracteres." });
-    if (password.length > 100) return res.status(400).json({ error: "La contraseña es demasiado larga (máximo 100)." });
+    const errUsuario = validarUsuario(usuarioNombre);
+    if (errUsuario) return res.status(400).json({ error: errUsuario, codigo: "usuario_invalido" });
+    const errClave = validarContrasena(password, usuarioNombre);
+    if (errClave) return res.status(400).json({ error: errClave, codigo: "clave_invalida" });
     if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
+    if (await Usuario.findOne({ usuario: usuarioNombre })) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
 
     if (await Usuario.findOne({ email })) {
       return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
     }
     const usuario = await Usuario.create({
-      googleId: `email:${email}`, email, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
+      googleId: `email:${email}`, email, usuario: usuarioNombre, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
     });
     res.status(201).json({ token: await iniciarSesion(req, usuario, { cuentaNueva: true }), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
   } catch (e) {
-    if (e.code === 11000) return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
+    if (e.code === 11000) {
+      const porUsuario = /usuario/.test(String(e.message));
+      return res.status(409).json(porUsuario ? { error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" } : { error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
+    }
     console.error("Error en registro con correo:", e.message);
     res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo crear la cuenta. Probá de nuevo." });
   }
@@ -130,22 +138,25 @@ router.post("/registro", async (req, res) => {
 // POST /api/auth/login   { email, password }  → entra con correo y contraseña
 router.post("/login", async (req, res) => {
   try {
-    const email = normalizarCorreo(req.body?.email);
+    // Se puede entrar con el correo o con el usuario (la web manda "identificador"; "email" sigue funcionando).
+    const ident = String(req.body?.identificador ?? req.body?.email ?? "").trim().toLowerCase();
+    const esCorreo = ident.includes("@");
+    const email = esCorreo ? normalizarCorreo(ident) : "";
     const password = String(req.body?.password || "");
-    const clave = `login|${ip(req)}|${email}`;
+    const clave = `login|${ip(req)}|${ident}`;
     // 8 intentos cada 15 minutos por persona y correo: frena a quien prueba contraseñas
     if (!permitir(clave, 8, 15 * 60 * 1000) || !permitir(`login|${ip(req)}`, 40, 15 * 60 * 1000)) {
       return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
     }
-    if (!RE_CORREO.test(email) || !password) return res.status(400).json({ error: "Escribí tu correo y tu contraseña." });
+    if ((esCorreo ? !RE_CORREO.test(email) : ident.length < 3) || !password) return res.status(400).json({ error: "Escribí tu usuario o correo y tu contraseña." });
 
-    const usuario = await Usuario.findOne({ email });
+    const usuario = await Usuario.findOne(esCorreo ? { email } : { usuario: normalizarUsuario(ident) });
     if (usuario && !usuario.passwordHash) {
       return res.status(400).json({ error: "Ese correo se registró con Google. Entrá con el botón de Google.", codigo: "cuenta_google" });
     }
     // aunque el correo no exista hacemos el mismo trabajo, así no se nota la diferencia
     const ok = await verificarContrasena(password, usuario ? usuario.passwordHash : "00:00");
-    if (!usuario || !ok) return res.status(401).json({ error: "Correo o contraseña incorrectos." });
+    if (!usuario || !ok) return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
 
     olvidar(clave);
     res.json({ token: await iniciarSesion(req, usuario), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
@@ -187,6 +198,52 @@ router.post("/sesion-cliente", identificar, requiereUsuario, async (req, res) =>
   }
 });
 
+// PUT /api/auth/completar   { usuario, password, nombre? }
+// Último paso del registro: quien entró con Google elige su usuario y su contraseña (también sirve para cuentas viejas que todavía no los tenían).
+// Después puede entrar con usuario y contraseña, o con Google, y cambiar ambos desde Ajustes.
+router.put("/completar", identificar, requiereUsuario, async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    if (!permitir(`completar|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    if (u.usuario && u.passwordHash) return res.status(400).json({ error: "Tu cuenta ya tiene usuario y contraseña. Podés cambiarlos desde Ajustes." });
+    const nuevo = normalizarUsuario(req.body?.usuario);
+    const password = String(req.body?.password || "");
+    const errUsuario = validarUsuario(nuevo);
+    if (errUsuario) return res.status(400).json({ error: errUsuario, codigo: "usuario_invalido" });
+    const errClave = validarContrasena(password, nuevo);
+    if (errClave) return res.status(400).json({ error: errClave, codigo: "clave_invalida" });
+    if (await Usuario.findOne({ usuario: nuevo, _id: { $ne: u._id } })) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
+    if (req.body?.nombre !== undefined) {
+      const nombre = String(req.body.nombre || "").replace(/\s+/g, " ").trim();
+      if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
+      u.nombre = nombre;
+    }
+    u.usuario = nuevo;
+    u.passwordHash = await hashearContrasena(password);
+    await u.save();
+    await registrarActividad(u._id, "usuario_creado", req);
+    res.json({ usuario: usuarioPublico(u) });
+  } catch (e) {
+    if (e.code === 11000) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
+    console.error("Error al completar la cuenta:", e.message);
+    res.status(500).json({ error: "No se pudo guardar. Probá de nuevo." });
+  }
+});
+
+// GET /api/auth/usuario-disponible?u=nombre  → { valido, disponible, error }  (público, con límite de consultas)
+router.get("/usuario-disponible", async (req, res) => {
+  try {
+    if (!permitir(`disp|${ip(req)}`, 60, 10 * 60 * 1000)) return res.status(429).json({ error: "Muchas consultas seguidas. Esperá un momento." });
+    const u = normalizarUsuario(req.query.u);
+    const error = validarUsuario(u);
+    if (error) return res.json({ valido: false, disponible: false, error });
+    const ocupado = await Usuario.exists({ usuario: u });
+    res.json({ valido: true, disponible: !ocupado, error: ocupado ? "Ese usuario ya está ocupado." : "" });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo revisar el usuario." });
+  }
+});
+
 router.get("/me", identificar, requiereUsuario, (req, res) => {
   res.json({ usuario: usuarioPublico(req.actor.usuario) });
 });
@@ -208,8 +265,8 @@ router.put("/clave", identificar, requiereUsuario, async (req, res) => {
     const actual = String(req.body?.actual || "");
     const nueva = String(req.body?.nueva || "");
     if (!(await verificarContrasena(actual, u.passwordHash))) return res.status(401).json({ error: "La contraseña actual no es correcta." });
-    if (nueva.length < 8) return res.status(400).json({ error: "La contraseña nueva tiene que tener al menos 8 caracteres." });
-    if (nueva.length > 100) return res.status(400).json({ error: "La contraseña nueva es demasiado larga (máximo 100)." });
+    const errNueva = validarContrasena(nueva, u.usuario);
+    if (errNueva) return res.status(400).json({ error: errNueva, codigo: "clave_invalida" });
     if (nueva === actual) return res.status(400).json({ error: "La contraseña nueva tiene que ser distinta a la actual." });
     u.passwordHash = await hashearContrasena(nueva);
     u.tokenVersion = (u.tokenVersion || 0) + 1;
@@ -311,11 +368,22 @@ router.put("/alertas", identificar, requiereUsuario, limitar("alertas", 30, 10 *
 // PUT /api/auth/perfil   { nombre }  — el nombre se pide al registrarse y se puede editar en "Mi cuenta"
 router.put("/perfil", identificar, requiereUsuario, async (req, res) => {
   try {
-    const nombre = String(req.body?.nombre || "").replace(/\s+/g, " ").trim();
-    if (nombre.length < 2) return res.status(400).json({ error: "Escribí tu nombre (al menos 2 letras)." });
-    if (nombre.length > 60) return res.status(400).json({ error: "El nombre es demasiado largo (máximo 60 letras)." });
     const u = req.actor.usuario;
-    u.nombre = nombre;
+    const quiereUsuario = req.body?.usuario !== undefined;
+    if (req.body?.nombre !== undefined || !quiereUsuario) {
+      const nombre = String(req.body?.nombre || "").replace(/\s+/g, " ").trim();
+      if (nombre.length < 2) return res.status(400).json({ error: "Escribí tu nombre (al menos 2 letras)." });
+      if (nombre.length > 60) return res.status(400).json({ error: "El nombre es demasiado largo (máximo 60 letras)." });
+      u.nombre = nombre;
+    }
+    if (quiereUsuario) {
+      const nuevo = normalizarUsuario(req.body.usuario);
+      const err = validarUsuario(nuevo);
+      if (err) return res.status(400).json({ error: err, codigo: "usuario_invalido" });
+      if (nuevo !== u.usuario && (await Usuario.findOne({ usuario: nuevo, _id: { $ne: u._id } }))) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
+      if (nuevo !== u.usuario) await registrarActividad(u._id, "usuario_cambiado", req);
+      u.usuario = nuevo;
+    }
     await u.save();
     res.json({ usuario: usuarioPublico(u) });
   } catch (e) {

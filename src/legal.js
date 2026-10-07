@@ -7,7 +7,7 @@ export const TERMINOS = [
     "Al usar Mi Zona aceptás estos términos. Si no estás de acuerdo, no uses la aplicación.",
   ] },
   { t: "2. Tu cuenta", p: [
-    "Podés mirar negocios sin cuenta. Para chatear con un asistente, dejar reseñas o registrar un negocio necesitás una cuenta, que se crea con Google o con un correo y una contraseña.",
+    "Para usar Mi Zona necesitás una cuenta, que se crea eligiendo tu cuenta de Google y, después, un nombre de usuario y una contraseña.",
     "Sos responsable de mantener tu contraseña y tus dispositivos seguros. Si notás un acceso que no reconocés, cerrá las demás sesiones y cambiá tu contraseña desde Ajustes → Seguridad. Tenés que darnos datos verdaderos y no podés usar la cuenta de otra persona.",
     "Podés eliminar tu cuenta cuando quieras desde Ajustes → Mi cuenta.",
   ] },
@@ -43,7 +43,7 @@ export const PRIVACIDAD_TEXTO = [
   { t: "1. Qué datos guardamos de vos", p: [
     "Si no iniciás sesión, no guardamos datos tuyos en nuestro servidor. Con sesión guardamos:",
   ], l: [
-    "Tu correo y tu nombre (y, si te registraste con correo, tu contraseña cifrada: nunca se guarda en texto).",
+    "Tu correo, tu nombre, tu nombre de usuario y tu contraseña (esta última siempre cifrada: nunca se guarda en texto).",
     "Los dispositivos con sesión abierta y un registro de actividad de seguridad (inicios de sesión y cambios), por un máximo de 90 días.",
     "Las reseñas que escribís y las consultas que le mandás a Soporte.",
     "Si tenés un negocio: los datos que cargás de él (públicos) y tu agenda (privada).",

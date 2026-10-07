@@ -162,6 +162,12 @@ export const seguridadApi = {
   salir: () => enviarUsuarioJSON("/auth/salir", "POST", {}).catch(() => {}),
 };
 
+// Usuario y contraseña propios (además de Google)
+export const entrarConUsuario = (identificador, password) => accesoConCorreo("/auth/login", { identificador, password });
+export const usuarioDisponible = (u) => pedirJSON(`/auth/usuario-disponible?u=${encodeURIComponent(u)}`, { method: "GET" }, {});
+export const completarCuenta = (usuario, password, nombre) =>
+  enviarUsuarioJSON("/auth/completar", "PUT", { usuario, password, ...(nombre !== undefined ? { nombre } : {}) }).then((r) => r.usuario);
+export const guardarUsuario = (usuario) => enviarUsuarioJSON("/auth/perfil", "PUT", { usuario }).then((r) => r.usuario);
 export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT", { nombre }).then((r) => r.usuario);
 
 /* ---------- negocios propios y suscripción ---------- */

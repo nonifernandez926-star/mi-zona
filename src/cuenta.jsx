@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays } from "lucide-react";
 import { tonoDe } from "./tonos";
+import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 import {
-  cargarGoogle, pedirCuentaGoogle, cambiarClave, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
+  cargarGoogle, pedirCuentaGoogle, cambiarClave, guardarUsuario, usuarioDisponible, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
   estadoPush, activarPush, desactivarPush, privacidadApi, seguridadApi, setToken,
 } from "./api.js";
 
@@ -41,36 +42,42 @@ export function infoSuscripcion(negocio) {
 
 // Botón cuadrado con flecha, para las barras de arriba.
 //   tono "claro": sobre fondo azul oscuro · "oscuro": sobre fondo blanco · "foto": encima de una foto
-export function BotonAtras({ onClick, tono = "claro", size = 40, label = "Volver" }) {
+// Flecha de volver: la misma de Mi Asistente (línea y punta, trazo 2)
+const FlechaAtras = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+  </svg>
+);
+export function BotonAtras({ onClick, tono = "claro", size = 36, label = "Volver" }) {
   const estilos = {
-    claro: { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.28)", color: "#fff" },
-    oscuro: { background: "#fff", border: "1px solid #E3E7F1", color: "#0B1437", boxShadow: "0 1px 2px rgba(11,20,55,0.08)" },
-    foto: { background: "rgba(255,255,255,0.95)", border: "1px solid rgba(255,255,255,0.9)", color: "#0B1437", boxShadow: "0 4px 14px rgba(0,0,0,0.25)" },
+    claro: { background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)", color: "#fff" },
+    oscuro: { background: "#F3F5FA", border: "none", color: "#0B1437" },
+    foto: { background: "rgba(255,255,255,0.95)", border: "none", color: "#0B1437", boxShadow: "0 4px 14px rgba(0,0,0,0.25)" },
   }[tono];
   return (
     <button
       onClick={onClick} aria-label={label}
       className="flex items-center justify-center shrink-0 active:scale-95 transition-transform"
-      style={{ width: size, height: size, borderRadius: Math.round(size * 0.34), ...estilos }}
+      style={{ width: size, height: size, borderRadius: 12, ...estilos }}
     >
-      <ChevronLeft size={Math.round(size * 0.56)} strokeWidth={2.4} style={{ marginLeft: -1 }} />
+      <FlechaAtras size={Math.round(size * 0.55)} />
     </button>
   );
 }
 
-// Botón de las subpantallas de Ajustes: círculo con flecha + nombre de la pantalla anterior
+// Botón de las subpantallas de Ajustes (como en Mi Asistente): cuadrado con flecha + nombre de la pantalla
 export function BotonVolver({ texto, onClick }) {
   const destino = String(texto || "").replace(/^Volver a /i, "") || "Volver";
   return (
     <button
       onClick={onClick} aria-label={texto}
-      className="inline-flex items-center gap-2 mb-4 active:scale-95 transition-transform"
-      style={{ padding: "5px 16px 5px 5px", borderRadius: 999, background: "#fff", border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,0.08), 0 4px 12px rgba(11,20,55,0.06)", color: "#0B1437" }}
+      className="inline-flex items-center gap-3 mb-4 active:scale-95 transition-transform"
+      style={{ color: "#0B1437" }}
     >
-      <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: "50%", background: "#0B1437", color: "#fff" }}>
-        <ChevronLeft size={18} strokeWidth={2.6} style={{ marginLeft: -1 }} />
+      <span className="flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 12, background: "#F3F5FA", color: "#0B1437" }}>
+        <FlechaAtras size={20} />
       </span>
-      <span style={{ fontFamily: "var(--fuente-titulo)", fontSize: 14.5, fontWeight: 700, letterSpacing: "-0.01em" }}>{destino}</span>
+      <span style={{ fontFamily: "var(--fuente-titulo)", fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em" }}>{destino}</span>
     </button>
   );
 }
@@ -418,6 +425,61 @@ function FilaDato({ Icon, titulo, valor, ultimo }) {
   );
 }
 
+
+// Cambiar el nombre de usuario: se revisa en vivo si es válido y si está libre.
+function EditorUsuario({ usuario, onGuardado }) {
+  const actual = usuario?.usuario || "";
+  const [valor, setValor] = useState(actual);
+  const [disp, setDisp] = useState({ estado: "idle", msg: "" });
+  const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
+  useEffect(() => { setValor(usuario?.usuario || ""); }, [usuario?.usuario]);
+  const u = normalizarUsuario(valor);
+  const cambio = u !== actual;
+  useEffect(() => {
+    if (!cambio) { setDisp({ estado: "idle", msg: "" }); return undefined; }
+    const err = validarUsuario(u);
+    if (err) { setDisp({ estado: "invalido", msg: err }); return undefined; }
+    setDisp({ estado: "revisando", msg: "Revisando si está libre..." });
+    let vivo = true;
+    const t = setTimeout(async () => {
+      try {
+        const r = await usuarioDisponible(u);
+        if (vivo) setDisp(r.disponible ? { estado: "libre", msg: "¡Está disponible!" } : { estado: "ocupado", msg: "Ese usuario ya está ocupado. Usá otro." });
+      } catch { if (vivo) setDisp({ estado: "error", msg: "No pudimos revisarlo; lo comprobamos al guardar." }); }
+    }, 450);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [u, cambio]);
+  const puede = cambio && (disp.estado === "libre" || disp.estado === "error") && estado !== "guardando";
+  const guardar = async () => {
+    setEstado("guardando");
+    try {
+      onGuardado(await guardarUsuario(u));
+      setEstado("ok");
+      setTimeout(() => setEstado(null), 2500);
+    } catch (e) {
+      if (/ocupado/i.test(e.message)) { setDisp({ estado: "ocupado", msg: e.message }); setEstado(null); } else setEstado({ error: e.message });
+    }
+  };
+  const color = disp.estado === "libre" ? "#1E8A55" : disp.estado === "ocupado" || disp.estado === "invalido" ? "#C93030" : "#5B6482";
+  return (
+    <div className="mb-3">
+      <label className="text-xs font-medium block mb-1" style={{ color: "#2B3768" }}>Usuario</label>
+      <input value={valor} maxLength={20} autoCapitalize="none" spellCheck={false}
+        onChange={(e) => { setValor(e.target.value.replace(/\s/g, "")); setEstado(null); }}
+        placeholder="Elegí tu usuario" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 12, borderColor: disp.estado === "ocupado" || disp.estado === "invalido" ? "#C93030" : "#E3E7F1" }} />
+      <p className="text-xs mt-1.5 font-medium" style={{ color }}>{disp.msg || "De 5 a 20 caracteres, con una letra al inicio y al menos un número."}</p>
+      {estado?.error && <p className="text-xs mt-1" style={{ color: "#C93030" }}>{estado.error}</p>}
+      {cambio && (
+        <button onClick={guardar} disabled={!puede} className="w-full text-sm font-semibold py-2.5 mt-2 flex items-center justify-center gap-1.5"
+          style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 12, opacity: puede ? 1 : 0.45 }}>
+          {estado === "guardando" ? "Guardando..." : "Guardar usuario"}
+        </button>
+      )}
+      {estado === "ok" && <p className="text-xs mt-2 flex items-center gap-1.5 font-medium" style={{ color: "#1E6B44" }}><Check size={14} /> Listo: tu usuario ahora es @{actual}.</p>}
+    </div>
+  );
+}
+
 export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
@@ -466,7 +528,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             <span className="flex items-center justify-center shrink-0 text-xl font-bold" style={{ width: 54, height: 54, borderRadius: "50%", background: "#0B1437", color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{inicial}</span>
             <span className="flex-1 min-w-0">
               <span className="block text-base font-bold truncate" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{usuario.nombre || "Sin nombre"}</span>
-              <span className="block text-xs truncate mt-0.5" style={{ color: "#5B6482" }}>{usuario.email}</span>
+              <span className="block text-xs truncate mt-0.5" style={{ color: "#5B6482" }}>{usuario.usuario ? `@${usuario.usuario} · ` : ""}{usuario.email}</span>
               <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "#EDF1FF", color: "#2350F5" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
             </span>
           </div>
@@ -479,6 +541,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
               onKeyDown={(e) => e.key === "Enter" && cambio && nombre.trim().length >= 2 && guardar()}
               className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
             />
+            <EditorUsuario usuario={usuario} onGuardado={onUsuarioActualizado} />
             <label className="text-xs font-medium block mb-1" style={{ color: "#2B3768" }}>Correo de tu cuenta</label>
             <div className="flex items-center gap-2 text-sm px-3 py-2.5 mb-3" style={{ borderRadius: 8, background: "#F3F5FA", color: "#0B1437" }}>
               <Mail size={14} color="#5B6482" /> <span className="truncate">{usuario.email}</span>
@@ -670,7 +733,9 @@ function SegContrasena({ usuario, onBack, onCambio }) {
       </div>
     );
   }
-  const valida = actual && nueva.length >= 8 && nueva === repetir;
+  const reglasClave = requisitosContrasena(nueva);
+  const errNueva = nueva ? validarContrasena(nueva, usuario.usuario) : "";
+  const valida = actual && nueva && !errNueva && nueva === repetir;
   const guardar = async () => {
     setEstado("guardando");
     try {
@@ -687,8 +752,16 @@ function SegContrasena({ usuario, onBack, onCambio }) {
       <div className="p-4" style={TARJETA_SEG}>
         <div className="flex flex-col gap-3">
           <input value={actual} onChange={cambia(setActual)} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-          <input value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva (mínimo 8 caracteres)" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
           <input value={repetir} onChange={cambia(setRepetir)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {reglasClave.map((r) => (
+              <li key={r.texto} className="flex items-center gap-1.5 text-xs" style={{ color: r.ok ? "#1E8A55" : "#8D95B0", fontWeight: r.ok ? 600 : 400 }}>
+                <span className="flex items-center justify-center" style={{ width: 16, height: 16, borderRadius: "50%", background: r.ok ? "#1E8A55" : "#EEF0F6", color: "#fff" }}>{r.ok && <Check size={11} strokeWidth={3.4} />}</span>{r.texto}
+              </li>
+            ))}
+          </ul>
+          {nueva && errNueva && /usuario|espacios/.test(errNueva) && <p className="text-sm" style={{ color: "#C93030" }}>{errNueva}</p>}
           <label className="flex items-center gap-2 text-sm" style={{ color: "#2B3768" }}>
             <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar contraseñas
           </label>
@@ -807,6 +880,8 @@ const ACTIVIDAD = {
   cuenta_creada: { Icon: User, color: "#2350F5", texto: "Creaste tu cuenta" },
   inicio_sesion: { Icon: LogOut, color: "#0B1437", texto: "Iniciaste sesión" },
   contrasena_cambiada: { Icon: KeyRound, color: "#C77A0A", texto: "Cambiaste tu contraseña" },
+  usuario_creado: { Icon: User, color: "#2350F5", texto: "Creaste tu usuario y contraseña" },
+  usuario_cambiado: { Icon: User, color: "#2350F5", texto: "Cambiaste tu usuario" },
   sesiones_cerradas: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión en los demás dispositivos" },
   sesion_cerrada: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión de un dispositivo" },
 };
