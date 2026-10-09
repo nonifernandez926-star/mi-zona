@@ -41,10 +41,10 @@ input, textarea, select { font-size: 16px; }
 :root {
   --zona-marino: #0B1437;
   --zona-marino-2: #0A1235;
-  --zona-azul: #2350F5;
+  --zona-azul: var(--azul);
   --zona-borde: #E3E7F1;
   --zona-borde-fuerte: #CFD6E8;
-  --zona-anillo: rgba(35, 80, 245, 0.14);
+  --zona-anillo: rgba(var(--azul-rgb), 0.14);
   --zona-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --zona-sombra-sm: 0 1px 2px rgba(11, 20, 55, .04);
   --zona-sombra-md: 0 1px 2px rgba(11, 20, 55, .05), 0 6px 16px rgba(11, 20, 55, .06);
@@ -59,7 +59,7 @@ body {
 }
 h1, h2, h3 { font-weight: 800; line-height: 1.15; text-wrap: balance; }
 p { text-wrap: pretty; }
-::selection { background: rgba(35, 80, 245, .22); }
+::selection { background: rgba(var(--azul-rgb), .22); }
 
 /* ---------- foco accesible y coherente ---------- */
 :focus { outline: none; }
@@ -77,8 +77,8 @@ button:not(:disabled) { cursor: pointer; }
 
 /* botón principal: degradado azul y sombra de botón de Mi Asistente; peligro en rojo */
 button[style*="background-color: rgb(35, 80, 245)"], button[style*="background: rgb(35, 80, 245)"], a[style*="background-color: rgb(35, 80, 245)"] {
-  background-image: linear-gradient(180deg, #2a58ff 0%, #1f47e0 100%) !important;
-  box-shadow: 0 1px 2px rgba(11, 20, 55, .2), 0 6px 14px rgba(35, 80, 245, .22);
+  background-image: linear-gradient(180deg, var(--azul-g1) 0%, var(--azul-g2) 100%) !important;
+  box-shadow: 0 1px 2px rgba(11, 20, 55, .2), 0 6px 14px rgba(var(--azul-rgb), .22);
 }
 button[style*="background-color: rgb(193, 68, 58)"], button[style*="background: rgb(193, 68, 58)"] {
   background-image: linear-gradient(180deg, #d94b4b 0%, #c93030 100%) !important;
@@ -99,7 +99,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus, text
   border-color: var(--zona-azul) !important;
   box-shadow: 0 0 0 3px var(--zona-anillo);
 }
-input::placeholder, textarea::placeholder { color: #8D95B0; }
+input::placeholder, textarea::placeholder { color: #6B7494; opacity: 1; }
+.buscador-portada::placeholder { color: #5B6482; opacity: 1; -webkit-text-fill-color: #5B6482; }
 input:disabled, textarea:disabled, select:disabled { background-color: #F1F3F8; color: #8D95B0; cursor: not-allowed; box-shadow: none; }
 input[aria-invalid="true"], .campo-error { border-color: #C1443A !important; box-shadow: 0 0 0 4px rgba(193, 68, 58, .14); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--zona-azul); }
@@ -184,7 +185,7 @@ img { animation: zona-fondo .4s ease-out both; }
    ESTADOS: carga, error y pantallas vacías con el mismo nivel de acabado
    ===================================================================== */
 @keyframes zona-giro { to { transform: rotate(360deg); } }
-@keyframes zona-halo { 0%, 100% { box-shadow: 0 0 0 0 rgba(35,80,245,.18); } 50% { box-shadow: 0 0 0 10px rgba(35,80,245,0); } }
+@keyframes zona-halo { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--azul-rgb),.18); } 50% { box-shadow: 0 0 0 10px rgba(var(--azul-rgb),0); } }
 
 /* carga: indicador circular sobre el texto */
 p.text-center.py-16[style*="rgb(75, 85, 99)"] { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #667085 !important; font-weight: 500; }
@@ -315,13 +316,15 @@ input[class*="bg-transparent"]:focus-visible, textarea[class*="bg-transparent"]:
 
 /* Texto de ayuda dentro de campos sobre fondo azul (cabeceras) */
 [data-conservar-color] input::placeholder { color: rgba(255,255,255,.66); }
+/* El buscador de la portada es blanco: ahí el texto de ayuda tiene que ser oscuro (antes salía blanco sobre blanco y no se veía) */
+div:has(> input[placeholder^="Buscá"]) > input::placeholder { color: #6B7390 !important; opacity: 1; }
 
 /* =====================================================================
    COLOR DE ACENTO (Ajustes → Apariencia)
    El azul de la app sigue el acento elegido, pero solo donde aporta: botones principales, textos
    y iconos activos, bordes de selección y los fondos suaves. Las cabeceras oscuras se mantienen.
    ===================================================================== */
-:root { --azul: #2350f5; --azul-g1: #2a58ff; --azul-g2: #1f47e0; --azul-suave: #edf1ff; --azul-rgb: 35, 80, 245; }
+:root { --azul: #2350f5; --azul-g1: #2a58ff; --azul-g2: #1f47e0; --azul-suave: #edf1ff; --azul-rgb: 35, 80, 245; --azul-oscuro: #0B1437; --azul-brillo-rgb: 54, 104, 255; --azul-claro: #7FA8F5; --azul-claro-rgb: 23, 198, 255; --azul-claro-vivo: #17c6ff; --azul-medio: #5B91F7; --azul-palido: #BBD1FB; }
 [style*="background-color: rgb(35, 80, 245)"], [style*="background: rgb(35, 80, 245)"] { background-color: var(--azul) !important; }
 [style^="color: rgb(35, 80, 245)"], [style*="; color: rgb(35, 80, 245)"] { color: var(--azul) !important; }
 [style*="border-color: rgb(35, 80, 245)"], [style*="border: 1px solid rgb(35, 80, 245)"] { border-color: var(--azul) !important; }
@@ -353,3 +356,16 @@ html.sin-movimiento *, html.sin-movimiento *::before, html.sin-movimiento *::aft
 .fz-rayo { animation: fz-ray 9s linear infinite; opacity: 0; }
 @keyframes fz-ray { 0%, 40.5% { opacity: 0; } 41%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
 html.sin-movimiento .fz-nubes, html.sin-movimiento .fz-gota, html.sin-movimiento .fz-copo, html.sin-movimiento .fz-estrella, html.sin-movimiento .fz-relampago, html.sin-movimiento .fz-rayo { animation: none !important; }
+
+/* acordeones del Centro de ayuda y Acerca de (como en Mi Asistente) */
+.zn-acordeon > summary::-webkit-details-marker { display: none; }
+.zn-acordeon > summary .zn-chevron { transition: transform .25s ease; }
+.zn-acordeon[open] > summary .zn-chevron { transform: rotate(90deg); }
+
+@keyframes zn-sacude { 0%,100% { transform: rotate(0) } 15% { transform: rotate(18deg) } 35% { transform: rotate(-16deg) } 55% { transform: rotate(10deg) } 75% { transform: rotate(-6deg) } }
+
+
+/* ---------- accesibilidad: respetar "reducir movimiento" del celular ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

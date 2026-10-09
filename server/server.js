@@ -52,6 +52,12 @@ app.use("/api/agenda", agendaRoutes);
 app.use("/api/privacidad", privacidadRoutes);
 app.use("/api/soporte", soporteRoutes);
 
+// Salud para monitores externos (UptimeRobot, cron-job.org) que además evitan que Render gratis se duerma
+app.get("/healthz", (req, res) => res.json({ ok: true }));
+
+// Rutas /api que no existen: respuesta JSON clara en vez de una página HTML
+app.use("/api", (req, res) => res.status(404).json({ error: "No encontrado" }));
+
 if (!process.env.JWT_SECRET) console.warn("⚠️  Falta JWT_SECRET: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("⚠️  Falta GOOGLE_CLIENT_ID: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
 
@@ -62,6 +68,9 @@ app.use((err, req, res, next) => {
   // los errores 5xx no muestran detalles internos
   res.status(status).json({ error: status < 500 ? err.message || "Pedido inválido" : "Error del servidor" });
 });
+
+// Un error suelto en una tarea en segundo plano no debe tumbar el servidor sin dejar rastro
+process.on("unhandledRejection", (motivo) => console.error("Promesa rechazada sin atrapar:", motivo));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en el puerto ${PORT}`));

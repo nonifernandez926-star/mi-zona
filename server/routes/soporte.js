@@ -1,6 +1,6 @@
 import express from "express";
 import Consulta from "../models/Consulta.js";
-import { identificar, limitar } from "../utils/auth.js";
+import { identificar, limitar, claveAdminOk } from "../utils/auth.js";
 import { enviarPushAUsuario } from "../utils/push.js";
 import Business from "../models/Business.js";
 import Usuario from "../models/Usuario.js";
@@ -81,10 +81,7 @@ router.post("/:id/cerrar", async (req, res) => {
 });
 
 /* ---------- Equipo de Mi Zona (con SOPORTE_ADMIN_KEY) ---------- */
-const claveOk = (req) => {
-  const k = process.env.SOPORTE_ADMIN_KEY;
-  return !!k && req.get("x-soporte-key") === k;
-};
+const claveOk = claveAdminOk;
 
 // GET /api/soporte/admin?estado=abierta|respondida|cerrada
 router.get("/admin", async (req, res) => {
@@ -117,7 +114,7 @@ async function avisarAutor(autor, negocio, resena, mensaje) {
     mensaje: `El equipo de Mi Zona revisó tu reseña: "${String(resena.text || "").slice(0, 200)}"`,
     respuesta: mensaje, estado: "respondida", respondidaEn: new Date(),
   });
-  enviarPushAUsuario(String(autor._id), { titulo: "El equipo te escribió sobre tu reseña", cuerpo: mensaje.slice(0, 120) }).catch(() => {});
+  enviarPushAUsuario(String(autor._id), { titulo: "El equipo te escribió sobre tu reseña", cuerpo: mensaje.slice(0, 120) }, "soporte").catch(() => {});
   return c;
 }
 async function moderarResena(req, res, borrar) {
@@ -141,7 +138,7 @@ async function moderarResena(req, res, borrar) {
     reporte.estado = "respondida"; reporte.respondidaEn = new Date();
     reporte.respuesta = borrar ? "Revisamos tu reporte y eliminamos la reseña. Gracias por avisarnos." : "Revisamos tu reporte. Gracias por avisarnos.";
     await reporte.save();
-    if (reporte.usuarioId) enviarPushAUsuario(reporte.usuarioId, { titulo: "Revisamos tu reporte", cuerpo: reporte.respuesta }).catch(() => {});
+    if (reporte.usuarioId) enviarPushAUsuario(reporte.usuarioId, { titulo: "Revisamos tu reporte", cuerpo: reporte.respuesta }, "soporte").catch(() => {});
     res.json({ ok: true, aviso: aviso.trim() });
   } catch (e) {
     console.error("Error moderando reseña:", e.message);
@@ -158,7 +155,7 @@ router.post("/admin/:id/responder", async (req, res) => {
   if (respuesta.length < 2) return res.status(400).json({ error: "Escribí la respuesta." });
   const c = await Consulta.findByIdAndUpdate(req.params.id, { $set: { respuesta, estado: "respondida", respondidaEn: new Date() } }, { new: true });
   if (!c) return res.status(404).json({ error: "No existe esa consulta." });
-  if (c.usuarioId) enviarPushAUsuario(c.usuarioId, { titulo: "Respondimos tu consulta", cuerpo: `${codigo(c)} · ${c.asunto}`.slice(0, 120) }).catch(() => {});
+  if (c.usuarioId) enviarPushAUsuario(c.usuarioId, { titulo: "Respondimos tu consulta", cuerpo: `${codigo(c)} · ${c.asunto}`.slice(0, 120) }, "soporte").catch(() => {});
   res.json({ consulta: publica(c) });
 });
 

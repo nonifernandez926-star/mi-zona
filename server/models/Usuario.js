@@ -24,6 +24,13 @@ const usuarioSchema = new mongoose.Schema(
     seguridad: {
       alertasInicio: { type: Boolean, default: true },
     },
+    // Qué avisos recibe en el celular (Ajustes → Notificaciones). La campana de la app siempre muestra todo; esto solo controla el push.
+    // "seguridad" usa seguridad.alertasInicio.
+    notificaciones: {
+      agenda: { type: Boolean, default: true }, // recordatorios de la agenda
+      suscripcion: { type: Boolean, default: true }, // vencimiento de la suscripción de un negocio
+      soporte: { type: Boolean, default: true }, // respuestas del equipo (consultas, reseñas y reportes)
+    },
     // Controles de privacidad que el SERVIDOR respeta (la búsqueda con asistente y las funciones de IA de la agenda los consultan)
     privacidad: {
       ubicacionBusqueda: { type: Boolean, default: true }, // usar mi ubicación para ordenar negocios por cercanía

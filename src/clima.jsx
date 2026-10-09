@@ -1,6 +1,6 @@
 // Fondo de la portada de inicio: cielo, sol o luna, nubes, lluvia, tormenta y montañas según la hora y el clima real de la zona.
 // Clima: servicio gratuito Open-Meteo (sin clave). Si no hay internet, se usa solo la hora. Cambia despacio, con transiciones.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Thermometer, Droplets } from "lucide-react";
 import { getPrivacidad } from "./api.js";
 
@@ -90,31 +90,52 @@ function trazoLuna(cx, cy, r, p) {
   return { d, espejo: p > 0.5 };
 }
 
+// Acerca un valor a su objetivo sin saltos: el clima real se actualiza cada tanto, pero lo que se ve cambia de a poquito.
+const acercar = (v, objetivo, paso) => (Math.abs(objetivo - v) <= paso ? objetivo : v + Math.sign(objetivo - v) * paso);
+const TICK = 10; // segundos entre cada actualización de lo que se ve (todo se mueve con transiciones suaves entre una y otra)
+
 export function FondoClima({ zona }) {
   const datos = useClima(zona);
   const [ahora, setAhora] = useState(() => new Date());
-  useEffect(() => { const t = setInterval(() => setAhora(new Date()), 60 * 1000); return () => clearInterval(t); }, []);
+  const wReal = tiempo(datos?.code, datos?.nubes);
+  const objetivo = { cob: wReal.cobertura, ll: wReal.gotas / 95, tor: wReal.tormenta ? 1 : 0, fue: wReal.fuerte ? 1 : 0, nie: wReal.nieve ? 1 : 0, nieb: wReal.niebla ? 1 : 0 };
+  // lo que se muestra: arranca igual al clima real y después lo sigue despacio (nubes ~6 min, lluvia ~4 min, tormenta ~3 min)
+  const [e, setE] = useState(objetivo);
+  const objRef = useRef(objetivo); objRef.current = objetivo;
+  useEffect(() => {
+    const t = setInterval(() => {
+      setAhora(new Date());
+      const o = objRef.current;
+      setE((p) => ({ cob: acercar(p.cob, o.cob, TICK / 360), ll: acercar(p.ll, o.ll, TICK / 240), tor: acercar(p.tor, o.tor, TICK / 180), fue: acercar(p.fue, o.fue, TICK / 240), nie: acercar(p.nie, o.nie, TICK / 240), nieb: acercar(p.nieb, o.nieb, TICK / 240) }));
+    }, TICK * 1000);
+    return () => clearInterval(t);
+  }, []);
 
-  const t = ahora.getHours() * 60 + ahora.getMinutes();
+  const t = ahora.getHours() * 60 + ahora.getMinutes() + ahora.getSeconds() / 60;
   const sale = datos?.sale ?? 6 * 60 + 30, pone = datos?.pone ?? 19 * 60;
-  const w = tiempo(datos?.code, datos?.nubes);
+  // clima que se ve (suavizado)
+  const gate = lim((e.cob - 0.35) / 0.35); // la lluvia empieza cuando las nubes ya se formaron
+  const w = { ...wReal, cobertura: e.cob, tormenta: e.tor > 0.55, nieve: e.nie > 0.05, niebla: e.nieb > 0.05, gotas: Math.round(95 * e.ll * gate) };
   const noche = nocturnidad(t, sale, pone), dia = 1 - noche;
 
   // colores del cielo, apagados según la cobertura y oscurecidos con tormenta
   const base = cielo(t, sale, pone);
   const gris = [mezcla("#161d33", "#7c8a9e", dia), mezcla("#1c2440", "#a0acbd", dia), mezcla("#222c4c", "#c0c9d5", dia)];
-  const f = lim(w.cobertura * (w.tormenta ? 1.05 : 0.88));
+  const f = lim(e.cob * (0.88 + e.tor * 0.17));
   let col = base.map((c, i) => mezcla(c, gris[i], f * 0.85));
-  if (w.tormenta || w.fuerte) col = col.map((c) => mezcla(c, "#1a2030", w.tormenta ? 0.42 : 0.25));
+  const oscuro = Math.max(e.tor * 0.42, e.fue * 0.25 * lim(e.cob));
+  if (oscuro > 0) col = col.map((c) => mezcla(c, "#1a2030", oscuro));
   const calor = datos ? lim((datos.temp - 28) / 10) : 0, frio = datos ? lim((12 - datos.temp) / 12) : 0;
   col = col.map((c, i) => mezcla(mezcla(c, "#ffcf8a", calor * 0.16 * dia * (0.35 + i * 0.35)), "#cfe0ff", frio * 0.14 * dia * (0.35 + i * 0.35)));
 
-  // sol y luna recorriendo el cielo
-  const pSol = (t - sale) / (pone - sale), solVisible = pSol > -0.02 && pSol < 1.02;
-  const sx = 140 + 230 * lim(pSol, 0, 1), sy = 172 - 122 * Math.sin(Math.PI * lim(pSol, 0, 1));
+  // Sol: sale por la izquierda, sube hasta lo más alto al mediodía solar y baja hasta esconderse tras las montañas.
+  // Luna: lo mismo durante la noche. Las posiciones siguen la hora sin saltos (continuas, también bajo el horizonte).
+  const pSol = lim((t - sale) / (pone - sale), -0.2, 1.2);
+  const sx = 140 + 230 * pSol, sy = 172 - 122 * Math.sin(Math.PI * pSol);
   const calido = 1 - Math.sin(Math.PI * lim(pSol, 0, 1));
-  const largoNoche = 1440 - (pone - sale), tn = t >= pone ? t - pone : t + 1440 - pone, pLuna = tn / largoNoche;
-  const mx = 140 + 230 * lim(pLuna, 0, 1), my = 172 - 112 * Math.sin(Math.PI * lim(pLuna, 0, 1));
+  const largoNoche = 1440 - (pone - sale), tn = t >= pone ? t - pone : t + 1440 - pone;
+  const pLuna = lim(tn / largoNoche, -0.2, 1.2);
+  const mx = 140 + 230 * pLuna, my = 172 - 112 * Math.sin(Math.PI * pLuna);
   const luna = trazoLuna(0, 0, 13, faseLuna(ahora));
   const velo = 1 - lim(w.cobertura * 1.05);
   const rayas = useMemo(() => Array.from({ length: 95 }, (_, i) => ({ x: (i * 37.7) % 420 - 10, y: -(i * 53.3) % 220, l: 7 + (i % 5) * 2.2, d: 0.55 + (i % 7) * 0.09, r: -((i * 0.37) % 1.2) })), []);
@@ -127,7 +148,7 @@ export function FondoClima({ zona }) {
   const rgb = (h) => hex(h).map((v) => (v / 255).toFixed(3)).join(" ");
   const matriz = (h, a) => { const [r, g, b] = rgb(h).split(" "); return `0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  ${a} 0 0 0 ${(-umbral * a).toFixed(2)}`; };
 
-  const tr = "30s linear";
+  const tr = `${TICK + 2}s linear`;
   const ver = (n) => ({ transition: `stop-color ${tr}` });
   const montes = { lejos: mezcla(col[2], mezcla("#17265a", "#3d5fae", dia), 0.62), medio: mezcla(col[2], mezcla("#101c48", "#2a4a96", dia), 0.8), cerca: mezcla(col[2], mezcla("#0b1538", "#1f3a82", dia), 0.9), frente: mezcla("#070d26", "#12275e", dia * 0.8) };
 
@@ -146,16 +167,14 @@ export function FondoClima({ zona }) {
             <clipPath id="fzLit"><path d={luna.d} /></clipPath>
           </defs>
           <rect width="400" height="220" fill="url(#fzCielo)" />
-          <g style={{ opacity: noche * velo, transition: "opacity 30s linear" }}>
+          <g style={{ opacity: noche * velo, transition: `opacity ${tr}` }}>
             {ESTRELLAS.map(([x, y, r, d], i) => <circle key={i} cx={x} cy={y} r={r} fill="#fff" className="fz-estrella" style={{ animationDelay: `${d}s` }} />)}
           </g>
-          {solVisible && (
-            <g style={{ opacity: lim(velo * 1.15 + 0.12) * (w.tormenta ? 0.3 : 1) }} transform={`translate(${sx} ${sy})`}>
-              <circle r={70 + calido * 40} fill="url(#fzSol)" /><circle r="14" fill="#fffdf2" />
-            </g>
-          )}
-          {noche > 0.25 && (
-            <g style={{ opacity: noche * lim(velo * 1.1 + 0.05) }} transform={`translate(${mx} ${my})`}>
+          <g style={{ opacity: lim(velo * 1.15 + 0.12) * (1 - 0.7 * e.tor), transform: `translate(${sx}px, ${sy}px)`, transition: `transform ${tr}, opacity ${tr}` }}>
+            <circle r={70 + calido * 40} fill="url(#fzSol)" /><circle r="14" fill="#fffdf2" />
+          </g>
+          {noche > 0.02 && (
+            <g style={{ opacity: lim(noche * 2) * lim(velo * 1.1 + 0.05), transform: `translate(${mx}px, ${my}px)`, transition: `transform ${tr}, opacity ${tr}` }}>
               <circle r="60" fill="url(#fzHaloLuna)" />
               <circle r="13" fill="#232c4b" />
               <g clipPath="url(#fzLit)" transform={luna.espejo ? "scale(-1 1)" : undefined}>
@@ -189,13 +208,13 @@ export function FondoClima({ zona }) {
           <rect x="0" y="124" width="400" height="60" fill="url(#fzBruma)" opacity=".7" />
           <path d={MONTES.cerca} style={{ fill: montes.cerca, transition: `fill ${tr}` }} />
           <path d={MONTES.frente} style={{ fill: montes.frente, transition: `fill ${tr}` }} />
-          {w.niebla && <rect width="400" height="220" fill="#dfe6ef" opacity={0.28 + dia * 0.12} />}
+          {w.niebla && <rect width="400" height="220" fill="#dfe6ef" opacity={(0.28 + dia * 0.12) * e.nieb} />}
           {w.gotas > 0 && (
-            <g stroke="#d6e6ff" strokeWidth=".8" strokeLinecap="round" opacity={0.28 + dia * 0.12}>
+            <g stroke="#d6e6ff" strokeWidth=".8" strokeLinecap="round" opacity={(0.28 + dia * 0.12) * lim(e.ll * 2.5) * gate}>
               {rayas.slice(0, w.gotas).map((g, i) => <line key={i} className="fz-gota" x1={g.x} y1={g.y} x2={g.x - 2} y2={g.y + g.l} style={{ animationDuration: `${g.d}s`, animationDelay: `${g.r}s` }} />)}
             </g>
           )}
-          {w.nieve && <g fill="#fff" opacity=".8">{copos.map((c, i) => <circle key={i} className="fz-copo" cx={c.x} cy="0" r={c.r} style={{ animationDuration: `${c.d}s`, animationDelay: `${c.de}s` }} />)}</g>}
+          {w.nieve && <g fill="#fff" opacity={0.8 * e.nie}>{copos.map((c, i) => <circle key={i} className="fz-copo" cx={c.x} cy="0" r={c.r} style={{ animationDuration: `${c.d}s`, animationDelay: `${c.de}s` }} />)}</g>}
           {w.tormenta && (
             <>
               <rect width="400" height="220" fill="#dbe8ff" className="fz-relampago" />
@@ -207,9 +226,9 @@ export function FondoClima({ zona }) {
 
       {datos && (
         <div className="absolute flex items-center gap-2.5 text-[11px] font-semibold" aria-label={`${etiquetaTiempo(w, noche > 0.5)}, ${datos.temp} grados, humedad ${datos.hum} por ciento`}
-          style={{ right: 14, bottom: 12, padding: "4px 10px", borderRadius: 999, background: "rgba(5,12,40,.38)", border: "1px solid rgba(255,255,255,.14)", color: "#E6EEFF", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 2 }}>
-          <span className="flex items-center gap-1"><Thermometer size={12} color="#9ec1ff" />{datos.temp}°</span>
-          <span className="flex items-center gap-1"><Droplets size={12} color="#9ec1ff" />{datos.hum}%</span>
+          style={{ right: 14, top: 12, padding: "4px 10px", borderRadius: 999, background: "rgba(5,12,40,.38)", border: "1px solid rgba(255,255,255,.14)", color: "#E6EEFF", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 2 }}>
+          <span className="flex items-center gap-1"><Thermometer size={12} color="var(--azul-palido)" />{datos.temp}°</span>
+          <span className="flex items-center gap-1"><Droplets size={12} color="var(--azul-palido)" />{datos.hum}%</span>
         </div>
       )}
     </>

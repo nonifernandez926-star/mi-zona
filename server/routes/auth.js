@@ -6,7 +6,7 @@ import Sesion from "../models/Sesion.js";
 import ActividadSeguridad from "../models/ActividadSeguridad.js";
 import {
   verificarIdTokenGoogle, verificarAccessTokenGoogle, firmarTokenUsuario,
-  identificar, requiereUsuario, sesionClienteDe, limitar,
+  identificar, requiereUsuario, sesionClienteDe, limitar, claveAdminOk,
 } from "../utils/auth.js";
 import { iniciarSesion, crearSesion, registrarActividad, avisarSeguridad } from "../utils/sesiones.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
@@ -14,6 +14,8 @@ import { permitir, olvidar } from "../utils/limitador.js";
 import { validarUsuario, validarContrasena, normalizarUsuario } from "../utils/credenciales.js";
 
 const router = express.Router();
+const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const normalizarCorreo = (v) => String(v || "").trim().toLowerCase();
 
 const tieneClave = (u) => !!(u.passwordHash || u.claveZona);
 // Con el correo solo vale la contraseña de correo (cuentas viejas creadas con correo); con el usuario, la de Mi Zona. Las cuentas de Google entran con Google o con usuario.
@@ -40,11 +42,11 @@ async function vincularNegociosPorEmail(usuario) {
 // POST /api/auth/google   { accessToken | idToken, modo }
 // Verifica el token que entrega Google en el navegador, crea la cuenta si es la primera vez y devuelve la sesión.
 // Si todavía no tiene nombre, la web se lo pide (requiereNombre) y lo guarda con PUT /api/auth/perfil.
-//   modo "registro": crea la cuenta (si ya existía, simplemente inicia sesión y avisa con yaExistia)
+//   modo "registro": crea la cuenta (si ya existía responde 409 cuenta_existente y NO inicia sesión)
 //   modo "login":    solo entra si la cuenta ya está registrada; si no, responde cuenta_inexistente
 router.post("/google", async (req, res) => {
   try {
-    if (!permitir(`google|${req.ip || "sin-ip"}`, 40, 15 * 60 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
+    if (!(await permitir(`google|${req.ip || "sin-ip"}`, 40, 15 * 60 * 1000))) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
     const { idToken, accessToken } = req.body || {};
     const modo = req.body?.modo === "login" ? "login" : "registro";
     if (!idToken && !accessToken) return res.status(400).json({ error: "Falta el token de Google" });
@@ -54,8 +56,18 @@ router.post("/google", async (req, res) => {
       ? await verificarAccessTokenGoogle(accessToken)
       : await verificarIdTokenGoogle(idToken);
 
+    // Si escribió un correo a mano, la cuenta que elija en Google tiene que ser esa misma (si no, podría entrar a otra cuenta)
+    const esperado = normalizarCorreo(req.body?.emailEsperado);
+    if (esperado && esperado !== email) {
+      return res.status(400).json({ error: `Elegiste la cuenta ${email}, pero escribiste ${esperado}. Probá de nuevo con el mismo correo.` });
+    }
+
     let usuario = await Usuario.findOne({ googleId });
     let yaExistia = !!usuario;
+    // "Registrarme" con una cuenta que ya existe: no se entra al panel, se le pide que inicie sesión
+    if (modo === "registro" && (usuario || await Usuario.findOne({ email }))) {
+      return res.status(409).json({ error: "cuenta_existente", mensaje: `La cuenta ${email} ya existe. Iniciá sesión con "Acceder con Google" o con tu usuario y contraseña.` });
+    }
     if (!usuario) {
       // Si ya se había registrado con correo y contraseña con este mismo correo, ahora Google lo verifica: pasa a ser la misma cuenta
       const porCorreo = await Usuario.findOne({ email, proveedor: "email" });
@@ -91,18 +103,19 @@ router.post("/google", async (req, res) => {
     console.error("Error en login con Google:", e.message);
     if (e.status === 503) return res.status(503).json({ error: e.message });
     // el detalle técnico (por ejemplo "Wrong recipient": el ID de cliente de Google no coincide) ayuda a encontrar el problema
-    res.status(401).json({ error: "No se pudo verificar la cuenta de Google", detalle: String(e.message || "").slice(0, 160) });
+    // el detalle técnico queda solo en los registros del servidor; para verlo también en la respuesta (al depurar) poné DEBUG_AUTH=1
+    const cuerpo = { error: "No se pudo verificar la cuenta de Google" };
+    if (process.env.DEBUG_AUTH === "1") cuerpo.detalle = String(e.message || "").slice(0, 160);
+    res.status(401).json(cuerpo);
   }
 });
 
-const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const normalizarCorreo = (v) => String(v || "").trim().toLowerCase();
 const ip = (req) => req.ip || "sin-ip";
 
 // POST /api/auth/correo   { email }  → paso 1 del ingreso con correo: dice qué hacer después (pedir contraseña, crear cuenta o usar Google)
 router.post("/correo", async (req, res) => {
   try {
-    if (!permitir(`correo|${ip(req)}`, 30, 15 * 60 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
+    if (!(await permitir(`correo|${ip(req)}`, 30, 15 * 60 * 1000))) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
     const email = normalizarCorreo(req.body?.email);
     if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
     const usuario = await Usuario.findOne({ email });
@@ -115,38 +128,8 @@ router.post("/correo", async (req, res) => {
   }
 });
 
-// POST /api/auth/registro   { nombre, email, password }  → crea una cuenta con correo y contraseña
-router.post("/registro", async (req, res) => {
-  try {
-    if (!permitir(`registro|${ip(req)}`, 10, 3600 * 1000)) return res.status(429).json({ error: "Hiciste muchos intentos. Probá de nuevo en un rato." });
-    const email = normalizarCorreo(req.body?.email);
-    const password = String(req.body?.password || "");
-    const nombre = String(req.body?.nombre || "").replace(/\s+/g, " ").trim();
-    const usuarioNombre = normalizarUsuario(req.body?.usuario);
-    if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
-    const errUsuario = validarUsuario(usuarioNombre);
-    if (errUsuario) return res.status(400).json({ error: errUsuario, codigo: "usuario_invalido" });
-    const errClave = validarContrasena(password, usuarioNombre);
-    if (errClave) return res.status(400).json({ error: errClave, codigo: "clave_invalida" });
-    if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
-    if (await Usuario.findOne({ usuario: usuarioNombre })) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
-
-    if (await Usuario.findOne({ email })) {
-      return res.status(409).json({ error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
-    }
-    const usuario = await Usuario.create({
-      googleId: `email:${email}`, email, usuario: usuarioNombre, nombre, proveedor: "email", passwordHash: await hashearContrasena(password),
-    });
-    res.status(201).json({ token: await iniciarSesion(req, usuario, { cuentaNueva: true }), usuario: usuarioPublico(usuario), requiereNombre: false, yaExistia: false });
-  } catch (e) {
-    if (e.code === 11000) {
-      const porUsuario = /usuario/.test(String(e.message));
-      return res.status(409).json(porUsuario ? { error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" } : { error: "Ese correo ya está registrado. Tocá \"Iniciar sesión\".", codigo: "correo_existente" });
-    }
-    console.error("Error en registro con correo:", e.message);
-    res.status(e.status === 503 ? 503 : 500).json({ error: e.status === 503 ? e.message : "No se pudo crear la cuenta. Probá de nuevo." });
-  }
-});
+// (El registro con correo y contraseña se cerró a propósito: el correo no se verificaba, así que cualquiera podía reservar el
+// correo o el usuario de otra persona. Las cuentas nuevas se crean solo con Google en POST /google y se completan en PUT /completar.)
 
 // POST /api/auth/login   { email, password }  → entra con correo y contraseña
 router.post("/login", async (req, res) => {
@@ -158,7 +141,7 @@ router.post("/login", async (req, res) => {
     const password = String(req.body?.password || "");
     const clave = `login|${ip(req)}|${ident}`;
     // 8 intentos cada 15 minutos por persona y correo: frena a quien prueba contraseñas
-    if (!permitir(clave, 8, 15 * 60 * 1000) || !permitir(`login|${ip(req)}`, 40, 15 * 60 * 1000)) {
+    if (!(await permitir(clave, 8, 15 * 60 * 1000)) || !(await permitir(`login|${ip(req)}`, 40, 15 * 60 * 1000))) {
       return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
     }
     if ((esCorreo ? !RE_CORREO.test(email) : ident.length < 3) || !password) return res.status(400).json({ error: "Escribí tu usuario o correo y tu contraseña." });
@@ -172,7 +155,7 @@ router.post("/login", async (req, res) => {
     const ok = await verificarContrasena(password, usuario ? hashParaEntrar(usuario, esCorreo) : "00:00");
     if (!usuario || !ok) return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
 
-    olvidar(clave);
+    await olvidar(clave);
     res.json({ token: await iniciarSesion(req, usuario), usuario: usuarioPublico(usuario), requiereNombre: !usuario.nombre, yaExistia: true });
   } catch (e) {
     console.error("Error en login con correo:", e.message);
@@ -180,8 +163,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// GET /api/auth/estado → qué está configurado en el servidor (solo sí/no, nunca los valores). Sirve para diagnosticar errores de inicio de sesión.
+// GET /api/auth/estado → qué está configurado en el servidor (solo sí/no, nunca los valores). Es solo para el equipo:
+// pide la clave de administrador (encabezado x-soporte-key). Sin ella responde como si la ruta no existiera.
 router.get("/estado", (req, res) => {
+  if (!claveAdminOk(req)) return res.status(404).json({ error: "No encontrado" });
   res.json({
     googleClientId: Boolean(process.env.GOOGLE_CLIENT_ID), // aunque falte, el servidor acepta el ID de la web de Mi Zona
     jwtSecret: Boolean(process.env.JWT_SECRET),
@@ -218,7 +203,7 @@ router.post("/sesion-cliente", identificar, requiereUsuario, async (req, res) =>
 router.put("/completar", identificar, requiereUsuario, async (req, res) => {
   try {
     const u = req.actor.usuario;
-    if (!permitir(`completar|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    if (!(await permitir(`completar|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000))) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
     await separarClaves(u);
     if (u.usuario && tieneClave(u)) return res.status(400).json({ error: "Tu cuenta ya tiene usuario y contraseña. Podés cambiarlos desde Ajustes." });
     const nuevo = normalizarUsuario(req.body?.usuario);
@@ -251,7 +236,7 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
 // GET /api/auth/usuario-disponible?u=nombre  → { valido, disponible, error }  (público, con límite de consultas)
 router.get("/usuario-disponible", async (req, res) => {
   try {
-    if (!permitir(`disp|${ip(req)}`, 60, 10 * 60 * 1000)) return res.status(429).json({ error: "Muchas consultas seguidas. Esperá un momento." });
+    if (!(await permitir(`disp|${ip(req)}`, 60, 10 * 60 * 1000))) return res.status(429).json({ error: "Muchas consultas seguidas. Esperá un momento." });
     const u = normalizarUsuario(req.query.u);
     const error = validarUsuario(u);
     if (error) return res.json({ valido: false, disponible: false, error });
@@ -279,7 +264,7 @@ async function dejarSoloEstaSesion(req, usuario) {
 router.put("/clave", identificar, requiereUsuario, async (req, res) => {
   try {
     const u = req.actor.usuario;
-    if (!permitir(`clave|${ip(req)}|${u._id}`, 8, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    if (!(await permitir(`clave|${ip(req)}|${u._id}`, 8, 15 * 60 * 1000))) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
     await separarClaves(u);
     const campo = u.passwordHash ? "passwordHash" : "claveZona"; // cada cuenta cambia la contraseña que realmente usa
     if (!u[campo]) return res.status(400).json({ error: "Tu cuenta entra con Google: todavía no tiene una contraseña de Mi Zona." });

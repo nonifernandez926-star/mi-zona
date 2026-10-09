@@ -29,7 +29,7 @@ export async function enviarRecordatoriosPush() {
   const debidos = candidatos.filter((i) => recordatorioDebido(i));
   let enviados = 0;
   for (const item of debidos) {
-    const llegaron = await enviarPushAUsuario(item.usuarioId, textoAviso(item));
+    const llegaron = await enviarPushAUsuario(item.usuarioId, textoAviso(item), "agenda");
     await AgendaItem.updateOne({ _id: item._id }, { $set: { avisoPushEnviado: true } }); // aunque no tenga push activo, no insistimos
     if (llegaron > 0) enviados++;
   }

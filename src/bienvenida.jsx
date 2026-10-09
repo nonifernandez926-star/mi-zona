@@ -8,14 +8,14 @@ import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsua
 
 const RUBROS = [
   { Icon: UtensilsCrossed, color: "#ffb36b", a: 0 }, { Icon: HeartPulse, color: "#ff8aa5", a: 60 }, { Icon: Wrench, color: "#b9a4ff", a: 120 },
-  { Icon: Home, color: "#6fe3b0", a: 180 }, { Icon: ShoppingBag, color: "#8fb0ff", a: 240 }, { Icon: Scissors, color: "#5ee7ff", a: 300 },
+  { Icon: Home, color: "#6fe3b0", a: 180 }, { Icon: ShoppingBag, color: "var(--azul-palido)", a: 240 }, { Icon: Scissors, color: "var(--azul-claro-vivo)", a: 300 },
 ];
 
 function Marca() {
   return (
     <div className="bv-marca">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bvMg" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#5b8bff" /><stop offset="1" stopColor="#17c6ff" /></linearGradient></defs>
-        <rect width="40" height="40" rx="12" fill="url(#bvMg)" /><path d="M20 9c-5.2 0-9 3.9-9 8.6 0 6.2 9 14.4 9 14.4s9-8.2 9-14.4C29 12.9 25.2 9 20 9z" fill="#fff" /><circle cx="20" cy="17.6" r="3.4" fill="#2454ff" /></svg>
+      <svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bvMg" x1="0" y1="0" x2="1" y2="1"><stop stopColor="var(--azul-g1)" /><stop offset="1" stopColor="var(--azul-claro-vivo)" /></linearGradient></defs>
+        <rect width="40" height="40" rx="12" fill="url(#bvMg)" /><path d="M20 9c-5.2 0-9 3.9-9 8.6 0 6.2 9 14.4 9 14.4s9-8.2 9-14.4C29 12.9 25.2 9 20 9z" fill="#fff" /><circle cx="20" cy="17.6" r="3.4" fill="var(--azul)" /></svg>
       Mi Zona
     </div>
   );
@@ -32,19 +32,19 @@ function Escena() {
       </div>
       <svg className="bv-pin" viewBox="0 0 150 168" role="img" aria-label="Ubicación">
         <defs>
-          <linearGradient id="bvPin" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#8fb0ff" /><stop offset=".5" stopColor="#2f66ff" /><stop offset="1" stopColor="#1536c8" /></linearGradient>
-          <radialGradient id="bvNucleo"><stop stopColor="#e8fbff" /><stop offset=".45" stopColor="#4fd8ff" /><stop offset="1" stopColor="#2454ff" stopOpacity="0" /></radialGradient>
+          <linearGradient id="bvPin" x1="0" y1="0" x2="1" y2="1"><stop stopColor="var(--azul-palido)" /><stop offset=".5" stopColor="#2f66ff" /><stop offset="1" stopColor="#1536c8" /></linearGradient>
+          <radialGradient id="bvNucleo"><stop stopColor="#e8fbff" /><stop offset=".45" stopColor="#4fd8ff" /><stop offset="1" stopColor="var(--azul)" stopOpacity="0" /></radialGradient>
           <filter id="bvBrillo" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
         <ellipse cx="75" cy="162" rx="30" ry="5" fill="#000" opacity=".35" />
-        <ellipse className="bv-onda" cx="75" cy="162" rx="40" ry="8" fill="none" stroke="#5ee7ff" strokeWidth="1.6" />
-        <ellipse className="bv-onda b" cx="75" cy="162" rx="40" ry="8" fill="none" stroke="#5ee7ff" strokeWidth="1.6" />
+        <ellipse className="bv-onda" cx="75" cy="162" rx="40" ry="8" fill="none" stroke="var(--azul-claro-vivo)" strokeWidth="1.6" />
+        <ellipse className="bv-onda b" cx="75" cy="162" rx="40" ry="8" fill="none" stroke="var(--azul-claro-vivo)" strokeWidth="1.6" />
         <path d="M75 6C42 6 16 31 16 63c0 40 47 90 56 100a4 4 0 0 0 6 0c9-10 56-60 56-100C134 31 108 6 75 6z" fill="url(#bvPin)" />
         <path d="M75 6C42 6 16 31 16 63c0 40 47 90 56 100a4 4 0 0 0 6 0c9-10 56-60 56-100C134 31 108 6 75 6z" fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth="1.5" />
         <circle cx="75" cy="62" r="27" fill="#fff" />
         <circle cx="75" cy="62" r="27" fill="none" stroke="#9fb6ee" strokeOpacity=".6" />
         <circle className="bv-nucleo" cx="75" cy="62" r="17" fill="url(#bvNucleo)" filter="url(#bvBrillo)" />
-        <circle cx="75" cy="62" r="7" fill="#2454ff" />
+        <circle cx="75" cy="62" r="7" fill="var(--azul)" />
         <path d="M34 42q22-26 54-22" stroke="#fff" strokeOpacity=".5" strokeWidth="7" strokeLinecap="round" fill="none" />
       </svg>
     </div>
@@ -151,7 +151,7 @@ export function PantallaCrearUsuario({ usuario, onListo, onSalir }) {
   return (
     <div className="bv"><div className="bv-fondo" aria-hidden="true"><i /><i /><i /></div>
       <div className="bv-pantalla">
-        <div className="bv-barra"><Marca />{onSalir && <button className="bv-link" style={{ marginLeft: "auto", color: "#bbd1fb", fontSize: ".85rem" }} onClick={onSalir}>Salir</button>}</div>
+        <div className="bv-barra"><Marca />{onSalir && <button className="bv-link" style={{ marginLeft: "auto", color: "var(--azul-palido)", fontSize: ".85rem" }} onClick={onSalir}>Salir</button>}</div>
         <div className="bv-hoja">
           <h2>Último paso: creá tu usuario</h2>
           <p className="bv-sub">{usuario?.conClave ? "Elegí un usuario para entrar más fácil. Tu contraseña de siempre no cambia." : "Con tu usuario y contraseña vas a poder entrar a Mi Zona cuando quieras, además de Google."}</p>
@@ -192,7 +192,7 @@ export function PantallaBienvenida({ onLogged }) {
     try { token = await pedirCuentaGoogle(hint); } catch (e) { if (!e.cancelado && !(enSilencio && e.bloqueada)) setErrorGoogle(e.message); return; }
     setBusy(true);
     try {
-      const r = await loginConGoogle(token, modo);
+      const r = await loginConGoogle(token, modo, hint);
       if (modo === "registro" && !r.usuario?.usuario) { setDatosGoogle(r); setBusy(false); ir("crear"); return; }
       onLogged(r.usuario);
     } catch (e) { setErrorGoogle(e.message); setBusy(false); }
@@ -210,8 +210,7 @@ export function PantallaBienvenida({ onLogged }) {
       setBusy(false);
       if (r.paso === "crear") { setError("No encontramos una cuenta con ese correo. Tocá “Registrarme” para crearla."); return; }
       if (r.paso === "clave") { setPaso("clave"); return; }
-      setPaso("google");
-      conGoogle("login", v.toLowerCase(), true);
+      setPaso("google"); // paso aparte: Google pide ahí la contraseña del correo; no se entra solo
     } catch (err) { setError(err.message); setBusy(false); }
   };
   const entrar = async (e) => {
@@ -261,8 +260,8 @@ export function PantallaBienvenida({ onLogged }) {
             ) : paso === "google" ? (
               <div className="bv-form">
                 <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setErrorGoogle(""); }}>Cambiar</button></div>
-                <button className="bv-google" onClick={() => conGoogle("login", ident.trim().toLowerCase())} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Continuar con Google"}</button>
-                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Google te va a pedir la contraseña de ese correo en su propia página. Mi Zona nunca la ve.</p>
+                <button className="bv-google" onClick={() => conGoogle("login", ident.trim().toLowerCase())} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Continuar con contraseña del correo"}</button>
+                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Tocá el botón y Google te va a pedir la contraseña de ese correo en su propia página. Mi Zona nunca la ve.</p>
               </div>
             ) : (
               <form className="bv-form" onSubmit={entrar} noValidate>

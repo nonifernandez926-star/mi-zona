@@ -35,7 +35,7 @@ function etiquetaFecha(iso) {
   const hoy = hoyISO();
   if (!iso) return { texto: "Sin fecha", color: "#5B6482", bg: "#F1F4F9" };
   if (iso < hoy) return { texto: "Vencida", color: "#B42318", bg: "#FDE7E4" };
-  if (iso === hoy) return { texto: "Hoy", color: "#1D4ED8", bg: "#DBEAFE" };
+  if (iso === hoy) return { texto: "Hoy", color: "var(--azul-g2)", bg: "#DBEAFE" };
   if (iso === sumarDias(hoy, 1)) return { texto: "Mañana", color: "#5B6482", bg: "#F1F4F9" };
   return { texto: new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).replace(".", ""), color: "#5B6482", bg: "#F1F4F9" };
 }
@@ -66,13 +66,13 @@ export function RecordatoriosToast({ lista, onCerrar, onAbrir }) {
   return (
     <div className="fixed left-0 right-0 flex flex-col items-center gap-2 px-3 pointer-events-none" style={{ top: 10, zIndex: 120 }}>
       {lista.slice(0, 3).map((r) => (
-        <div key={r.id} className="pointer-events-auto w-full max-w-sm flex items-center gap-3 px-3.5 py-3" style={{ borderRadius: 16, background: "#0B1437", color: "#fff", boxShadow: "0 12px 30px rgba(5,20,45,0.4)", animation: "zona-subir .35s cubic-bezier(0.22,1,0.36,1) both" }} data-conservar-color>
+        <div key={r.id} className="pointer-events-auto w-full max-w-sm flex items-center gap-3 px-3.5 py-3" style={{ borderRadius: 16, background: "var(--azul-oscuro)", color: "#fff", boxShadow: "0 12px 30px rgba(5,20,45,0.4)", animation: "zona-subir .35s cubic-bezier(0.22,1,0.36,1) both" }} data-conservar-color>
           <span className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#ffffff1f" }}><Bell size={17} color="#FFD27A" /></span>
           <button className="flex-1 min-w-0 text-left" onClick={() => onAbrir(r)}>
-            <span className="block text-[11px] font-semibold" style={{ color: "#9BBBF7" }}>{r.tipo === "tarea" ? "Tarea pendiente" : "Evento próximo"}</span>
+            <span className="block text-[11px] font-semibold" style={{ color: "var(--azul-palido)" }}>{r.tipo === "tarea" ? "Tarea pendiente" : "Evento próximo"}</span>
             <span className="block text-sm font-semibold truncate">{r.titulo}{r.hora ? ` · ${r.hora}` : ""}</span>
           </button>
-          <button onClick={() => onCerrar(r.id)} aria-label="Cerrar"><X size={16} color="#B8C9EA" /></button>
+          <button onClick={() => onCerrar(r.id)} aria-label="Cerrar"><X size={16} color="var(--azul-palido)" /></button>
         </div>
       ))}
     </div>
@@ -131,7 +131,7 @@ function Check2({ marcado, onClick, label = "Marcar" }) {
   );
 }
 
-function Chip({ children, color = "#2350F5", bg = "#EDF1FF" }) {
+function Chip({ children, color = "var(--azul)", bg = "var(--azul-suave)" }) {
   return <span className="text-[11px] font-semibold px-2.5 py-0.5" style={{ borderRadius: 999, background: bg, color, letterSpacing: ".01em" }}>{children}</span>;
 }
 
@@ -221,7 +221,7 @@ function FormularioItem({ inicial, perfil, onClose, onGuardado, alDevolver }) {
         {!esNuevo && !alDevolver && (
           <button onClick={eliminar} className="px-4 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>Eliminar</button>
         )}
-        <button onClick={guardar} disabled={guardando} className="flex-1 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", opacity: guardando ? 0.6 : 1, boxShadow: "0 8px 18px rgba(35,80,245,.3)" }}>
+        <button onClick={guardar} disabled={guardando} className="flex-1 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", opacity: guardando ? 0.6 : 1, boxShadow: "0 8px 18px rgba(var(--azul-rgb),.3)" }}>
           {guardando ? "Guardando..." : alDevolver ? "Listo" : "Guardar"}
         </button>
       </div>
@@ -241,7 +241,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
     return (
       <Sheet titulo="No encontré nada" onClose={onClose}>
         <p className="text-sm" style={{ color: "#2B3768", lineHeight: 1.5 }}>{resultado.aclaraciones || "No pude encontrar eventos ni tareas. Probá con otra foto más nítida o escribilo de otra forma."}</p>
-        <button onClick={onClose} className="w-full py-3 mt-5 text-sm font-semibold" style={{ borderRadius: 14, background: "#2350F5", color: "#fff" }}>Cerrar</button>
+        <button onClick={onClose} className="w-full py-3 mt-5 text-sm font-semibold" style={{ borderRadius: 14, background: "var(--azul)", color: "#fff" }}>Cerrar</button>
       </Sheet>
     );
   }
@@ -268,7 +268,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
             <div key={n} className="flex items-start gap-3 p-3" style={{ borderRadius: 16, border: `1.5px ${i._marcado ? "solid" : "dashed"} ${i.confianza === "baja" ? "#F5C76B" : "#DCE4F8"}`, background: i.confianza === "baja" ? "#FFFCF3" : "#fff", opacity: i._marcado ? 1 : 0.55 }}>
               <Check2 marcado={i._marcado} onClick={() => setItems((l) => l.map((x, k) => (k === n ? { ...x, _marcado: !x._marcado } : x)))} label="Incluir" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-snug">{i.titulo} <Chip bg={i.tipo === "tarea" ? "#FFEDD5" : "#EDF1FF"} color={i.tipo === "tarea" ? "#C2410C" : "#2350F5"}>{i.tipo === "tarea" ? "Tarea" : "Evento"}</Chip></p>
+                <p className="text-sm font-semibold leading-snug">{i.titulo} <Chip bg={i.tipo === "tarea" ? "#FFEDD5" : "var(--azul-suave)"} color={i.tipo === "tarea" ? "#C2410C" : "var(--azul)"}>{i.tipo === "tarea" ? "Tarea" : "Evento"}</Chip></p>
                 <p className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5" style={{ color: "#5B6482" }}>
                   <span className="flex items-center gap-1"><Clock size={12} /> {i.fecha ? fechaLinda(i.fecha) : "Sin fecha"}{i.hora ? ` · ${i.hora}` : ""}</span>
                   {i.persona && <span className="flex items-center gap-1"><User size={12} /> {i.persona}</span>}
@@ -276,7 +276,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
                 {i.notas && <p className="text-xs mt-1" style={{ color: "#5B6482" }}>{i.notas}</p>}
                 {i.confianza === "baja" && <p className="text-xs font-semibold mt-1.5" style={{ color: "#B45309" }}>No estoy seguro de esta lectura: revisala.</p>}
                 {i.textoOriginal && <p className="text-[11px] mt-1 italic" style={{ color: "#64748B" }}>Leí: “{i.textoOriginal}”</p>}
-                <button onClick={() => setEditando(n)} className="text-xs font-semibold mt-1.5" style={{ color: "#2350F5" }}>Editar</button>
+                <button onClick={() => setEditando(n)} className="text-xs font-semibold mt-1.5" style={{ color: "var(--azul)" }}>Editar</button>
               </div>
             </div>
           ))}
@@ -284,7 +284,7 @@ function PropuestasModal({ resultado, origen, perfil, onClose, onGuardado }) {
         {error && <p className="text-xs mt-3" style={{ color: "#C1443A" }}>{error}</p>}
         <div className="flex gap-2.5 mt-5">
           <button onClick={onClose} className="px-4 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>Descartar</button>
-          <button onClick={guardar} disabled={!marcados || guardando} className="flex-1 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", opacity: !marcados || guardando ? 0.5 : 1, boxShadow: "0 8px 18px rgba(35,80,245,.3)" }}>
+          <button onClick={guardar} disabled={!marcados || guardando} className="flex-1 py-3 text-sm font-semibold" style={{ borderRadius: 14, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", opacity: !marcados || guardando ? 0.5 : 1, boxShadow: "0 8px 18px rgba(var(--azul-rgb),.3)" }}>
             {guardando ? "Guardando..." : `Agregar a la agenda (${marcados})`}
           </button>
         </div>
@@ -321,7 +321,7 @@ function FotoPrevia({ perfil, onElegir, onClose }) {
           </a>
         </div>
       )}
-      <button onClick={onElegir} disabled={sinCupo} className="w-full py-3 mt-4 text-sm font-semibold flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", opacity: sinCupo ? 0.45 : 1, boxShadow: "0 8px 18px rgba(35,80,245,.3)" }}>
+      <button onClick={onElegir} disabled={sinCupo} className="w-full py-3 mt-4 text-sm font-semibold flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", opacity: sinCupo ? 0.45 : 1, boxShadow: "0 8px 18px rgba(var(--azul-rgb),.3)" }}>
         <Camera size={16} /> Elegir foto
       </button>
     </Sheet>
@@ -355,7 +355,7 @@ function MensajeModal({ onClose, onResultado }) {
 /* ---------- tarjetas ---------- */
 function TarjetaEvento({ e, proximo, pasado, onClick }) {
   return (
-    <button onClick={onClick} className="zona-tarjeta w-full flex gap-3 p-3 text-left" style={{ ...CARD, borderLeft: `4px solid ${proximo ? "#7A4F9E" : "#2350F5"}`, opacity: pasado ? 0.55 : 1, background: proximo ? "linear-gradient(135deg,#FAF7FF,#fff)" : "#fff" }}>
+    <button onClick={onClick} className="zona-tarjeta w-full flex gap-3 p-3 text-left" style={{ ...CARD, borderLeft: `4px solid ${proximo ? "#7A4F9E" : "var(--azul)"}`, opacity: pasado ? 0.55 : 1, background: proximo ? "linear-gradient(135deg,#FAF7FF,#fff)" : "#fff" }}>
       <span className="shrink-0 text-center" style={{ width: 50 }}>
         <span className="block text-sm font-bold leading-tight" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{e.hora || "Todo el día"}</span>
         {e.hora && e.duracionMinutos ? <span className="block text-[10px]" style={{ color: "#64748B" }}>{e.duracionMinutos} min</span> : null}
@@ -403,7 +403,7 @@ const Vacio = ({ Icon = CalendarDays, titulo, texto }) => (
 const SeccionTitulo = ({ children, contador }) => (
   <p className="flex items-center gap-2 mt-6 mb-2.5 px-0.5" style={{ ...TITULO, fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#5B6482" }}>
     {children}
-    {contador ? <span className="text-[11px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: "#2350F5", color: "#fff" }}>{contador}</span> : null}
+    {contador ? <span className="text-[11px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: "var(--azul)", color: "#fff" }}>{contador}</span> : null}
   </p>
 );
 
@@ -488,7 +488,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   const proximo = hoy ? hoy.eventos.find((e) => e.hora && minutosDe(e.hora) >= ahoraMin) : null;
 
   const acciones = [
-    { Icon: CalendarDays, t: "Evento", color: "#2350F5", bg: "#EDF1FF", f: () => setFormulario({ tipo: "evento", fecha: hoyISO() }) },
+    { Icon: CalendarDays, t: "Evento", color: "var(--azul)", bg: "var(--azul-suave)", f: () => setFormulario({ tipo: "evento", fecha: hoyISO() }) },
     { Icon: ListChecks, t: "Tarea", color: "#16A34A", bg: "#DCFCE7", f: () => setFormulario({ tipo: "tarea" }) },
     { Icon: Camera, t: "Desde foto", color: "#EA580C", bg: "#FFEDD5", f: () => (aiOk ? setFotoPrevia(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
     { Icon: MessageSquare, t: "Desde mensaje", color: "#7A4F9E", bg: "#EDE3F8", f: () => (aiOk ? setMensajeAbierto(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
@@ -497,14 +497,14 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
       {/* portada */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", padding: "16px 16px 26px" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", padding: "16px 16px 26px" }}>
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <BotonAtras onClick={onBack} size={38} />
             <p className="flex-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi agenda</p>
           </div>
-          <p className="text-xs" style={{ color: "#B8C9EA" }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>
+          <p className="text-xs" style={{ color: "var(--azul-palido)" }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>
           <div className="flex items-end justify-between gap-3 mt-1">
             <div className="min-w-0">
               <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 23, color: "#fff", lineHeight: 1.15 }}>{fechaLinda(hoyISO())}</p>
@@ -514,7 +514,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
             </div>
             <span className="flex flex-col items-center justify-center shrink-0" style={{ width: 62, height: 62, borderRadius: 20, background: "#ffffff1f", border: "1px solid #ffffff33" }}>
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1 }}>{hoy ? hoy.eventos.length : "·"}</span>
-              <span className="text-[9px] uppercase mt-0.5" style={{ color: "#B8C9EA", letterSpacing: 0.6 }}>hoy</span>
+              <span className="text-[9px] uppercase mt-0.5" style={{ color: "var(--azul-palido)", letterSpacing: 0.6 }}>hoy</span>
             </span>
           </div>
         </div>
@@ -522,9 +522,9 @@ export function AgendaScreen({ negocioNombre, onBack }) {
 
       <div className="max-w-3xl mx-auto px-4" style={{ marginTop: -14, paddingBottom: 40 }}>
         {pushEstado === "inactivo" && (
-          <div className="flex items-center justify-between gap-3 px-3.5 py-3 mb-3" style={{ borderRadius: 16, background: "#EDF1FF", border: "1px solid #CFE0FB" }}>
+          <div className="flex items-center justify-between gap-3 px-3.5 py-3 mb-3" style={{ borderRadius: 16, background: "var(--azul-suave)", border: "1px solid #CFE0FB" }}>
             <span className="flex items-center gap-2 text-xs font-semibold" style={{ color: "#1D3FB5", lineHeight: 1.4 }}><Bell size={15} className="shrink-0" /> Activá las notificaciones para que te avisemos de tus eventos, incluso con la app cerrada.</span>
-            <button onClick={activarAvisos} className="text-xs font-semibold px-3 py-1.5 shrink-0" style={{ borderRadius: 20, background: "#2350F5", color: "#fff" }}>Activar</button>
+            <button onClick={activarAvisos} className="text-xs font-semibold px-3 py-1.5 shrink-0" style={{ borderRadius: 20, background: "var(--azul)", color: "#fff" }}>Activar</button>
           </div>
         )}
 
@@ -576,14 +576,14 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <div className="flex p-1 mb-4" style={{ borderRadius: 16, background: "#E3E9F5" }}>
           {[{ id: "hoy", t: "Hoy" }, { id: "semana", t: "Semana" }, { id: "tareas", t: "Tareas" }].map((o) => (
             <button key={o.id} onClick={() => setVista(o.id)} className="flex-1 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "#2350F5" : "#5B6482", boxShadow: vista === o.id ? "0 1px 2px rgba(11,20,55,.10), 0 4px 10px -2px rgba(11,20,55,.14)" : "none" }}>
+              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "var(--azul)" : "#5B6482", boxShadow: vista === o.id ? "0 1px 2px rgba(11,20,55,.10), 0 4px 10px -2px rgba(11,20,55,.14)" : "none" }}>
               {o.t}
             </button>
           ))}
         </div>
 
         {error && <p className="text-sm p-3 mb-3" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>{error}</p>}
-        {cargando && !datos && <p className="text-sm text-center py-10 flex flex-col items-center gap-3 font-medium" style={{ color: "#5B6482" }}><span style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid #E3E7F1", borderTopColor: "#2350F5", animation: "zona-giro .8s linear infinite" }} />Cargando...</p>}
+        {cargando && !datos && <p className="text-sm text-center py-10 flex flex-col items-center gap-3 font-medium" style={{ color: "#5B6482" }}><span style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid #E3E7F1", borderTopColor: "var(--azul)", animation: "zona-giro .8s linear infinite" }} />Cargando...</p>}
 
         {/* HOY */}
         {vista === "hoy" && hoy && (
@@ -604,7 +604,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
             {hoy.tareas.length ? (
               <div className="flex flex-col gap-2.5">
                 {hoy.tareas.slice(0, 8).map((t) => <TarjetaTarea key={t._id} t={t} onToggle={alternarTarea} onClick={() => setFormulario(t)} />)}
-                {hoy.tareas.length > 8 && <button onClick={() => setVista("tareas")} className="text-sm font-semibold py-2.5" style={{ borderRadius: 14, background: "#EDF1FF", color: "#2350F5" }}>Ver todas las tareas</button>}
+                {hoy.tareas.length > 8 && <button onClick={() => setVista("tareas")} className="text-sm font-semibold py-2.5" style={{ borderRadius: 14, background: "var(--azul-suave)", color: "var(--azul)" }}>Ver todas las tareas</button>}
               </div>
             ) : <Vacio Icon={ListChecks} titulo="No tenés tareas pendientes" texto="¡Todo al día! 🎉" />}
           </>
@@ -614,8 +614,8 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         {vista === "semana" && datos?.dias && datos.dias.map((d) => (
           <div key={d.fecha} className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="flex items-center gap-2 text-sm font-semibold">{fechaLinda(d.fecha)} {d.fecha === hoyISO() && <Chip color="#1D4ED8" bg="#DBEAFE">Hoy</Chip>}</p>
-              <button onClick={() => setFormulario({ tipo: "evento", fecha: d.fecha })} aria-label="Agregar evento este día" className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "#EDF1FF" }}><Plus size={15} color="#2350F5" /></button>
+              <p className="flex items-center gap-2 text-sm font-semibold">{fechaLinda(d.fecha)} {d.fecha === hoyISO() && <Chip color="var(--azul-g2)" bg="#DBEAFE">Hoy</Chip>}</p>
+              <button onClick={() => setFormulario({ tipo: "evento", fecha: d.fecha })} aria-label="Agregar evento este día" className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "var(--azul-suave)" }}><Plus size={15} color="var(--azul)" /></button>
             </div>
             {d.eventos.length ? (
               <div className="flex flex-col gap-2.5">{d.eventos.map((e) => <TarjetaEvento key={e._id} e={e} onClick={() => setFormulario(e)} />)}</div>
@@ -638,7 +638,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
                   <SeccionTitulo>Sugeridas para tu rubro{perfil?.rubro ? ` (${perfil.rubro})` : ""}</SeccionTitulo>
                   <div className="flex flex-wrap gap-2">
                     {sugeridas.map((t) => (
-                      <button key={t} onClick={() => setFormulario({ tipo: "tarea", titulo: t })} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 text-left" style={{ borderRadius: 20, border: "1.5px dashed #B8C6F5", background: "#fff", color: "#2350F5" }}>
+                      <button key={t} onClick={() => setFormulario({ tipo: "tarea", titulo: t })} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 text-left" style={{ borderRadius: 20, border: "1.5px dashed #B8C6F5", background: "#fff", color: "var(--azul)" }}>
                         <Plus size={13} /> {t}
                       </button>
                     ))}
@@ -664,7 +664,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         <Sheet titulo="Leyendo tu agenda" onClose={() => foto !== "cargando" && setFoto(null)}>
           {foto === "cargando" ? (
             <div className="flex flex-col items-center text-center gap-2 py-6">
-              <span style={{ width: 36, height: 36, borderRadius: "50%", border: "4px solid #E3E8FA", borderTopColor: "#2350F5", animation: "agGirar 0.8s linear infinite" }} />
+              <span style={{ width: 36, height: 36, borderRadius: "50%", border: "4px solid #E3E8FA", borderTopColor: "var(--azul)", animation: "agGirar 0.8s linear infinite" }} />
               <style>{"@keyframes agGirar { to { transform: rotate(360deg); } }"}</style>
               <p className="text-sm font-semibold">Analizando la foto...</p>
               <p className="text-xs" style={{ color: "#5B6482" }}>Puede tardar unos segundos. Después vas a poder revisar todo antes de guardar.</p>
@@ -672,7 +672,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
           ) : (
             <>
               <p className="text-sm p-3" style={{ borderRadius: 14, background: "#FDE7E4", color: "#B42318" }}>{foto.error}</p>
-              <button onClick={() => setFoto(null)} className="w-full py-3 mt-4 text-sm font-semibold" style={{ borderRadius: 14, background: "#2350F5", color: "#fff" }}>Cerrar</button>
+              <button onClick={() => setFoto(null)} className="w-full py-3 mt-4 text-sm font-semibold" style={{ borderRadius: 14, background: "var(--azul)", color: "#fff" }}>Cerrar</button>
             </>
           )}
         </Sheet>

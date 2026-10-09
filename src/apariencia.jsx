@@ -48,7 +48,7 @@ export function AparienciaScreen({ onBack }) {
 
       {/* vista previa en vivo */}
       <div className="overflow-hidden mb-1" style={{ ...TARJETA_SEG }}>
-        <div className="flex items-center gap-2 px-4 py-2.5" data-conservar-color style={{ background: "#0B1437" }}>
+        <div className="flex items-center gap-2 px-4 py-2.5" data-conservar-color style={{ background: "var(--azul-oscuro)" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--azul)" }} />
           <b className="text-xs" style={{ color: "#fff" }}>Así se va a ver</b>
         </div>
@@ -96,7 +96,7 @@ export function AparienciaScreen({ onBack }) {
           derecha={<Interruptor activo={cfg.movimiento === "reducido"} onChange={(v) => guardarApariencia({ movimiento: v ? "reducido" : "normal" })} etiqueta="Reducir animaciones" />} />
       </div>
 
-      <button onClick={restablecerApariencia} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mt-5" style={{ borderRadius: 14, background: "#EDF1FF", color: "var(--azul)" }}>
+      <button onClick={restablecerApariencia} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mt-5" style={{ borderRadius: 14, background: "var(--azul-suave)", color: "var(--azul)" }}>
         <RotateCcw size={16} /> Restablecer apariencia
       </button>
     </div>

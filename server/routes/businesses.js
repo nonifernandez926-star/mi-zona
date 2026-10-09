@@ -25,14 +25,20 @@ function limpiarSalida(doc, { completo = false } = {}) {
   return obj;
 }
 
+// Último barrido de negocios vencidos (se hace a lo sumo una vez por minuto, no en cada visita)
+let ultimoBarrido = 0;
+
 // Traer todos los negocios (público: sin datos internos)
 router.get("/", async (req, res) => {
   try {
     // Los negocios con suscripción propia que ya vencieron dejan de mostrarse
-    await Business.updateMany(
-      { ownerId: { $exists: true, $nin: ["", null] }, status: "active", expiresAt: { $lt: hoyISO() } },
-      { $set: { status: "inactive" } }
-    );
+    if (Date.now() - ultimoBarrido > 60 * 1000) {
+      ultimoBarrido = Date.now();
+      await Business.updateMany(
+        { ownerId: { $exists: true, $nin: ["", null] }, status: "active", expiresAt: { $lt: hoyISO() } },
+        { $set: { status: "inactive" } }
+      );
+    }
     const list = await Business.find({ pendientePago: { $ne: true } });
     res.json(list.map((b) => limpiarSalida(b)));
   } catch (e) {
@@ -86,7 +92,7 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
     if (body.reviews !== undefined && actor?.tipo === "usuario") {
       const uidActor = String(actor.usuario._id);
       const dejaNueva = Array.isArray(body.reviews) && body.reviews.length > (biz.reviews || []).length;
-      if (!dejaNueva || permitir(`resena|${uidActor}`, 10, 3600 * 1000)) {
+      if (!dejaNueva || (await permitir(`resena|${uidActor}`, 10, 3600 * 1000))) {
         const lista = combinarResenas(biz.reviews || [], body.reviews, { esDueno, usuarioId: uidActor, hoy: hoyISO() });
         // solo se escribe si hay una reseña nueva o una respuesta nueva (así un pedido viejo no pisa reseñas recién llegadas)
         if (lista && JSON.stringify(lista) !== JSON.stringify(biz.reviews || [])) cambios.reviews = lista;
@@ -95,7 +101,7 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
 
     const operacion = {};
     if (Object.keys(cambios).length) operacion.$set = cambios;
-    if (sumaVisita && permitir(`visita|${req.ip}|${biz.id}`, 30, 3600 * 1000)) operacion.$inc = { views: 1 };
+    if (sumaVisita && (await permitir(`visita|${req.ip}|${biz.id}`, 30, 3600 * 1000, { soloMemoria: true }))) operacion.$inc = { views: 1 };
     if (!Object.keys(operacion).length) return res.json(limpiarSalida(biz, { completo: esDueno }));
     const updated = await Business.findOneAndUpdate({ id: biz.id }, operacion, { new: true });
     res.json(limpiarSalida(updated, { completo: esDueno }));

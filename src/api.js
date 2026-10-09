@@ -73,7 +73,7 @@ export function pedirCuentaGoogle(hint) {
     const cliente = oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: "openid email profile",
-      ...(hint ? { hint, prompt: "" } : { prompt: "select_account" }),
+      ...(hint ? { hint, login_hint: hint, prompt: "login" } : { prompt: "select_account" }), // con correo escrito: Google vuelve a pedir la contraseña de ese correo
       callback: (r) => {
         if (r?.access_token) resolve(r.access_token);
         else reject(Object.assign(new Error(r?.error_description || r?.error || "No se pudo entrar con Google."), { cancelado: r?.error === "access_denied" }));
@@ -90,12 +90,13 @@ export function pedirCuentaGoogle(hint) {
 
 /* ---------- sesión ---------- */
 
-export async function loginConGoogle(accessToken, modo = "registro") {
+export async function loginConGoogle(accessToken, modo = "registro", emailEsperado) {
   let r;
   try {
-    r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ accessToken, modo }) }, { "Content-Type": "application/json" });
+    r = await pedirJSON("/auth/google", { method: "POST", body: JSON.stringify({ accessToken, modo, ...(emailEsperado ? { emailEsperado } : {}) }) }, { "Content-Type": "application/json" });
   } catch (e) {
     if (e.status === undefined) e.message = "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo."; // fetch falló (sin conexión, CORS o servidor caído)
+    else if (e.datos?.mensaje) e.message = e.datos.mensaje; // cuenta_existente / cuenta_inexistente
     else if (e.datos?.detalle) e.message = `${e.message} (${e.datos.detalle})`;
     throw e;
   }
@@ -117,14 +118,12 @@ async function accesoConCorreo(ruta, cuerpo) {
 }
 // Paso 1 del ingreso con correo: { paso: "clave" | "crear" | "google" }
 export const revisarCorreo = (email) => pedirJSON("/auth/correo", { method: "POST", body: JSON.stringify({ email }) }, { "Content-Type": "application/json" });
-export const registrarConCorreo = (nombre, email, password) => accesoConCorreo("/auth/registro", { nombre, email, password });
-export const entrarConCorreo = (email, password) => accesoConCorreo("/auth/login", { email, password });
 
 // Enlace para descargar Mi Asistente. Poné el link exacto en Netlify con la variable VITE_PLAY_STORE_URL.
 // Contacto directo opcional en Soporte: si no se configuran, esos botones no se muestran. VITE_SOPORTE_WHATSAPP va solo con números y código de país (ej. 5491122334455).
 export const SOPORTE_EMAIL = import.meta.env.VITE_SOPORTE_EMAIL || "";
 export const SOPORTE_WHATSAPP = String(import.meta.env.VITE_SOPORTE_WHATSAPP || "").replace(/\D/g, "");
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.1.0";
 
 export const PLAY_STORE_URL = import.meta.env.VITE_PLAY_STORE_URL || "https://play.google.com/store/search?q=Mi%20Asistente&c=apps";
 
@@ -239,12 +238,46 @@ export async function activarPush() {
   await enviarUsuarioJSON("/push/suscribirse", "POST", { subscription: sub.toJSON() });
 }
 
-export async function desactivarPush() {
-  const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+// Sin argumentos: desactiva este dispositivo. Con "endpoint": quita ese dispositivo de la cuenta (y, si es este, también deja de recibir).
+export async function desactivarPush(endpoint) {
+  const reg = await navigator.serviceWorker.getRegistration("/sw.js").catch(() => null);
   const sub = await reg?.pushManager.getSubscription();
-  if (!sub) return;
-  await enviarUsuarioJSON("/push/cancelar", "POST", { endpoint: sub.endpoint }).catch(() => {});
-  await sub.unsubscribe();
+  const ep = endpoint || sub?.endpoint;
+  if (ep) await enviarUsuarioJSON("/push/cancelar", "POST", { endpoint: ep }).catch(() => {});
+  if (sub && (!endpoint || endpoint === sub.endpoint)) await sub.unsubscribe();
+}
+
+// Pantalla Ajustes → Notificaciones: estado en el servidor, tipos de aviso y aviso de prueba
+export const pushApi = {
+  estado: () => getUsuarioJSON("/push/estado"),
+  guardar: (cuerpo) => enviarUsuarioJSON("/push/preferencias", "PUT", cuerpo).then((r) => r.preferencias),
+  probar: () => enviarUsuarioJSON("/push/probar", "POST", {}),
+};
+
+// Avisos dentro de la app (cartel y sonido): se guardan en este dispositivo
+const AVISOS_KEY = "miZonaAvisosApp";
+export function getAvisosApp() {
+  try { return { cartel: true, sonido: true, ...JSON.parse(localStorage.getItem(AVISOS_KEY) || "{}") }; } catch { return { cartel: true, sonido: true }; }
+}
+export function setAvisosApp(parcial) {
+  const nuevo = { ...getAvisosApp(), ...parcial };
+  try { localStorage.setItem(AVISOS_KEY, JSON.stringify(nuevo)); } catch { /* sin almacenamiento */ }
+  return nuevo;
+}
+// Dos notas suaves, como el aviso de Mi Asistente. Falla en silencio si el navegador no deja reproducir sonido todavía.
+export function sonidoAviso() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx(); const t0 = ctx.currentTime;
+    [[880, 0], [1175, 0.14]].forEach(([f, d]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(0.18, t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.32);
+      o.connect(g); g.connect(ctx.destination); o.start(t0 + d); o.stop(t0 + d + 0.35);
+    });
+    setTimeout(() => ctx.close().catch(() => {}), 900);
+  } catch { /* sin sonido */ }
 }
 
 /* ---------- privacidad ---------- */

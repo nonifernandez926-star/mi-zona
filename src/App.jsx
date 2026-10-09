@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useAtrasDeCapas } from "./atras.js";
+import { QrLocal } from "./qr.jsx";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -14,7 +16,7 @@ import {
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, seguridadApi, vincularSesionCliente, traerMisConversaciones, soporteApi,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, soporteApi,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
@@ -44,7 +46,7 @@ const CATEGORIES = [
   { id: "agro", label: "Agro e insumos rurales", icon: Tractor, color: "#5A7A3C", quick: false },
   { id: "eventos", label: "Eventos y fiestas", icon: PartyPopper, color: "#A6437A", quick: false },
   { id: "inmobiliaria", label: "Inmobiliaria", icon: Building2, color: "#3B5266", quick: false },
-  { id: "turismo", label: "Turismo y alojamiento", icon: Palmtree, color: "#2350F5", quick: false },
+  { id: "turismo", label: "Turismo y alojamiento", icon: Palmtree, color: "var(--azul)", quick: false },
   { id: "deportes", label: "Deportes y recreación", icon: Dumbbell, color: "#C1443A", quick: false },
   { id: "talleres", label: "Talleres y reparaciones", icon: Hammer, color: "#4A5568", quick: false },
   { id: "almacenes", label: "Almacenes y supermercados", icon: ShoppingCart, color: "#3C8558", quick: false },
@@ -445,6 +447,10 @@ function fmtFechaAR(iso) {
 
 const NOTIF_LEIDAS_KEY = "miZonaNotifLeidas";
 const NOTIF_ELIMINADAS_KEY = "miZonaNotifEliminadas";
+// Color con transparencia: funciona con hex ("#1877F2") y con variables del color de acento ("var(--azul)")
+const tinte = (c, pct) => (String(c).startsWith("var(") ? `color-mix(in srgb, ${c} ${pct}%, transparent)` : `${c}${Math.round(pct * 2.55).toString(16).padStart(2, "0")}`);
+const NOTIF_VISTAS_KEY = "miZonaNotifVistas";
+const NOTIF_BANNER_KEY = "miZonaBannerPush";
 
 function getIdSet(key) {
   try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); }
@@ -454,7 +460,7 @@ function saveIdSet(key, set) {
 }
 
 const NOTIF_TIPOS = {
-  pedido: { Icon: Package, color: "#2350F5", bg: "#EDF1FF" },
+  pedido: { Icon: Package, color: "var(--azul)", bg: "var(--azul-suave)" },
   turno: { Icon: CalendarCheck, color: "#0B1437", bg: "#E4EAF5" },
   promo: { Icon: Tag, color: "#B8703F", bg: "#FBEBD1" },
   historia: { Icon: PartyPopper, color: "#2C9A5F", bg: "#E4F3EA" },
@@ -768,7 +774,7 @@ function Photo({ cat, src, height = 128, radius = "10px 10px 0 0", iconSize = 34
   return (
     <div
       className="flex flex-col items-center justify-center relative overflow-hidden shrink-0 gap-1 px-2 text-center"
-      style={{ height, background: failed ? "#FDF1EF" : `linear-gradient(135deg, ${c?.color}22, ${c?.color}08)`, borderRadius: radius }}
+      style={{ height, background: failed ? "#FDF1EF" : `radial-gradient(120% 90% at 85% 0%, ${c?.color}2e, transparent 60%), linear-gradient(160deg, ${c?.color}1f, ${c?.color}0a 70%, #ffffff00)`, borderRadius: radius }}
     >
       {failed ? (
         <>
@@ -776,7 +782,9 @@ function Photo({ cat, src, height = 128, radius = "10px 10px 0 0", iconSize = 34
           <span className="text-[10px] leading-tight" style={{ color: "#9A3B34" }}>El link de esta foto no funciona</span>
         </>
       ) : (
-        <Icon size={iconSize} color={c?.color} strokeWidth={1.5} />
+        iconSize >= 40
+          ? <span className="flex items-center justify-center" style={{ width: iconSize * 1.9, height: iconSize * 1.9, borderRadius: "30%", background: "#ffffffb8", boxShadow: `0 10px 28px ${c?.color}33, inset 0 0 0 1px ${c?.color}22` }}><Icon size={iconSize} color={c?.color} strokeWidth={1.4} /></span>
+          : <Icon size={iconSize} color={c?.color} strokeWidth={1.5} />
       )}
     </div>
   );
@@ -811,8 +819,8 @@ function StarPicker({ value, onChange }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
-        <button key={n} type="button" onClick={() => onChange(n)}>
-          <Star size={22} color={n <= value ? "#2350F5" : "#D1D5DB"} fill={n <= value ? "#2350F5" : "none"} />
+        <button key={n} type="button" onClick={() => onChange(n)} aria-label={`${n} ${n === 1 ? "estrella" : "estrellas"}`} aria-pressed={n <= value} style={{ padding: 6, margin: -6 }}>
+          <Star size={26} color={n <= value ? "var(--azul)" : "#D1D5DB"} fill={n <= value ? "var(--azul)" : "none"} />
         </button>
       ))}
     </div>
@@ -924,15 +932,15 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
 
   return (
     <div className="fixed inset-0 z-[80]" style={{ backgroundColor: "#F3F5FA", display: "flex", flexDirection: "column" }}>
-      <div style={{ backgroundColor: "#0B1437" }}>
+      <div style={{ backgroundColor: "var(--azul-oscuro)" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
-          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #2350F5, #7FA8F5)" }}>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, var(--azul), var(--azul-claro))" }}>
             <Search size={16} color="#fff" />
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Asistente de búsqueda</p>
-            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>Te ayudo a encontrar lo que necesitás</p>
+            <p className="text-[11px]" style={{ color: "var(--azul-palido)" }}>Te ayudo a encontrar lo que necesitás</p>
           </div>
         </div>
       </div>
@@ -944,7 +952,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
               className="px-3.5 py-2.5 text-sm"
               style={{
                 maxWidth: "85%", borderRadius: 14,
-                backgroundColor: m.rol === "cliente" ? "#2350F5" : "#fff",
+                backgroundColor: m.rol === "cliente" ? "var(--azul)" : "#fff",
                 color: m.rol === "cliente" ? "#fff" : "#0B1437",
                 border: m.rol === "cliente" ? "none" : "1px solid #E3E7F1",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
@@ -966,14 +974,14 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
                       className="flex items-center gap-3 p-3 text-left bg-white"
                       style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 3px 10px rgba(11,20,55,0.07)" }}
                     >
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "#2350F5" }}>
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "var(--azul)" }}>
                         {c?.icon ? <c.icon size={18} color="#fff" /> : <Building2 size={18} color="#fff" />}
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{biz.name}</span>
                         <span className="block text-xs truncate" style={{ color: "#5B6482" }}>{c?.label} · {biz.zone}</span>
                       </span>
-                      <ChevronDown size={14} color="#2350F5" style={{ transform: "rotate(-90deg)" }} />
+                      <ChevronDown size={14} color="var(--azul)" style={{ transform: "rotate(-90deg)" }} />
                     </button>
                   );
                 })}
@@ -1002,7 +1010,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
           <button
             onClick={enviar} disabled={sending || !text.trim()}
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2350F5", opacity: sending || !text.trim() ? 0.5 : 1 }}
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "var(--azul)", opacity: sending || !text.trim() ? 0.5 : 1 }}
           >
             <Send size={16} color="#fff" />
           </button>
@@ -1098,15 +1106,15 @@ function ChatScreen({ biz, onBack }) {
 
   return (
     <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
+      <div className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
-          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "#2350F5", color: "#fff", fontWeight: 700, fontSize: 14 }}>
+          <div className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: "50%", background: c?.color || "var(--azul)", color: "#fff", fontWeight: 700, fontSize: 14 }}>
             {biz.name?.[0]?.toUpperCase()}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{biz.name}</p>
-            <p className="text-[11px] flex items-center gap-1" style={{ color: "#BBD1FB" }}>
+            <p className="text-[11px] flex items-center gap-1" style={{ color: "var(--azul-palido)" }}>
               {tieneAsistenteReal ? "Asistente virtual" : c?.label}
               <span className="inline-flex items-center gap-1 ml-1">
                 <span className="rounded-full" style={{ width: 5, height: 5, background: isOpenNow(biz.weekHours) ? "#2C9A5F" : "#C1443A" }} />
@@ -1124,7 +1132,7 @@ function ChatScreen({ biz, onBack }) {
               className="px-3.5 py-2.5 text-sm"
               style={{
                 maxWidth: "78%", borderRadius: 14,
-                backgroundColor: m.rol === "cliente" ? "#2350F5" : "#fff",
+                backgroundColor: m.rol === "cliente" ? "var(--azul)" : "#fff",
                 color: m.rol === "cliente" ? "#fff" : "#0B1437",
                 border: m.rol === "cliente" ? "none" : "1px solid #E3E7F1",
                 borderBottomRightRadius: m.rol === "cliente" ? 4 : 14,
@@ -1171,7 +1179,7 @@ function ChatScreen({ biz, onBack }) {
           <button
             onClick={enviar} disabled={sending || !text.trim()}
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#2350F5", opacity: sending || !text.trim() ? 0.5 : 1 }}
+            style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "var(--azul)", opacity: sending || !text.trim() ? 0.5 : 1 }}
           >
             <Send size={16} color="#fff" />
           </button>
@@ -1377,7 +1385,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
-  const rankColor = rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B1437";
+  const rankColor = rank === 1 ? "#D98A0B" : rank === 2 ? "#667892" : rank === 3 ? "#B0643A" : "#0B1437";
   return (
     <div
       role="button" tabIndex={0}
@@ -1456,7 +1464,7 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
             onClick={(e) => { e.stopPropagation(); onTrack && onTrack(biz.id, "ubicacion"); }}
             className="flex items-center gap-1.5 text-xs min-w-0 hover:underline" style={{ color: "#5B6482" }}
           >
-            <MapPin size={13} color="#2350F5" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
+            <MapPin size={13} color="var(--azul)" className="shrink-0" /> <span className="truncate">{biz.loc}</span>
           </a>
           <span className="flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#64748B" }}>
             <Eye size={12} /> {fmtNum(biz.views)}
@@ -1482,7 +1490,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   const todayIdx = new Date().getDay();
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showEmpleoDetalle, setShowEmpleoDetalle] = useState(false);
-  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewName, setReviewName] = useState("");
   const [tab, setTab] = useState("info"); // info | opiniones | fotos
@@ -1550,10 +1558,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
   }, [esDueño, tab, biz.id]);
 
   const submitReview = () => {
-    if (!reviewText.trim()) return;
+    if (!reviewText.trim() || !reviewRating) return;
     const ok = onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO(), autorId: getAutorResenasId() });
     if (ok === false) return; // todavía no se registró: no perdemos lo que escribió
-    setReviewText(""); setReviewName(""); setReviewRating(5);
+    setReviewText(""); setReviewName(""); setReviewRating(0);
   };
 
   const TabButton = ({ id, label }) => (
@@ -1589,7 +1597,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               className="absolute flex items-center gap-1 text-xs font-bold px-2.5 py-1.5"
               style={{
                 bottom: 40, right: 16, borderRadius: 20, color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-                background: rank === 1 ? "#F5A623" : rank === 2 ? "#8EA0B8" : rank === 3 ? "#C97B4A" : "#0B1437",
+                background: rank === 1 ? "#D98A0B" : rank === 2 ? "#667892" : rank === 3 ? "#B0643A" : "#0B1437",
               }}
             >
               <Trophy size={13} /> Top #{rank} en tu zona
@@ -1606,9 +1614,9 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onTouchCancel={cancelPress}
                 className="flex items-center justify-center shrink-0 text-xl font-bold overflow-hidden"
                 style={{
-                  width: 66, height: 66, borderRadius: 22, background: c?.color || "#2350F5", color: "#fff",
+                  width: 66, height: 66, borderRadius: 22, background: c?.color || "var(--azul)", color: "#fff",
                   fontFamily: "var(--fuente-titulo)", marginTop: -36, border: "4px solid #fff",
-                  boxShadow: tieneHistorias ? "0 0 0 3px #2350F5, 0 8px 18px rgba(11,20,55,.25)" : "0 8px 18px rgba(11,20,55,.25)",
+                  boxShadow: tieneHistorias ? "0 0 0 3px var(--azul), 0 8px 18px rgba(11,20,55,.25)" : "0 8px 18px rgba(11,20,55,.25)",
                 }}
               >
                 {biz.logo ? <img src={biz.logo} alt="" className="w-full h-full object-cover" /> : biz.name?.[0]?.toUpperCase()}
@@ -1632,7 +1640,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             <div className="grid grid-cols-3 gap-2 mt-4">
               {[
                 { Icon: Star, color: "#F5A623", valor: rating || "—", etiqueta: biz.reviews?.length ? `${biz.reviews.length} reseñas` : "Sin reseñas" },
-                { Icon: Eye, color: "#2350F5", valor: fmtNum(biz.views), etiqueta: "visitas" },
+                { Icon: Eye, color: "var(--azul)", valor: fmtNum(biz.views), etiqueta: "visitas" },
                 { Icon: Heart, color: "#E5484D", valor: fmtNum(biz.vecesFavorito || 0), etiqueta: "guardados" },
               ].map(({ Icon, color, valor, etiqueta }) => (
                 <div key={etiqueta} className="text-center py-2" style={{ borderRadius: 14, background: "#F6F9FD" }}>
@@ -1652,7 +1660,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               const contacto = biz.phone && biz.acceptsWhatsapp
                 ? { Icon: MessageCircle, label: "WhatsApp", color: "#25A06A", href: `https://wa.me/${numeroWhatsapp(biz.phone)}`, track: "contacto" }
                 : biz.phone ? { Icon: Phone, label: "Llamar", color: "#2C9A5F", href: `tel:${soloDigitos(biz.phone)}`, track: "contacto" } : null;
-              const principales = [contacto, { Icon: Navigation, label: "Cómo llegar", color: "#2350F5", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" }].filter(Boolean);
+              const principales = [contacto, { Icon: Navigation, label: "Cómo llegar", color: "var(--azul)", href: mapsLink(biz.loc, biz.zone), track: "ubicacion" }].filter(Boolean);
               const redes = [
                 biz.ig && handle(biz.ig) && { Icon: Instagram, label: "Instagram", color: "#C13584", href: `https://instagram.com/${handle(biz.ig)}`, track: "contacto" },
                 biz.tiktok && handle(biz.tiktok) && { Icon: Music2, label: "TikTok", color: "#111827", href: `https://www.tiktok.com/@${handle(biz.tiktok)}`, track: "contacto" },
@@ -1663,7 +1671,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   href={href} target="_blank" rel="noreferrer"
                   onClick={() => onTrack && onTrack(biz.id, track)}
                   className="flex items-center justify-center gap-2 py-3"
-                  style={{ borderRadius: 14, background: `${color}14`, gridColumn: ancho ? "span 2" : undefined }}
+                  style={{ borderRadius: 14, background: tinte(color, 8), gridColumn: ancho ? "span 2" : undefined }}
                 >
                   <Icon size={17} color={color} />
                   <span className="text-xs font-semibold" style={{ color: "#0B1437" }}>{label}</span>
@@ -1689,13 +1697,13 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
             <button
               onClick={() => setShowEmpleoDetalle(true)}
               className="w-full flex items-center gap-2.5 px-3.5 py-2.5 mb-4 text-left"
-              style={{ borderRadius: 10, background: "#EDF1FF", border: "1px solid #BFD6FB" }}
+              style={{ borderRadius: 10, background: "var(--azul-suave)", border: "1px solid #BFD6FB" }}
             >
-              <Briefcase size={16} color="#2350F5" className="shrink-0" />
+              <Briefcase size={16} color="var(--azul)" className="shrink-0" />
               <span className="flex-1 text-xs" style={{ color: "#0B1437" }}>
                 <b>Buscan personal:</b> {biz.busquedaEmpleo.puesto}
               </span>
-              <ChevronDown size={13} color="#2350F5" style={{ transform: "rotate(-90deg)" }} />
+              <ChevronDown size={13} color="var(--azul)" style={{ transform: "rotate(-90deg)" }} />
             </button>
           )}
           {showEmpleoDetalle && <EmpleoDetalleModal business={biz} onClose={() => setShowEmpleoDetalle(false)} />}
@@ -1717,7 +1725,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   {biz.services?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {biz.services.map((s) => (
-                        <span key={s} className="text-xs px-2 py-1" style={{ background: "#EDF1FF", color: "#0B1437", borderRadius: 20 }}>{s}</span>
+                        <span key={s} className="text-xs px-2 py-1" style={{ background: "var(--azul-suave)", color: "#0B1437", borderRadius: 20 }}>{s}</span>
                       ))}
                     </div>
                   )}
@@ -1787,7 +1795,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                       <div key={d.id} className="p-4" style={{ borderRadius: 18, border: "1px solid #F2C98E", background: "linear-gradient(135deg,#FFF3DC,#FBE3BC)" }}>
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{d.title}</h3>
-                          {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B1437", color: "#2350F5", borderRadius: 20 }}>{d.percent} OFF</span>}
+                          {d.percent && <span className="text-xs font-bold px-2 py-0.5" style={{ background: "#0B1437", color: "var(--azul)", borderRadius: 20 }}>{d.percent} OFF</span>}
                         </div>
                         {d.item && <p className="text-xs mb-1" style={{ color: "#8A5B12" }}>Incluye: {d.item}</p>}
                         {d.desc && <p className="text-sm" style={{ color: "#1F2937" }}>{d.desc}</p>}
@@ -1805,7 +1813,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <div className="bg-white overflow-hidden" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
                   {DAYS.map((day, i) => (
                     <div key={day} className="flex items-center justify-between px-4 py-2.5 text-sm"
-                      style={{ borderTop: i === 0 ? "none" : "1px solid #EEF0F6", backgroundColor: i === todayIdx ? "#EDF1FF" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1437" }}
+                      style={{ borderTop: i === 0 ? "none" : "1px solid #EEF0F6", backgroundColor: i === todayIdx ? "var(--azul-suave)" : "transparent", fontWeight: i === todayIdx ? 600 : 400, color: "#0B1437" }}
                     >
                       <span>{day}{i === todayIdx ? " · hoy" : ""}</span>
                       <span style={{ color: biz.weekHours[i]?.[0] === null ? "#9A3B34" : "#1F2937" }}>{fmtHours(biz.weekHours[i])}</span>
@@ -1821,6 +1829,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               <div className="bg-white p-4 mb-4" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
                 <p className="text-sm font-semibold mb-2" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
+                {!reviewRating && <p className="text-xs mt-1.5" style={{ color: "#5B6482" }}>Tocá una estrella para calificar.</p>}
                 <input
                   value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
                   className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
@@ -1829,12 +1838,12 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
                   rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                 />
-                <button onClick={submitReview} className="text-sm font-semibold px-4 py-2" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 8 }}>
+                <button onClick={submitReview} disabled={!reviewRating || !reviewText.trim()} className="text-sm font-semibold px-5 py-2.5" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 12 }}>
                   Publicar reseña
                 </button>
               </div>
 
-              {avisoReporte && <p role="status" className="text-sm font-medium mb-3 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#EDF1FF", color: "#2B3768", border: "1px solid #D6E3FB" }}>{avisoReporte}</p>}
+              {avisoReporte && <p role="status" className="text-sm font-medium mb-3 px-3.5 py-2.5" style={{ borderRadius: 12, background: "var(--azul-suave)", color: "#2B3768", border: "1px solid #D6E3FB" }}>{avisoReporte}</p>}
               {biz.reviews?.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {[...biz.reviews].reverse().filter((r) => !ocultas.includes(r.id)).map((r) => (
@@ -1843,14 +1852,14 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                         <span className="text-sm font-medium">{r.name}</span>
                         <span className="flex items-center gap-1.5">
                           <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
-                          <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 9, background: reportandoId === r.id ? "#EDF1FF" : "transparent" }}>
+                          <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 9, background: reportandoId === r.id ? "var(--azul-suave)" : "transparent" }}>
                             <Flag size={14} color="#8D95B0" />
                           </button>
                         </span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <Star key={n} size={13} fill={n <= r.rating ? "#2350F5" : "none"} color={n <= r.rating ? "#2350F5" : "#D1D5DB"} />
+                          <Star key={n} size={13} fill={n <= r.rating ? "var(--azul)" : "none"} color={n <= r.rating ? "var(--azul)" : "#D1D5DB"} />
                         ))}
                       </div>
                       <p className="text-sm mb-2" style={{ color: "#1F2937" }}>{r.text}</p>
@@ -1866,10 +1875,10 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                       )}
 
                       {r.respuesta ? (
-                        <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F5FA", borderLeft: "3px solid #2350F5" }}>
+                        <div className="mt-2 p-3" style={{ borderRadius: 8, background: "#F3F5FA", borderLeft: "3px solid var(--azul)" }}>
                           <div className="flex items-center gap-1.5 mb-1">
                             {r.respuesta.esDueño && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#EDF1FF", color: "#2350F5", borderRadius: 6 }}>Respuesta del dueño</span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "var(--azul-suave)", color: "var(--azul)", borderRadius: 6 }}>Respuesta del dueño</span>
                             )}
                             <span className="text-[11px]" style={{ color: "#64748B" }}>{fmtDate(r.respuesta.fecha)}</span>
                           </div>
@@ -1885,7 +1894,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                           <div className="flex gap-2">
                             <button
                               onClick={() => { if (replyText.trim()) { onReplyReview(biz.id, r.id, replyText.trim(), esDueño); setReplyingId(null); setReplyText(""); } }}
-                              className="text-xs font-semibold px-3 py-1.5" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 6 }}
+                              className="text-xs font-semibold px-3 py-1.5" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 6 }}
                             >
                               Responder
                             </button>
@@ -1895,7 +1904,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setReplyingId(r.id); setReplyText(""); }} className="text-xs font-semibold" style={{ color: "#2350F5" }}>
+                        <button onClick={() => { setReplyingId(r.id); setReplyText(""); }} className="text-xs font-semibold" style={{ color: "var(--azul)" }}>
                           Responder
                         </button>
                       )}
@@ -1931,7 +1940,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               <button
                 onClick={() => onOpenChat(biz)}
                 className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full"
-                style={{ background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(35,80,245,.35)" }}
+                style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(var(--azul-rgb),.35)" }}
               >
                 <Sparkles size={16} /> Hablar con el asistente
               </button>
@@ -1975,7 +1984,7 @@ function IconoSolLuna({ size = 22 }) {
         <path d="M12 1.6v1.8" /><path d="M12 20.6v1.8" /><path d="M4.6 4.6l1.3 1.3" /><path d="M4.6 19.4l1.3-1.3" /><path d="M1.6 12h1.8" />
       </g>
       <path d="M15.2 9.2a3.4 3.4 0 1 0 3.2 4.6 3 3 0 0 1-3.2-4.6Z" fill="#fff" opacity=".95" />
-      <circle cx="19.2" cy="8.4" r=".9" fill="#C7D2FE" /><circle cx="17.4" cy="17.6" r=".7" fill="#C7D2FE" />
+      <circle cx="19.2" cy="8.4" r=".9" fill="var(--azul-palido)" /><circle cx="17.4" cy="17.6" r=".7" fill="var(--azul-palido)" />
       <path d="M12 5.4v13.2" stroke="#fff" strokeWidth="1.1" opacity=".9" />
     </svg>
   );
@@ -1983,15 +1992,15 @@ function IconoSolLuna({ size = 22 }) {
 
 function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, buscador }) {
   return (
-    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", borderRadius: 0 }}>
+    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", borderRadius: 0 }}>
       <div className="max-w-6xl mx-auto px-4 pt-3 pb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 11, background: "linear-gradient(135deg,#2350F5,#7FA8F5)", boxShadow: "0 4px 12px rgba(35,80,245,.5)" }}>
+            <span className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 11, background: "linear-gradient(135deg,var(--azul),var(--azul-claro))", boxShadow: "0 4px 12px rgba(var(--azul-rgb),.5)" }}>
               <MapPin size={17} color="#fff" />
             </span>
             <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
-              Mi<span style={{ color: "#7FA8F5" }}>Zona</span>
+              Mi<span style={{ color: "var(--azul-claro)" }}>Zona</span>
             </span>
           </div>
           {onOpenNotificaciones && (
@@ -2006,16 +2015,16 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
           )}
         </div>
         <h1 className="mt-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 28, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{titulo}</h1>
-        {sub && <p className="text-sm mt-1" style={{ color: "#BBD1FB" }}>{sub}</p>}
+        {sub && <p className="text-sm mt-1" style={{ color: "var(--azul-palido)" }}>{sub}</p>}
         {buscador && (
           <div className="flex items-center gap-2.5 px-4 mt-4" style={{ borderRadius: 16, background: "#ffffff1f", border: "1px solid #ffffff33" }}>
-            <Search size={17} color="#BBD1FB" className="shrink-0" />
+            <Search size={17} color="var(--azul-palido)" className="shrink-0" />
             <input
               value={buscador.valor} onChange={(e) => buscador.onChange(e.target.value)} maxLength={60}
               placeholder={buscador.placeholder} aria-label={buscador.placeholder}
               className="w-full outline-none text-sm bg-transparent py-3" style={{ color: "#fff" }}
             />
-            {buscador.valor && <button onClick={() => buscador.onChange("")} aria-label="Borrar búsqueda" className="shrink-0"><X size={16} color="#BBD1FB" /></button>}
+            {buscador.valor && <button onClick={() => buscador.onChange("")} aria-label="Borrar búsqueda" className="shrink-0"><X size={16} color="var(--azul-palido)" /></button>}
           </div>
         )}
       </div>
@@ -2025,7 +2034,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2033,7 +2042,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   return (
     <>
       {/* barra superior fija: menú, logo y notificaciones */}
-      <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "#0B1437", boxShadow: "0 2px 14px rgba(11,20,55,0.25)" }}>
+      <div data-conservar-color className="sticky top-0 z-40" style={{ backgroundColor: "var(--azul-oscuro)", boxShadow: "0 2px 14px rgba(11,20,55,0.25)" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -2044,11 +2053,11 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               <Menu size={18} color="#fff" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2350F5,#7FA8F5)", boxShadow: "0 4px 12px rgba(35,80,245,.5)" }}>
+              <span className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,var(--azul),var(--azul-claro))", boxShadow: "0 4px 12px rgba(var(--azul-rgb),.5)" }}>
                 <MapPin size={16} color="#fff" />
               </span>
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 19, color: "#fff", letterSpacing: -0.3 }}>
-                Mi<span style={{ color: "#7FA8F5" }}>Zona</span>
+                Mi<span style={{ color: "var(--azul-claro)" }}>Zona</span>
               </span>
             </div>
           </div>
@@ -2057,7 +2066,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             className="relative flex items-center justify-center shrink-0"
             style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}
           >
-            <Bell size={17} color="#fff" />
+            <Bell key={campanaSacude} size={17} color="#fff" style={campanaSacude ? { animation: "zn-sacude .7s ease" } : undefined} />
             {notifSinLeer > 0 && (
               <span
                 className="absolute flex items-center justify-center text-[9px] font-bold"
@@ -2071,26 +2080,26 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       </div>
 
       {/* portada: saludo, buscador y zona */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
-        <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
+        <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "rgba(var(--azul-claro-rgb),0.1)" }} />
         <FondoClima zona={zone} />
         <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
-          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
+          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4, textShadow: "0 1px 14px rgba(5,12,40,.55)" }}>
             Descubrí lo mejor<br />de tu zona
           </p>
-          <p className="text-sm mt-1.5 mb-4" style={{ color: "#B8C9EA", maxWidth: 380 }}>
+          <p className="text-sm mt-1.5 mb-4" style={{ color: "#E6EEFF", maxWidth: 380, textShadow: "0 1px 12px rgba(5,12,40,.7), 0 0 2px rgba(5,12,40,.35)" }}>
             Negocios, productos y servicios cerca tuyo, con reseñas reales.
           </p>
 
-          <div className="flex items-center gap-2.5 bg-white px-4 py-3" style={{ borderRadius: 16, boxShadow: "0 10px 28px rgba(5,20,45,0.35)" }}>
-            <Search size={18} color="#2350F5" />
+          <div className="flex items-center gap-2.5 bg-white px-4" style={{ borderRadius: 16, minHeight: 54, boxShadow: "0 10px 28px rgba(5,20,45,0.35)" }}>
+            <Search size={18} color="var(--azul)" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
               onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
               placeholder="Buscá un negocio, producto o servicio..."
-              className="w-full outline-none text-sm bg-transparent" style={{ color: "#0B1437" }}
+              className="w-full outline-none text-sm bg-transparent buscador-portada" style={{ color: "#0B1437", WebkitTextFillColor: "#0B1437" }}
             />
             {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#5B6482" /></button>}
           </div>
@@ -2114,7 +2123,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold px-3 py-1.5"
             style={{ color: "#fff", borderRadius: 20, background: "#ffffff1a", border: "1px solid #ffffff26" }}
           >
-            <MapPin size={13} color="#7FA8F5" /> {zone} <ChevronDown size={12} />
+            <MapPin size={13} color="var(--azul-claro)" /> {zone} <ChevronDown size={12} />
           </button>
         </div>
       </div>
@@ -2142,7 +2151,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
               onClick={() => { if (pendingZone) { setZone(pendingZone); setShowZoneModal(false); } }}
               disabled={!pendingZone}
               className="w-full text-sm font-semibold py-3 mt-4"
-              style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10, opacity: pendingZone ? 1 : 0.5 }}
+              style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10, opacity: pendingZone ? 1 : 0.5 }}
             >
               Confirmar ubicación
             </button>
@@ -2155,12 +2164,12 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>Categorías</span>
-            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "#2350F5", background: "#EDF1FF", borderRadius: 20 }}>Ver todas</button>
+            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20 }}>Ver todas</button>
           </div>
           <div className="flex gap-3.5 overflow-x-auto pb-1">
             <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,#2350F5,#5B91F7)" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px #2350F555" : "none", transition: "all .2s" }}>
-                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "#2350F5"} />
+              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px rgba(var(--azul-rgb),0.33)" : "none", transition: "all .2s" }}>
+                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "var(--azul)"} />
               </span>
               <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B1437" : "#2B3768" }}>Todos</span>
             </button>
@@ -2198,15 +2207,15 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
         style={{ width: "min(78vw, 300px)", boxShadow: "6px 0 30px #00000033" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div data-conservar-color className="p-5 pt-7" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
+        <div data-conservar-color className="p-5 pt-7" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)" }}>
           <div
             className="flex items-center justify-center mb-3"
-            style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, #2350F5, #7FA8F5)", boxShadow: "0 8px 20px rgba(35,80,245,.45)" }}
+            style={{ width: 54, height: 54, borderRadius: 18, background: "linear-gradient(135deg, var(--azul), var(--azul-claro))", boxShadow: "0 8px 20px rgba(var(--azul-rgb),.45)" }}
           >
             <MapPin size={26} color="#fff" />
           </div>
-          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi<span style={{ color: "#9BBBF7" }}>Zona</span></p>
-          <p className="text-xs mt-0.5" style={{ color: "#BBD1FB" }}>Explorá los negocios de tu zona</p>
+          <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi<span style={{ color: "var(--azul-palido)" }}>Zona</span></p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--azul-palido)" }}>Explorá los negocios de tu zona</p>
         </div>
         <div className="py-2 flex-1 overflow-y-auto">
           <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
@@ -2261,14 +2270,14 @@ function IlustracionChats() {
   return (
     <svg width="168" height="132" viewBox="0 0 168 132" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="zcA" x1="20" y1="14" x2="96" y2="84" gradientUnits="userSpaceOnUse"><stop stopColor="#6FA0FF" /><stop offset="1" stopColor="#2350F5" /></linearGradient>
+        <linearGradient id="zcA" x1="20" y1="14" x2="96" y2="84" gradientUnits="userSpaceOnUse"><stop stopColor="var(--azul-claro)" /><stop offset="1" stopColor="var(--azul)" /></linearGradient>
         <linearGradient id="zcB" x1="70" y1="48" x2="140" y2="116" gradientUnits="userSpaceOnUse"><stop stopColor="#F4F8FF" /><stop offset="1" stopColor="#CFE0FB" /></linearGradient>
       </defs>
-      <ellipse cx="84" cy="116" rx="62" ry="10" fill="#2350F5" opacity=".10" />
+      <ellipse cx="84" cy="116" rx="62" ry="10" fill="var(--azul)" opacity=".10" />
       <path d="M78 50a20 20 0 0 1 20-20h28a20 20 0 0 1 20 20v22a20 20 0 0 1-20 20h-6l-12 14v-14h-10a20 20 0 0 1-20-20Z" fill="url(#zcB)" />
       <path d="M22 36a22 22 0 0 1 22-22h40a22 22 0 0 1 22 22v28a22 22 0 0 1-22 22H62L44 106V86h0a22 22 0 0 1-22-22Z" fill="url(#zcA)" />
       <circle cx="46" cy="50" r="5" fill="#fff" /><circle cx="64" cy="50" r="5" fill="#fff" /><circle cx="82" cy="50" r="5" fill="#fff" />
-      <path d="M126 14l6-9M136 24l10-5M138 36l11 0" stroke="#6FA0FF" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M126 14l6-9M136 24l10-5M138 36l11 0" stroke="var(--azul-claro)" strokeWidth="3.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -2325,7 +2334,7 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
                   {biz.logo ? (
                     <img src={biz.logo} alt="" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,20,55,.08)" }} />
                   ) : (
-                    <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "#2350F5", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
+                    <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "var(--azul)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
                       {CatIcon ? <CatIcon size={24} color="#fff" /> : <span className="text-lg font-bold">{biz.name?.[0]?.toUpperCase()}</span>}
                     </div>
                   )}
@@ -2334,16 +2343,16 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 16, color: "#0B1437", fontWeight: noLeido ? 800 : 700 }}>{biz.name}</span>
-                    <span className="text-xs shrink-0" style={{ color: noLeido ? "#2350F5" : "#5B6482", fontWeight: noLeido ? 600 : 400 }}>{fmtChatLista(ultimo.hora)}</span>
+                    <span className="text-xs shrink-0" style={{ color: noLeido ? "var(--azul)" : "#5B6482", fontWeight: noLeido ? 600 : 400 }}>{fmtChatLista(ultimo.hora)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
                     <span className="text-[13px]" style={{ color: noLeido ? "#1D2939" : "#5B6482", fontWeight: noLeido ? 500 : 400, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {ultimo.rol === "cliente" ? "Vos: " : ""}{ultimo.texto}
                     </span>
                     {noLeido ? (
-                      <span className="shrink-0 flex items-center justify-center text-xs font-bold" style={{ minWidth: 24, height: 24, borderRadius: 12, background: "#2350F5", color: "#fff", padding: "0 7px", boxShadow: "0 4px 10px -3px rgba(35,80,245,.7)" }}>{sinLeer}</span>
+                      <span className="shrink-0 flex items-center justify-center text-xs font-bold" style={{ minWidth: 24, height: 24, borderRadius: 12, background: "var(--azul)", color: "#fff", padding: "0 7px", boxShadow: "0 4px 10px -3px rgba(var(--azul-rgb),.7)" }}>{sinLeer}</span>
                     ) : ultimo.rol === "asistente" ? (
-                      <CheckCheck size={16} color="#2350F5" className="shrink-0" />
+                      <CheckCheck size={16} color="var(--azul)" className="shrink-0" />
                     ) : null}
                   </div>
                 </div>
@@ -2448,7 +2457,7 @@ const CAPAS_MAPA = {
 
 function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const c = catInfo(b.cat);
-  const color = c?.color || "#2350F5";
+  const color = c?.color || "var(--azul)";
   const size = seleccionado ? 54 : 42;
   const inicial = escapeHtml((b.name || "?").trim().charAt(0).toUpperCase());
   const logo = b.logo || b.photos?.[0];
@@ -2464,7 +2473,7 @@ function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const html = `
     <div style="position:relative;width:${size}px;height:${size + 10}px">
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid #fff;
-        box-shadow:0 4px 12px rgba(11,20,55,.4)${seleccionado ? `,0 0 0 4px ${color}55` : ""};overflow:hidden;
+        box-shadow:0 4px 12px rgba(11,20,55,.4)${seleccionado ? `,0 0 0 4px ${tinte(color, 33)}` : ""};overflow:hidden;
         display:flex;align-items:center;justify-content:center;color:#fff;font:700 ${Math.round(size * 0.4)}px Poppins,sans-serif">
         ${inicial}${img}
       </div>
@@ -2629,7 +2638,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     if (!map || !userLoc) return;
     const icono = L.divIcon({
       className: "",
-      html: `<div style="position:relative;width:22px;height:22px"><span style="position:absolute;inset:0;border-radius:50%;background:#2350F555;animation:mzPulse 1.8s ease-out infinite"></span><span style="position:absolute;inset:4px;border-radius:50%;background:#2350F5;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span></div>`,
+      html: `<div style="position:relative;width:22px;height:22px"><span style="position:absolute;inset:0;border-radius:50%;background:rgba(var(--azul-rgb),0.33);animation:mzPulse 1.8s ease-out infinite"></span><span style="position:absolute;inset:4px;border-radius:50%;background:var(--azul);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span></div>`,
       iconSize: [22, 22], iconAnchor: [11, 11],
     });
     if (userMarkerRef.current) userMarkerRef.current.setLatLng([userLoc.lat, userLoc.lng]);
@@ -2659,7 +2668,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     }
   };
 
-  const Chip = ({ label, Icon, active, onClick, activeBg = "#EDF1FF", activeColor = "#2350F5", activeBorder = "#2350F5" }) => (
+  const Chip = ({ label, Icon, active, onClick, activeBg = "var(--azul-suave)", activeColor = "var(--azul)", activeBorder = "var(--azul)" }) => (
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 shrink-0 whitespace-nowrap"
@@ -2686,12 +2695,12 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
         .leaflet-container { font-family: var(--fuente-texto); }`}</style>
 
       {/* encabezado */}
-      <div style={{ backgroundColor: "#0B1437" }}>
+      <div style={{ backgroundColor: "var(--azul-oscuro)" }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Mapa de {zone}</p>
-            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>
+            <p className="text-[11px]" style={{ color: "var(--azul-palido)" }}>
               {conUbicacion.length} {conUbicacion.length === 1 ? "negocio" : "negocios"} en el mapa
               {sinUbicacion > 0 ? ` · ${sinUbicacion} sin ubicación exacta` : ""}
             </p>
@@ -2768,7 +2777,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                 <button
                   onClick={() => setCapasAbierto((v) => !v)} aria-label="Cambiar tipo de mapa"
                   className="flex items-center justify-center"
-                  style={{ width: 40, height: 40, borderRadius: 12, background: capasAbierto ? "#2350F5" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
+                  style={{ width: 40, height: 40, borderRadius: 12, background: capasAbierto ? "var(--azul)" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
                 >
                   <Layers size={18} color={capasAbierto ? "#fff" : "#0B1437"} />
                 </button>
@@ -2776,8 +2785,8 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                   <div className="absolute flex gap-2 p-2" style={{ right: 48, top: 0, borderRadius: 16, background: "#fff", boxShadow: "0 10px 28px rgba(11,20,55,0.28)" }}>
                     {Object.entries(CAPAS_MAPA).map(([id, c]) => (
                       <button key={id} onClick={() => { setCapa(id); setCapasAbierto(false); }} className="flex flex-col items-center gap-1">
-                        <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "#2350F5" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "#2350F5" : "#2B3768" }}>{c.label}</span>
+                        <span style={{ width: 58, height: 58, borderRadius: 12, background: c.muestra, border: `3px solid ${capa === id ? "var(--azul)" : "transparent"}`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }} />
+                        <span className="text-[11px] font-semibold" style={{ color: capa === id ? "var(--azul)" : "#2B3768" }}>{c.label}</span>
                       </button>
                     ))}
                   </div>
@@ -2786,7 +2795,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               <button
                 onClick={irAMiUbicacion} aria-label="Mi ubicación"
                 className="flex items-center justify-center"
-                style={{ width: 40, height: 40, borderRadius: 12, background: userLoc ? "#2350F5" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
+                style={{ width: 40, height: 40, borderRadius: 12, background: userLoc ? "var(--azul)" : "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}
               >
                 <LocateFixed size={18} color={userLoc ? "#fff" : "#0B1437"} className={locStatus === "loading" ? "animate-pulse" : ""} />
               </button>
@@ -2816,7 +2825,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
               const promos = activeDiscounts(selected);
               const esFav = favorites.includes(selected.id);
               const etiquetas = [
-                selected.delivery && { t: "Delivery", Icon: Truck, bg: "#EDF1FF", color: "#0B1437" },
+                selected.delivery && { t: "Delivery", Icon: Truck, bg: "var(--azul-suave)", color: "#0B1437" },
                 (selected.asistenteCodigoPublico && selected.asistenteActivo) && { t: "Asistente disponible", Icon: Sparkles, bg: "#F3ECFC", color: "#7A4F9E" },
                 promos.length > 0 && { t: promos[0].percent ? `${promos[0].percent} OFF` : "Promoción", Icon: Tag, bg: "#FBEBD1", color: "#8A5B12" },
                 esNegocioNuevo(selected) && { t: "Nuevo", Icon: Sparkles, bg: "#E4F3EA", color: "#1E6B44" },
@@ -2865,7 +2874,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                       <button
                         onClick={() => onOpenBusiness(selected.id)}
                         className="flex-1 text-sm font-semibold py-2.5"
-                        style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}
+                        style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}
                       >
                         Ver perfil
                       </button>
@@ -2873,7 +2882,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                         href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`} target="_blank" rel="noreferrer"
                         onClick={() => onTrack && onTrack(selected.id, "ubicacion")}
                         className="flex items-center justify-center gap-1.5 text-sm font-semibold px-3.5 py-2.5"
-                        style={{ backgroundColor: "#EDF1FF", color: "#0B1437", borderRadius: 10 }}
+                        style={{ backgroundColor: "var(--azul-suave)", color: "#0B1437", borderRadius: 10 }}
                       >
                         <Navigation size={15} /> Cómo llegar
                       </a>
@@ -2938,9 +2947,9 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
                       <button
                         onClick={(e) => { e.stopPropagation(); setVista("mapa"); setSelectedId(biz.id); }}
                         className="flex items-center justify-center shrink-0" aria-label="Ver en el mapa"
-                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#EDF1FF" }}
+                        style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--azul-suave)" }}
                       >
-                        <MapPin size={16} color="#2350F5" />
+                        <MapPin size={16} color="var(--azul)" />
                       </button>
                     )}
                   </div>
@@ -3042,8 +3051,21 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
   );
 }
 
-function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMarkAllRead, onBack }) {
+function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMarkAllRead, onBack, usuario }) {
   const [filtro, setFiltro] = useState("todas");
+  // invitación a activar los avisos del celular (igual que en Mi Asistente)
+  const [estadoAvisos, setEstadoAvisos] = useState("cargando");
+  const [bannerOculto, setBannerOculto] = useState(() => { try { return localStorage.getItem(NOTIF_BANNER_KEY) === "1"; } catch { return false; } });
+  const [activando, setActivando] = useState(false);
+  const [errorAvisos, setErrorAvisos] = useState(null);
+  useEffect(() => { if (usuario) estadoPush().then(setEstadoAvisos).catch(() => setEstadoAvisos("inactivo")); }, [usuario?.id]);
+  const activarAvisos = async () => {
+    setActivando(true); setErrorAvisos(null);
+    try { await activarPush(); } catch (e) { setErrorAvisos(e.message); }
+    setEstadoAvisos(await estadoPush().catch(() => "inactivo")); setActivando(false);
+  };
+  const ocultarBanner = () => { setBannerOculto(true); try { localStorage.setItem(NOTIF_BANNER_KEY, "1"); } catch { /* sin almacenamiento */ } };
+  const mostrarBanner = !!usuario && estadoAvisos === "inactivo" && !bannerOculto;
   const sinLeer = notificaciones.filter((n) => !leidas.has(n.id)).length;
   const lista = filtro === "todas" ? notificaciones : filtro === "sinleer" ? notificaciones.filter((n) => !leidas.has(n.id)) : notificaciones.filter((n) => NOTIF_CAT[n.tipo] === filtro);
   const hoy = new Date().toDateString();
@@ -3059,12 +3081,12 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
 
   return (
     <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
-      <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
+      <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
         <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-3" style={{ paddingTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
           <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0 leading-tight">
             <p style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em" }}>Notificaciones</p>
-            <p className="text-xs" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
+            <p className="text-xs" style={{ color: "var(--azul-palido)" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
           </div>
           {sinLeer > 0 && (
             <button onClick={onMarkAllRead} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0" style={{ borderRadius: 10, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
@@ -3080,7 +3102,7 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
             const activo = filtro === id;
             return (
               <button key={id} onClick={() => setFiltro(id)} className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 shrink-0"
-                style={{ borderRadius: 999, background: activo ? "#0B1437" : "#fff", color: activo ? "#fff" : "#5B6482", border: `1px solid ${activo ? "#0B1437" : "#E3E7F1"}` }}>
+                style={{ borderRadius: 999, background: activo ? "var(--azul-oscuro)" : "#fff", color: activo ? "#fff" : "#5B6482", border: `1px solid ${activo ? "var(--azul-oscuro)" : "#E3E7F1"}` }}>
                 {nombre}
                 {id === "sinleer" && sinLeer > 0 && <b className="flex items-center justify-center text-[11px]" style={{ background: "var(--azul)", color: "#fff", minWidth: 18, height: 18, borderRadius: 9, padding: "0 5px" }}>{sinLeer}</b>}
               </button>
@@ -3088,10 +3110,23 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
           })}
         </div>
 
+        {mostrarBanner && (
+          <div className="relative flex items-center gap-3 p-3.5 mt-3" style={{ borderRadius: 18, background: "radial-gradient(260px 160px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), var(--azul-oscuro)", color: "#fff" }} data-conservar-color>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "rgba(255,255,255,.14)" }}><Bell size={20} color="#fff" /></span>
+            <span className="flex-1 min-w-0 leading-tight">
+              <strong className="block text-sm">Recibí los avisos en tu celular</strong>
+              <span className="block text-xs mt-0.5" style={{ color: "var(--azul-palido)" }}>Pedidos, turnos, puntos y novedades, aunque tengas la app cerrada.</span>
+              {errorAvisos && <span className="block text-xs mt-1" style={{ color: "#FFB4AE" }}>{errorAvisos}</span>}
+            </span>
+            <button onClick={activarAvisos} disabled={activando} className="shrink-0 text-xs font-bold px-3.5 py-2" style={{ borderRadius: 10, background: "#fff", color: "#0B1437", opacity: activando ? .6 : 1 }}>{activando ? "Activando..." : "Activar"}</button>
+            <button onClick={ocultarBanner} aria-label="Ocultar" className="absolute flex items-center justify-center" style={{ top: -8, right: -6, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "#5B6482", boxShadow: "0 2px 8px rgba(11,20,55,.25)" }}><X size={14} /></button>
+          </div>
+        )}
+
         {lista.length === 0 ? (
           <div className="text-center px-6" style={{ paddingTop: 56 }}>
             <span className="flex items-center justify-center mx-auto" style={{ width: 84, height: 84, borderRadius: "50%", background: "radial-gradient(circle, rgba(var(--azul-rgb), .16), rgba(var(--azul-rgb), 0) 70%)" }}>
-              <span className="flex items-center justify-center" style={{ width: 62, height: 62, borderRadius: 21, background: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06), 0 10px 22px -8px rgba(var(--azul-rgb), .4)" }}><BellOff size={28} color="#2350F5" /></span>
+              <span className="flex items-center justify-center" style={{ width: 62, height: 62, borderRadius: 21, background: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06), 0 10px 22px -8px rgba(var(--azul-rgb), .4)" }}><BellOff size={28} color="var(--azul)" /></span>
             </span>
             <p className="mt-5 mb-1.5" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, color: "#0B1437" }}>{vacio[0]}</p>
             <p className="text-sm mx-auto" style={{ color: "#5B6482", lineHeight: 1.5, maxWidth: 320 }}>{vacio[1]}</p>
@@ -3158,14 +3193,14 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
           <button
             onClick={() => onCanjear(r)} disabled={canjeando}
             className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5"
-            style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10, opacity: canjeando ? 0.6 : 1 }}
+            style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10, opacity: canjeando ? 0.6 : 1 }}
           >
             <Ticket size={16} /> Canjear por {fmtNum(r.puntos)} puntos
           </button>
         ) : (
           <>
             <div style={{ height: 7, borderRadius: 4, background: "#EEF0F6", overflow: "hidden" }}>
-              <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, #2350F5, #7FA8F5)", borderRadius: 4 }} />
+              <div style={{ width: `${progreso}%`, height: "100%", background: "linear-gradient(90deg, var(--azul), var(--azul-claro))", borderRadius: 4 }} />
             </div>
             <p className="text-xs mt-1.5" style={{ color: "#2B3768" }}>
               Te {r.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(r.faltan)} {r.faltan === 1 ? "punto" : "puntos"}</b>.
@@ -3193,10 +3228,9 @@ function CanjeModal({ canje, onClose }) {
         <p className="text-base font-semibold" style={{ color: "#0B1437" }}>{canje.recompensa}</p>
         {canje.negocio && <p className="text-xs mb-3" style={{ color: "#5B6482" }}>{canje.negocio}</p>}
         {!usado && (
-          <img
-            alt="Código QR del canje" className="mx-auto mb-3"
-            style={{ width: 170, height: 170, borderRadius: 10, border: "1px solid #E3E7F1" }}
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(canje.codigo)}`}
+          <QrLocal
+            texto={canje.codigo} tam={170} alt="Código QR del canje" className="mx-auto mb-3"
+            style={{ borderRadius: 10, border: "1px solid #E3E7F1" }}
           />
         )}
         <p className="text-xl font-mono font-bold mb-1" style={{ color: usado ? "#64748B" : "#0B1437", letterSpacing: 1, textDecoration: usado ? "line-through" : "none" }}>{canje.codigo}</p>
@@ -3283,19 +3317,19 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
     return src ? (
       <img src={src} alt="" className="object-cover shrink-0" style={{ width: size, height: size, borderRadius: "50%" }} />
     ) : (
-      <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "#2350F5", color: "#fff" }}>
+      <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "var(--azul)", color: "#fff" }}>
         {(nombre || "?")[0].toUpperCase()}
       </span>
     );
   };
 
   const cabecera = (titulo, subtitulo, atras) => (
-    <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
+    <div className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
         <BotonAtras onClick={atras} />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{titulo}</p>
-          {subtitulo && <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{subtitulo}</p>}
+          {subtitulo && <p className="text-[11px]" style={{ color: "var(--azul-palido)" }}>{subtitulo}</p>}
         </div>
       </div>
     </div>
@@ -3319,10 +3353,10 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
             </div>
           ) : detalle && (
             <>
-              <div className="p-4 mb-4 flex items-center gap-3" style={{ borderRadius: 14, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
+              <div className="p-4 mb-4 flex items-center gap-3" style={{ borderRadius: 14, background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)" }}>
                 <Logo nombre={detalle.nombreNegocio} logoUrl={detalle.logoUrl} cp={codigo} size={50} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs" style={{ color: "#BBD1FB" }}>Tus puntos en {detalle.nombreNegocio}</p>
+                  <p className="text-xs" style={{ color: "var(--azul-palido)" }}>Tus puntos en {detalle.nombreNegocio}</p>
                   <p className="flex items-center gap-1.5" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24 }}>
                     <Coins size={20} color="#F5C85A" /> {fmtNum(detalle.saldo)}
                   </p>
@@ -3344,7 +3378,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                 </div>
               )}
               {biz && (
-                <button onClick={() => onOpenBusiness(biz.id)} className="w-full text-sm font-semibold py-3 mt-5" style={{ borderRadius: 10, backgroundColor: "#EDF1FF", color: "#0B1437" }}>
+                <button onClick={() => onOpenBusiness(biz.id)} className="w-full text-sm font-semibold py-3 mt-5" style={{ borderRadius: 10, backgroundColor: "var(--azul-suave)", color: "#0B1437" }}>
                   Ver perfil del negocio
                 </button>
               )}
@@ -3375,9 +3409,9 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
       <div className="max-w-3xl mx-auto px-4 py-4" style={{ paddingBottom: 60 }}>
         <div className="flex items-center gap-6 mb-4" style={{ borderBottom: "1px solid #E3E7F1" }}>
           {[{ id: "puntos", label: "Mis puntos" }, { id: "canjes", label: `Mis canjes${pendientes ? ` (${pendientes})` : ""}` }].map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "#2350F5" : "#5B6482" }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="px-1 pb-3 text-sm font-medium relative" style={{ color: tab === t.id ? "var(--azul)" : "#5B6482" }}>
               {t.label}
-              {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "#2350F5", borderRadius: 2 }} />}
+              {tab === t.id && <span className="absolute left-0 right-0" style={{ bottom: 0, height: 2, background: "var(--azul)", borderRadius: 2 }} />}
             </button>
           ))}
         </div>
@@ -3412,7 +3446,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                         <span className="truncate pr-2">{n.proxima.nombre} · {fmtNum(n.proxima.puntos)} puntos</span>
                       </div>
                       <div style={{ height: 7, borderRadius: 4, background: "#EEF0F6", overflow: "hidden" }}>
-                        <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, #2350F5, #7FA8F5)" }} />
+                        <div style={{ width: `${Math.min(100, Math.round((n.saldo / n.proxima.puntos) * 100))}%`, height: "100%", background: "linear-gradient(90deg, var(--azul), var(--azul-claro))" }} />
                       </div>
                       <p className="text-xs mt-1.5" style={{ color: "#2B3768" }}>Te {n.proxima.faltan === 1 ? "falta" : "faltan"} <b>{fmtNum(n.proxima.faltan)} puntos</b>.</p>
                     </div>
@@ -3422,7 +3456,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
                   <button
                     onClick={() => { setErrorCanje(null); setCodigo(n.codigoPublico); }}
                     className="w-full text-sm font-semibold py-2.5 mt-3.5"
-                    style={{ borderRadius: 10, backgroundColor: "#EDF1FF", color: "#0B1437" }}
+                    style={{ borderRadius: 10, backgroundColor: "var(--azul-suave)", color: "#0B1437" }}
                   >
                     Ver recompensas
                   </button>
@@ -3505,7 +3539,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
           </span>
         </div>
         <p className="text-xs font-semibold text-center leading-tight px-1" style={{ color: "#fff", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", maxWidth: "100%" }}>{biz.name}</p>
-        <p className="text-[10px] mt-0.5 truncate" style={{ color: "#B8C9EA", maxWidth: "100%" }}>{c?.label}</p>
+        <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--azul-palido)", maxWidth: "100%" }}>{c?.label}</p>
         <div className="flex items-center gap-2 mt-1.5 mb-2">
           {rating && (
             <span className="flex items-center gap-0.5 text-[11px] font-semibold" style={{ color: "#fff" }}>
@@ -3524,15 +3558,15 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   return (
     <div>
       {/* portada oscura con título y podio */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", padding: "16px 16px 0" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", padding: "16px 16px 0" }}>
         <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
-        <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "#7FA8F51a" }} />
+        <div style={{ position: "absolute", top: 70, left: -70, width: 150, height: 150, borderRadius: "50%", background: "rgba(var(--azul-claro-rgb),0.1)" }} />
         <div className="relative max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <BotonAtras onClick={onBack} size={36} />
             <div className="flex-1 min-w-0">
               <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#fff", lineHeight: 1.15 }}>Ranking de la zona</p>
-              <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "#B8C9EA" }}><MapPin size={11} /> {zone}</p>
+              <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--azul-palido)" }}><MapPin size={11} /> {zone}</p>
             </div>
             <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 14, background: "linear-gradient(135deg,#FFE08A,#F5A623)", boxShadow: "0 6px 16px rgba(245,166,35,.45)" }}>
               <Trophy size={20} color="#7A4B00" />
@@ -3547,10 +3581,10 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 { Icon: Eye, valor: fmtNum(enZona.reduce((s, b) => s + (b.views || 0), 0)), etiqueta: "visitas" },
               ].map(({ Icon, valor, etiqueta }) => (
                 <div key={etiqueta} className="flex-1 flex items-center gap-2 px-3 py-2" style={{ borderRadius: 14, background: "#ffffff14", border: "1px solid #ffffff1f" }}>
-                  <Icon size={14} color="#7FA8F5" />
+                  <Icon size={14} color="var(--azul-claro)" />
                   <span className="min-w-0">
                     <span className="block text-sm font-bold leading-none" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{valor}</span>
-                    <span className="block text-[10px] mt-0.5" style={{ color: "#B8C9EA" }}>{etiqueta}</span>
+                    <span className="block text-[10px] mt-0.5" style={{ color: "var(--azul-palido)" }}>{etiqueta}</span>
                   </span>
                 </div>
               ))}
@@ -3597,8 +3631,8 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
 
           {ranking.length === 0 ? (
             <div className="text-center py-14 px-6">
-              <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "#EDF1FF" }}>
-                <Trophy size={32} color="#2350F5" />
+              <span className="inline-flex items-center justify-center mb-4" style={{ width: 72, height: 72, borderRadius: 24, background: "var(--azul-suave)" }}>
+                <Trophy size={32} color="var(--azul)" />
               </span>
               <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1437" }}>Todavía no hay ranking</p>
               <p className="text-sm mt-1" style={{ color: "#5B6482" }}>
@@ -3639,7 +3673,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                           {(biz.vecesFavorito || 0) > 0 && <span className="flex items-center gap-0.5 shrink-0"><Heart size={10} color="#C1443A" fill="#C1443A" /> {biz.vecesFavorito}</span>}
                         </span>
                         <span className="block mt-1.5" style={{ height: 5, borderRadius: 5, background: "#EEF0F6", overflow: "hidden" }}>
-                          <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "#2350F5"}, ${c?.color || "#2350F5"}aa)` }} />
+                          <span className="block" style={{ width: `${pct}%`, height: "100%", borderRadius: 5, background: `linear-gradient(90deg, ${c?.color || "var(--azul)"}, color-mix(in srgb, ${c?.color || "var(--azul)"} 66%, transparent))` }} />
                         </span>
                       </span>
                       <span className="text-right shrink-0" style={{ minWidth: 38 }}>
@@ -3656,18 +3690,18 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
                 className="w-full flex items-center justify-between mt-5 px-4 py-3 bg-white"
                 style={{ borderRadius: 16, border: "1px solid #E3E7F1" }}
               >
-                <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B1437" }}><Medal size={16} color="#2350F5" /> ¿Cómo se calcula el ranking?</span>
+                <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#0B1437" }}><Medal size={16} color="var(--azul)" /> ¿Cómo se calcula el ranking?</span>
                 <ChevronDown size={16} color="#5B6482" style={{ transform: verComo ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {verComo && (
                 <div className="mt-2 p-4 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1" }}>
                   {[
-                    { Icon: Eye, color: "#2350F5", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
+                    { Icon: Eye, color: "var(--azul)", titulo: "Visitas", texto: "Cada vez que alguien entra al perfil del negocio." },
                     { Icon: Star, color: "#F5A623", titulo: "Reseñas y valoración", texto: "Más reseñas y mejores estrellas suman más puntos." },
                     { Icon: Heart, color: "#C1443A", titulo: "Favoritos", texto: "Cada persona que guarda el negocio suma el doble que una visita." },
                   ].map(({ Icon, color, titulo, texto }) => (
                     <div key={titulo} className="flex items-start gap-3 mb-3 last:mb-0">
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 10, background: tinte(color, 10) }}><Icon size={15} color={color} /></span>
                       <span>
                         <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>{titulo}</span>
                         <span className="block text-xs" style={{ color: "#5B6482" }}>{texto}</span>
@@ -3728,7 +3762,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
       className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
       style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
     >
-      <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: `${color}1A` }}>
+      <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: tinte(color, 10) }}>
         <Icon size={19} color={color} />
       </span>
       {badge > 0 && (
@@ -3778,7 +3812,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
     <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
-      <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: `${color}1A` }}><Icon size={15} color={color} /></span>
+      <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: tinte(color, 10) }}><Icon size={15} color={color} /></span>
       <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>{valor}</span>
       <span className="block text-[11px] mt-1" style={{ color: "#5B6482" }}>{etiqueta}</span>
     </div>
@@ -3807,14 +3841,12 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     return (
       <SubPantalla titulo="Mi código QR" onBack={() => setSub(null)}>
         <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E3E7F1" }}>
-          <img
-            alt="Código QR de tu negocio"
-            className="mx-auto mb-4"
-            style={{ width: 200, height: 200, borderRadius: 14, border: "1px solid #E3E7F1" }}
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`)}`}
+          <QrLocal
+            texto={`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`} tam={200} alt="Código QR de tu negocio"
+            className="mx-auto mb-4" style={{ borderRadius: 14, border: "1px solid #E3E7F1" }}
           />
           <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
-          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", borderRadius: 14 }}>
+          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14 }}>
             Compartir enlace
           </button>
         </div>
@@ -3826,15 +3858,15 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     <div>
 
       {/* tarjeta de identidad */}
-      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", boxShadow: "0 14px 30px rgba(11,20,55,.28)" }}>
+      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", boxShadow: "0 14px 30px rgba(11,20,55,.28)" }}>
         <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
         <div className="relative flex items-center gap-3.5">
-          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "#2350F5", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
+          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "var(--azul)", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
             {ownerBiz.logo ? <img src={ownerBiz.logo} alt="" className="w-full h-full object-cover" /> : ownerBiz.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <p className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{ownerBiz.name}</p>
-            <p className="text-xs truncate" style={{ color: "#BBD1FB" }}>{c?.label} · {ownerBiz.zone}</p>
+            <p className="text-xs truncate" style={{ color: "var(--azul-palido)" }}>{c?.label} · {ownerBiz.zone}</p>
             <span className="inline-block text-[10px] font-bold px-2 py-0.5 mt-1.5" style={{ borderRadius: 10, background: estadoColor.bg, color: estadoColor.fg }}>{estadoTexto}</span>
           </div>
         </div>
@@ -3847,7 +3879,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
       {/* números del negocio */}
       <div className="grid grid-cols-2 gap-2.5 mb-1">
-        <Estadistica Icon={Eye} color="#2350F5" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
+        <Estadistica Icon={Eye} color="var(--azul)" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
         <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(ownerBiz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
         <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${ownerBiz.reviews?.length || 0} ${(ownerBiz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
         <Estadistica Icon={Tag} color="#B8703F" valor={promosVigentes} etiqueta={promosVigentes === 1 ? "promoción vigente" : "promociones vigentes"} />
@@ -3887,7 +3919,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
   const irSoporte = (tema, desde, directo) => { setSoporteCtx({ tema: tema || null, directo: !!directo, desde: desde || null }); setSub("soporte"); };
 
   const TONOS = {
-    azul: { bg: "linear-gradient(180deg,#EEF4FF,#DCE8FD)", fg: "#2350F5", aro: "#D3E1FA" },
+    azul: { bg: "linear-gradient(180deg,#EEF4FF,#DCE8FD)", fg: "var(--azul)", aro: "#D3E1FA" },
     violeta: { bg: "linear-gradient(180deg,#F5EFFE,#E8DDFB)", fg: "#7A4FD6", aro: "#E0D2F8" },
     verde: { bg: "linear-gradient(180deg,#E9F8F0,#D4F0E1)", fg: "#1E8A55", aro: "#C3E8D3" },
     naranja: { bg: "linear-gradient(180deg,#FFF5E3,#FFE8C2)", fg: "#E08A12", aro: "#FADFAE" },
@@ -3985,7 +4017,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
       <SeccionAjustes Icon={User}>Cuenta y personalización</SeccionAjustes>
       <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
         <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
-        <Row Icon={Bell} tono="violeta" title="Notificaciones" desc="Avisos en tu celular, como los días que le quedan a tu suscripción" onClick={() => setSub("notificaciones")} />
+        <Row Icon={Bell} tono="violeta" title="Notificaciones" desc="Qué avisos recibís, sonido y dispositivos" onClick={() => setSub("notificaciones")} />
         <Row Icon={ShieldCheck} tono="verde" title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
         <Row Icon={IconoSolLuna} tono="naranja" title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
         <Row Icon={Lock} tono="violeta" title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
@@ -4009,7 +4041,7 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
     return (
       <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
         <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 9, background: on ? "#E9EEFF" : "transparent", transition: "background .2s ease" }}>
-          <Icon size={20} color={on ? "#2350F5" : "#8D95B0"} strokeWidth={on ? 2.3 : 1.9} />
+          <Icon size={20} color={on ? "var(--azul)" : "#6B7494"} strokeWidth={on ? 2.3 : 1.9} />
           {badge > 0 && (
             <span
               className="absolute flex items-center justify-center text-[9px] font-bold"
@@ -4019,7 +4051,7 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
             </span>
           )}
         </span>
-        <span className="text-[10px]" style={{ color: on ? "#2350F5" : "#8D95B0", fontWeight: on ? 700 : 500 }}>{label}</span>
+        <span className="text-[11px]" style={{ color: on ? "var(--azul)" : "#6B7494", fontWeight: on ? 700 : 500 }}>{label}</span>
       </button>
     );
   };
@@ -4031,7 +4063,7 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
         className="fixed flex items-center justify-center"
         style={{
           left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg,#2350F5,#5B91F7)", boxShadow: "0 12px 24px -6px rgba(35,80,245,0.6), 0 0 0 1px rgba(35,80,245,0.18)", border: "4px solid #fff", zIndex: 41,
+          background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 12px 24px -6px rgba(var(--azul-rgb),0.6), 0 0 0 1px rgba(var(--azul-rgb),0.18)", border: "4px solid #fff", zIndex: 41,
         }}
       >
         <Plus size={24} color="#fff" strokeWidth={2.6} />
@@ -4345,7 +4377,7 @@ function HistoriaViewerModal({ business, historias, onClose }) {
       </div>
 
       <div className="absolute flex items-center gap-2 z-10" style={{ top: 20, left: 12, right: 12 }}>
-        <div className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 28, height: 28, borderRadius: "50%", background: "#2350F5", color: "#fff" }}>
+        <div className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--azul)", color: "#fff" }}>
           {business.name?.[0]?.toUpperCase()}
         </div>
         <span className="text-sm font-semibold" style={{ color: "#fff" }}>{business.name}</span>
@@ -4366,16 +4398,16 @@ function EmpleoDetalleModal({ business, onClose }) {
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 16 }} onClick={(ev) => ev.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>
-            <Briefcase size={17} color="#2350F5" /> Buscan personal
+            <Briefcase size={17} color="var(--azul)" /> Buscan personal
           </span>
           <button onClick={onClose}><X size={18} color="#5B6482" /></button>
         </div>
-        <p className="text-xs font-semibold mb-1" style={{ color: "#2350F5" }}>{e.puesto}</p>
+        <p className="text-xs font-semibold mb-1" style={{ color: "var(--azul)" }}>{e.puesto}</p>
         <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
         <a
           href={contactoEmpleoLink(business)} target="_blank" rel="noreferrer"
           className="flex items-center justify-center gap-2 text-sm font-semibold py-3 w-full"
-          style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}
+          style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}
         >
           {e.contactoTipo === "whatsapp" ? <MessageCircle size={16} /> : <Share2 size={16} />}
           Contactar por esta búsqueda
@@ -4436,7 +4468,7 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
                 <button
                   key={d.dias} onClick={() => setDias(d.dias)}
                   className="text-xs font-medium px-3 py-1.5"
-                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "#2350F5" : "#E3E7F1"), background: dias === d.dias ? "#EDF1FF" : "#fff", color: dias === d.dias ? "#2350F5" : "#2B3768" }}
+                  style={{ borderRadius: 20, border: "1px solid " + (dias === d.dias ? "var(--azul)" : "#E3E7F1"), background: dias === d.dias ? "var(--azul-suave)" : "#fff", color: dias === d.dias ? "var(--azul)" : "#2B3768" }}
                 >
                   {d.label}
                 </button>
@@ -4449,14 +4481,14 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
               <button
                 onClick={() => setContactoTipo("whatsapp")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "#2350F5" : "#E3E7F1"), background: contactoTipo === "whatsapp" ? "#EDF1FF" : "#fff", color: contactoTipo === "whatsapp" ? "#2350F5" : "#2B3768" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "whatsapp" ? "var(--azul)" : "#E3E7F1"), background: contactoTipo === "whatsapp" ? "var(--azul-suave)" : "#fff", color: contactoTipo === "whatsapp" ? "var(--azul)" : "#2B3768" }}
               >
                 WhatsApp
               </button>
               <button
                 onClick={() => setContactoTipo("red_social")}
                 className="flex-1 text-xs font-medium py-2"
-                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "#2350F5" : "#E3E7F1"), background: contactoTipo === "red_social" ? "#EDF1FF" : "#fff", color: contactoTipo === "red_social" ? "#2350F5" : "#2B3768" }}
+                style={{ borderRadius: 8, border: "1px solid " + (contactoTipo === "red_social" ? "var(--azul)" : "#E3E7F1"), background: contactoTipo === "red_social" ? "var(--azul-suave)" : "#fff", color: contactoTipo === "red_social" ? "var(--azul)" : "#2B3768" }}
               >
                 Red social / link
               </button>
@@ -4468,7 +4500,7 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             />
           </div>
 
-          <button onClick={guardar} className="text-sm font-semibold py-3 mt-1" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}>
+          <button onClick={guardar} className="text-sm font-semibold py-3 mt-1" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}>
             {existente ? "Guardar cambios" : "Publicar búsqueda"}
           </button>
           {existente && (
@@ -4530,7 +4562,7 @@ function PromosSheet({ business, onSave, onToggle, onDelete }) {
   return (
     <div>
       <div>
-          <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,#2350F5,#5B91F7)", color: "#fff", boxShadow: "0 8px 18px rgba(35,80,245,.3)" }}>
+          <button onClick={() => setEditing(emptyDiscount())} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-3 mb-3" style={{ borderRadius: 14, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", boxShadow: "0 8px 18px rgba(var(--azul-rgb),.3)" }}>
             <Plus size={16} /> Crear promoción
           </button>
           {lista.length === 0 ? (
@@ -4770,6 +4802,10 @@ export default function MiZona() {
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [puntosView, setPuntosView] = useState(null); // null | { codigoPublico?: string }
   const [actividad, setActividad] = useState({ pedidos: [], turnos: [], puntos: [], canjes: [] });
+  const [actividadLista, setActividadLista] = useState(false);
+  const [avisosNuevos, setAvisosNuevos] = useState([]); // avisos emergentes (como los de Mi Asistente)
+  const [campanaSacude, setCampanaSacude] = useState(0);
+  const vistasRef = useRef(null);
   const [notifLeidas, setNotifLeidas] = useState(() => getIdSet(NOTIF_LEIDAS_KEY));
   const [notifEliminadas, setNotifEliminadas] = useState(() => getIdSet(NOTIF_ELIMINADAS_KEY));
 
@@ -4893,7 +4929,7 @@ export default function MiZona() {
     const cargar = async () => {
       try {
         const a = await fetchActividad();
-        if (!cancelado) setActividad(a);
+        if (!cancelado) { setActividad(a); setActividadLista(true); }
       } catch { /* sin conexión con Mi Asistente: se muestran solo los avisos locales */ }
     };
     cargar();
@@ -4909,6 +4945,26 @@ export default function MiZona() {
     [actividad, businesses, favorites, notifEliminadas, misNegocios]
   );
   const notifSinLeer = notificaciones.filter((n) => !notifLeidas.has(n.id)).length;
+  // Cuando llega un aviso nuevo con la app abierta: se muestra un cartel y la campana se sacude. Lo ya existente no avisa.
+  useEffect(() => {
+    if (!actividadLista || !usuario?.id) return;
+    if (vistasRef.current === null) {
+      vistasRef.current = getIdSet(NOTIF_VISTAS_KEY);
+      const primera = vistasRef.current.size === 0;
+      notificaciones.forEach((n) => vistasRef.current.add(n.id));
+      if (primera) saveIdSet(NOTIF_VISTAS_KEY, vistasRef.current);
+      if (primera) return;
+    }
+    const nuevos = notificaciones.filter((n) => !vistasRef.current.has(n.id) && !notifLeidas.has(n.id));
+    if (!nuevos.length) return;
+    notificaciones.forEach((n) => vistasRef.current.add(n.id));
+    saveIdSet(NOTIF_VISTAS_KEY, vistasRef.current);
+    const ajustes = getAvisosApp();
+    if (ajustes.cartel) setAvisosNuevos(nuevos.slice(0, 2));
+    if (ajustes.sonido) sonidoAviso();
+    setCampanaSacude((v) => v + 1);
+  }, [notificaciones, actividadLista]);
+  useEffect(() => { if (!avisosNuevos.length) return; const t = setTimeout(() => setAvisosNuevos([]), 6000); return () => clearTimeout(t); }, [avisosNuevos]);
   const marcarNotifLeida = (id) => {
     setNotifLeidas((prev) => { if (prev.has(id)) return prev; const next = new Set(prev); next.add(id); saveIdSet(NOTIF_LEIDAS_KEY, next); return next; });
   };
@@ -5010,6 +5066,30 @@ export default function MiZona() {
     persistOne(ownerBizId, (b) => ({ ...b, discounts: b.discounts.filter((d) => d.id !== discountId) }));
   };
 
+  // Botón "atrás" de Android: cierra la pantalla o ventana de más arriba en vez de salir de la app (de abajo hacia arriba)
+  useAtrasDeCapas([
+    [!!selectedId, () => setSelectedId(null)],
+    [showFavoritos, () => setShowFavoritos(false)],
+    [showMapa, () => setShowMapa(false)],
+    [showRanking, () => setShowRanking(false)],
+    [showAgenda, () => setShowAgenda(false)],
+    [!!puntosView, () => setPuntosView(null)],
+    [showNotificaciones, () => setShowNotificaciones(false)],
+    [showBusquedaAsistente, () => setShowBusquedaAsistente(false)],
+    [!!chatBiz, () => setChatBiz(null)],
+    [!!subHerramientas, () => setSubHerramientas(null)],
+    [!!subAjustes, () => setSubAjustes(null)],
+    [showEditOwnerBiz, () => setShowEditOwnerBiz(false)],
+    [showAddSheet, () => setShowAddSheet(false)],
+    [showAddBusiness, () => setShowAddBusiness(false)],
+    [!!borrador, () => setBorrador(null)],
+    [!!planesModal, () => setPlanesModal(null)],
+    [!!addBusinessDone, () => setAddBusinessDone(null)],
+    [!!showLogin, () => setShowLogin(null)],
+    [confirmarSalida, () => setConfirmarSalida(false)],
+    [!!lightboxSrc, () => setLightboxSrc(null)],
+  ]);
+
   // Puerta de entrada: sin sesión se ve la bienvenida (Empezar → Registrarme / Iniciar sesión); con sesión abierta se entra directo al inicio.
   if (!sesionRevisada) return <div style={{ position: "fixed", inset: 0, background: "#050b2a" }} aria-hidden="true" />;
   if (!usuario) return <PantallaBienvenida onLogged={(u) => setUsuario(u)} />;
@@ -5055,6 +5135,7 @@ export default function MiZona() {
       <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
         <NotificacionesScreen
+          usuario={usuario}
           notificaciones={notificaciones}
           leidas={notifLeidas}
           onBack={() => setShowNotificaciones(false)}
@@ -5192,7 +5273,7 @@ export default function MiZona() {
         </div>
       )}
       {confirmandoPago && (
-        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "#EDF1FF", color: "#0B1437" }}>
+        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "var(--azul-suave)", color: "#0B1437" }}>
           Confirmando tu pago con Mercado Pago...
         </div>
       )}
@@ -5214,6 +5295,22 @@ export default function MiZona() {
         );
       })()}
 
+      {/* avisos emergentes: llegó algo nuevo (igual que en Mi Asistente) */}
+      {avisosNuevos.length > 0 && (
+        <div className="fixed left-0 right-0 z-[60] flex flex-col items-center gap-2 px-3 pointer-events-none" style={{ top: "calc(10px + env(safe-area-inset-top, 0px))" }}>
+          {avisosNuevos.map((n) => {
+            const t = NOTIF_TIPOS[n.tipo] || NOTIF_TIPOS.pedido; const TI = t.Icon;
+            return (
+              <button key={n.id} onClick={() => { setAvisosNuevos([]); setShowNotificaciones(true); }} className="pointer-events-auto w-full max-w-sm flex items-center gap-3 px-3.5 py-3 text-left" data-conservar-color
+                style={{ borderRadius: 16, background: "var(--azul-oscuro)", color: "#fff", boxShadow: "0 12px 30px rgba(5,20,45,.4)", animation: "zona-subir .35s cubic-bezier(0.22,1,0.36,1) both" }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,.14)" }}><TI size={18} color="#fff" /></span>
+                <span className="flex-1 min-w-0 leading-tight"><strong className="block text-sm truncate">{n.titulo}</strong><span className="block text-xs mt-0.5 truncate" style={{ color: "var(--azul-palido)" }}>{n.descripcion}</span></span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* la cabecera (menú, buscador, zona y categorías) se ve solo en Inicio */}
       {activeTab === "inicio" ? (
         <PublicHeader
@@ -5225,7 +5322,7 @@ export default function MiZona() {
           onAjustes={() => irATab("ajustes")}
           onAyuda={() => { irATab("ajustes"); setSubAjustes("ayuda"); }}
           onSoporte={() => { irATab("ajustes"); setSubAjustes("soporte"); }}
-          notifSinLeer={notifSinLeer}
+          notifSinLeer={notifSinLeer} campanaSacude={campanaSacude}
           onOpenNotificaciones={() => setShowNotificaciones(true)}
         />
       ) : (subHerramientas || subAjustes) ? null : (
@@ -5287,8 +5384,8 @@ export default function MiZona() {
               className="w-full flex items-center gap-3 p-3.5 text-left"
               style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
             >
-              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#EDF1FF" }}>
-                <Building2 size={19} color="#2350F5" />
+              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "var(--azul-suave)" }}>
+                <Building2 size={19} color="var(--azul)" />
               </span>
               <span>
                 <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Agregar mi negocio</span>
@@ -5318,14 +5415,14 @@ export default function MiZona() {
             <p className="text-sm mb-5" style={{ color: "#2B3768" }}>
               Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
-                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}>
+                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}>
               Entendido
             </button>
           </div>
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: 90 }}>
+      <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: "calc(160px + env(safe-area-inset-bottom, 0px))" }}>
         {activeTab === "ajustes" ? (
           <AjustesScreen
             sub={subAjustes} setSub={setSubAjustes}
@@ -5395,7 +5492,7 @@ export default function MiZona() {
               setShowMapa(true);
             }}
             className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 shrink-0"
-            style={{ borderRadius: 20, background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", color: "#fff", boxShadow: "0 6px 14px rgba(11,20,55,.28)" }}
+            style={{ borderRadius: 20, background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", color: "#fff", boxShadow: "0 6px 14px rgba(11,20,55,.28)" }}
           >
             <MapIcon size={13} /> Ver en el mapa
           </button>
@@ -5441,9 +5538,9 @@ export default function MiZona() {
                 className="flex items-center gap-1.5 font-medium px-3.5 py-2"
                 style={{
                   fontSize: 13, borderRadius: 20,
-                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "#EDF1FF") : "#fff",
-                  color: c.activo ? (c.verde ? "#1E6B44" : "#2350F5") : "#2B3768",
-                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "#2350F5") : "#E3E7F1"),
+                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "var(--azul-suave)") : "#fff",
+                  color: c.activo ? (c.verde ? "#1E6B44" : "var(--azul)") : "#2B3768",
+                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "var(--azul)") : "#E3E7F1"),
                 }}
               >
                 {c.icono}
@@ -5454,7 +5551,7 @@ export default function MiZona() {
         </div>
 
         {sortBy === "cercanos" && locStatus === "idle" && (
-          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "#EDF1FF", borderRadius: 10 }}>
+          <div className="flex items-center justify-between gap-3 mb-4 px-4 py-3" style={{ background: "var(--azul-suave)", borderRadius: 10 }}>
             <p className="text-sm" style={{ color: "#0B1437" }}>Activá tu ubicación para ver qué negocios tenés más cerca.</p>
             <button
               onClick={requestLocation}
@@ -5510,18 +5607,20 @@ export default function MiZona() {
         )}
       </main>
 
+      {!subAjustes && !subHerramientas && (
       <button
         onClick={() => setShowBusquedaAsistente(true)}
         className="fixed z-40 flex items-center justify-center"
         style={{
           right: 16, bottom: 78, width: 54, height: 54, borderRadius: "50%",
-          background: "linear-gradient(135deg, #2350F5, #7FA8F5)",
-          boxShadow: "0 8px 20px rgba(35,80,245,0.45)",
+          background: "linear-gradient(135deg, var(--azul), var(--azul-claro))",
+          boxShadow: "0 8px 20px rgba(var(--azul-rgb),0.45)",
         }}
         aria-label="Buscar con el asistente"
       >
         <Search size={22} color="#fff" />
       </button>
+      )}
 
       <BottomNav
         active={activeTab}

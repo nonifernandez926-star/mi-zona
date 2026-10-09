@@ -36,7 +36,7 @@ function Interruptor({ activo, onChange, disabled, etiqueta }) {
     <button
       role="switch" aria-checked={activo} aria-label={etiqueta} disabled={disabled} onClick={() => onChange(!activo)}
       className="shrink-0 relative"
-      style={{ width: 50, height: 30, borderRadius: 15, background: activo ? "linear-gradient(180deg,#2A58FF,#1F47E0)" : "#CBD3E1", boxShadow: "inset 0 1px 2px rgba(11,20,55,.18)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer", transition: "background .22s ease, opacity .2s ease" }}
+      style={{ width: 50, height: 30, borderRadius: 15, background: activo ? "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))" : "#CBD3E1", boxShadow: "inset 0 1px 2px rgba(11,20,55,.18)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer", transition: "background .22s ease, opacity .2s ease" }}
     >
       <span className="absolute" style={{ top: 3, left: activo ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.25), 0 3px 8px -1px rgba(0,0,0,.2)", transition: "left .24s cubic-bezier(0.22,1,0.36,1)" }} />
     </button>
@@ -99,7 +99,7 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
       setTimeout(() => setEstado((e) => (e && e.ok ? null : e)), 5000);
     } catch (e) { setEstado({ error: e.message || "No se pudo completar. Probá de nuevo." }); }
   };
-  const color = danger ? "#9A3B34" : "#2350F5";
+  const color = danger ? "#9A3B34" : "var(--azul)";
   return (
     <div className="px-4 py-3.5" style={ultimo ? null : LINEA}>
       <div className="flex items-center gap-3">
@@ -172,7 +172,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
       <div className="flex items-start gap-3.5 p-4 mb-6" style={{ borderRadius: 20, background: "linear-gradient(135deg,#F3F7FF,#E6EFFD)", border: "1px solid #D6E3FB" }}>
-        <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: "linear-gradient(135deg,#2350F5,#6C9BF5)", boxShadow: "0 8px 18px -6px rgba(35,80,245,.6)" }}>
+        <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: "linear-gradient(135deg,var(--azul),#6C9BF5)", boxShadow: "0 8px 18px -6px rgba(var(--azul-rgb),.6)" }}>
           <ShieldCheck size={22} color="#fff" />
         </span>
         <div className="min-w-0">
@@ -231,7 +231,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         ) : (
           <div className="px-4 py-3.5" style={LINEA}>
             <p className="text-sm mb-3" style={{ color: "#374151", lineHeight: 1.5 }}>No iniciaste sesión: no tenemos ningún dato tuyo en el servidor.</p>
-            <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 12, background: "#2350F5", color: "#fff", boxShadow: "0 8px 18px -8px rgba(35,80,245,.7)" }}>Iniciar sesión</button>
+            <button onClick={onLogin} className="w-full text-sm font-semibold py-2.5" style={{ borderRadius: 12, background: "var(--azul)", color: "#fff", boxShadow: "0 8px 18px -8px rgba(var(--azul-rgb),.7)" }}>Iniciar sesión</button>
           </div>
         )}
         <Dato etiqueta="Favoritos en este dispositivo" valor={contLocal.favoritos} />

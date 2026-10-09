@@ -115,11 +115,20 @@ export async function sesionClienteDe(usuario) {
   return usuario.sesionClienteId;
 }
 
+// Clave del equipo (SOPORTE_ADMIN_KEY), enviada en el encabezado x-soporte-key. Sin clave configurada, nadie pasa.
+export function claveAdminOk(req) {
+  const k = process.env.SOPORTE_ADMIN_KEY;
+  const recibida = req.get("x-soporte-key");
+  if (!k || typeof recibida !== "string") return false;
+  const a = Buffer.from(k), b = Buffer.from(recibida);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 // Límite de pedidos por persona (si hay sesión) o por IP. Devuelve un middleware.
 export function limitar(nombre, max, ventanaMs) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const quien = req.actor?.usuario ? `u${req.actor.usuario._id}` : `ip${req.ip || "?"}`;
-    if (!permitir(`${nombre}|${quien}`, max, ventanaMs)) return res.status(429).json({ error: "Hiciste muchos pedidos seguidos. Probá de nuevo en un rato." });
+    if (!(await permitir(`${nombre}|${quien}`, max, ventanaMs))) return res.status(429).json({ error: "Hiciste muchos pedidos seguidos. Probá de nuevo en un rato." });
     next();
   };
 }

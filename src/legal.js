@@ -1,5 +1,5 @@
 // Textos legales de Mi Zona. Si cambia algo de lo que la app hace con los datos, hay que actualizar también estas fechas y textos.
-export const LEGAL_ACTUALIZADO = "5 de octubre de 2026";
+export const LEGAL_ACTUALIZADO = "9 de octubre de 2026";
 
 export const TERMINOS = [
   { t: "1. Qué es Mi Zona", p: [
@@ -48,7 +48,11 @@ export const PRIVACIDAD_TEXTO = [
     "Las reseñas que escribís y las consultas que le mandás a Soporte.",
     "Si tenés un negocio: los datos que cargás de él (públicos) y tu agenda (privada).",
     "Los dispositivos en los que activaste las notificaciones, para poder enviarlas.",
+    "Las fotos que subís para tu negocio (visibles para todos) y las acciones sobre un negocio (ver, guardar, contactar) para armar sus estadísticas.",
     "Tus preferencias de privacidad (ubicación, chats, IA en la agenda).",
+  ] },
+  { t: "1 bis. Ubicación", p: [
+    "Si lo permitís, usamos la ubicación de tu dispositivo (solo mientras usás la aplicación) para ordenar los negocios por cercanía y mostrarte el clima. Cuando buscás con el asistente, la ubicación se envía a nuestro servidor solo para calcular distancias en ese momento: no la guardamos ni la usamos en segundo plano. Podés negarte o retirar el permiso desde los ajustes de tu celular y desde Ajustes → Privacidad.",
   ] },
   { t: "2. Lo que queda en tu dispositivo", p: [
     "Tus favoritos, los chats guardados, los negocios vistos, las búsquedas recientes y tus preferencias (como el modo oscuro) se guardan en tu dispositivo, no en nuestro servidor. Podés borrarlos desde Ajustes → Privacidad.",
@@ -65,6 +69,10 @@ export const PRIVACIDAD_TEXTO = [
     "Mercado Pago: cobra las suscripciones. Nunca vemos los datos de tu tarjeta.",
     "Cloudinary: aloja las fotos que sube un negocio, que son visibles para todos.",
     "Proveedores de mapas (CARTO, Esri y OpenStreetMap): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
+    "Open-Meteo: si permitís el uso de tu ubicación, recibe una ubicación aproximada para mostrarte el clima de tu zona.",
+    "OpenStreetMap (Nominatim) y datos.gob.ar (Georef): reciben la dirección o localidad que escribís para ubicarla en el mapa.",
+    "Google Fonts: recibe la dirección IP de tu dispositivo para entregarte la tipografía de la aplicación.",
+    "Servicios de alojamiento (servidor, base de datos y sitio web): guardan la información de la aplicación en nuestro nombre y no la usan para otros fines.",
   ], p2: [
     "También podemos compartir información si una autoridad competente lo exige conforme a la ley.",
   ] },

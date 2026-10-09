@@ -47,7 +47,7 @@ export async function revisarVencimientos() {
     const yaAvisado = b.suscripcion?.ultimoAvisoUmbral === umbral && b.suscripcion?.ultimoAvisoVencimiento === b.expiresAt;
     if (umbral !== null && !yaAvisado) {
       const msg = MENSAJES[umbral](b.name, Math.max(dias, 0));
-      await enviarPushAUsuario(b.ownerId, { ...msg, url: "/?tab=herramientas" });
+      await enviarPushAUsuario(b.ownerId, { ...msg, url: "/?tab=herramientas" }, "suscripcion");
       cambios["suscripcion.ultimoAvisoUmbral"] = umbral;
       cambios["suscripcion.ultimoAvisoVencimiento"] = b.expiresAt;
       resumen.avisos++;

@@ -8,6 +8,8 @@ const pushSuscripcionSchema = new mongoose.Schema(
     usuarioId: { type: String, required: true, index: true },
     endpoint: { type: String, required: true, unique: true },
     subscription: { type: mongoose.Schema.Types.Mixed, required: true },
+    nombre: { type: String, default: "" }, // "Chrome en Android": para que la persona reconozca el dispositivo
+    tipo: { type: String, default: "" },
   },
   { timestamps: true }
 );

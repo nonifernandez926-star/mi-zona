@@ -152,7 +152,7 @@ router.delete("/cuenta", async (req, res) => {
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    if (!permitir(`borrar-cuenta|${id}`, 5, 3600 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Probá de nuevo en un rato." });
+    if (!(await permitir(`borrar-cuenta|${id}`, 5, 3600 * 1000))) return res.status(429).json({ error: "Demasiados intentos. Probá de nuevo en un rato." });
     if (req.body?.confirmacion !== "ELIMINAR") return res.status(400).json({ error: "Escribí ELIMINAR para confirmar." });
 
     if (u.passwordHash || u.claveZona) {

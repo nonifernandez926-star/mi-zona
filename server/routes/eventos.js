@@ -15,7 +15,7 @@ const INTEGRACION_KEY = process.env.INTEGRACION_KEY || "";
 // Límite simple en memoria (sin dependencias nuevas): máx. 120 eventos por minuto por IP
 const golpes = new Map();
 function limitePorIP(req, res, next) {
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip;
+  const ip = req.ip || "sin-ip"; // con "trust proxy" activado, req.ip ya es la IP real (x-forwarded-for lo puede falsificar cualquiera)
   const ahora = Date.now();
   const reg = golpes.get(ip) || { desde: ahora, n: 0 };
   if (ahora - reg.desde > 60000) { reg.desde = ahora; reg.n = 0; }
@@ -41,7 +41,8 @@ router.post("/", limitePorIP, async (req, res) => {
     if (!repetido) await Evento.create({ bizId, tipo, clienteId });
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(e);
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
@@ -106,7 +107,8 @@ router.get("/resumen", async (req, res) => {
       datosDesde: primero ? diaArg(primero.createdAt) : null, // desde cuándo se registran estos datos
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(e);
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 

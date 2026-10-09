@@ -191,7 +191,7 @@ router.post("/revisar-vencimientos", async (req, res) => {
     res.json(await revisarVencimientos());
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 

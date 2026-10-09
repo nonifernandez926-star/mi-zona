@@ -1,18 +1,15 @@
 // Ajustes → Acerca de Mi Zona, Centro de ayuda y Soporte.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search, ChevronRight, Check, Loader2, Mail, Send, Info, FileText, ShieldCheck, Code, Share2, Inbox, LifeBuoy, MessageCircle,
-  Compass, User, Store, CreditCard, Star, Lock, Wrench, ThumbsUp, ThumbsDown, BookOpen, Clock, X,
+  Search, ChevronRight, Check, Loader2, Mail, Send, Info, MessageCircle, Sparkles, MapPin, Star, Bell, LifeBuoy, HelpCircle, BookOpen, X, Compass,
 } from "lucide-react";
-import { tonoDe } from "./tonos";
-import { BotonVolver, FilaMenu, Etiqueta, TARJETA_SEG, VERDE, AMBAR } from "./cuenta.jsx";
+import { BotonVolver, VERDE, AMBAR } from "./cuenta.jsx";
 import { soporteApi, SOPORTE_EMAIL, SOPORTE_WHATSAPP, APP_VERSION } from "./api.js";
-import { CATEGORIAS, ARTICULOS, POPULARES, articuloPorId, categoriaPorId, buscarArticulos, sugeridosPara } from "./ayudaContenido.js";
+import { CATEGORIAS, ARTICULOS, articuloPorId, categoriaPorId, buscarArticulos } from "./ayudaContenido.js";
 import { TERMINOS, PRIVACIDAD_TEXTO, LICENCIAS, LEGAL_ACTUALIZADO } from "./legal.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1437" };
 const TARJ = { borderRadius: 20, border: "1px solid #E3E7F1", background: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.04)" };
-const ICONOS = { Compass, User, Store, CreditCard, MessageCircle, Star, Lock, Wrench };
 
 function Cabecera({ titulo, sub, volver, onBack }) {
   return (
@@ -21,22 +18,6 @@ function Cabecera({ titulo, sub, volver, onBack }) {
       <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{titulo}</h2>
       {sub ? <p className="text-sm mt-1.5 mb-5" style={{ color: "#5B6482", lineHeight: 1.5 }}>{sub}</p> : <div className="mb-5" />}
     </>
-  );
-}
-
-// Fila simple de lista (artículo, consulta...) con flecha
-function FilaLista({ titulo, desc, derecha, onClick, ultimo, Icon, color, colorIcono }) {
-  const t = tonoDe(Icon);
-  return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 active:bg-slate-100" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF0F6" }}>
-      {Icon && <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: color || t.bg, boxShadow: `inset 0 0 0 1px ${t.aro}` }}><Icon size={18} color={colorIcono || t.fg} /></span>}
-      <span className="flex-1 min-w-0">
-        <span className="block text-[15px] font-semibold" style={{ color: "#0B1437", lineHeight: 1.3 }}>{titulo}</span>
-        {desc && <span className="block text-xs mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4 }}>{desc}</span>}
-      </span>
-      {derecha}
-      <ChevronRight size={18} color="#B9C0D6" className="shrink-0" />
-    </button>
   );
 }
 
@@ -56,15 +37,15 @@ function CuerpoArticulo({ cuerpo }) {
           <ol key={i} className="space-y-2.5">
             {b.pasos.map((p, j) => (
               <li key={j} className="flex gap-3 items-start">
-                <span className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", marginTop: 0, boxShadow: "0 4px 10px -3px rgba(35,80,245,.6)" }}>{j + 1}</span>
+                <span className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", marginTop: 0, boxShadow: "0 4px 10px -3px rgba(var(--azul-rgb),.6)" }}>{j + 1}</span>
                 <span className="text-[15px]" style={{ color: "#1F2937", lineHeight: 1.6 }}>{p}</span>
               </li>
             ))}
           </ol>
         );
         if (b.nota) return (
-          <div key={i} className="flex gap-2.5 p-3.5" style={{ borderRadius: 14, background: "#F3F7FF", border: "1px solid #D6E3FB", borderLeft: "4px solid #2350F5" }}>
-            <Info size={17} color="#2350F5" className="shrink-0" style={{ marginTop: 2 }} />
+          <div key={i} className="flex gap-2.5 p-3.5" style={{ borderRadius: 14, background: "#F3F7FF", border: "1px solid #D6E3FB", borderLeft: "4px solid var(--azul)" }}>
+            <Info size={17} color="var(--azul)" className="shrink-0" style={{ marginTop: 2 }} />
             <p className="text-sm" style={{ color: "#2B3768", lineHeight: 1.55 }}>{b.nota}</p>
           </div>
         );
@@ -74,165 +55,144 @@ function CuerpoArticulo({ cuerpo }) {
   );
 }
 
-function VistaArticulo({ art, onAbrir, onContactar }) {
-  const cat = categoriaPorId(art.cat);
-  const [voto, setVoto] = useState(null); // null | "si" | "no"
-  useEffect(() => { setVoto(null); window.scrollTo(0, 0); }, [art.id]);
-  const rel = (art.relacionados || []).map(articuloPorId).filter(Boolean);
-  const motivo = art.contactar || cat?.motivo || "otro";
+
+const hace = (iso) => {
+  if (!iso) return "";
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (m < 1) return "ahora";
+  if (m < 60) return `hace ${m} min`;
+  if (m < 1440) return `hace ${Math.round(m / 60)} h`;
+  const d = Math.round(m / 1440);
+  return d === 1 ? "ayer" : d < 30 ? `hace ${d} días` : fmtFecha(iso);
+};
+
+// Caja de ícono con el color del tema, como en Mi Asistente
+function IconoCaja({ Icon, color = "#2350F5", size = 18, caja = 38 }) {
+  const aCss = color.startsWith("var(") ? `color-mix(in srgb, ${color} 12%, white)` : `${color}1a`;
+  const aro = color.startsWith("var(") ? `color-mix(in srgb, ${color} 22%, white)` : `${color}33`;
+  return <span className="flex items-center justify-center shrink-0" style={{ width: caja, height: caja, borderRadius: Math.round(caja * 0.32), background: aCss, boxShadow: `inset 0 0 0 1px ${aro}` }}><Icon size={size} color={color} /></span>;
+}
+
+// Acordeón (igual que los de Mi Asistente): se abre y se cierra en el mismo lugar
+function Acordeon({ icono, color, titulo, sub, abierto, children, delay = 0 }) {
+  const ref = useRef(null);
+  useEffect(() => { if (abierto && ref.current) setTimeout(() => ref.current?.scrollIntoView({ block: "start", behavior: "smooth" }), 80); }, [abierto]);
   return (
-    <div>
-      <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mb-2" style={{ borderRadius: 999, background: "#EDF1FF", color: "#2350F5", letterSpacing: ".02em" }}>{cat?.titulo}</span>
-      <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="mb-4">{art.titulo}</h2>
+    <details ref={ref} open={!!abierto} className="zn-acordeon mb-2.5 overflow-hidden" style={{ ...TARJ, borderRadius: 16, animation: `zona-aparecer .35s ease ${delay}ms both` }}>
+      <summary className="flex items-center gap-3 p-3.5 cursor-pointer" style={{ listStyle: "none" }}>
+        {icono && <IconoCaja Icon={icono} color={color} />}
+        <span className="flex-1 min-w-0 flex flex-col">
+          <strong className="text-[15px]" style={{ color: "#0B1437", lineHeight: 1.3 }}>{titulo}</strong>
+          {sub && <small className="text-xs mt-0.5" style={{ color: "#8D95B0", fontWeight: 600 }}>{sub}</small>}
+        </span>
+        <ChevronRight size={16} color="#8D95B0" className="shrink-0 zn-chevron" />
+      </summary>
+      <div className="px-4 pb-4" style={{ animation: "zona-aparecer .3s ease both" }}>{children}</div>
+    </details>
+  );
+}
+
+/* =========================================================
+   CENTRO DE AYUDA  (mismo formato que el de Mi Asistente: buscador, temas y artículos que se abren)
+   ========================================================= */
+
+function ArticuloAyuda({ art, abierto, delay, onContactar }) {
+  const cat = categoriaPorId(art.cat);
+  const [voto, setVoto] = useState(null);
+  return (
+    <Acordeon icono={BookOpen} color={cat?.color} titulo={art.titulo} sub={cat?.titulo} abierto={abierto} delay={delay}>
       <CuerpoArticulo cuerpo={art.cuerpo} />
-
-      <div className="mt-6 p-4" style={TARJ}>
-        {voto === null && (
-          <>
-            <p className="text-sm font-semibold mb-3" style={{ color: "#0B1437" }}>¿Te sirvió este artículo?</p>
-            <div className="flex gap-2">
-              <button onClick={() => setVoto("si")} className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5" style={{ borderRadius: 12, border: "1px solid #D3DDEE", background: "#F8FAFE", color: "#0B1437" }}><ThumbsUp size={16} /> Sí</button>
-              <button onClick={() => setVoto("no")} className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5" style={{ borderRadius: 12, border: "1px solid #D3DDEE", background: "#F8FAFE", color: "#0B1437" }}><ThumbsDown size={16} /> No</button>
-            </div>
-          </>
-        )}
-        {voto === "si" && <p className="text-sm flex items-center gap-2 font-medium" style={{ color: "#1E6B44", animation: "zona-aparecer .28s cubic-bezier(0.22,1,0.36,1) both" }}><Check size={16} /> Gracias por avisarnos.</p>}
-        {voto === "no" && (
-          <>
-            <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>Lamentamos que no te haya servido. Contanos qué pasa y te ayudamos directamente.</p>
-            <button onClick={() => onContactar(motivo)} className="w-full text-sm font-bold py-3 flex items-center justify-center gap-2" style={{ borderRadius: 12, background: "#0B1437", color: "#fff" }}><Send size={16} /> Escribir a Soporte</button>
-          </>
-        )}
+      <div className="flex items-center gap-2 mt-4 pt-3 text-sm" style={{ borderTop: "1px solid #EEF0F6", color: "#5B6482" }}>
+        {voto === null && (<>
+          <span>¿Te sirvió?</span>
+          <button onClick={() => setVoto("si")} className="px-3.5 py-1.5 text-[13px] font-bold" style={{ border: "1px solid #E3E7F1", borderRadius: 9, background: "#fff", color: "#0B1437" }}>Sí</button>
+          <button onClick={() => setVoto("no")} className="px-3.5 py-1.5 text-[13px] font-bold" style={{ border: "1px solid #E3E7F1", borderRadius: 9, background: "#fff", color: "#0B1437" }}>No</button>
+        </>)}
+        {voto === "si" && <span className="flex items-center gap-1.5 font-bold" style={{ color: "#1E6B44" }}><Check size={15} /> ¡Gracias!</span>}
+        {voto === "no" && (<>
+          <span>Lamentamos eso.</span>
+          <button onClick={() => onContactar(art.contactar || cat?.motivo || "otro")} className="px-3.5 py-1.5 text-[13px] font-bold" style={{ border: "1px solid #E3E7F1", borderRadius: 9, background: "#fff", color: "var(--azul)" }}>Escribir a soporte</button>
+        </>)}
       </div>
-
-      {rel.length > 0 && (
-        <>
-          <Etiqueta>Te puede interesar</Etiqueta>
-          <div className="overflow-hidden" style={TARJ}>
-            {rel.map((r, i) => <FilaLista key={r.id} titulo={r.titulo} onClick={() => onAbrir(r.id)} ultimo={i === rel.length - 1} />)}
-          </div>
-        </>
-      )}
-    </div>
+    </Acordeon>
   );
 }
 
 export function AyudaScreen({ articuloInicial, onBack, onContactar }) {
-  const [pila, setPila] = useState(() => (articuloInicial && articuloPorId(articuloInicial) ? [{ v: "art", id: articuloInicial }] : [{ v: "home" }]));
   const [q, setQ] = useState("");
-  const actual = pila[pila.length - 1];
-  const ir = (e) => { setPila((p) => [...p, e]); window.scrollTo(0, 0); };
-  const atras = () => (pila.length > 1 ? setPila((p) => p.slice(0, -1)) : onBack());
-  const resultados = useMemo(() => buscarArticulos(q), [q]);
-
-  const volverTexto = pila.length > 1 ? "Volver al Centro de ayuda" : "Volver a Ajustes";
-
-  if (actual.v === "art") {
-    const art = articuloPorId(actual.id);
-    return (
-      <div>
-        <BotonVolver texto={volverTexto} onClick={atras} />
-        {art && <VistaArticulo art={art} onAbrir={(id) => ir({ v: "art", id })} onContactar={onContactar} />}
-      </div>
-    );
-  }
-
-  if (actual.v === "cat") {
-    const cat = categoriaPorId(actual.id);
-    const lista = ARTICULOS.filter((a) => a.cat === cat.id);
-    return (
-      <div>
-        <Cabecera titulo={cat.titulo} sub={cat.desc} volver={volverTexto} onBack={atras} />
-        <div className="overflow-hidden" style={TARJ}>
-          {lista.map((a, i) => <FilaLista key={a.id} titulo={a.titulo} onClick={() => ir({ v: "art", id: a.id })} ultimo={i === lista.length - 1} />)}
-        </div>
-      </div>
-    );
-  }
-
-  const buscando = q.trim().length > 0;
+  const [tema, setTema] = useState("todos");
+  const resultados = useMemo(() => {
+    const base = q.trim() ? buscarArticulos(q) : ARTICULOS;
+    return tema === "todos" ? base : base.filter((a) => a.cat === tema);
+  }, [q, tema]);
+  const inicial = articuloInicial && articuloPorId(articuloInicial) ? articuloInicial : null;
+  const chips = [{ id: "todos", titulo: "Todos" }, ...CATEGORIAS];
   return (
     <div>
-      <Cabecera titulo="Centro de ayuda" sub="Respuestas a las dudas más comunes sobre Mi Zona." volver={volverTexto} onBack={atras} />
+      <Cabecera titulo="Centro de ayuda" sub="Respuestas a las dudas más comunes sobre Mi Zona." volver="Volver a Ajustes" onBack={onBack} />
 
-      <div className="relative mb-1">
-        <Search size={18} color="#64748B" className="absolute" style={{ left: 14, top: 14 }} />
-        <input
-          value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscá una respuesta" maxLength={80} aria-label="Buscar en el Centro de ayuda"
-          className="w-full text-sm py-3" style={{ paddingLeft: 42, paddingRight: 40, borderRadius: 14, border: "1px solid #DCE5F2", background: "#fff", outline: "none" }}
-        />
-        {buscando && <button onClick={() => setQ("")} aria-label="Borrar búsqueda" className="absolute" style={{ right: 12, top: 12 }}><X size={18} color="#64748B" /></button>}
+      <div className="flex items-center gap-2.5 px-3.5 mb-3" style={{ background: "#fff", border: "1px solid #E3E7F1", borderRadius: 16 }}>
+        <Search size={18} color="#5B6482" className="shrink-0" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscá: negocios, pagos, avisos..." maxLength={80} aria-label="Buscar en el Centro de ayuda" autoComplete="off"
+          className="flex-1 min-w-0 py-3.5 text-[15px] bg-transparent outline-none" style={{ color: "#0B1437" }} />
+        {q && <button onClick={() => setQ("")} aria-label="Borrar búsqueda" className="p-1.5"><X size={16} color="#5B6482" /></button>}
       </div>
 
-      {buscando ? (
-        <>
-          <Etiqueta>{resultados.length ? `${resultados.length} ${resultados.length === 1 ? "resultado" : "resultados"}` : "Sin resultados"}</Etiqueta>
-          {resultados.length > 0 ? (
-            <div className="overflow-hidden" style={TARJ}>
-              {resultados.slice(0, 12).map((a, i, arr) => <FilaLista key={a.id} titulo={a.titulo} desc={categoriaPorId(a.cat)?.titulo} onClick={() => ir({ v: "art", id: a.id })} ultimo={i === arr.length - 1} />)}
-            </div>
-          ) : (
-            <div className="px-4 py-6 text-center" style={TARJ}>
-              <p className="text-sm mb-1" style={{ color: "#0B1437", fontWeight: 600 }}>No encontramos nada para “{q.trim()}”</p>
-              <p className="text-sm" style={{ color: "#5B6482", lineHeight: 1.5 }}>Probá con otras palabras o escribinos y lo vemos juntos.</p>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <Etiqueta>Preguntas frecuentes</Etiqueta>
-          <div className="overflow-hidden" style={TARJ}>
-            {POPULARES.map(articuloPorId).filter(Boolean).map((a, i, arr) => <FilaLista key={a.id} titulo={a.titulo} onClick={() => ir({ v: "art", id: a.id })} ultimo={i === arr.length - 1} />)}
-          </div>
+      <div className="flex gap-2 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
+        {chips.map((c) => {
+          const activo = tema === c.id;
+          return <button key={c.id} onClick={() => setTema(c.id)} className="shrink-0 text-[13px] font-bold px-3.5 py-2" style={{ borderRadius: 999, border: `1px solid ${activo ? "var(--azul-oscuro)" : "#E3E7F1"}`, background: activo ? "var(--azul-oscuro)" : "#fff", color: activo ? "#fff" : "#5B6482" }}>{c.titulo}</button>;
+        })}
+      </div>
 
-          <Etiqueta>Explorar por tema</Etiqueta>
-          <div className="overflow-hidden" style={TARJ}>
-            {CATEGORIAS.map((c, i) => (
-              <FilaMenu key={c.id} Icon={ICONOS[c.icono] || BookOpen} color={c.color} titulo={c.titulo} desc={c.desc} onClick={() => ir({ v: "cat", id: c.id })} ultimo={i === CATEGORIAS.length - 1} />
-            ))}
+      <div>
+        {resultados.length ? resultados.map((a, i) => <ArticuloAyuda key={a.id} art={a} abierto={a.id === inicial} delay={Math.min(i, 8) * 30} onContactar={onContactar} />) : (
+          <div className="text-center px-5 py-8">
+            <span className="inline-flex items-center justify-center mb-3" style={{ width: 62, height: 62, borderRadius: 20, background: "linear-gradient(145deg,#F1F3F8,#E5E9F1)", boxShadow: "inset 0 0 0 1px #D9DEEA" }}><Search size={26} color="#5B6482" /></span>
+            <strong className="block" style={{ color: "#0B1437" }}>Sin resultados</strong>
+            <p className="text-sm mt-1" style={{ color: "#5B6482" }}>Probá con otra palabra o escribinos y te ayudamos.</p>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
-      <div className="mt-6 p-4 flex items-center gap-3.5" style={TARJ}>
-        <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(180deg,#EEF4FF,#E0EBFD)", boxShadow: "inset 0 0 0 1px #D3E1FA" }}><LifeBuoy size={20} color="#2350F5" /></span>
+      <div className="mt-2 p-4 flex items-center gap-3" style={{ background: "var(--azul-suave)", borderRadius: 18 }}>
+        <IconoCaja Icon={MessageCircle} color="#7A4FD0" size={22} caja={44} />
         <span className="flex-1 min-w-0">
-          <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>¿No encontraste lo que buscabas?</span>
-          <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>Escribinos y te respondemos.</span>
+          <strong className="block text-sm" style={{ color: "#0B1437" }}>¿No encontraste lo que buscabas?</strong>
+          <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482" }}>Escribinos y te respondemos desde acá.</span>
         </span>
-        <button onClick={() => onContactar(null)} className="shrink-0 text-sm font-bold px-4 py-2.5" style={{ borderRadius: 12, background: "#0B1437", color: "#fff" }}>Contactar</button>
+        <button onClick={() => onContactar(null)} className="shrink-0 text-sm font-bold px-4 py-2.5" style={{ borderRadius: 12, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff" }}>Escribir</button>
       </div>
     </div>
   );
 }
 
 /* =========================================================
-   SOPORTE
+   SOPORTE  (una sola pantalla, como en Mi Asistente: ayuda, nueva consulta, contacto y mis consultas)
    ========================================================= */
 
 const MOTIVOS = [
-  { id: "cuenta", titulo: "Mi cuenta y acceso", desc: "No puedo entrar, mi nombre, mi contraseña" },
-  { id: "negocio", titulo: "Mi negocio", desc: "Registrarlo, editarlo, fotos o mapa" },
-  { id: "pagos", titulo: "Pagos y suscripción", desc: "Un pago, un vencimiento o un plan" },
-  { id: "asistente", titulo: "Chats y Mi Asistente", desc: "Chats, puntos o el asistente de un negocio" },
-  { id: "resenas", titulo: "Reseñas", desc: "Una reseña que escribí o que recibí" },
-  { id: "error", titulo: "Algo no funciona", desc: "Un error o algo que se ve mal" },
-  { id: "sugerencia", titulo: "Sugerencia", desc: "Una idea para mejorar Mi Zona" },
-  { id: "otro", titulo: "Otro tema", desc: "Cualquier otra consulta" },
+  { id: "cuenta", titulo: "Mi cuenta y acceso" },
+  { id: "negocio", titulo: "Mi negocio" },
+  { id: "pagos", titulo: "Pagos y suscripción" },
+  { id: "asistente", titulo: "Chats y Mi Asistente" },
+  { id: "resenas", titulo: "Reseñas" },
+  { id: "error", titulo: "Algo no funciona" },
+  { id: "sugerencia", titulo: "Sugerencia" },
+  { id: "otro", titulo: "Otra cosa" },
 ];
-const NOMBRE_MOTIVO = Object.fromEntries(MOTIVOS.map((m) => [m.id, m.titulo]));
 
 const ESTADO = {
-  abierta: { texto: "En revisión", fondo: "#FFF1D6", color: AMBAR },
-  respondida: { texto: "Respondida", fondo: "#E4F3EA", color: VERDE },
+  abierta: { texto: "En revisión", fondo: "#FDECC4", color: "#8A5600" },
+  respondida: { texto: "Respondida", fondo: "#D3F0E1", color: "#14663B" },
   cerrada: { texto: "Resuelta", fondo: "#EEF0F6", color: "#5B6482" },
 };
-function Chip({ estado }) {
+function Pastilla({ estado }) {
   const e = ESTADO[estado] || ESTADO.abierta;
-  return <span className="text-[11px] font-bold px-2.5 py-0.5 shrink-0" style={{ borderRadius: 999, background: e.fondo, color: e.color }}>{e.texto}</span>;
+  return <span className="text-[10.5px] font-extrabold px-2.5 py-1 shrink-0" style={{ borderRadius: 7, background: e.fondo, color: e.color, letterSpacing: ".05em", textTransform: "uppercase" }}>{e.texto}</span>;
 }
 
-// Datos que ayudan a reproducir un problema. Se muestran antes de enviar.
+// Datos que ayudan a reproducir un problema. Se envían junto con la consulta.
 function datosTecnicos() {
   const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
   const nav = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Otro navegador";
@@ -240,19 +200,21 @@ function datosTecnicos() {
   return `Mi Zona ${APP_VERSION} · ${nav} en ${so}`;
 }
 
+const CAMPO = { width: "100%", borderRadius: 12, border: "1px solid #E3E7F1", background: "#fff", color: "#0B1437", padding: "12px 14px", fontSize: 16 };
+const ETIQUETA = { display: "block", fontSize: 13, fontWeight: 700, color: "#2B3768", margin: "14px 0 6px" };
+const TITULO_GRUPO = { margin: "0 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#8D95B0" };
+
 export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBack, onLogin, onIrAyuda }) {
-  const [vista, setVista] = useState(directo ? "nueva" : "inicio"); // inicio | nueva | enviada | mias | detalle
-  const [artAbierto, setArtAbierto] = useState(null); // artículo del Centro de ayuda abierto sin salir de la consulta
-  const [motivo, setMotivo] = useState(temaInicial || null);
-  const [asunto, setAsunto] = useState("");
+  const [motivo, setMotivo] = useState(temaInicial || "otro");
   const [mensaje, setMensaje] = useState("");
   const [email, setEmail] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const [enviada, setEnviada] = useState(null);
+  const [okMsg, setOkMsg] = useState(null);
   const [lista, setLista] = useState(null);
   const [errorLista, setErrorLista] = useState(false);
-  const [detalleId, setDetalleId] = useState(null);
+  const formRef = useRef(null);
+  const tecnico = useMemo(datosTecnicos, []);
 
   const cargarLista = () => {
     if (!usuario) { setLista([]); return; }
@@ -260,133 +222,78 @@ export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBa
     soporteApi.mias().then(setLista).catch(() => setErrorLista(true));
   };
   useEffect(cargarLista, [usuario?.id]);
-  useEffect(() => { window.scrollTo(0, 0); }, [vista]);
+  useEffect(() => { window.scrollTo(0, 0); if (directo) setTimeout(() => formRef.current?.querySelector("textarea")?.focus(), 150); }, []);
 
-  const volverInicio = () => setVista("inicio");
-  const tecnico = useMemo(datosTecnicos, []);
-  const sugeridos = motivo ? sugeridosPara(motivo) : [];
   const correoOk = usuario || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
-  const puedeEnviar = motivo && asunto.trim().length >= 3 && mensaje.trim().length >= 15 && correoOk && !enviando;
+  const puedeEnviar = mensaje.trim().length >= 15 && correoOk && !enviando;
 
-  const enviar = async () => {
-    setEnviando(true); setError(null);
+  const enviar = async (e) => {
+    e.preventDefault();
+    if (!puedeEnviar) return;
+    setEnviando(true); setError(null); setOkMsg(null);
+    const texto = mensaje.trim();
+    const asunto = texto.replace(/\s+/g, " ").slice(0, 60);
     try {
-      const c = await soporteApi.enviar({ motivo, asunto: asunto.trim(), mensaje: mensaje.trim(), email: usuario ? undefined : email.trim(), tecnico });
-      setEnviada(c); setAsunto(""); setMensaje(""); setVista("enviada"); cargarLista();
-    } catch (e) { setError(e.message || "No pudimos enviar tu consulta. Probá de nuevo."); }
+      const c = await soporteApi.enviar({ motivo, asunto, mensaje: texto, email: usuario ? undefined : email.trim(), tecnico });
+      setMensaje(""); setOkMsg(usuario ? `Consulta enviada (${c.codigo}). Te respondemos por acá.` : `Consulta enviada (${c.codigo}). Te respondemos por correo.`); cargarLista();
+    } catch (err) { setError(err.message || "No pudimos enviar tu consulta. Probá de nuevo."); }
     finally { setEnviando(false); }
   };
 
-  /* ----- Artículo sugerido (se abre acá para no perder lo escrito) ----- */
-  if (artAbierto && articuloPorId(artAbierto)) {
-    return (
-      <div>
-        <BotonVolver texto="Volver a la consulta" onClick={() => setArtAbierto(null)} />
-        <VistaArticulo art={articuloPorId(artAbierto)} onAbrir={setArtAbierto} onContactar={(m) => { setMotivo(m || motivo); setArtAbierto(null); }} />
-      </div>
-    );
-  }
+  const wa = SOPORTE_WHATSAPP ? `https://wa.me/${SOPORTE_WHATSAPP}?text=${encodeURIComponent("Hola, tengo una consulta sobre Mi Zona.")}` : null;
+  const mail = SOPORTE_EMAIL ? `mailto:${SOPORTE_EMAIL}?subject=${encodeURIComponent("Consulta sobre Mi Zona")}` : null;
+  const hayRespuesta = (lista || []).some((c) => c.estado === "respondida");
 
-  /* ----- Nueva consulta ----- */
-  if (vista === "nueva") {
-    return (
-      <div>
-        <Cabecera titulo="Nueva consulta" sub={motivo ? null : "Elegí el tema para ayudarte más rápido."} volver="Volver a Soporte" onBack={volverInicio} />
+  return (
+    <div>
+      <Cabecera titulo="Soporte" sub="Contanos qué necesitás y te respondemos desde acá." volver={textoVolver || "Volver a Ajustes"} onBack={onBack} />
 
-        <Etiqueta>Tema</Etiqueta>
-        <div className="overflow-hidden" style={TARJ}>
-          {MOTIVOS.map((m, i) => {
-            const activo = motivo === m.id;
-            return (
-              <button key={m.id} onClick={() => setMotivo(m.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left" style={{ borderBottom: i === MOTIVOS.length - 1 ? "none" : "1px solid #EEF0F6", background: activo ? "#F3F7FF" : "#fff", boxShadow: activo ? "inset 3px 0 0 #2350F5" : "none" }}>
-                <span className="flex items-center justify-center shrink-0" style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${activo ? "#2350F5" : "#C3CCDC"}`, transition: "border-color .2s" }}>{activo && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2350F5" }} />}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>{m.titulo}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{m.desc}</span>
-                </span>
-              </button>
-            );
-          })}
+      <button onClick={onIrAyuda} className="w-full flex items-center gap-3 p-3.5 mb-4 text-left" style={TARJ}>
+        <IconoCaja Icon={HelpCircle} color="#0E8FB5" />
+        <span className="flex-1 min-w-0">
+          <span className="block text-[15px] font-semibold" style={{ color: "#0B1437" }}>Mirá primero el Centro de ayuda</span>
+          <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>Quizás la respuesta ya está ahí</span>
+        </span>
+        <ChevronRight size={18} color="#B9C0D6" className="shrink-0" />
+      </button>
+
+      <form ref={formRef} onSubmit={enviar} noValidate className="p-4 mb-4" style={TARJ}>
+        <h4 style={{ margin: "0 0 4px", fontWeight: 800, color: "#0B1437" }}>Nueva consulta</h4>
+        <label htmlFor="so-tema" style={ETIQUETA}>¿Sobre qué es?</label>
+        <select id="so-tema" value={motivo} onChange={(e) => setMotivo(e.target.value)} style={CAMPO}>
+          {MOTIVOS.map((m) => <option key={m.id} value={m.id}>{m.titulo}</option>)}
+        </select>
+
+        {!usuario && (<>
+          <label htmlFor="so-mail" style={ETIQUETA}>Tu correo</label>
+          <input id="so-mail" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} placeholder="nombre@ejemplo.com" style={CAMPO} />
+          <p className="text-xs mt-1.5" style={{ color: "#5B6482", lineHeight: 1.45 }}>Te respondemos a este correo. Si tenés cuenta, <button type="button" onClick={() => onLogin()} className="font-semibold underline" style={{ color: "var(--azul)" }}>iniciá sesión</button> y ves la respuesta acá.</p>
+        </>)}
+
+        <label htmlFor="so-msg" style={ETIQUETA}>Contanos qué pasa</label>
+        <textarea id="so-msg" rows={5} maxLength={2000} value={mensaje} onChange={(e) => setMensaje(e.target.value)} placeholder="Cuanto más detalle, más rápido podemos ayudarte." style={{ ...CAMPO, resize: "vertical", minHeight: 110 }} />
+        <p className="text-xs mt-1 text-right" style={{ color: mensaje.trim().length > 0 && mensaje.trim().length < 15 ? AMBAR : "#8D95B0" }}>{mensaje.length}/2000</p>
+
+        {error && <p className="text-sm mt-2" role="alert" style={{ color: "#C1443A" }}>{error}</p>}
+        {okMsg && <p className="text-sm mt-2 flex items-center gap-1.5 font-semibold" style={{ color: "#1E6B44" }}><Check size={15} /> {okMsg}</p>}
+        <button type="submit" disabled={!puedeEnviar} className="w-full text-sm font-bold py-3.5 mt-3 flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", opacity: puedeEnviar ? 1 : 0.45 }}>
+          {enviando ? <><Loader2 size={16} className="animate-spin" /> Enviando...</> : <><Send size={16} /> Enviar consulta</>}
+        </button>
+      </form>
+
+      {(wa || mail) && (
+        <div className="flex flex-col gap-2 mb-5">
+          {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 text-sm font-bold py-3" style={{ borderRadius: 14, background: "var(--azul-suave)", color: "var(--azul)" }}><MessageCircle size={18} /> Escribir por WhatsApp</a>}
+          {mail && <a href={mail} className="w-full flex items-center justify-center gap-2 text-sm font-bold py-3" style={{ borderRadius: 14, background: "var(--azul-suave)", color: "var(--azul)" }}><Mail size={18} /> Enviar un correo</a>}
         </div>
+      )}
 
-        {motivo && sugeridos.length > 0 && (
-          <>
-            <Etiqueta>Antes de escribir, mirá esto</Etiqueta>
-            <div className="overflow-hidden" style={TARJ}>
-              {sugeridos.map((a, i) => <FilaLista key={a.id} Icon={BookOpen} titulo={a.titulo} onClick={() => setArtAbierto(a.id)} ultimo={i === sugeridos.length - 1} />)}
-            </div>
-          </>
-        )}
-
-        {motivo && (
-          <>
-            <Etiqueta>Tu consulta</Etiqueta>
-            <div className="p-4" style={TARJ}>
-              {!usuario && (
-                <>
-                  <label className="text-[13px] font-semibold block mb-1.5" style={{ color: "#2B3768" }}>Tu correo</label>
-                  <input type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} placeholder="nombre@ejemplo.com"
-                    className="w-full border px-3 py-2.5 text-sm mb-1" style={{ borderRadius: 12, borderColor: "#E3E7F1" }} />
-                  <p className="text-xs mb-3" style={{ color: "#5B6482", lineHeight: 1.45 }}>Te respondemos a este correo. Si tenés cuenta, <button onClick={() => onLogin()} className="font-semibold underline" style={{ color: "#2350F5" }}>iniciá sesión</button> y ves la respuesta acá.</p>
-                </>
-              )}
-              {usuario && <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#5B6482" }}><Mail size={13} /> Respondemos en tu cuenta: <b className="truncate" style={{ color: "#0B1437" }}>{usuario.email}</b></p>}
-
-              <label className="text-[13px] font-semibold block mb-1.5" style={{ color: "#2B3768" }}>Asunto</label>
-              <input value={asunto} onChange={(e) => setAsunto(e.target.value)} maxLength={120} placeholder="Resumen en pocas palabras"
-                className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 12, borderColor: "#E3E7F1" }} />
-
-              <label className="text-[13px] font-semibold block mb-1.5" style={{ color: "#2B3768" }}>Mensaje</label>
-              <textarea value={mensaje} onChange={(e) => setMensaje(e.target.value)} maxLength={2000} rows={6}
-                placeholder={motivo === "error" ? "¿Qué estabas haciendo? ¿Qué esperabas que pasara y qué pasó?" : motivo === "pagos" ? "Contanos la fecha del pago y qué ves en la app. No envíes datos de tu tarjeta." : "Contanos con el mayor detalle posible."}
-                className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 12, borderColor: "#E3E7F1", resize: "vertical" }} />
-              <p className="text-xs mt-1 text-right" style={{ color: mensaje.trim().length > 0 && mensaje.trim().length < 15 ? AMBAR : "#6B7280" }}>{mensaje.length}/2000</p>
-
-              <p className="text-xs mt-2 mb-4 flex gap-1.5" style={{ color: "#5B6482", lineHeight: 1.45 }}><Info size={13} className="shrink-0" style={{ marginTop: 2 }} /> Se adjunta: {tecnico}. Sirve para encontrar el problema; no incluye tus datos personales.</p>
-
-              {error && <p className="text-sm mb-3" style={{ color: "#C1443A" }}>{error}</p>}
-              <button onClick={enviar} disabled={!puedeEnviar} className="w-full text-sm font-bold py-3.5 flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "#0B1437", color: "#fff", opacity: puedeEnviar ? 1 : 0.45 }}>
-                {enviando ? <><Loader2 size={16} className="animate-spin" /> Enviando...</> : <><Send size={16} /> Enviar consulta</>}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  /* ----- Confirmación ----- */
-  if (vista === "enviada" && enviada) {
-    return (
       <div>
-        <BotonVolver texto="Volver a Soporte" onClick={volverInicio} />
-        <div className="p-6 text-center" style={TARJ}>
-          <span className="flex items-center justify-center mx-auto mb-4" style={{ width: 60, height: 60, borderRadius: "50%", background: VERDE, boxShadow: "0 0 0 8px #E4F3EA, 0 12px 24px -8px rgba(30,138,85,.55)", animation: "zona-rebote .5s cubic-bezier(0.22,1,0.36,1) both" }}><Check size={30} color="#fff" strokeWidth={3} /></span>
-          <h2 style={{ ...TITULO, fontSize: 20, fontWeight: 800 }} className="mb-1.5">Recibimos tu consulta</h2>
-          <p className="text-sm mb-4" style={{ color: "#5B6482" }}>Número de consulta <b style={{ color: "#0B1437" }}>{enviada.codigo}</b></p>
-          <p className="text-sm" style={{ color: "#2B3768", lineHeight: 1.6 }}>
-            {usuario
-              ? "Vas a ver la respuesta en Mis consultas. Si tenés las notificaciones activadas, te avisamos cuando respondamos."
-              : "Te vamos a responder por correo a la dirección que nos dejaste. Revisá también la carpeta de spam."}
-          </p>
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button onClick={volverInicio} className="flex-1 text-sm font-bold py-3" style={{ borderRadius: 14, border: "1.5px solid #0B1437", color: "#0B1437" }}>Listo</button>
-          {usuario && <button onClick={() => { setDetalleId(enviada.id); setVista("detalle"); }} className="flex-1 text-sm font-bold py-3" style={{ borderRadius: 14, background: "#0B1437", color: "#fff" }}>Ver mi consulta</button>}
-        </div>
-      </div>
-    );
-  }
-
-  /* ----- Mis consultas ----- */
-  if (vista === "mias") {
-    return (
-      <div>
-        <Cabecera titulo="Mis consultas" sub="Lo que le escribiste al equipo y sus respuestas." volver="Volver a Soporte" onBack={volverInicio} />
+        <h4 className="flex items-center gap-2" style={TITULO_GRUPO}>Mis consultas{hayRespuesta && <span className="text-[10px] font-extrabold px-2 py-0.5" style={{ borderRadius: 7, background: "#FDECC4", color: "#8A5600", letterSpacing: ".05em" }}>RESPUESTA NUEVA</span>}</h4>
         {!usuario && (
           <div className="p-5 text-center" style={TARJ}>
             <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>Iniciá sesión para ver tus consultas y las respuestas del equipo.</p>
-            <button onClick={() => onLogin()} className="w-full text-sm font-bold py-3" style={{ borderRadius: 14, background: "#0B1437", color: "#fff" }}>Iniciar sesión</button>
+            <button onClick={() => onLogin()} className="w-full text-sm font-bold py-3" style={{ borderRadius: 14, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff" }}>Iniciar sesión</button>
           </div>
         )}
         {usuario && lista === null && !errorLista && <p className="text-sm flex items-center gap-2" style={{ color: "#5B6482" }}><Loader2 size={16} className="animate-spin" /> Cargando...</p>}
@@ -396,83 +303,25 @@ export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBa
           </div>
         )}
         {usuario && lista && lista.length === 0 && (
-          <div className="px-4 py-8 text-center" style={TARJ}>
-            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: 18, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E3E7F1" }}><Inbox size={26} color="#8D95B0" /></span>
-            <p className="text-sm mb-0.5" style={{ color: "#0B1437", fontWeight: 600 }}>Sin consultas todavía</p>
-            <p className="text-sm" style={{ color: "#5B6482", lineHeight: 1.5 }}>Cuando escribas al equipo, vas a verlas acá.</p>
+          <div className="text-center px-5 py-7">
+            <span className="inline-flex items-center justify-center mb-3" style={{ width: 62, height: 62, borderRadius: 20, background: "linear-gradient(145deg,#F3EDFD,#E6DBFA)", boxShadow: "inset 0 0 0 1px #DCCDF5" }}><MessageCircle size={26} color="#7A4FD0" /></span>
+            <strong className="block" style={{ color: "#0B1437" }}>Todavía no escribiste</strong>
+            <p className="text-sm mt-1" style={{ color: "#5B6482" }}>Tus consultas y nuestras respuestas aparecen acá.</p>
           </div>
         )}
-        {usuario && lista && lista.length > 0 && (
-          <div className="overflow-hidden" style={TARJ}>
-            {lista.map((c, i) => (
-              <FilaLista key={c.id} titulo={c.asunto} desc={`${c.codigo} · ${fmtFecha(c.creadaEn)}`} derecha={<Chip estado={c.estado} />} onClick={() => { setDetalleId(c.id); setVista("detalle"); }} ultimo={i === lista.length - 1} />
-            ))}
+        {usuario && lista && lista.map((c) => (
+          <div key={c.id} className="p-3.5 mb-2.5" style={{ ...TARJ, borderRadius: 16, ...(c.estado === "respondida" ? { borderColor: "var(--azul)", boxShadow: "0 0 0 3px rgba(var(--azul-rgb),.12)" } : null) }}>
+            <div className="flex items-center justify-between mb-2"><Pastilla estado={c.estado} /><small className="text-xs" style={{ color: "#8D95B0" }}>{hace(c.creadaEn)}</small></div>
+            <p className="text-sm" style={{ color: "#0B1437", lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.mensaje}</p>
+            {c.respuesta ? (
+              <div className="mt-3 p-3" style={{ background: "var(--azul-suave)", borderRadius: 12 }}>
+                <strong className="flex items-center gap-1.5 text-xs mb-1" style={{ color: "var(--azul)" }}><Sparkles size={14} /> Respuesta del equipo</strong>
+                <p className="text-sm" style={{ color: "#0B1437", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.respuesta}</p>
+              </div>
+            ) : c.estado !== "cerrada" && <small className="block mt-2 text-xs" style={{ color: "#8D95B0" }}>Te avisamos acá y en tus notificaciones cuando respondamos.</small>}
           </div>
-        )}
+        ))}
       </div>
-    );
-  }
-
-  /* ----- Detalle de una consulta ----- */
-  if (vista === "detalle") {
-    const c = (lista || []).find((x) => x.id === detalleId) || (enviada && enviada.id === detalleId ? enviada : null);
-    if (!c) return <div><BotonVolver texto="Volver a Soporte" onClick={volverInicio} /><p className="text-sm" style={{ color: "#5B6482" }}>No encontramos esa consulta.</p></div>;
-    const cerrar = async () => { try { await soporteApi.cerrar(c.id); cargarLista(); } catch { /* se puede reintentar */ } };
-    return (
-      <div>
-        <BotonVolver texto="Volver a Mis consultas" onClick={() => setVista("mias")} />
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h2 style={{ ...TITULO, fontSize: 20, fontWeight: 800, lineHeight: 1.25 }}>{c.asunto}</h2>
-          <Chip estado={c.estado} />
-        </div>
-        <p className="text-xs mb-5" style={{ color: "#5B6482" }}>{c.codigo} · {NOMBRE_MOTIVO[c.motivo]} · {fmtFechaHora(c.creadaEn)}</p>
-
-        <div className="p-4 mb-3" style={{ borderRadius: "18px 18px 18px 6px", background: "#F3F5FA", border: "1px solid #E3E7F1" }}>
-          <p className="text-xs font-bold mb-1" style={{ color: "#5B6482" }}>Tu mensaje</p>
-          <p className="text-sm" style={{ color: "#1F2937", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{c.mensaje}</p>
-        </div>
-        {c.respuesta ? (
-          <div className="p-4 mb-4" style={{ borderRadius: "18px 18px 6px 18px", background: "#EDF1FF", border: "1px solid #CFE0FB" }}>
-            <p className="text-xs font-bold mb-1" style={{ color: "#2350F5" }}>Respuesta del equipo de Mi Zona · {fmtFechaHora(c.respondidaEn)}</p>
-            <p className="text-sm" style={{ color: "#0B1437", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{c.respuesta}</p>
-          </div>
-        ) : (
-          c.estado !== "cerrada" && <p className="text-sm mb-4 flex items-center gap-2" style={{ color: "#5B6482" }}><Clock size={15} /> Todavía no respondimos. Te avisamos cuando lo hagamos.</p>
-        )}
-        {c.estado !== "cerrada" && (
-          <button onClick={cerrar} className="w-full text-sm font-bold py-3 mb-2" style={{ borderRadius: 14, border: "1.5px solid #0B1437", color: "#0B1437" }}>Marcar como resuelta</button>
-        )}
-        {c.estado === "respondida" && (
-          <button onClick={() => { setMotivo(c.motivo); setAsunto(`Re: ${c.asunto}`.slice(0, 120)); setVista("nueva"); }} className="w-full text-sm font-semibold py-3" style={{ color: "#2350F5" }}>Sigo con el problema: escribir de nuevo</button>
-        )}
-      </div>
-    );
-  }
-
-  /* ----- Inicio de Soporte ----- */
-  const abiertas = (lista || []).filter((c) => c.estado !== "cerrada").length;
-  const conRespuesta = (lista || []).filter((c) => c.estado === "respondida").length;
-  const wa = SOPORTE_WHATSAPP ? `https://wa.me/${SOPORTE_WHATSAPP}?text=${encodeURIComponent("Hola, tengo una consulta sobre Mi Zona.")}` : null;
-  const mail = SOPORTE_EMAIL ? `mailto:${SOPORTE_EMAIL}?subject=${encodeURIComponent("Consulta sobre Mi Zona")}` : null;
-  return (
-    <div>
-      <Cabecera titulo="Soporte" sub="Contanos qué necesitás y te respondemos desde acá." volver={textoVolver || "Volver a Ajustes"} onBack={onBack} />
-
-      <div className="overflow-hidden" style={TARJ}>
-        <FilaMenu Icon={Send} color="#0B1437" titulo="Enviar una consulta" desc="Escribile al equipo de Mi Zona" onClick={() => { setMotivo(null); setVista("nueva"); }} />
-        <FilaMenu Icon={Inbox} color="#2350F5" titulo="Mis consultas" desc={usuario ? (conRespuesta ? `${conRespuesta} ${conRespuesta === 1 ? "con respuesta nueva" : "con respuesta"}` : abiertas ? `${abiertas} en revisión` : "Tus mensajes y respuestas") : "Iniciá sesión para verlas"} valor={usuario && lista && lista.length ? String(lista.length) : null} tonoValor="#5B6482" onClick={() => setVista("mias")} />
-        <FilaMenu Icon={BookOpen} color="#1E8A55" titulo="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={onIrAyuda} ultimo />
-      </div>
-
-      {(wa || mail) && (
-        <>
-          <Etiqueta>Otras formas de contacto</Etiqueta>
-          <div className="overflow-hidden" style={TARJ}>
-            {wa && <FilaMenu Icon={MessageCircle} color="#1E8A55" titulo="WhatsApp" desc="Escribinos por mensaje" onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} ultimo={!mail} />}
-            {mail && <FilaMenu Icon={Mail} color="#C77A0A" titulo="Correo" desc={SOPORTE_EMAIL} onClick={() => { window.location.href = mail; }} ultimo />}
-          </div>
-        </>
-      )}
 
       <p className="text-xs mt-6 px-1" style={{ color: "#5B6482", lineHeight: 1.55 }}>Para problemas de pago, no nos envíes los datos de tu tarjeta ni tu contraseña: nunca los pedimos.</p>
     </div>
@@ -480,110 +329,68 @@ export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBa
 }
 
 /* =========================================================
-   ACERCA DE MI ZONA
+   ACERCA DE MI ZONA  (mismo formato que el de Mi Asistente)
    ========================================================= */
 
-function TextoLegal({ titulo, secciones, volver, onBack }) {
+function SeccionesLegal({ secciones }) {
   return (
     <div>
-      <Cabecera titulo={titulo} sub={`Última actualización: ${LEGAL_ACTUALIZADO}`} volver={volver} onBack={onBack} />
-      <div className="p-5 space-y-5" style={{ ...TARJ, maxWidth: 720 }}>
-        {secciones.map((s, k) => (
-          <section key={s.t} style={k ? { borderTop: "1px solid #EEF0F6", paddingTop: 20 } : null}>
-            <h3 style={{ ...TITULO, fontSize: 15, fontWeight: 700 }} className="mb-1.5">{s.t}</h3>
-            {s.p.map((x, i) => <p key={i} className="text-sm mb-2" style={{ color: "#2B3768", lineHeight: 1.65 }}>{x}</p>)}
-            {s.l && (
-              <ul className="space-y-1.5 mb-2">
-                {s.l.map((x, i) => (
-                  <li key={i} className="flex gap-2.5 text-sm" style={{ color: "#2B3768", lineHeight: 1.6 }}><span className="shrink-0" style={{ width: 5, height: 5, borderRadius: "50%", background: "#94A3B8", marginTop: 9 }} /><span>{x}</span></li>
-                ))}
-              </ul>
-            )}
-            {s.p2 && s.p2.map((x, i) => <p key={i} className="text-sm mb-2" style={{ color: "#2B3768", lineHeight: 1.65 }}>{x}</p>)}
-          </section>
-        ))}
-      </div>
+      {secciones.map((s) => (
+        <div key={s.t}>
+          <h5 className="mt-3.5 mb-1 text-[13.5px] font-bold" style={{ color: "#0B1437" }}>{s.t}</h5>
+          {s.p && s.p.map((x, i) => <p key={i} className="text-sm mb-2" style={{ color: "#3A4466", lineHeight: 1.55 }}>{x}</p>)}
+          {s.l && <ul className="space-y-1.5 mb-2">{s.l.map((x, i) => <li key={i} className="flex gap-2.5 text-sm" style={{ color: "#3A4466", lineHeight: 1.55 }}><span className="shrink-0" style={{ width: 5, height: 5, borderRadius: "50%", background: "#94A3B8", marginTop: 8 }} /><span>{x}</span></li>)}</ul>}
+          {s.p2 && s.p2.map((x, i) => <p key={i} className="text-sm mb-2" style={{ color: "#3A4466", lineHeight: 1.55 }}>{x}</p>)}
+        </div>
+      ))}
     </div>
   );
 }
 
-function PasosBloque({ titulo, pasos }) {
+function FilaInfo({ Icon, color, titulo, desc }) {
   return (
-    <div className="p-4 mb-3" style={TARJ}>
-      <h3 style={{ ...TITULO, fontSize: 15, fontWeight: 700 }} className="mb-3">{titulo}</h3>
-      <ol className="space-y-2.5">
-        {pasos.map((p, i) => (
-          <li key={i} className="flex gap-3 items-start">
-            <span className="flex items-center justify-center shrink-0 text-xs font-bold" style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", marginTop: 0, boxShadow: "0 4px 10px -3px rgba(35,80,245,.6)" }}>{i + 1}</span>
-            <span className="text-sm" style={{ color: "#1F2937", lineHeight: 1.6 }}>{p}</span>
-          </li>
-        ))}
-      </ol>
+    <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: "1px solid #EEF0F6" }}>
+      <IconoCaja Icon={Icon} color={color} />
+      <span className="flex-1 min-w-0">
+        <span className="block text-[15px] font-semibold" style={{ color: "#0B1437", lineHeight: 1.3 }}>{titulo}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4 }}>{desc}</span>
+      </span>
     </div>
   );
 }
 
 export function AcercaScreen({ onBack, onIrSoporte }) {
-  const [vista, setVista] = useState(null); // null | "como" | "terminos" | "privacidad" | "licencias"
-  const [aviso, setAviso] = useState(null);
-  const atras = () => setVista(null);
-
-  const compartir = async () => {
-    const url = window.location.origin;
-    if (navigator.share) { try { await navigator.share({ title: "Mi Zona", text: "Encontrá los negocios de tu zona en Mi Zona", url }); } catch { /* cerró el menú de compartir */ } return; }
-    try { await navigator.clipboard.writeText(url); setAviso("Enlace copiado"); setTimeout(() => setAviso(null), 2500); } catch { setAviso("No se pudo copiar el enlace"); }
-  };
-
-  if (vista === "terminos") return <TextoLegal titulo="Términos y condiciones" secciones={TERMINOS} volver="Volver a Acerca de Mi Zona" onBack={atras} />;
-  if (vista === "privacidad") return <TextoLegal titulo="Política de privacidad" secciones={PRIVACIDAD_TEXTO} volver="Volver a Acerca de Mi Zona" onBack={atras} />;
-  if (vista === "como") {
-    return (
-      <div>
-        <Cabecera titulo="Cómo funciona" sub="Mi Zona conecta a los clientes con los negocios de su localidad." volver="Volver a Acerca de Mi Zona" onBack={atras} />
-        <PasosBloque titulo="Si buscás un negocio" pasos={["Elegí tu zona y buscá por nombre o categoría.", "Abrí la ficha para ver fotos, horarios, reseñas y cómo llegar.", "Contactalo por WhatsApp, llamá, o chateá con su asistente si lo tiene."]} />
-        <PasosBloque titulo="Si tenés un negocio" pasos={["Creá tu cuenta y tocá “+” para cargar tu negocio.", "Elegí un plan de 1, 3 o 6 meses y pagá con Mercado Pago.", "Tu negocio se publica al confirmarse el pago y lo administrás desde Herramientas."]} />
-      </div>
-    );
-  }
-  if (vista === "licencias") {
-    return (
-      <div>
-        <Cabecera titulo="Licencias" sub="Mi Zona usa estos proyectos de código abierto y datos abiertos." volver="Volver a Acerca de Mi Zona" onBack={atras} />
-        <div className="overflow-hidden" style={TARJ}>
-          {LICENCIAS.map((l, i) => (
-            <div key={l.nombre} className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ borderBottom: i === LICENCIAS.length - 1 ? "none" : "1px solid #EEF0F6" }}>
-              <span className="text-sm font-semibold" style={{ color: "#0B1437" }}>{l.nombre}</span>
-              <span className="text-xs text-right shrink-0" style={{ color: "#5B6482" }}>{l.licencia}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-      <div className="flex flex-col items-center text-center pt-2 pb-6">
-        <img src="/icono-192.png" alt="" width={76} height={76} style={{ borderRadius: 22, boxShadow: "0 0 0 1px rgba(11,20,55,.08), 0 14px 28px -10px rgba(11,20,55,.45)" }} />
-        <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }} className="mt-4">Mi Zona</h2>
-        <p className="text-sm mt-1" style={{ color: "#5B6482" }}>Versión {APP_VERSION}</p>
-        <p className="text-sm mt-3 px-4" style={{ color: "#2B3768", lineHeight: 1.6 }}>Los negocios de tu localidad, en un solo lugar.</p>
+      <div className="flex flex-col items-center text-center pt-2 pb-6 px-2">
+        <span className="inline-flex items-center justify-center mb-3" style={{ width: 72, height: 72, borderRadius: 24, background: "linear-gradient(145deg,var(--azul-g1),var(--azul-g2))", boxShadow: "0 12px 28px rgba(var(--azul-rgb),.4)" }}><MapPin size={32} color="#fff" /></span>
+        <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Mi Zona</h2>
+        <span className="text-sm mt-0.5" style={{ color: "#5B6482" }}>Versión {APP_VERSION}</span>
+        <p className="text-sm mt-3" style={{ color: "#2B3768", lineHeight: 1.6, maxWidth: 360 }}>Los negocios de tu localidad en un solo lugar: encontralos, mirá sus reseñas y contactalos o chateá con su asistente.</p>
       </div>
 
-      <div className="overflow-hidden" style={TARJ}>
-        <FilaMenu Icon={Info} color="#2350F5" titulo="Cómo funciona" onClick={() => setVista("como")} />
-        <FilaMenu Icon={FileText} color="#0B1437" titulo="Términos y condiciones" onClick={() => setVista("terminos")} />
-        <FilaMenu Icon={ShieldCheck} color="#1E8A55" titulo="Política de privacidad" onClick={() => setVista("privacidad")} />
-        <FilaMenu Icon={Code} color="#5B6482" titulo="Licencias" onClick={() => setVista("licencias")} ultimo />
+      <h4 style={TITULO_GRUPO}>Cómo funciona</h4>
+      <div className="overflow-hidden mb-5" style={TARJ}>
+        <FilaInfo Icon={Compass} color="#2350F5" titulo="Descubrí lo que hay en tu zona" desc="Elegí tu localidad y buscá por nombre, rubro o en el mapa." />
+        <FilaInfo Icon={Star} color="#C98A00" titulo="Reseñas de gente de tu zona" desc="Mirá opiniones, horarios y cómo llegar antes de ir." />
+        <FilaInfo Icon={MessageCircle} color="#7A4FD0" titulo="Chateá con el negocio" desc="Consultá por WhatsApp o con el asistente de cada negocio." />
+        <FilaInfo Icon={Bell} color="#E0731E" titulo="Te avisamos lo importante" desc="Pedidos, turnos, puntos y novedades, en la app y en el celular." />
       </div>
 
-      <div className="overflow-hidden mt-4" style={TARJ}>
-        <FilaMenu Icon={Share2} color="#7A4F9E" titulo="Compartir Mi Zona" desc={aviso || "Enviá el enlace a tus contactos"} onClick={compartir} />
-        <FilaMenu Icon={Send} color="#C77A0A" titulo="Escribirnos" desc="Consultas, ideas o problemas" onClick={onIrSoporte} ultimo />
-      </div>
+      <h4 style={TITULO_GRUPO}>Legal</h4>
+      <Acordeon titulo="Términos de uso" sub={`Actualizado: ${LEGAL_ACTUALIZADO}`}><SeccionesLegal secciones={TERMINOS} /></Acordeon>
+      <Acordeon titulo="Política de privacidad" sub={`Actualizado: ${LEGAL_ACTUALIZADO}`}><SeccionesLegal secciones={PRIVACIDAD_TEXTO} /></Acordeon>
+      <Acordeon titulo="Licencias" sub="Proyectos de código abierto que usa Mi Zona">
+        {LICENCIAS.map((l, i) => (
+          <div key={l.nombre} className="flex items-center justify-between gap-3 py-2.5" style={{ borderBottom: i === LICENCIAS.length - 1 ? "none" : "1px solid #EEF0F6" }}>
+            <span className="text-sm font-semibold" style={{ color: "#0B1437" }}>{l.nombre}</span>
+            <span className="text-xs text-right shrink-0" style={{ color: "#5B6482" }}>{l.licencia}</span>
+          </div>
+        ))}
+      </Acordeon>
 
-      <p className="text-xs text-center mt-8 mb-2" style={{ color: "#5B6482" }}>© {new Date().getFullYear()} Mi Zona</p>
+      <p className="text-xs text-center mt-6 mb-2" style={{ color: "#5B6482" }}>Hecho con cariño para la gente y los negocios de tu zona.</p>
     </div>
   );
 }

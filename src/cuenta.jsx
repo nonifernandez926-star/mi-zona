@@ -1,11 +1,11 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays } from "lucide-react";
+import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays, CreditCard, MessageCircle, ShieldAlert, Send, Info } from "lucide-react";
 import { tonoDe } from "./tonos";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 import {
-  cargarGoogle, pedirCuentaGoogle, cambiarClave, guardarUsuario, usuarioDisponible, cerrarOtrasSesiones, loginConGoogle, revisarCorreo, registrarConCorreo, entrarConCorreo, guardarNombre, traerPlanes,
-  estadoPush, activarPush, desactivarPush, privacidadApi, seguridadApi, setToken,
+  cargarGoogle, pedirCuentaGoogle, cambiarClave, guardarUsuario, usuarioDisponible, cerrarOtrasSesiones, loginConGoogle, guardarNombre, traerPlanes,
+  estadoPush, activarPush, desactivarPush, privacidadApi, seguridadApi, setToken, pushApi, getAvisosApp, setAvisosApp, sonidoAviso,
 } from "./api.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1437" };
@@ -93,89 +93,7 @@ const LogoG = () => (
   </svg>
 );
 
-// Formulario con correo y contraseña, en pasos: primero el correo y recién después aparece la contraseña
-// (o, si ese correo no tiene cuenta, el nombre y la contraseña para crearla).
-function FormularioCorreo({ onLogged }) {
-  const [paso, setPaso] = useState("correo"); // "correo" | "clave" | "crear"
-  const [nombre, setNombre] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [clave, setClave] = useState("");
-  const [ver, setVer] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState(null);
-  const campo = { borderRadius: 12, borderColor: "#E3E7F1", background: "#fff" };
-  const boton = (activo) => ({ borderRadius: 14, background: "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", opacity: activo ? 1 : 0.55, boxShadow: "0 1px 0 rgba(255,255,255,.18) inset, 0 10px 20px -8px rgba(35,80,245,.7)" });
-
-  const continuar = async () => {
-    if (enviando || !correo.trim()) return;
-    setEnviando(true); setError(null);
-    try {
-      const r = await revisarCorreo(correo);
-      if (r.paso === "google") setError("Ese correo se registró con Google. Tocá \"Acceder con Google\".");
-      else { setPaso(r.paso); setClave(""); }
-    } catch (e) {
-      setError(e.status === undefined ? "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo." : (e.message || "No se pudo continuar. Probá de nuevo."));
-    }
-    setEnviando(false);
-  };
-  const enviar = async () => {
-    if (enviando) return;
-    setEnviando(true); setError(null);
-    try {
-      onLogged(paso === "crear" ? await registrarConCorreo(nombre, correo, clave) : await entrarConCorreo(correo, clave));
-    } catch (e) { setError(e.message || "No se pudo completar. Probá de nuevo."); setEnviando(false); }
-  };
-  const volver = () => { setPaso("correo"); setClave(""); setError(null); };
-
-  if (paso === "correo") {
-    const listo = !!correo.trim();
-    return (
-      <div className="flex flex-col gap-2.5">
-        <input
-          value={correo} onChange={(e) => { setCorreo(e.target.value); setError(null); }} type="email" inputMode="email" autoComplete="email"
-          onKeyDown={(e) => e.key === "Enter" && listo && continuar()}
-          placeholder="Correo electrónico" className="w-full border px-3.5 py-3 text-sm" style={campo}
-        />
-        {error && <p className="text-xs" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
-        <button onClick={continuar} disabled={!listo || enviando} className="w-full text-sm font-semibold py-3.5" style={boton(listo && !enviando)}>
-          {enviando ? "Un momento..." : "Continuar"}
-        </button>
-      </div>
-    );
-  }
-
-  const esCrear = paso === "crear";
-  const listo = clave && (!esCrear || nombre.trim().length >= 2);
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between gap-2 px-3.5 py-2.5" style={{ borderRadius: 12, background: "#F3F5FA" }}>
-        <span className="flex items-center gap-2 min-w-0 text-sm" style={{ color: "#0B1437" }}><Mail size={14} color="#5B6482" /><span className="truncate">{correo.trim()}</span></span>
-        <button type="button" onClick={volver} className="text-xs font-semibold shrink-0" style={{ color: "#2350F5" }}>Cambiar</button>
-      </div>
-      {esCrear && (
-        <input autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} autoComplete="name" placeholder="Tu nombre" className="w-full border px-3.5 py-3 text-sm" style={campo} />
-      )}
-      <div className="relative">
-        <input
-          autoFocus={!esCrear}
-          value={clave} onChange={(e) => { setClave(e.target.value); setError(null); }} type={ver ? "text" : "password"} maxLength={100}
-          autoComplete={esCrear ? "new-password" : "current-password"}
-          onKeyDown={(e) => e.key === "Enter" && listo && enviar()}
-          placeholder={esCrear ? "Contraseña (mínimo 8 caracteres)" : "Contraseña"} className="w-full border px-3.5 py-3 text-sm" style={{ ...campo, paddingRight: 64 }}
-        />
-        <button type="button" onClick={() => setVer((v) => !v)} className="absolute text-xs font-semibold" style={{ right: 14, top: "50%", transform: "translateY(-50%)", color: "#2350F5" }}>
-          {ver ? "Ocultar" : "Ver"}
-        </button>
-      </div>
-      {error && <p className="text-xs" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
-      <button onClick={enviar} disabled={!listo || enviando} className="w-full text-sm font-semibold py-3.5" style={boton(listo && !enviando)}>
-        {enviando ? "Un momento..." : esCrear ? "Crear cuenta" : "Iniciar sesión"}
-      </button>
-    </div>
-  );
-}
-
-// Pantalla de acceso: "Acceder con Google" es para iniciar sesión. Tocar "Registrarme" abre directo la lista de cuentas de Google.
+// Pantalla de acceso (solo Google): "Acceder con Google" inicia sesión. Tocar "Registrarme" abre directo la lista de cuentas de Google.
 function PanelAcceso({ onLogged }) {
   const [error, setError] = useState(null);
   const [entrando, setEntrando] = useState(false);
@@ -202,15 +120,9 @@ function PanelAcceso({ onLogged }) {
         <LogoG /> {entrando ? "Entrando..." : "Acceder con Google"}
       </button>
       {error && <p className="text-xs text-center mt-2" style={{ color: "#C1443A", lineHeight: 1.4 }}>{error}</p>}
-      <div className="flex items-center gap-3 my-4">
-        <span className="flex-1" style={{ height: 1, background: "#E3E7F1" }} />
-        <span className="text-xs" style={{ color: "#64748B" }}>o con tu correo</span>
-        <span className="flex-1" style={{ height: 1, background: "#E3E7F1" }} />
-      </div>
-      <FormularioCorreo onLogged={onLogged} />
       <p className="text-center mt-4" style={{ fontSize: 12, color: "#5B6482" }}>
         ¿No tenés cuenta?{" "}
-        <button onClick={() => conGoogle("registro")} disabled={entrando} className="font-semibold" style={{ color: "#2350F5" }}>Registrarme</button>
+        <button onClick={() => conGoogle("registro")} disabled={entrando} className="font-semibold" style={{ color: "var(--azul)" }}>Registrarme</button>
       </p>
     </>
   );
@@ -264,7 +176,7 @@ export function NombreModal({ sugerido, onGuardado }) {
         <button
           onClick={guardar} disabled={nombre.trim().length < 2 || guardando}
           className="w-full text-sm font-semibold py-3 mt-1"
-          style={{ background: "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(35,80,245,.7)", opacity: nombre.trim().length < 2 || guardando ? 0.5 : 1 }}
+          style={{ background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(var(--azul-rgb),.7)", opacity: nombre.trim().length < 2 || guardando ? 0.5 : 1 }}
         >
           {guardando ? "Guardando..." : "Continuar"}
         </button>
@@ -471,7 +383,7 @@ function EditorUsuario({ usuario, onGuardado }) {
       {estado?.error && <p className="text-xs mt-1" style={{ color: "#C93030" }}>{estado.error}</p>}
       {cambio && (
         <button onClick={guardar} disabled={!puede} className="w-full text-sm font-semibold py-2.5 mt-2 flex items-center justify-center gap-1.5"
-          style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 12, opacity: puede ? 1 : 0.45 }}>
+          style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 12, opacity: puede ? 1 : 0.45 }}>
           {estado === "guardando" ? "Guardando..." : "Guardar usuario"}
         </button>
       )}
@@ -518,7 +430,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             <span className="flex-1 min-w-0">
               <span className="block text-base font-bold truncate" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{usuario.usuario ? `@${usuario.usuario}` : "Sin usuario"}</span>
               <span className="block text-xs truncate mt-0.5" style={{ color: "#5B6482" }}>{usuario.email}</span>
-              <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "#EDF1FF", color: "#2350F5" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
+              <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "var(--azul-suave)", color: "var(--azul)" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
             </span>
           </div>
 
@@ -533,7 +445,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
 
           <Etiqueta>Tu actividad en Mi Zona</Etiqueta>
           <div className="overflow-hidden" style={TARJETA_SEG}>
-            <FilaMenu Icon={CalendarDays} color="#2350F5" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
+            <FilaMenu Icon={CalendarDays} color="var(--azul)" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
             <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
             <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => (onAbrirFavoritos ? onAbrirFavoritos() : setVista("favoritos"))} />
             <FilaMenu Icon={Store} color="#0B1437" titulo="Mis negocios" valor={resumen ? String(negocios.length) : null} onClick={() => setVista("negocios")} ultimo />
@@ -852,11 +764,11 @@ function SegDispositivos({ sesiones, error, recargar, onBack }) {
 
 /* ----- Actividad reciente ----- */
 const ACTIVIDAD = {
-  cuenta_creada: { Icon: User, color: "#2350F5", texto: "Creaste tu cuenta" },
+  cuenta_creada: { Icon: User, color: "var(--azul)", texto: "Creaste tu cuenta" },
   inicio_sesion: { Icon: LogOut, color: "#0B1437", texto: "Iniciaste sesión" },
   contrasena_cambiada: { Icon: KeyRound, color: "#C77A0A", texto: "Cambiaste tu contraseña" },
-  usuario_creado: { Icon: User, color: "#2350F5", texto: "Creaste tu usuario y contraseña" },
-  usuario_cambiado: { Icon: User, color: "#2350F5", texto: "Cambiaste tu usuario" },
+  usuario_creado: { Icon: User, color: "var(--azul)", texto: "Creaste tu usuario y contraseña" },
+  usuario_cambiado: { Icon: User, color: "var(--azul)", texto: "Cambiaste tu usuario" },
   sesiones_cerradas: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión en los demás dispositivos" },
   sesion_cerrada: { Icon: ShieldCheck, color: "#1E8A55", texto: "Cerraste la sesión de un dispositivo" },
 };
@@ -1008,7 +920,7 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
 
       <Etiqueta>Iniciar sesión</Etiqueta>
       <div className="overflow-hidden" style={TARJETA_SEG}>
-        <FilaMenu Icon={KeyRound} color="#2350F5" titulo="Contraseña" valor={usuario.conClave ? null : "Google"} onClick={() => setVista("clave")} />
+        <FilaMenu Icon={KeyRound} color="var(--azul)" titulo="Contraseña" valor={usuario.conClave ? null : "Google"} onClick={() => setVista("clave")} />
         <FilaMenu Icon={Bell} color="#E08A1E" titulo="Alertas de inicio de sesión" desc={est.sinAvisos ? "Las notificaciones de este dispositivo están apagadas." : undefined} valor={alertas === null ? null : alertas === false ? "Desactivadas" : est.sinAvisos ? "Sin avisos" : "Activadas"} tonoValor={est.alertasApagadas || est.sinAvisos ? AMBAR : undefined} onClick={() => setVista("alertas")} ultimo />
       </div>
 
@@ -1023,62 +935,140 @@ export function SeguridadScreen({ usuario, onBack, onLogin }) {
 
 /* ---------- Ajustes → Notificaciones (push) ---------- */
 
+// Ajustes → Notificaciones: mismo formato que en Mi Asistente (estado, qué avisos recibir, dentro de la app y dispositivos)
+function FilaAviso({ Icon, tono, titulo, desc, activo, onChange, disabled, ultimo }) {
+  const t = tonoDe(Icon);
+  return (
+    <div className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: ultimo ? "none" : "1px solid #EEF0F6" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: tono?.bg || t.bg, boxShadow: `inset 0 0 0 1px ${tono?.aro || t.aro}` }}><Icon size={19} color={tono?.fg || t.fg} /></span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[15px] font-semibold" style={{ color: "#0B1437", lineHeight: 1.3 }}>{titulo}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4 }}>{desc}</span>
+      </span>
+      <Interruptor activo={activo} onChange={onChange} disabled={disabled} />
+    </div>
+  );
+}
+const TITULO_GRUPO_NT = { margin: "22px 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#8D95B0" };
+
 export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
   const [estado, setEstado] = useState("cargando"); // cargando | no-soportado | bloqueado | activo | inactivo
-  const [trabajando, setTrabajando] = useState(false);
-  const [error, setError] = useState(null);
-  useEffect(() => { estadoPush().then(setEstado); }, []);
+  const [srv, setSrv] = useState(null); // { configurado, dispositivos, preferencias }
+  const [errorCarga, setErrorCarga] = useState(false);
+  const [trabajando, setTrabajando] = useState(null); // "on" | "off" | "test" | endpoint del dispositivo que se quita
+  const [aviso, setAviso] = useState(null); // { tipo: "ok" | "error", texto }
+  const [local, setLocal] = useState(getAvisosApp);
+  const [endpointActual, setEndpointActual] = useState(null);
 
-  const alternar = async () => {
-    setTrabajando(true); setError(null);
+  const cargar = async () => {
+    setErrorCarga(false);
+    const st = await estadoPush();
+    setEstado(st);
     try {
-      if (estado === "activo") await desactivarPush(); else await activarPush();
-      setEstado(await estadoPush());
-    } catch (e) { setError(e.message); setEstado(await estadoPush()); }
-    finally { setTrabajando(false); }
+      const reg = await navigator.serviceWorker?.getRegistration("/sw.js");
+      setEndpointActual((await reg?.pushManager.getSubscription())?.endpoint || null);
+    } catch { setEndpointActual(null); }
+    if (usuario) { try { setSrv(await pushApi.estado()); } catch { setErrorCarga(true); } }
   };
+  useEffect(() => { cargar(); }, [usuario?.id]);
+
+  const decir = (tipo, texto) => { setAviso({ tipo, texto }); setTimeout(() => setAviso((a) => (a && a.texto === texto ? null : a)), 3500); };
+  const correr = async (clave, fn, okTexto) => {
+    setTrabajando(clave); setAviso(null);
+    try { await fn(); if (okTexto) decir("ok", okTexto); } catch (e) { decir("error", e.message || "No se pudo completar. Probá de nuevo."); }
+    await cargar(); setTrabajando(null);
+  };
+  const guardarPref = async (clave, valor) => {
+    const antes = srv.preferencias;
+    setSrv({ ...srv, preferencias: { ...antes, [clave]: valor } });
+    try { await pushApi.guardar({ [clave]: valor }); decir("ok", valor ? "Aviso activado." : "Aviso desactivado."); }
+    catch (e) { setSrv({ ...srv, preferencias: antes }); decir("error", e.message); }
+  };
+  const cambiarLocal = (parcial) => { setLocal(setAvisosApp(parcial)); if (parcial.sonido) sonidoAviso(); decir("ok", parcial.sonido === false || parcial.cartel === false ? "Desactivado." : "Activado."); };
+
+  const sinServidor = srv && srv.configurado === false;
+  const ESTADOS = {
+    activo: { Icon: Bell, fondo: "#E4F3EA", color: "#1E6B44", titulo: "Notificaciones activadas en este dispositivo", desc: "Te llegan al celular aunque tengas Mi Zona cerrada." },
+    inactivo: { Icon: BellOff, fondo: "#FFF1D6", color: "#8A5600", titulo: "Notificaciones desactivadas en este dispositivo", desc: "Activalas para enterarte al instante de lo importante." },
+    bloqueado: { Icon: BellOff, fondo: "#FDF1EF", color: "#9A3B34", titulo: "Las notificaciones están bloqueadas", desc: "Habilitalas desde el candado de la barra del navegador (o los ajustes del sistema) y volvé acá." },
+    "no-soportado": { Icon: Info, fondo: "#FFF1D6", color: "#8A5600", titulo: "Este navegador no permite notificaciones", desc: "En iPhone: abrí Mi Zona en Safari → Compartir → “Agregar a pantalla de inicio” y activalas desde ahí." },
+    "sin-servidor": { Icon: Info, fondo: "#FFF1D6", color: "#8A5600", titulo: "Notificaciones al celular no disponibles", desc: "El servidor todavía no las tiene configuradas. Mientras tanto, los avisos funcionan con la app abierta." },
+  };
+  const e = ESTADOS[sinServidor ? "sin-servidor" : estado] || ESTADOS.inactivo;
+  const prefs = srv?.preferencias;
 
   return (
     <div>
       <BotonVolver texto="Volver a Ajustes" onClick={onBack} />
-      <h2 style={{ ...TITULO, fontSize: 18 }} className="mb-2">Notificaciones</h2>
-      <p className="text-sm mb-5" style={{ color: "#2B3768", lineHeight: 1.6 }}>
-        Recibí avisos en tu celular aunque Mi Zona esté cerrada, por ejemplo cuántos días le quedan a la suscripción de tu negocio.
-      </p>
+      <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Notificaciones</h2>
+      <p className="text-sm mt-1.5 mb-5" style={{ color: "#5B6482", lineHeight: 1.5 }}>Elegí qué avisos querés recibir y dónde.</p>
 
       {!usuario ? (
-        <button onClick={onLogin} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10 }}>
-          Iniciar sesión para activarlas
-        </button>
-      ) : estado === "no-soportado" ? (
-        <p className="text-sm p-4" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 10 }}>
-          Este navegador no permite notificaciones. En iPhone, abrí Mi Zona en Safari → Compartir → "Agregar a pantalla de inicio" y activalas desde ahí.
-        </p>
-      ) : estado === "bloqueado" ? (
-        <p className="text-sm p-4" style={{ background: "#FDF1EF", color: "#9A3B34", borderRadius: 10 }}>
-          Bloqueaste las notificaciones de este sitio. Habilitalas desde el candado de la barra del navegador (o los ajustes del sistema) y volvé a intentar.
-        </p>
+        <div className="p-5 text-center" style={TARJETA_SEG}>
+          <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>Iniciá sesión para activar las notificaciones y elegir qué avisos recibir.</p>
+          <button onClick={onLogin} className="w-full text-sm font-bold py-3" style={{ borderRadius: 14, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff" }}>Iniciar sesión</button>
+        </div>
       ) : (
         <>
-          <div className="flex items-center gap-3 p-4 mb-3 bg-white" style={{ borderRadius: 12, border: "1px solid #E3E7F1" }}>
-            <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: "50%", background: estado === "activo" ? "#E4F3EA" : "#EDF1FF" }}>
-              {estado === "activo" ? <Bell size={17} color="#1E6B44" /> : <BellOff size={17} color="#2350F5" />}
+          <div className="flex items-start gap-3 p-4" style={{ borderRadius: 18, background: e.fondo }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "rgba(255,255,255,.7)" }}>{estado === "cargando" ? <Loader2 size={19} className="animate-spin" color="#5B6482" /> : <e.Icon size={20} color={e.color} />}</span>
+            <span className="flex-1 min-w-0">
+              <strong className="block text-[15px]" style={{ color: e.color, lineHeight: 1.3 }}>{estado === "cargando" ? "Revisando..." : e.titulo}</strong>
+              {estado !== "cargando" && <span className="block text-[13px] mt-0.5" style={{ color: e.color, opacity: .88, lineHeight: 1.45 }}>{e.desc}</span>}
             </span>
-            <div className="flex-1">
-              <p className="text-sm font-medium" style={{ color: "#0B1437" }}>{estado === "activo" ? "Activadas en este dispositivo" : "Desactivadas"}</p>
-              <p className="text-xs" style={{ color: "#5B6482" }}>Se configuran por dispositivo.</p>
-            </div>
           </div>
-          <button
-            onClick={alternar} disabled={trabajando || estado === "cargando"}
-            className="w-full text-sm font-semibold py-3"
-            style={estado === "activo"
-              ? { borderRadius: 10, border: "1px solid #E3E7F1", color: "#0B1437", background: "#fff" }
-              : { borderRadius: 10, backgroundColor: "#2350F5", color: "#fff", opacity: trabajando ? 0.6 : 1 }}
-          >
-            {trabajando ? "Un momento..." : estado === "activo" ? "Desactivar notificaciones" : "Activar notificaciones"}
-          </button>
-          {error && <p className="text-xs mt-3" style={{ color: "#C1443A" }}>{error}</p>}
+
+          {!sinServidor && (estado === "activo" || estado === "inactivo") && (
+            <div className="flex flex-col gap-2 mt-3">
+              {estado === "activo" ? (<>
+                <button onClick={() => correr("test", async () => { const r = await pushApi.probar(); if (!r.enviados) throw new Error("No se pudo enviar. Probá desactivar y volver a activar."); }, "Listo: revisá las notificaciones de tu celular.")} disabled={!!trabajando} className="w-full text-sm font-bold py-3.5 flex items-center justify-center gap-2" style={{ borderRadius: 14, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", opacity: trabajando ? .6 : 1 }}>
+                  {trabajando === "test" ? <><Loader2 size={16} className="animate-spin" /> Enviando...</> : <><Send size={16} /> Enviarme un aviso de prueba</>}
+                </button>
+                <button onClick={() => correr("off", () => desactivarPush(), "Notificaciones desactivadas en este dispositivo.")} disabled={!!trabajando} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "var(--azul-suave)", color: "var(--azul)", opacity: trabajando ? .6 : 1 }}>{trabajando === "off" ? "Desactivando..." : "Desactivar en este dispositivo"}</button>
+              </>) : (
+                <button onClick={() => correr("on", () => activarPush(), "Notificaciones activadas en este dispositivo.")} disabled={!!trabajando} className="w-full text-sm font-bold py-3.5" style={{ borderRadius: 14, background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", opacity: trabajando ? .6 : 1 }}>{trabajando === "on" ? "Activando..." : "Activar en este dispositivo"}</button>
+              )}
+            </div>
+          )}
+          {aviso && <p className="text-sm mt-3 px-1 flex items-center gap-1.5 font-semibold" role="status" style={{ color: aviso.tipo === "ok" ? "#1E6B44" : "#C1443A" }}>{aviso.tipo === "ok" && <Check size={15} />}{aviso.texto}</p>}
+          {errorCarga && <p className="text-sm mt-3 px-1" style={{ color: "#C1443A" }}>No pudimos cargar tus preferencias. <button onClick={cargar} className="font-bold underline">Reintentar</button></p>}
+
+          {prefs && (<>
+            <h4 style={TITULO_GRUPO_NT}>Qué avisos querés recibir en el celular</h4>
+            <div className="overflow-hidden" style={TARJETA_SEG}>
+              <FilaAviso Icon={CalendarDays} titulo="Recordatorios de tu agenda" desc="Eventos y tareas que cargaste." activo={prefs.agenda} onChange={(v) => guardarPref("agenda", v)} />
+              <FilaAviso Icon={CreditCard} titulo="Tu suscripción" desc="Aviso antes de que venza la de tu negocio y cuando vence." activo={prefs.suscripcion} onChange={(v) => guardarPref("suscripcion", v)} />
+              <FilaAviso Icon={MessageCircle} titulo="Respuestas del equipo" desc="Cuando respondemos una consulta, reseña o reporte tuyo." activo={prefs.soporte} onChange={(v) => guardarPref("soporte", v)} />
+              <FilaAviso Icon={ShieldAlert} titulo="Alertas de seguridad" desc="Cuando alguien entra a tu cuenta desde un dispositivo nuevo." activo={prefs.seguridad} onChange={(v) => guardarPref("seguridad", v)} ultimo />
+            </div>
+            <p className="text-xs mt-2 px-1" style={{ color: "#5B6482", lineHeight: 1.5 }}>La campana de Mi Zona siempre muestra todos los avisos (pedidos, turnos, puntos y novedades); esto controla solo los que llegan al celular.</p>
+          </>)}
+
+          <h4 style={TITULO_GRUPO_NT}>Dentro de la app</h4>
+          <div className="overflow-hidden" style={TARJETA_SEG}>
+            <FilaAviso Icon={Sparkles} titulo="Cartel al llegar un aviso" desc="Se muestra arriba mientras usás Mi Zona." activo={local.cartel} onChange={(v) => cambiarLocal({ cartel: v })} />
+            <FilaAviso Icon={Bell} titulo="Sonido al llegar un aviso" desc="Suena mientras tenés Mi Zona abierta." activo={local.sonido} onChange={(v) => cambiarLocal({ sonido: v })} ultimo />
+          </div>
+
+          {srv && srv.dispositivos.length > 0 && (<>
+            <h4 style={TITULO_GRUPO_NT}>Dispositivos con notificaciones ({srv.dispositivos.length})</h4>
+            <div className="overflow-hidden" style={TARJETA_SEG}>
+              {srv.dispositivos.map((d, i) => {
+                const Ic = d.tipo === "celular" ? Smartphone : d.tipo === "tablet" ? Tablet : Monitor;
+                const este = d.endpoint === endpointActual;
+                return (
+                  <div key={d.endpoint} className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: i === srv.dispositivos.length - 1 ? "none" : "1px solid #EEF0F6" }}>
+                    <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#F1F4FA", boxShadow: "inset 0 0 0 1px #E3E7F1" }}><Ic size={19} color="#5B6482" /></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-2 text-[15px] font-semibold" style={{ color: "#0B1437" }}><span className="truncate">{d.nombre}</span>{este && <em className="text-[10px] font-extrabold px-1.5 py-0.5 not-italic" style={{ borderRadius: 6, background: "var(--azul-suave)", color: "var(--azul)", letterSpacing: ".05em" }}>ESTE</em>}</span>
+                      <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>Desde el {new Date(d.desde).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</span>
+                    </span>
+                    <button onClick={() => correr(d.endpoint, () => desactivarPush(d.endpoint), "Dispositivo quitado.")} disabled={!!trabajando} className="shrink-0 text-xs font-bold px-3 py-2" style={{ borderRadius: 10, background: "var(--azul-suave)", color: "var(--azul)", opacity: trabajando ? .6 : 1 }}>{trabajando === d.endpoint ? "..." : "Quitar"}</button>
+                  </div>
+                );
+              })}
+            </div>
+          </>)}
         </>
       )}
     </div>
@@ -1145,10 +1135,10 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
                   <button
                     key={clave} onClick={() => setPlan(clave)}
                     className="flex items-center gap-3 px-3.5 py-3 text-left"
-                    style={{ borderRadius: 14, border: `1.5px solid ${activo ? "#2350F5" : "#E3E7F1"}`, background: activo ? "#F1F6FF" : "#fff", boxShadow: activo ? "0 0 0 3px rgba(35,80,245,.14)" : "none" }}
+                    style={{ borderRadius: 14, border: `1.5px solid ${activo ? "var(--azul)" : "#E3E7F1"}`, background: activo ? "#F1F6FF" : "#fff", boxShadow: activo ? "0 0 0 3px rgba(var(--azul-rgb),.14)" : "none" }}
                   >
-                    <span className="flex items-center justify-center shrink-0" style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${activo ? "#2350F5" : "#CBD5E1"}` }}>
-                      {activo && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2350F5" }} />}
+                    <span className="flex items-center justify-center shrink-0" style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${activo ? "var(--azul)" : "#CBD5E1"}` }}>
+                      {activo && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--azul)" }} />}
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="flex items-center gap-2">
@@ -1176,7 +1166,7 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
         <button
           onClick={confirmar} disabled={enviando || (!gratis && !plan)}
           className="w-full text-sm font-semibold py-3"
-          style={{ background: gratis ? "linear-gradient(180deg,#38B06E,#2C9A5F)" : "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", borderRadius: 14, boxShadow: gratis ? "0 10px 20px -8px rgba(44,154,95,.7)" : "0 10px 20px -8px rgba(35,80,245,.7)", opacity: enviando || (!gratis && !plan) ? 0.5 : 1 }}
+          style={{ background: gratis ? "linear-gradient(180deg,#38B06E,#2C9A5F)" : "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", borderRadius: 14, boxShadow: gratis ? "0 10px 20px -8px rgba(44,154,95,.7)" : "0 10px 20px -8px rgba(var(--azul-rgb),.7)", opacity: enviando || (!gratis && !plan) ? 0.5 : 1 }}
         >
           {enviando ? (gratis ? "Publicando..." : "Abriendo Mercado Pago...") : gratis ? "Publicar mi negocio" : elegido ? `Pagar ${fmtPesos(elegido.precio)} con Mercado Pago` : "Elegí un plan"}
         </button>
@@ -1217,7 +1207,7 @@ export function TarjetaSuscripcion({ negocio, onAgregar }) {
       {origenAsistente && info.estado !== "pendiente" && (
         <p className="text-[11px] mb-2.5 flex items-center gap-1" style={{ color: "#7A4F9E" }}><Sparkles size={11} /> Incluida con tu suscripción de Mi Asistente</p>
       )}
-      <button onClick={onAgregar} className="w-full text-sm font-semibold py-2.5" style={{ background: "linear-gradient(180deg,#2A58FF,#1F47E0)", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(35,80,245,.7)" }}>
+      <button onClick={onAgregar} className="w-full text-sm font-semibold py-2.5" style={{ background: "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", borderRadius: 12, boxShadow: "0 10px 20px -8px rgba(var(--azul-rgb),.7)" }}>
         {info.estado === "pendiente" ? "Elegir plan y pagar" : info.estado === "vencida" ? "Renovar suscripción" : "Agregar meses"}
       </button>
     </div>

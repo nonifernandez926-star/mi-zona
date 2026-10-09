@@ -1,3 +1,24 @@
+# Mi Zona 1.1.0 — Preparada para Google Play (LEER PRIMERO · hacer `npm install` en la web y en `server/`, y volver a publicar servidor Y web)
+
+Detalle completo en `INFORME-REVISION.md`. Guía de publicación en `play-store/`.
+- **Nuevo:** botón atrás de Android (`src/atras.js`), pantalla de error con "Reintentar", modo sin conexión (`public/sw.js`, `public/offline.html`), QR generados dentro de la app (dependencia `qrcode`), íconos *maskable*, página `/eliminar-cuenta.html`, `netlify.toml`, `.env.example` de la web.
+- **Corregido:** la política de privacidad pública salía sin las listas de datos y terceros; QR que se pedían a un sitio externo; errores del servidor que mostraban detalles internos; límite de `/api/eventos` falsificable; barrido de negocios vencidos en cada visita.
+- **Diseño (según capturas):** el buscador de la portada no mostraba su texto de ayuda (blanco sobre blanco); insignias de ranking más legibles; textos de la portada con sombra para leerse sobre las nubes; el contenido ya no queda tapado por el botón de búsqueda (que ahora se oculta en Ajustes y Herramientas); versión 1.1.0.
+- **Variables nuevas:** `VITE_SOPORTE_EMAIL` (obligatoria para Play) y `LEGAL_TITULAR` en la web; `DEBUG_AUTH=1` (opcional) en el servidor.
+
+# Mi Zona — Ajustes → Notificaciones completo y cielo que se mueve en tiempo real (volver a publicar servidor Y web)
+
+- **Ajustes → Notificaciones** (como en Mi Asistente): estado de este dispositivo, activar/desactivar, aviso de prueba, qué avisos recibir en el celular (agenda, suscripción, respuestas del equipo, seguridad), cartel y sonido dentro de la app, y lista de dispositivos con "Quitar". Servidor: `GET /api/push/estado`, `PUT /api/push/preferencias`, `POST /api/push/probar`; el push respeta las preferencias.
+- **Portada con clima:** el sol y la luna se mueven de forma continua según la hora (sol alto al mediodía, baja y se esconde tras las montañas; la luna sube de noche y baja al amanecer). Las nubes, la lluvia y los rayos aparecen y se van de a poco (nubes ~6 min, lluvia ~4 min, tormenta ~3 min) en vez de cambiar de golpe.
+
+# Mi Zona — Acceso corregido, color de acento global, avisos y ayuda al estilo Mi Asistente (LEER PRIMERO · volver a publicar servidor Y web)
+
+- **Acceso:** usuario + contraseña entra al panel; correo + "Continuar" ahora abre un paso aparte y Google pide la contraseña del correo (ya no entra solo); "Acceder con Google" elige cuenta; "Registrarme" abre la lista de cuentas y, si la cuenta ya existe, avisa que inicie sesión y NO entra al panel (servidor: `POST /api/auth/google` responde 409 `cuenta_existente`). Si se escribe un correo, la cuenta elegida en Google tiene que ser ese mismo correo.
+- **Apariencia:** el color elegido cambia todo lo que era azul (lupa, "Ver en el mapa", cabeceras, botón +, degradados, botones, fondos suaves).
+- **Clima:** temperatura y humedad subieron a la esquina superior para que no los tapen los rubros.
+- **Notificaciones:** aviso para activar las notificaciones del celular dentro del centro, cartel emergente y campana que se sacude cuando llega algo nuevo.
+- **Centro de ayuda, Soporte y Acerca de:** rehechos con el formato de Mi Asistente (buscador + temas + artículos que se abren; consulta + Mis consultas; Cómo funciona + Legal).
+
 # Mi Zona — Acerca de, Centro de ayuda y Soporte (LEER PRIMERO · volver a publicar servidor Y web)
 
 **Qué hay:** Acerca de Mi Zona (cómo funciona, términos, política de privacidad, licencias, compartir), Centro de ayuda (34 artículos en 8 temas, buscador, "¿Te sirvió?") y Soporte (formulario con tema, "Mis consultas" con respuestas del equipo y estados). El menú lateral también abre Centro de ayuda y Soporte.
@@ -120,7 +141,7 @@ Para que siempre avise, creá un cron gratis (por ejemplo en cron-job.org) que c
 - **Perfil del negocio:** arriba WhatsApp (o Llamar si no usa WhatsApp) y Cómo llegar; abajo las redes (Instagram, TikTok, Facebook), de a dos; si queda una sola, ocupa todo el ancho.
 - **Chats que vuelven:** los chats de cada cliente quedan ligados a su cuenta de Google. Aunque un negocio venza Mi Asistente, los chats no se borran: al renovar, reaparecen y el asistente retoma lo que ya hablaron.
 - **Mapa:** se quitó de Herramientas (queda "Ver en el mapa" en Inicio). Los negocios cargados sin coordenadas se ubican solos (el servidor lo hace cada 6 horas y la web lo hace al abrir el mapa).
-- **Si falla el inicio de sesión:** abrí `https://TU-SERVIDOR.onrender.com/api/auth/estado` en el navegador. Muestra qué está configurado (sí/no, sin valores). Si `googleClientId` o `jwtSecret` dicen `false`, falta cargar esa variable en Render. Si todo dice `true`, revisá en Google Cloud que la dirección de Netlify esté en "Orígenes autorizados de JavaScript".
+- **Si falla el inicio de sesión:** pedí el estado del servidor con tu clave de administrador (`SOPORTE_ADMIN_KEY`): `curl -H "x-soporte-key: TU_CLAVE" https://TU-SERVIDOR.onrender.com/api/auth/estado`. Muestra qué está configurado (sí/no, sin valores). Sin la clave la ruta responde 404, a propósito: así nadie de afuera puede ver qué servicios usa el servidor. Si `googleClientId` o `jwtSecret` dicen `false`, falta cargar esa variable en Render. Si todo dice `true`, revisá en Google Cloud que la dirección de Netlify esté en "Orígenes autorizados de JavaScript".
 - **Agenda del dueño (solo para quienes tienen un negocio en su cuenta):** Herramientas → "Mi agenda". Vista Hoy, Semana y Tareas; eventos con hora, duración, persona, notas y recordatorio; tareas sugeridas según el rubro; importar desde una foto de agenda de papel o desde un mensaje (la IA propone y la persona revisa y confirma antes de guardar); "Organizar mi día" y preguntarle a la agenda. No incluye pedidos. Las funciones con IA usan `ANTHROPIC_API_KEY` y solo se habilitan si el negocio tiene la suscripción activa (tope de 40 usos por hora). La foto no se guarda: se analiza y se descarta. Opcional: `CLAUDE_MODEL_AGENDA` para cambiar el modelo.
 - **Avisos de la agenda:** dentro de la app (cada minuto mientras está abierta) y por notificación al celular. Como Render gratis se duerme, para que SIEMPRE avise creá un cron (cron-job.org) que cada 5 minutos haga un POST a `https://TU-SERVIDOR.onrender.com/api/agenda/enviar-recordatorios` con el header `x-cron-key: TU_CRON_KEY`.
 - **Mapa con capas (gratis):** botón de capas con Mapa (calles), Relieve (cerros, vegetación, ríos) y Satélite (fotos aéreas con nombres de calles). Solo se marcan los negocios registrados en Mi Zona. Usa mapas públicos de CARTO y Esri sin clave; si algún día tenés mucho tráfico, conviene pasar a un proveedor con clave gratuita (MapTiler, Stadia o una cuenta de Esri).
@@ -314,3 +335,11 @@ Ahora hay un botón explícito **"Activar ubicación"** que aparece al elegir "M
 - **Seguridad:** muestra cómo entra la cuenta (Google o correo), permite cambiar la contraseña (cuentas con correo) y cerrar sesión en los demás dispositivos. Hay que volver a publicar el servidor.
 - **Botón de volver:** en cada subpantalla hay uno solo ("Volver a Ajustes", "Volver a Herramientas"), grande, con ícono azul. Dentro de una subpantalla se oculta la barra de arriba, que queda solo en las listas principales (Chats, Herramientas, Ajustes).
 - **Filtros del inicio:** ya no hay carrusel "Visto recientemente" ni filtro "Busca personal". Ahora hay tres filtros chicos: **Abiertos**, **Vistos** (los negocios que miraste, el último primero) y **Nuevos**, al lado del selector (Destacados, Más visitados, Descuentos, Más cercanos). "Vistos" se guarda en el celular.
+
+## Seguridad: cambios recientes
+
+- **Registro con correo cerrado:** `POST /api/auth/registro` ya no existe. El correo no se verificaba y cualquiera podía reservar el correo o el usuario de otra persona. Las cuentas nuevas se crean con Google (`POST /api/auth/google`) y se completan con usuario y contraseña (`PUT /api/auth/completar`). Las cuentas viejas creadas con correo siguen pudiendo entrar, y si entran con Google pasan a ser cuentas de Google (se les borra la contraseña vieja).
+- **`/api/auth/estado` protegida:** pide el encabezado `x-soporte-key`. La comparación de la clave ahora es de tiempo constante (también en el panel de Soporte).
+- **Límite de intentos en MongoDB:** el contador (`LimiteIntentos`) sobrevive a los reinicios del servidor y vale aunque haya varias instancias. Cada registro se borra solo al vencer su ventana. Si MongoDB no responde, se usa una cuenta en memoria de respaldo. Las visitas a negocios siguen contando en memoria (no son un dato de seguridad y no justifican una escritura por vista).
+- **Correo escrito y cuenta de Google:** si la persona escribe un correo y elige otra cuenta en Google, el servidor rechaza el acceso. Es una ayuda de uso, no una barrera de seguridad: Google ya verifica quién es cada persona.
+

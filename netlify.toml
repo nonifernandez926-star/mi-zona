@@ -1,0 +1,32 @@
+# Configuración de la web en Netlify (si ya la cargaste en el panel de Netlify, este archivo tiene prioridad).
+[build]
+  command = "npm run build"   # genera las páginas legales y arma la web
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self), camera=(), microphone=(), payment=(self)"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy = "frame-ancestors 'none'"
+
+# El service worker tiene que revalidarse siempre, si no las actualizaciones tardan días en llegar
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Archivos con huella en el nombre: se guardan un año
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Enlace de verificación de la app de Android (ver play-store/GUIA-PLAY-STORE.md)
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"

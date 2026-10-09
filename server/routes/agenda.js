@@ -222,7 +222,7 @@ router.post("/enviar-recordatorios", async (req, res) => {
     res.json(await enviarRecordatoriosPush());
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
