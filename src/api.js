@@ -65,21 +65,22 @@ export function cargarGoogle() {
 // Abre la ventana de Google para ELEGIR la cuenta (siempre muestra las cuentas del dispositivo) y devuelve un access token.
 // Tiene que llamarse directo desde un toque del usuario (si no, el navegador bloquea la ventana).
 // Antes hay que haber llamado a cargarGoogle() para que el script ya esté listo.
-export function pedirCuentaGoogle() {
+// Sin "hint": lista de cuentas del celular. Con "hint" (un correo escrito a mano): Google abre ese correo y pide su contraseña en su propia página; Mi Zona nunca la ve.
+export function pedirCuentaGoogle(hint) {
   return new Promise((resolve, reject) => {
     const oauth2 = window.google?.accounts?.oauth2;
     if (!oauth2) { reject(new Error("Google todavía está cargando. Esperá un segundo y probá de nuevo.")); return; }
     const cliente = oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: "openid email profile",
-      prompt: "select_account",
+      ...(hint ? { hint, prompt: "" } : { prompt: "select_account" }),
       callback: (r) => {
         if (r?.access_token) resolve(r.access_token);
         else reject(Object.assign(new Error(r?.error_description || r?.error || "No se pudo entrar con Google."), { cancelado: r?.error === "access_denied" }));
       },
       error_callback: (e) => {
         if (e?.type === "popup_closed") reject(Object.assign(new Error("cancelado"), { cancelado: true }));
-        else if (e?.type === "popup_failed_to_open") reject(new Error("Tu navegador bloqueó la ventana de Google. Permití las ventanas emergentes y probá de nuevo."));
+        else if (e?.type === "popup_failed_to_open") reject(Object.assign(new Error("Tu navegador bloqueó la ventana de Google. Permití las ventanas emergentes y probá de nuevo."), { bloqueada: true }));
         else reject(new Error("No se pudo abrir Google. Probá de nuevo."));
       },
     });

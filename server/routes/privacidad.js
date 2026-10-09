@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
       Business.aggregate([{ $unwind: "$reviews" }, { $match: { "reviews.autorUid": huellaAutor(id) } }, { $count: "n" }]),
     ]);
     res.json({
-      cuenta: { email: u.email, nombre: u.nombre, proveedor: u.proveedor, creadaEn: u.createdAt, conClave: !!u.passwordHash },
+      cuenta: { email: u.email, nombre: u.nombre, proveedor: u.proveedor, creadaEn: u.createdAt, conClave: !!(u.passwordHash || u.claveZona) },
       sesion: { venceEn: req.tokenExp ? new Date(req.tokenExp * 1000).toISOString() : null },
       negocios: negocios.map((n) => ({ id: n.id, nombre: n.name, estado: n.pendientePago ? "pendiente" : n.status, venceEl: n.expiresAt })),
       agenda: { eventos: agenda, tareas },
@@ -155,8 +155,8 @@ router.delete("/cuenta", async (req, res) => {
     if (!permitir(`borrar-cuenta|${id}`, 5, 3600 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Probá de nuevo en un rato." });
     if (req.body?.confirmacion !== "ELIMINAR") return res.status(400).json({ error: "Escribí ELIMINAR para confirmar." });
 
-    if (u.passwordHash) {
-      if (!(await verificarContrasena(String(req.body?.password || ""), u.passwordHash))) return res.status(401).json({ error: "La contraseña no es correcta." });
+    if (u.passwordHash || u.claveZona) {
+      if (!(await verificarContrasena(String(req.body?.password || ""), u.passwordHash || u.claveZona))) return res.status(401).json({ error: "La contraseña no es correcta." });
     } else {
       let datos;
       try { datos = await verificarAccessTokenGoogle(req.body?.accessToken); } catch { return res.status(401).json({ error: "No pudimos confirmar tu cuenta de Google. Probá de nuevo." }); }

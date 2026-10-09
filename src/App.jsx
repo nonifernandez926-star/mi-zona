@@ -18,6 +18,10 @@ import {
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
+import { AparienciaScreen } from "./apariencia.jsx";
+import { FondoClima } from "./clima.jsx";
+import { TONOS as TONOS_ICONOS } from "./tonos.js";
+import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } from "./apariencia.js";
 import { PantallaBienvenida, PantallaCrearUsuario } from "./bienvenida.jsx";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
@@ -147,13 +151,9 @@ function catInfo(id) {
   return CATEGORIES.find((c) => c.id === id);
 }
 /* ---------- apariencia: claro, oscuro o automático (según el celular) ---------- */
-const TEMA_KEY = "miZonaTema";
-function getTema() { try { return localStorage.getItem(TEMA_KEY) || "auto"; } catch { return "auto"; } }
-function aplicarTema(t) {
-  const oscuro = t === "oscuro" || (t === "auto" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("tema-oscuro", oscuro);
-}
-function guardarTema(t) { try { localStorage.setItem(TEMA_KEY, t); } catch { /* sin almacenamiento */ } aplicarTema(t); }
+function getTema() { return leerApariencia().tema; }
+function aplicarTema(t) { aplicarApariencia({ ...leerApariencia(), ...(t ? { tema: t } : {}) }); }
+function guardarTema(t) { guardarApariencia({ tema: t }); }
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -463,6 +463,10 @@ const NOTIF_TIPOS = {
   canje: { Icon: Gift, color: "#7A4F9E", bg: "#F3ECFC" },
   suscripcion: { Icon: Bell, color: "#B8703F", bg: "#FBEBD1" },
 };
+
+const NOTIF_TONO = { pedido: "azul", turno: "azul", promo: "naranja", historia: "verde", resena: "naranja", puntos: "naranja", canje: "violeta", suscripcion: "naranja" };
+const NOTIF_CAT = { pedido: "pedidos", turno: "pedidos", promo: "novedades", historia: "novedades", resena: "novedades", suscripcion: "novedades", puntos: "puntos", canje: "puntos" };
+const NOTIF_FILTROS = [["todas", "Todas"], ["sinleer", "Sin leer"], ["pedidos", "Pedidos y turnos"], ["novedades", "Novedades"], ["puntos", "Puntos"]];
 
 const PEDIDO_TEXTOS = {
   pendiente: "Pedido enviado — esperando confirmación",
@@ -1977,31 +1981,6 @@ function IconoSolLuna({ size = 22 }) {
   );
 }
 
-/* Montañas de la portada: ilustración propia, en capas, que se desvanece hacia el texto */
-function PaisajePortada() {
-  return (
-    <svg aria-hidden="true" className="absolute pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMax slice" style={{ right: 0, bottom: 0, width: "100%", height: "100%", WebkitMaskImage: "linear-gradient(to right, transparent 10%, #000 58%)", maskImage: "linear-gradient(to right, transparent 10%, #000 58%)" }}>
-      <defs>
-        <linearGradient id="zmL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8fb0ee" /><stop offset=".6" stopColor="#4a6fc4" /><stop offset="1" stopColor="#2a4a9a" /></linearGradient>
-        <linearGradient id="zmM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3c5fb8" /><stop offset="1" stopColor="#1b3478" /></linearGradient>
-        <linearGradient id="zmC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1f3a82" /><stop offset="1" stopColor="#0e2054" /></linearGradient>
-        <linearGradient id="zmF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f2258" /><stop offset="1" stopColor="#0a1538" /></linearGradient>
-        <linearGradient id="zmB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#9db9f2" stopOpacity="0" /><stop offset="1" stopColor="#9db9f2" stopOpacity=".38" /></linearGradient>
-        <filter id="zmR" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" /><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .09 0" /></filter>
-      </defs>
-      <circle cx="213" cy="32" r="0.5" fill="#fff" opacity="0.77"/><circle cx="309" cy="7" r="0.7" fill="#fff" opacity="0.49"/><circle cx="372" cy="41" r="0.9" fill="#fff" opacity="0.58"/><circle cx="278" cy="60" r="0.5" fill="#fff" opacity="0.70"/><circle cx="348" cy="11" r="0.9" fill="#fff" opacity="0.72"/><circle cx="384" cy="31" r="0.5" fill="#fff" opacity="0.56"/><circle cx="388" cy="61" r="0.9" fill="#fff" opacity="0.69"/><circle cx="164" cy="66" r="0.7" fill="#fff" opacity="0.51"/><circle cx="248" cy="26" r="0.9" fill="#fff" opacity="0.51"/><circle cx="311" cy="42" r="0.7" fill="#fff" opacity="0.71"/><circle cx="333" cy="8" r="0.5" fill="#fff" opacity="0.67"/><circle cx="305" cy="32" r="0.9" fill="#fff" opacity="0.56"/><circle cx="370" cy="54" r="0.5" fill="#fff" opacity="0.67"/><circle cx="327" cy="26" r="0.5" fill="#fff" opacity="0.59"/><circle cx="267" cy="68" r="0.5" fill="#fff" opacity="0.37"/><circle cx="174" cy="58" r="0.7" fill="#fff" opacity="0.43"/><circle cx="385" cy="22" r="0.9" fill="#fff" opacity="0.41"/><circle cx="303" cy="35" r="0.5" fill="#fff" opacity="0.82"/><circle cx="237" cy="16" r="0.7" fill="#fff" opacity="0.59"/><circle cx="314" cy="35" r="0.7" fill="#fff" opacity="0.70"/><circle cx="317" cy="29" r="0.9" fill="#fff" opacity="0.64"/><circle cx="394" cy="67" r="0.9" fill="#fff" opacity="0.42"/><circle cx="268" cy="38" r="0.7" fill="#fff" opacity="0.78"/><circle cx="303" cy="29" r="0.7" fill="#fff" opacity="0.69"/><circle cx="328" cy="51" r="0.5" fill="#fff" opacity="0.70"/><circle cx="335" cy="18" r="0.5" fill="#fff" opacity="0.63"/><circle cx="310" cy="19" r="0.9" fill="#fff" opacity="0.37"/><circle cx="165" cy="23" r="0.7" fill="#fff" opacity="0.36"/><circle cx="159" cy="20" r="0.7" fill="#fff" opacity="0.39"/><circle cx="171" cy="49" r="0.9" fill="#fff" opacity="0.48"/><circle cx="390" cy="37" r="0.7" fill="#fff" opacity="0.47"/><circle cx="234" cy="54" r="0.5" fill="#fff" opacity="0.79"/><circle cx="260" cy="59" r="0.5" fill="#fff" opacity="0.59"/><circle cx="333" cy="31" r="0.5" fill="#fff" opacity="0.55"/>
-      <path d="M0.0 87.6 L3.1 89.5 L6.2 92.2 L9.4 93.3 L12.5 95.7 L15.6 95.3 L18.8 96.5 L21.9 97.6 L25.0 97.6 L28.1 97.2 L31.2 97.9 L34.4 99.0 L37.5 99.8 L40.6 100.6 L43.8 101.6 L46.9 100.2 L50.0 100.0 L53.1 101.3 L56.2 101.8 L59.4 100.3 L62.5 100.1 L65.6 100.6 L68.8 100.6 L71.9 99.0 L75.0 98.7 L78.1 99.5 L81.2 100.6 L84.4 100.3 L87.5 101.0 L90.6 102.0 L93.8 103.8 L96.9 106.8 L100.0 108.0 L103.1 107.2 L106.2 105.2 L109.4 104.5 L112.5 104.4 L115.6 105.5 L118.8 105.2 L121.9 105.8 L125.0 107.4 L128.1 107.1 L131.2 107.1 L134.4 109.1 L137.5 109.9 L140.6 111.1 L143.8 111.8 L146.9 111.1 L150.0 111.9 L153.1 112.5 L156.2 111.2 L159.4 110.7 L162.5 111.2 L165.6 112.7 L168.8 115.1 L171.9 116.3 L175.0 116.5 L178.1 117.3 L181.2 118.8 L184.4 120.0 L187.5 121.9 L190.6 124.4 L193.8 128.4 L196.9 129.2 L200.0 131.6 L203.1 131.9 L206.2 131.9 L209.4 130.4 L212.5 129.8 L215.6 129.6 L218.8 129.0 L221.9 130.0 L225.0 131.6 L228.1 129.2 L231.2 127.0 L234.4 126.5 L237.5 124.4 L240.6 124.9 L243.8 125.4 L246.9 124.6 L250.0 123.5 L253.1 123.9 L256.2 122.9 L259.4 122.1 L262.5 122.4 L265.6 122.4 L268.8 123.7 L271.9 123.5 L275.0 121.7 L278.1 121.2 L281.2 119.5 L284.4 118.2 L287.5 117.9 L290.6 115.9 L293.8 114.9 L296.9 115.4 L300.0 114.9 L303.1 115.4 L306.2 114.4 L309.4 113.1 L312.5 112.9 L315.6 112.5 L318.8 110.5 L321.9 109.1 L325.0 106.3 L328.1 106.5 L331.2 106.3 L334.4 107.0 L337.5 108.0 L340.6 106.9 L343.8 107.3 L346.9 107.5 L350.0 109.4 L353.1 110.3 L356.2 109.4 L359.4 109.5 L362.5 110.5 L365.6 111.5 L368.8 111.7 L371.9 110.3 L375.0 109.7 L378.1 109.2 L381.2 107.6 L384.4 105.8 L387.5 103.6 L390.6 101.0 L393.8 99.2 L396.9 97.8 L400.0 97.5 L400 220 L0 220Z" fill="url(#zmL)" opacity=".85" />
-      <path d="" fill="#fff" opacity=".55" />
-      <rect x="0" y="80" width="400" height="70" fill="url(#zmB)" />
-      <path d="M0.0 145.6 L3.1 143.3 L6.2 142.3 L9.4 141.6 L12.5 140.0 L15.6 139.1 L18.8 139.6 L21.9 138.0 L25.0 136.1 L28.1 136.1 L31.2 136.3 L34.4 137.2 L37.5 139.0 L40.6 139.0 L43.8 138.3 L46.9 137.9 L50.0 137.4 L53.1 137.5 L56.2 137.2 L59.4 137.1 L62.5 135.6 L65.6 134.0 L68.8 133.1 L71.9 129.9 L75.0 128.2 L78.1 128.0 L81.2 128.4 L84.4 128.0 L87.5 127.1 L90.6 126.2 L93.8 126.3 L96.9 124.7 L100.0 124.2 L103.1 124.4 L106.2 123.3 L109.4 122.1 L112.5 120.5 L115.6 119.6 L118.8 118.8 L121.9 117.4 L125.0 114.6 L128.1 113.2 L131.2 112.3 L134.4 111.9 L137.5 110.9 L140.6 109.6 L143.8 109.2 L146.9 107.6 L150.0 106.3 L153.1 105.7 L156.2 104.1 L159.4 102.5 L162.5 99.6 L165.6 100.1 L168.8 99.5 L171.9 98.1 L175.0 97.1 L178.1 96.5 L181.2 95.7 L184.4 94.9 L187.5 94.8 L190.6 95.4 L193.8 97.2 L196.9 97.5 L200.0 97.8 L203.1 98.7 L206.2 98.5 L209.4 98.3 L212.5 97.0 L215.6 98.7 L218.8 99.6 L221.9 101.5 L225.0 101.8 L228.1 103.7 L231.2 106.2 L234.4 107.5 L237.5 109.9 L240.6 110.4 L243.8 111.1 L246.9 111.8 L250.0 113.1 L253.1 112.7 L256.2 113.2 L259.4 112.9 L262.5 112.9 L265.6 112.6 L268.8 111.9 L271.9 111.1 L275.0 110.2 L278.1 110.0 L281.2 110.3 L284.4 112.2 L287.5 113.0 L290.6 113.3 L293.8 112.1 L296.9 111.1 L300.0 110.3 L303.1 108.9 L306.2 108.8 L309.4 105.8 L312.5 104.2 L315.6 105.3 L318.8 105.1 L321.9 103.7 L325.0 103.7 L328.1 103.6 L331.2 102.8 L334.4 101.7 L337.5 100.4 L340.6 98.7 L343.8 97.6 L346.9 97.0 L350.0 95.5 L353.1 94.4 L356.2 94.9 L359.4 93.3 L362.5 92.8 L365.6 92.3 L368.8 91.8 L371.9 90.4 L375.0 90.4 L378.1 91.5 L381.2 91.6 L384.4 92.0 L387.5 93.3 L390.6 93.3 L393.8 94.4 L396.9 93.2 L400.0 93.5 L400 220 L0 220Z" fill="url(#zmM)" opacity=".92" />
-      <rect x="0" y="120" width="400" height="60" fill="url(#zmB)" opacity=".7" />
-      <path d="M0.0 175.8 L3.1 176.0 L6.2 177.1 L9.4 177.1 L12.5 177.1 L15.6 178.2 L18.8 178.7 L21.9 178.9 L25.0 178.3 L28.1 179.6 L31.2 180.4 L34.4 182.1 L37.5 182.7 L40.6 183.8 L43.8 184.8 L46.9 186.0 L50.0 186.2 L53.1 184.8 L56.2 184.5 L59.4 184.0 L62.5 184.1 L65.6 183.3 L68.8 182.5 L71.9 180.9 L75.0 179.8 L78.1 180.6 L81.2 180.8 L84.4 180.7 L87.5 180.3 L90.6 180.9 L93.8 181.4 L96.9 182.0 L100.0 181.7 L103.1 182.4 L106.2 183.0 L109.4 182.9 L112.5 183.2 L115.6 182.5 L118.8 182.0 L121.9 182.4 L125.0 182.1 L128.1 183.6 L131.2 184.1 L134.4 183.8 L137.5 184.3 L140.6 184.9 L143.8 184.7 L146.9 184.3 L150.0 182.9 L153.1 182.9 L156.2 182.9 L159.4 181.9 L162.5 180.8 L165.6 180.8 L168.8 181.6 L171.9 182.0 L175.0 182.3 L178.1 182.6 L181.2 182.8 L184.4 182.6 L187.5 182.1 L190.6 180.3 L193.8 179.7 L196.9 179.4 L200.0 178.1 L203.1 178.2 L206.2 178.4 L209.4 177.5 L212.5 176.8 L215.6 176.8 L218.8 176.1 L221.9 174.9 L225.0 173.7 L228.1 173.2 L231.2 172.8 L234.4 172.9 L237.5 172.5 L240.6 172.1 L243.8 172.7 L246.9 173.7 L250.0 174.7 L253.1 174.6 L256.2 174.7 L259.4 175.5 L262.5 175.1 L265.6 175.9 L268.8 175.6 L271.9 175.5 L275.0 175.9 L278.1 177.0 L281.2 178.1 L284.4 178.1 L287.5 179.0 L290.6 179.4 L293.8 180.0 L296.9 180.9 L300.0 181.0 L303.1 180.7 L306.2 179.5 L309.4 179.7 L312.5 180.0 L315.6 179.0 L318.8 178.5 L321.9 176.6 L325.0 175.5 L328.1 174.6 L331.2 173.5 L334.4 174.0 L337.5 173.4 L340.6 173.1 L343.8 173.7 L346.9 173.4 L350.0 172.5 L353.1 171.4 L356.2 171.4 L359.4 171.2 L362.5 171.7 L365.6 170.8 L368.8 170.6 L371.9 170.7 L375.0 170.3 L378.1 170.2 L381.2 170.4 L384.4 169.6 L387.5 169.2 L390.6 167.8 L393.8 166.2 L396.9 165.0 L400.0 164.8 L400 220 L0 220Z" fill="url(#zmC)" />
-      <path d="M0.0 203.4 L3.1 203.5 L6.2 203.7 L9.4 203.7 L12.5 203.2 L15.6 202.6 L18.8 202.2 L21.9 201.8 L25.0 201.4 L28.1 201.2 L31.2 200.9 L34.4 200.3 L37.5 199.7 L40.6 199.4 L43.8 199.0 L46.9 198.8 L50.0 199.2 L53.1 199.0 L56.2 198.4 L59.4 198.4 L62.5 197.9 L65.6 197.1 L68.8 196.8 L71.9 196.1 L75.0 195.4 L78.1 195.3 L81.2 194.9 L84.4 195.2 L87.5 195.7 L90.6 195.0 L93.8 194.7 L96.9 194.4 L100.0 194.5 L103.1 194.7 L106.2 194.8 L109.4 194.4 L112.5 194.6 L115.6 194.7 L118.8 194.2 L121.9 193.7 L125.0 192.8 L128.1 193.2 L131.2 193.4 L134.4 193.3 L137.5 192.8 L140.6 192.9 L143.8 192.8 L146.9 193.2 L150.0 193.7 L153.1 193.8 L156.2 193.7 L159.4 193.7 L162.5 193.7 L165.6 194.3 L168.8 194.4 L171.9 194.6 L175.0 194.4 L178.1 194.5 L181.2 194.8 L184.4 195.3 L187.5 195.2 L190.6 195.2 L193.8 194.8 L196.9 194.6 L200.0 194.0 L203.1 193.5 L206.2 192.7 L209.4 192.3 L212.5 192.1 L215.6 192.0 L218.8 191.3 L221.9 191.7 L225.0 191.6 L228.1 191.3 L231.2 190.7 L234.4 191.0 L237.5 190.9 L240.6 190.0 L243.8 188.8 L246.9 188.3 L250.0 187.9 L253.1 188.1 L256.2 187.9 L259.4 187.6 L262.5 187.9 L265.6 187.3 L268.8 187.0 L271.9 186.5 L275.0 186.0 L278.1 185.3 L281.2 185.2 L284.4 184.6 L287.5 184.1 L290.6 184.0 L293.8 183.6 L296.9 183.8 L300.0 183.9 L303.1 183.6 L306.2 183.5 L309.4 184.0 L312.5 183.9 L315.6 184.2 L318.8 184.2 L321.9 184.6 L325.0 185.1 L328.1 185.3 L331.2 185.3 L334.4 185.1 L337.5 184.7 L340.6 184.6 L343.8 184.5 L346.9 183.8 L350.0 183.2 L353.1 183.7 L356.2 183.6 L359.4 183.4 L362.5 183.1 L365.6 183.2 L368.8 183.1 L371.9 183.7 L375.0 184.1 L378.1 183.8 L381.2 183.0 L384.4 182.7 L387.5 183.1 L390.6 183.6 L393.8 184.0 L396.9 184.1 L400.0 183.9 L400 220 L0 220Z" fill="url(#zmF)" />
-      <rect width="400" height="220" filter="url(#zmR)" />
-    </svg>
-  );
-}
-
 function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, buscador }) {
   return (
     <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235", borderRadius: 0 }}>
@@ -2095,7 +2074,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(54,104,255,.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(23,198,255,.22), transparent 60%), #0a1235" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "#7FA8F51a" }} />
-        <PaisajePortada />
+        <FondoClima zona={zone} />
         <div className="relative max-w-6xl mx-auto px-4 pt-3 pb-12">
           <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1.2, letterSpacing: -0.4 }}>
             Descubrí lo mejor<br />de tu zona
@@ -3027,94 +3006,107 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
     setTimeout(() => { seMovio.current = false; }, 50);
   };
 
+  const tono = TONOS_ICONOS[NOTIF_TONO[n.tipo]] || TONOS_ICONOS.azul;
   return (
     <div
       className="relative overflow-hidden"
-      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s", borderBottom: "1px solid #EEF0F6" }}
+      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, marginBottom: saliendo ? 0 : 8, borderRadius: 18, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s, margin 0.25s ease 0.12s" }}
     >
       {/* fondo que se descubre al deslizar */}
-      <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#C1443A" }}>
-        <Trash2 size={18} color="#fff" />
-        <span className="text-xs font-semibold" style={{ color: "#fff" }}>Eliminar</span>
+      <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#D64545", borderRadius: 18, opacity: dx > 4 ? 1 : 0 }}>
+        <Trash2 size={20} color="#fff" />
+        <span className="text-xs font-bold" style={{ color: "#fff" }}>Eliminar</span>
       </div>
       <div
         role="button" tabIndex={0}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={terminar} onPointerCancel={terminar}
         onClick={() => { if (!seMovio.current) onOpen(); }}
         onKeyDown={(e) => (e.key === "Enter" ? onOpen() : null)}
-        className="relative flex items-start gap-3 px-4 py-3.5 cursor-pointer"
+        className="relative flex items-start gap-3.5 p-3.5 cursor-pointer"
         style={{
-          background: leida ? "#fff" : "#F3F8FF", transform: `translateX(${dx}px)`,
-          transition: arrastrando ? "none" : "transform 0.25s ease", touchAction: "pan-y", userSelect: "none",
+          background: leida ? "#fff" : "color-mix(in srgb, var(--azul) 5%, white)", border: `1px solid ${leida ? "#E3E7F1" : "color-mix(in srgb, var(--azul) 22%, white)"}`, borderRadius: 18,
+          transform: `translateX(${dx}px)`, transition: arrastrando ? "none" : "transform 0.25s ease", touchAction: "pan-y", userSelect: "none",
         }}
       >
-        <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: "50%", background: t.bg }}>
-          <Icon size={19} color={t.color} />
+        <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 14, background: tono.bg, boxShadow: `inset 0 0 0 1px ${tono.aro}` }}>
+          <Icon size={20} color={tono.fg} />
         </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm" style={{ color: "#0B1437", fontWeight: leida ? 500 : 700 }}>{n.titulo}</p>
-            {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 9, height: 9, background: "#2350F5" }} />}
-          </div>
-          <p className="text-xs mt-0.5" style={{ color: "#2B3768", wordBreak: "break-word" }}>{n.descripcion}</p>
-          <p className="text-[11px] mt-1" style={{ color: leida ? "#64748B" : "#2350F5", fontWeight: leida ? 400 : 600 }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+          <p className="text-sm" style={{ color: "#0B1437", fontWeight: 700, lineHeight: 1.3 }}>{n.titulo}</p>
+          <p className="text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4, wordBreak: "break-word" }}>{n.descripcion}</p>
+          <p className="text-[11px] mt-1.5 font-semibold" style={{ color: "#8D95B0" }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
+        {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 10, height: 10, background: "var(--azul)", boxShadow: "0 0 0 4px rgba(var(--azul-rgb), .15)" }} />}
       </div>
     </div>
   );
 }
 
 function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMarkAllRead, onBack }) {
+  const [filtro, setFiltro] = useState("todas");
   const sinLeer = notificaciones.filter((n) => !leidas.has(n.id)).length;
+  const lista = filtro === "todas" ? notificaciones : filtro === "sinleer" ? notificaciones.filter((n) => !leidas.has(n.id)) : notificaciones.filter((n) => NOTIF_CAT[n.tipo] === filtro);
   const hoy = new Date().toDateString();
   const ayer = new Date(Date.now() - 86400000).toDateString();
   const grupos = [
-    { label: "Hoy", items: notificaciones.filter((n) => new Date(n.fecha).toDateString() === hoy) },
-    { label: "Ayer", items: notificaciones.filter((n) => new Date(n.fecha).toDateString() === ayer) },
-    { label: "Anteriores", items: notificaciones.filter((n) => ![hoy, ayer].includes(new Date(n.fecha).toDateString())) },
+    { label: "Hoy", items: lista.filter((n) => new Date(n.fecha).toDateString() === hoy) },
+    { label: "Ayer", items: lista.filter((n) => new Date(n.fecha).toDateString() === ayer) },
+    { label: "Anteriores", items: lista.filter((n) => ![hoy, ayer].includes(new Date(n.fecha).toDateString())) },
   ].filter((g) => g.items.length > 0);
+  const vacio = filtro === "sinleer" ? ["Todo leído", "No tenés avisos sin leer."]
+    : notificaciones.length ? ["Nada por acá", "No hay avisos en esta categoría."]
+    : ["Todavía no hay avisos", "Cuando haya novedades de tus pedidos, turnos, puntos, canjes o de los negocios que seguís, las ves acá."];
 
   return (
     <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
+        <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-3" style={{ paddingTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
           <BotonAtras onClick={onBack} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)" }}>Notificaciones</p>
-            <p className="text-[11px]" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
+          <div className="flex-1 min-w-0 leading-tight">
+            <p style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em" }}>Notificaciones</p>
+            <p className="text-xs" style={{ color: "#BBD1FB" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
           </div>
-          <button
-            onClick={onMarkAllRead} disabled={sinLeer === 0}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0"
-            style={{ borderRadius: 8, background: "#ffffff1f", color: "#fff", opacity: sinLeer === 0 ? 0.45 : 1 }}
-          >
-            <CheckCheck size={14} /> Marcar todas como leídas
-          </button>
+          {sinLeer > 0 && (
+            <button onClick={onMarkAllRead} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0" style={{ borderRadius: 10, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
+              <CheckCheck size={14} /> Marcar todas
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto" style={{ paddingBottom: 40 }}>
-        {notificaciones.length === 0 ? (
-          <div className="text-center py-20 px-8">
-            <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 56, height: 56, borderRadius: "50%", background: "#EDF1FF" }}>
-              <BellOff size={24} color="#2350F5" />
+      <div className="max-w-3xl mx-auto px-4" style={{ paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="flex gap-2 overflow-x-auto pt-3 pb-1" style={{ scrollbarWidth: "none" }}>
+          {NOTIF_FILTROS.map(([id, nombre]) => {
+            const activo = filtro === id;
+            return (
+              <button key={id} onClick={() => setFiltro(id)} className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 shrink-0"
+                style={{ borderRadius: 999, background: activo ? "#0B1437" : "#fff", color: activo ? "#fff" : "#5B6482", border: `1px solid ${activo ? "#0B1437" : "#E3E7F1"}` }}>
+                {nombre}
+                {id === "sinleer" && sinLeer > 0 && <b className="flex items-center justify-center text-[11px]" style={{ background: "var(--azul)", color: "#fff", minWidth: 18, height: 18, borderRadius: 9, padding: "0 5px" }}>{sinLeer}</b>}
+              </button>
+            );
+          })}
+        </div>
+
+        {lista.length === 0 ? (
+          <div className="text-center px-6" style={{ paddingTop: 56 }}>
+            <span className="flex items-center justify-center mx-auto" style={{ width: 84, height: 84, borderRadius: "50%", background: "radial-gradient(circle, rgba(var(--azul-rgb), .16), rgba(var(--azul-rgb), 0) 70%)" }}>
+              <span className="flex items-center justify-center" style={{ width: 62, height: 62, borderRadius: 21, background: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06), 0 10px 22px -8px rgba(var(--azul-rgb), .4)" }}><BellOff size={28} color="#2350F5" /></span>
             </span>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#0B1437" }}>No tenés notificaciones</p>
-            <p className="text-xs" style={{ color: "#5B6482" }}>Acá vas a ver avisos de tus pedidos, turnos, promociones, puntos, canjes y novedades de los negocios que seguís.</p>
+            <p className="mt-5 mb-1.5" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, color: "#0B1437" }}>{vacio[0]}</p>
+            <p className="text-sm mx-auto" style={{ color: "#5B6482", lineHeight: 1.5, maxWidth: 320 }}>{vacio[1]}</p>
           </div>
         ) : (
           <>
-            <p className="text-[11px] px-4 pt-3 pb-1" style={{ color: "#64748B" }}>Deslizá una notificación hacia la derecha para eliminarla.</p>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-semibold px-4 pt-3 pb-1.5" style={{ color: "#5B6482", letterSpacing: 0.4 }}>{g.label.toUpperCase()}</p>
-                <div style={{ borderTop: "1px solid #EEF0F6" }}>
-                  {g.items.map((n) => (
-                    <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
-                  ))}
-                </div>
+                <p className="text-[11px] font-extrabold px-1 pt-4 pb-2" style={{ color: "#8D95B0", letterSpacing: "0.1em" }}>{g.label.toUpperCase()}</p>
+                {g.items.map((n) => (
+                  <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
+                ))}
               </div>
             ))}
+            <p className="text-center text-xs mt-5" style={{ color: "#8D95B0" }}>Deslizá un aviso hacia la derecha para borrarlo.</p>
           </>
         )}
       </div>
@@ -3886,8 +3878,8 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   );
 }
 
-function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
-  const [tema, setTemaEstado] = useState(() => getTema());
+function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrirFavoritos, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
+  const tema = useApariencia().tema;
   // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
   useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
   // Ayuda y Soporte se mandan entre sí (por ejemplo, "No me sirvió" → escribir a Soporte con el tema ya elegido)
@@ -3935,7 +3927,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
   if (sub === "cuenta") {
     return (
       <MiCuentaScreen
-        usuario={usuario} local={{ favoritos: getFavorites().length }} negocios={negocios} onAbrirNegocio={onAbrirNegocio} onBack={() => setSub(null)} onLogged={onLogged}
+        usuario={usuario} local={{ favoritos: getFavorites().length }} negocios={negocios} onAbrirNegocio={onAbrirNegocio} onAbrirFavoritos={onAbrirFavoritos} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
         onCerrarSesion={onCerrarSesion}
         onCuentaEliminada={onCuentaEliminada}
@@ -3951,39 +3943,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onLogin
   }
 
   if (sub === "apariencia") {
-    const opciones = [
-      { id: "claro", titulo: "Claro", desc: "Fondo blanco, como siempre.", Icon: Sun },
-      { id: "oscuro", titulo: "Oscuro", desc: "Fondo oscuro, más cómodo de noche.", Icon: Moon },
-      { id: "auto", titulo: "Automático", desc: "Sigue el modo de tu celular.", Icon: Smartphone },
-    ];
-    return (
-      <div>
-        <BotonVolver texto="Volver a Ajustes" onClick={() => setSub(null)} />
-        <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1437" }} className="mb-1">Apariencia</h2>
-        <p className="text-xs mb-4" style={{ color: "#5B6482" }}>Elegí cómo querés ver Mi Zona</p>
-        <div className="overflow-hidden" style={{ borderRadius: 20, border: "1px solid #E3E7F1", boxShadow: "0 6px 20px rgba(11,20,55,0.07)" }}>
-          {opciones.map(({ id, titulo, desc, Icon }) => {
-            const activa = tema === id;
-            return (
-              <button
-                key={id} onClick={() => { guardarTema(id); setTemaEstado(id); }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white"
-                style={{ borderBottom: "1px solid #EEF0F6" }}
-              >
-                <span className="flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 13, background: activa ? "#2350F5" : "#EDF1FF" }}>
-                  <Icon size={17} color={activa ? "#fff" : "#2350F5"} />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium" style={{ color: "#0B1437" }}>{titulo}</span>
-                  <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</span>
-                </span>
-                {activa && <Check size={18} color="#2350F5" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
+    return <AparienciaScreen onBack={() => setSub(null)} />;
   }
 
   if (sub === "privacidad") {
@@ -5370,7 +5330,7 @@ export default function MiZona() {
           <AjustesScreen
             sub={subAjustes} setSub={setSubAjustes}
             usuario={usuario}
-            negocios={businesses} onAbrirNegocio={openDetail}
+            negocios={businesses} onAbrirNegocio={openDetail} onAbrirFavoritos={() => setShowFavoritos(true)}
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}

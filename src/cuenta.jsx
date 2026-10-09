@@ -467,7 +467,7 @@ function EditorUsuario({ usuario, onGuardado }) {
       <input value={valor} maxLength={20} autoCapitalize="none" spellCheck={false}
         onChange={(e) => { setValor(e.target.value.replace(/\s/g, "")); setEstado(null); }}
         placeholder="Elegí tu usuario" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 12, borderColor: disp.estado === "ocupado" || disp.estado === "invalido" ? "#C93030" : "#E3E7F1" }} />
-      <p className="text-xs mt-1.5 font-medium" style={{ color }}>{disp.msg || "De 5 a 20 caracteres, con una letra al inicio y al menos un número."}</p>
+      <p className="text-xs mt-1.5 font-medium" style={{ color }}>{disp.msg || "De 5 a 20 caracteres. Empieza con una letra; podés usar números, punto o guion bajo."}</p>
       {estado?.error && <p className="text-xs mt-1" style={{ color: "#C93030" }}>{estado.error}</p>}
       {cambio && (
         <button onClick={guardar} disabled={!puede} className="w-full text-sm font-semibold py-2.5 mt-2 flex items-center justify-center gap-1.5"
@@ -480,28 +480,17 @@ function EditorUsuario({ usuario, onGuardado }) {
   );
 }
 
-export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
-  const [nombre, setNombre] = useState(usuario?.nombre || "");
+export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onAbrirFavoritos, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   const [resumen, setResumen] = useState(null); // lo que Mi Zona tiene de esta cuenta (cantidades, negocios, fecha de alta)
   const [vista, setVista] = useState(null); // null | "desde" | "resenas" | "favoritos" | "negocios"
-  useEffect(() => { setNombre(usuario?.nombre || ""); }, [usuario?.nombre]);
   useEffect(() => {
     if (!usuario) { setResumen(null); return; }
     privacidadApi.resumen().then(setResumen).catch(() => {});
   }, [usuario?.id]);
 
-  const guardar = async () => {
-    setEstado("guardando");
-    try {
-      onUsuarioActualizado(await guardarNombre(nombre));
-      setEstado("ok");
-      setTimeout(() => setEstado(null), 2500);
-    } catch (e) { setEstado({ error: e.message }); }
-  };
-  const cambio = usuario && nombre.trim() !== (usuario.nombre || "");
   const negocios = resumen?.negocios || [];
-  const inicial = (usuario?.nombre || usuario?.email || "?").trim().charAt(0).toUpperCase();
+  const inicial = (usuario?.usuario || usuario?.nombre || usuario?.email || "?").trim().charAt(0).toUpperCase();
   const conCorreo = resumen ? resumen.cuenta.proveedor === "email" : !!usuario?.conClave;
 
   if (usuario && vista) {
@@ -527,40 +516,26 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
           <div className="flex items-center gap-3.5 p-4 mb-1" style={TARJETA_SEG}>
             <span className="flex items-center justify-center shrink-0 text-xl font-bold" style={{ width: 54, height: 54, borderRadius: "50%", background: "#0B1437", color: "#fff", fontFamily: "var(--fuente-titulo)" }}>{inicial}</span>
             <span className="flex-1 min-w-0">
-              <span className="block text-base font-bold truncate" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{usuario.nombre || "Sin nombre"}</span>
-              <span className="block text-xs truncate mt-0.5" style={{ color: "#5B6482" }}>{usuario.usuario ? `@${usuario.usuario} · ` : ""}{usuario.email}</span>
+              <span className="block text-base font-bold truncate" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{usuario.usuario ? `@${usuario.usuario}` : "Sin usuario"}</span>
+              <span className="block text-xs truncate mt-0.5" style={{ color: "#5B6482" }}>{usuario.email}</span>
               <span className="inline-block text-[11px] font-semibold px-2 py-0.5 mt-1.5" style={{ borderRadius: 8, background: "#EDF1FF", color: "#2350F5" }}>{conCorreo ? "Entrás con correo y contraseña" : "Entrás con Google"}</span>
             </span>
           </div>
 
           <Etiqueta>Tus datos</Etiqueta>
           <div className="p-4" style={TARJETA_SEG}>
-            <label className="text-xs font-medium block mb-1" style={{ color: "#2B3768" }}>Nombre</label>
-            <input
-              value={nombre} maxLength={60} onChange={(e) => { setNombre(e.target.value); setEstado(null); }}
-              onKeyDown={(e) => e.key === "Enter" && cambio && nombre.trim().length >= 2 && guardar()}
-              className="w-full border px-3 py-2.5 text-sm mb-3" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
-            />
             <EditorUsuario usuario={usuario} onGuardado={onUsuarioActualizado} />
             <label className="text-xs font-medium block mb-1" style={{ color: "#2B3768" }}>Correo de tu cuenta</label>
             <div className="flex items-center gap-2 text-sm px-3 py-2.5 mb-3" style={{ borderRadius: 8, background: "#F3F5FA", color: "#0B1437" }}>
               <Mail size={14} color="#5B6482" /> <span className="truncate">{usuario.email}</span>
             </div>
-            {estado?.error && <p className="text-xs mb-2" style={{ color: "#C1443A" }}>{estado.error}</p>}
-            <button
-              onClick={guardar} disabled={!cambio || nombre.trim().length < 2 || estado === "guardando"}
-              className="w-full text-sm font-semibold py-2.5 flex items-center justify-center gap-1.5"
-              style={{ backgroundColor: "#2350F5", color: "#fff", borderRadius: 10, opacity: !cambio || nombre.trim().length < 2 ? 0.45 : 1 }}
-            >
-              {estado === "ok" ? <><Check size={15} /> Guardado</> : estado === "guardando" ? "Guardando..." : "Guardar nombre"}
-            </button>
           </div>
 
           <Etiqueta>Tu actividad en Mi Zona</Etiqueta>
           <div className="overflow-hidden" style={TARJETA_SEG}>
             <FilaMenu Icon={CalendarDays} color="#2350F5" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
             <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
-            <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => setVista("favoritos")} />
+            <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => (onAbrirFavoritos ? onAbrirFavoritos() : setVista("favoritos"))} />
             <FilaMenu Icon={Store} color="#0B1437" titulo="Mis negocios" valor={resumen ? String(negocios.length) : null} onClick={() => setVista("negocios")} ultimo />
           </div>
 

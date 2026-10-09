@@ -14,6 +14,9 @@ const usuarioSchema = new mongoose.Schema(
     // por eso estas cuentas no se usan para reconocer negocios ni pagos de Mi Asistente).
     proveedor: { type: String, enum: ["google", "email"], default: "google" },
     passwordHash: { type: String, default: "" },
+    // Contraseña de Mi Zona para entrar con usuario (cuentas que se registraron con Google). Es independiente de passwordHash
+    // (la contraseña de correo, que también usa Mi Asistente): así las dos nunca se mezclan ni se pisan.
+    claveZona: { type: String, default: "" },
     sesionClienteId: { type: String, default: "" },
     // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
     tokenVersion: { type: Number, default: 0 },

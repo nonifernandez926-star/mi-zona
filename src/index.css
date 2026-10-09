@@ -315,3 +315,41 @@ input[class*="bg-transparent"]:focus-visible, textarea[class*="bg-transparent"]:
 
 /* Texto de ayuda dentro de campos sobre fondo azul (cabeceras) */
 [data-conservar-color] input::placeholder { color: rgba(255,255,255,.66); }
+
+/* =====================================================================
+   COLOR DE ACENTO (Ajustes → Apariencia)
+   El azul de la app sigue el acento elegido, pero solo donde aporta: botones principales, textos
+   y iconos activos, bordes de selección y los fondos suaves. Las cabeceras oscuras se mantienen.
+   ===================================================================== */
+:root { --azul: #2350f5; --azul-g1: #2a58ff; --azul-g2: #1f47e0; --azul-suave: #edf1ff; --azul-rgb: 35, 80, 245; }
+[style*="background-color: rgb(35, 80, 245)"], [style*="background: rgb(35, 80, 245)"] { background-color: var(--azul) !important; }
+[style^="color: rgb(35, 80, 245)"], [style*="; color: rgb(35, 80, 245)"] { color: var(--azul) !important; }
+[style*="border-color: rgb(35, 80, 245)"], [style*="border: 1px solid rgb(35, 80, 245)"] { border-color: var(--azul) !important; }
+[style*="linear-gradient(rgb(42, 88, 255)"], [style*="linear-gradient(180deg, rgb(42, 88, 255)"] { background-image: linear-gradient(180deg, var(--azul-g1), var(--azul-g2)) !important; }
+[style*="background: rgb(237, 241, 255)"], [style*="background-color: rgb(237, 241, 255)"] { background-color: var(--azul-suave) !important; }
+[stroke="#2350F5"], [stroke="#2350f5"] { stroke: var(--azul); }
+[fill="#2350F5"], [fill="#2350f5"] { fill: var(--azul); }
+:root { --zona-anillo: rgba(var(--azul-rgb), 0.14); --zona-azul: var(--azul); }
+.bv-enviar, .bv-opcion.principal { background-image: linear-gradient(180deg, var(--azul-g1), var(--azul-g2)); }
+button[style*="background-color: rgb(35, 80, 245)"], button[style*="background: rgb(35, 80, 245)"], a[style*="background-color: rgb(35, 80, 245)"] {
+  background-image: linear-gradient(180deg, var(--azul-g1) 0%, var(--azul-g2) 100%) !important;
+  box-shadow: 0 1px 2px rgba(11, 20, 55, .2), 0 6px 14px rgba(var(--azul-rgb), .22);
+}
+html.sin-movimiento *, html.sin-movimiento *::before, html.sin-movimiento *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+
+/* =====================================================================
+   PORTADA CON CLIMA: movimiento de nubes, lluvia, nieve, estrellas y rayos
+   ===================================================================== */
+.fz-nubes { will-change: transform; animation: fz-deriva 160s ease-in-out infinite alternate; }
+@keyframes fz-deriva { from { transform: translateX(0); } to { transform: translateX(-22%); } }
+.fz-gota { animation: fz-lluvia .8s linear infinite; }
+@keyframes fz-lluvia { from { transform: translate(0, -30px); } to { transform: translate(-22px, 250px); } }
+.fz-copo { animation: fz-nieve 6s linear infinite; }
+@keyframes fz-nieve { from { transform: translate(0, -6px); opacity: 0; } 10% { opacity: 1; } to { transform: translate(-18px, 228px); opacity: .9; } }
+.fz-estrella { animation: fz-titila 4.2s ease-in-out infinite; }
+@keyframes fz-titila { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.fz-relampago { animation: fz-rel 9s linear infinite; opacity: 0; mix-blend-mode: screen; }
+@keyframes fz-rel { 0%, 40% { opacity: 0; } 41% { opacity: .75; } 42% { opacity: .12; } 43% { opacity: .55; } 46% { opacity: 0; } 77% { opacity: 0; } 78% { opacity: .4; } 80%, 100% { opacity: 0; } }
+.fz-rayo { animation: fz-ray 9s linear infinite; opacity: 0; }
+@keyframes fz-ray { 0%, 40.5% { opacity: 0; } 41%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
+html.sin-movimiento .fz-nubes, html.sin-movimiento .fz-gota, html.sin-movimiento .fz-copo, html.sin-movimiento .fz-estrella, html.sin-movimiento .fz-relampago, html.sin-movimiento .fz-rayo { animation: none !important; }

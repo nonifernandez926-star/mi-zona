@@ -18,11 +18,9 @@
 .bv-escena { position: relative; width: 300px; height: 280px; margin: 0 auto; }
 .bv-halo { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(circle, rgba(70,130,255,.55) 0%, rgba(70,130,255,0) 68%); animation: bv-pulso 4s ease-in-out infinite; }
 .bv-orbita { position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 50%; border: 1px dashed rgba(140,180,255,.2); animation: bv-gira 15s linear infinite reverse; }
-.bv-orbita::after { content: ''; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #9d8bff; box-shadow: 0 0 12px 3px rgba(157,139,255,.8); }
-.bv-anillo { position: absolute; left: 50%; top: 50%; width: 262px; height: 262px; margin: -131px 0 0 -131px; border-radius: 50%; border: 1px dashed rgba(140,180,255,.3); animation: bv-gira 42s linear infinite; }
-.bv-anillo::after { content: ''; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #5ee7ff; box-shadow: 0 0 14px 3px rgba(94,231,255,.8); }
+.bv-anillo { position: absolute; left: 50%; top: 50%; width: 262px; height: 262px; margin: -131px 0 0 -131px; border-radius: 50%; border: 1px dashed rgba(140,180,255,.3); animation: bv-gira 34s linear infinite; }
 .bv-item { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; transform: rotate(var(--a)) translateY(-131px) rotate(calc(-1 * var(--a))); }
-.bv-burbuja { width: 100%; height: 100%; border-radius: 15px; display: grid; place-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.22); animation: bv-contra 42s linear infinite; }
+.bv-burbuja { width: 100%; height: 100%; border-radius: 15px; display: grid; place-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.22); animation: bv-contra 34s linear infinite; }
 .bv-pin { position: absolute; left: 50%; top: 50%; width: 150px; height: 168px; margin: -86px 0 0 -75px; overflow: visible; animation: bv-flota 5s ease-in-out infinite; }
 .bv-onda { transform-box: fill-box; transform-origin: center; animation: bv-onda 3.2s ease-out infinite; }
 .bv-onda.b { animation-delay: 1.6s; }
@@ -49,7 +47,7 @@
 /* acceso: hoja blanca que sube sobre el fondo */
 .bv-barra { display: flex; align-items: center; gap: 12px; padding: calc(14px + env(safe-area-inset-top)) 18px 22px; font-weight: 800; position: relative; z-index: 1; }
 .bv-volver { width: 40px; height: 40px; border-radius: 13px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #fff; display: grid; place-items: center; cursor: pointer; }
-.bv-hoja { position: relative; z-index: 1; flex: 1; background: #fff; color: #10193f; border-radius: 28px 28px 0 0; padding: 28px 22px calc(28px + env(safe-area-inset-bottom)); box-shadow: 0 -20px 50px rgba(0,0,0,.35); animation: bv-sube .38s cubic-bezier(.2,.8,.2,1); }
+.bv-hoja { position: relative; z-index: 1; flex: 1; margin: 0 12px; background: #fff; color: #10193f; border-radius: 28px 28px 0 0; padding: 28px 22px calc(28px + env(safe-area-inset-bottom)); box-shadow: 0 -20px 50px rgba(0,0,0,.35); animation: bv-sube .38s cubic-bezier(.2,.8,.2,1); }
 @keyframes bv-sube { from { transform: translateY(36px); opacity: 0; } to { transform: none; opacity: 1; } }
 .bv-hoja h2 { margin: 0 0 4px; font-size: 1.32rem; font-weight: 800; letter-spacing: -.02em; color: #10193f; }
 .bv-sub { margin: 0 0 20px; color: #667085; font-size: .9rem; line-height: 1.45; }
@@ -87,3 +85,12 @@
 .bv-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: #2350f5; cursor: pointer; }
 @media (max-height: 640px) { .bv-escena { transform: scale(.82); margin: -22px auto -22px; } }
 @media (prefers-reduced-motion: reduce) { .bv *, .bv *::after { animation: none !important; } }
+
+/* acceso: igual que Mi Asistente (Google, "o con tu usuario", campo + Continuar, Registrarme) */
+.bv-form .bv-campo input { padding: 13px 14px; }
+.bv-fijo { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; background: #f3f6fb; font-size: .9rem; color: #10193f; }
+.bv-fijo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-clave { position: relative; }
+.bv-clave input { padding-right: 70px; }
+.bv-clave .bv-link { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: .8rem; }
+.bv-err-g { margin: 8px 0 0; text-align: center; font-size: .8rem; line-height: 1.4; color: #c93030; }

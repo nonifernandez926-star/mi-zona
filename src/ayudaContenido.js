@@ -70,7 +70,7 @@ export const ARTICULOS = [
     claves: "registrarme registro google correo",
     cuerpo: [
       "Para usar Mi Zona necesitás una cuenta. Se crea en dos pasos: primero elegís tu cuenta de Google y después inventás tu usuario y tu contraseña.",
-      { pasos: ["En la primera pantalla tocá “Empezar” y después “Registrarme”.", "Elegí la cuenta de Google con la que querés registrarte.", "Escribí tu usuario: de 5 a 20 caracteres, empieza con una letra y lleva al menos un número. Si alguien ya lo usa, te avisamos para que elijas otro.", "Creá tu contraseña: 8 caracteres o más, con una mayúscula, una minúscula y un número.", "Tocá “Crear mi cuenta”. Desde ese momento entrás directo a la app cada vez que la abrís."] },
+      { pasos: ["En la primera pantalla tocá “Empezar” y después “Registrarme”.", "Elegí la cuenta de Google con la que querés registrarte.", "Escribí tu usuario: de 5 a 20 caracteres, empieza con una letra (después podés usar números, punto o guion bajo). Si alguien ya lo usa, te avisamos para que elijas otro.", "Creá tu contraseña: 8 caracteres o más, sin espacios. Puede ser solo números, solo letras o una mezcla.", "Tocá “Crear mi cuenta”. Desde ese momento entrás directo a la app cada vez que la abrís."] },
       { nota: "Si ya usabas Mi Asistente o tenías un negocio cargado antes, registrate con la misma cuenta de Google para que se reconozca." },
     ],
     relacionados: ["no-puedo-entrar", "cambiar-nombre"],
@@ -80,16 +80,16 @@ export const ARTICULOS = [
     claves: "error google contrasena olvide no entra acceso ventana",
     cuerpo: [
       "Probá primero con lo más común:",
-      { pasos: ["Tocá “Iniciar sesión” y escribí tu usuario y tu contraseña, o entrá con la cuenta de Google con la que te registraste.", "Si usás usuario y contraseña, revisá las mayúsculas. Tras varios intentos fallidos hay que esperar un rato antes de volver a probar.", "Si usás Google y la ventana de cuentas no abre o da error, actualizá la página y desactivá bloqueadores de ventanas emergentes para este sitio.", "Probá desde otro navegador o desde el modo incógnito."] },
+      { pasos: ["Tocá “Acceder con Google” y elegí tu cuenta, o escribí el usuario y la contraseña que creaste al registrarte.", "También podés escribir tu correo: Google te pide la contraseña de ese correo en su propia página.", "Si usás usuario y contraseña, revisá las mayúsculas. Tras varios intentos fallidos hay que esperar un rato antes de volver a probar.", "Si usás Google y la ventana de cuentas no abre o da error, actualizá la página y desactivá bloqueadores de ventanas emergentes para este sitio.", "Probá desde otro navegador o desde el modo incógnito."] },
       "Si nada funciona, escribinos desde Soporte y contanos qué mensaje te aparece. Si no podés entrar, podés enviar la consulta igual: solo necesitamos tu correo para responderte.",
     ],
     relacionados: ["crear-cuenta", "cambiar-clave"],
     contactar: "cuenta",
   },
   {
-    id: "cambiar-nombre", cat: "cuenta", titulo: "Cambiar mi nombre",
+    id: "cambiar-nombre", cat: "cuenta", titulo: "Cambiar mi usuario o mi nombre",
     claves: "perfil editar",
-    cuerpo: [{ pasos: ["Andá a Ajustes → Mi cuenta.", "Escribí tu nombre nuevo en el campo Nombre.", "Tocá “Guardar nombre”."] }, "Tu correo no se puede cambiar desde la app."],
+    cuerpo: [{ pasos: ["Andá a Ajustes → Mi cuenta.", "Escribí tu usuario nuevo en el campo Usuario.", "Tocá “Guardar usuario”."] }, "Tu correo no se puede cambiar desde la app."],
     relacionados: ["cambiar-usuario", "cambiar-clave"],
   },
   {
@@ -97,7 +97,7 @@ export const ARTICULOS = [
     claves: "usuario nombre de usuario ocupado editar",
     cuerpo: [
       { pasos: ["Andá a Ajustes → Mi cuenta.", "Escribí tu usuario nuevo en el campo Usuario. Mientras escribís te avisamos si es válido y si está libre.", "Tocá “Guardar usuario”."] },
-      "Tiene que tener entre 5 y 20 caracteres, empezar con una letra y llevar al menos un número. Podés usar letras, números, punto y guion bajo. Si ya lo usa otra persona, vas a ver el aviso “Ese usuario ya está ocupado”.",
+      "Tiene que tener entre 5 y 20 caracteres y empezar con una letra. Podés usar letras, números, punto y guion bajo. Si ya lo usa otra persona, vas a ver el aviso “Ese usuario ya está ocupado”.",
     ],
     relacionados: ["cambiar-clave", "no-puedo-entrar"],
   },
@@ -106,7 +106,7 @@ export const ARTICULOS = [
     claves: "seguridad contrasena dispositivos sesion otro celular robaron",
     cuerpo: [
       "Entrá a Ajustes → Seguridad.",
-      { pasos: ["Contraseña: escribí la actual y la nueva (8 caracteres o más, con mayúscula, minúscula y número).", "Dispositivos: ves todos los dispositivos con tu sesión abierta y podés cerrar la sesión de cualquiera.", "Si no reconocés alguno, cerralo y cambiá tu contraseña."] },
+      { pasos: ["Contraseña: escribí la actual y la nueva (8 caracteres o más, sin espacios; puede ser solo números, solo letras o ambos).", "Dispositivos: ves todos los dispositivos con tu sesión abierta y podés cerrar la sesión de cualquiera.", "Si no reconocés alguno, cerralo y cambiá tu contraseña."] },
       "Al cambiar la contraseña se cierran las sesiones de los demás dispositivos.",
     ],
     relacionados: ["alertas-inicio", "no-puedo-entrar"],
@@ -254,7 +254,7 @@ export const ARTICULOS = [
     id: "busqueda-asistente", cat: "asistente", titulo: "Búsqueda con asistente y mi ubicación",
     claves: "buscar recomendar ubicacion ultimos chats privacidad",
     cuerpo: [
-      "La búsqueda con asistente usa tu ubicación para ordenar por cercanía y un resumen corto de tus últimos chats para recomendarte mejor. La ubicación no se guarda.",
+      "La búsqueda con asistente usa tu ubicación para ordenar por cercanía, y la portada de inicio para mostrar el clima de donde estás, junto con un resumen corto de tus últimos chats para recomendarte mejor. La ubicación no se guarda.",
       "Podés apagar las dos cosas en Ajustes → Privacidad. Si las apagás, la búsqueda sigue funcionando, pero con menos datos.",
     ],
     relacionados: ["que-datos-guardamos", "ubicacion-no-funciona"],

@@ -15,7 +15,19 @@ import { validarUsuario, validarContrasena, normalizarUsuario } from "../utils/c
 
 const router = express.Router();
 
-const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, usuario: u.usuario || "", nombre: u.nombre, conClave: !!u.passwordHash });
+const tieneClave = (u) => !!(u.passwordHash || u.claveZona);
+// Con el correo solo vale la contraseña de correo (cuentas viejas creadas con correo); con el usuario, la de Mi Zona. Las cuentas de Google entran con Google o con usuario.
+const hashParaEntrar = (u, conCorreo) => (conCorreo ? u.passwordHash : u.claveZona || u.passwordHash);
+// Versión anterior: al elegir usuario en una cuenta de Google se guardaba la contraseña en el mismo campo que usa el correo (y Mi Asistente), pisándola.
+// Se separa sola la próxima vez que la cuenta entra.
+async function separarClaves(u) {
+  if (u && u.proveedor === "google" && u.usuario && u.passwordHash && !u.claveZona) {
+    u.claveZona = u.passwordHash;
+    u.passwordHash = "";
+    await u.save();
+  }
+}
+const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, usuario: u.usuario || "", nombre: u.nombre, conClave: !!(u.passwordHash || u.claveZona) });
 
 // Une a la cuenta los negocios que tengan su email como dueño (negocios cargados antes de que existiera el login).
 async function vincularNegociosPorEmail(usuario) {
@@ -95,7 +107,8 @@ router.post("/correo", async (req, res) => {
     if (!RE_CORREO.test(email) || email.length > 120) return res.status(400).json({ error: "Escribí un correo válido." });
     const usuario = await Usuario.findOne({ email });
     if (!usuario) return res.json({ paso: "crear" });
-    res.json({ paso: usuario.passwordHash ? "clave" : "google" });
+    // "clave": cuenta creada con correo y contraseña (se pide acá). "google": cuenta de Google (se entra con Google, con su contraseña de correo en la página de Google).
+    res.json({ paso: usuario.proveedor === "email" && usuario.passwordHash ? "clave" : "google" });
   } catch (e) {
     console.error("Error al revisar el correo:", e.message);
     res.status(500).json({ error: "No se pudo continuar. Probá de nuevo." });
@@ -151,11 +164,12 @@ router.post("/login", async (req, res) => {
     if ((esCorreo ? !RE_CORREO.test(email) : ident.length < 3) || !password) return res.status(400).json({ error: "Escribí tu usuario o correo y tu contraseña." });
 
     const usuario = await Usuario.findOne(esCorreo ? { email } : { usuario: normalizarUsuario(ident) });
-    if (usuario && !usuario.passwordHash) {
-      return res.status(400).json({ error: "Ese correo se registró con Google. Entrá con el botón de Google.", codigo: "cuenta_google" });
+    if (usuario) await separarClaves(usuario);
+    if (usuario && (esCorreo ? !usuario.passwordHash : !tieneClave(usuario))) {
+      return res.status(400).json({ error: "Esa cuenta entra con Google. Tocá “Acceder con Google”.", codigo: "cuenta_google" });
     }
     // aunque el correo no exista hacemos el mismo trabajo, así no se nota la diferencia
-    const ok = await verificarContrasena(password, usuario ? usuario.passwordHash : "00:00");
+    const ok = await verificarContrasena(password, usuario ? hashParaEntrar(usuario, esCorreo) : "00:00");
     if (!usuario || !ok) return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
 
     olvidar(clave);
@@ -205,12 +219,15 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
   try {
     const u = req.actor.usuario;
     if (!permitir(`completar|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
-    if (u.usuario && u.passwordHash) return res.status(400).json({ error: "Tu cuenta ya tiene usuario y contraseña. Podés cambiarlos desde Ajustes." });
+    await separarClaves(u);
+    if (u.usuario && tieneClave(u)) return res.status(400).json({ error: "Tu cuenta ya tiene usuario y contraseña. Podés cambiarlos desde Ajustes." });
     const nuevo = normalizarUsuario(req.body?.usuario);
     const password = String(req.body?.password || "");
     const errUsuario = validarUsuario(nuevo);
     if (errUsuario) return res.status(400).json({ error: errUsuario, codigo: "usuario_invalido" });
-    const errClave = validarContrasena(password, nuevo);
+    // Las cuentas que ya tienen contraseña (registradas con correo) solo eligen usuario: no se les toca la contraseña.
+    const pedirClave = !tieneClave(u);
+    const errClave = pedirClave ? validarContrasena(password, nuevo) : "";
     if (errClave) return res.status(400).json({ error: errClave, codigo: "clave_invalida" });
     if (await Usuario.findOne({ usuario: nuevo, _id: { $ne: u._id } })) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
     if (req.body?.nombre !== undefined) {
@@ -219,7 +236,8 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
       u.nombre = nombre;
     }
     u.usuario = nuevo;
-    u.passwordHash = await hashearContrasena(password);
+    if (!u.nombre) u.nombre = nuevo; // ya no se pide el nombre: alcanza con el usuario
+    if (pedirClave) u.claveZona = await hashearContrasena(password);
     await u.save();
     await registrarActividad(u._id, "usuario_creado", req);
     res.json({ usuario: usuarioPublico(u) });
@@ -244,7 +262,8 @@ router.get("/usuario-disponible", async (req, res) => {
   }
 });
 
-router.get("/me", identificar, requiereUsuario, (req, res) => {
+router.get("/me", identificar, requiereUsuario, async (req, res) => {
+  await separarClaves(req.actor.usuario);
   res.json({ usuario: usuarioPublico(req.actor.usuario) });
 });
 
@@ -261,14 +280,16 @@ router.put("/clave", identificar, requiereUsuario, async (req, res) => {
   try {
     const u = req.actor.usuario;
     if (!permitir(`clave|${ip(req)}|${u._id}`, 8, 15 * 60 * 1000)) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
-    if (!u.passwordHash) return res.status(400).json({ error: "Tu cuenta entra con Google: la contraseña se maneja desde tu cuenta de Google." });
+    await separarClaves(u);
+    const campo = u.passwordHash ? "passwordHash" : "claveZona"; // cada cuenta cambia la contraseña que realmente usa
+    if (!u[campo]) return res.status(400).json({ error: "Tu cuenta entra con Google: todavía no tiene una contraseña de Mi Zona." });
     const actual = String(req.body?.actual || "");
     const nueva = String(req.body?.nueva || "");
-    if (!(await verificarContrasena(actual, u.passwordHash))) return res.status(401).json({ error: "La contraseña actual no es correcta." });
+    if (!(await verificarContrasena(actual, u[campo]))) return res.status(401).json({ error: "La contraseña actual no es correcta." });
     const errNueva = validarContrasena(nueva, u.usuario);
     if (errNueva) return res.status(400).json({ error: errNueva, codigo: "clave_invalida" });
     if (nueva === actual) return res.status(400).json({ error: "La contraseña nueva tiene que ser distinta a la actual." });
-    u.passwordHash = await hashearContrasena(nueva);
+    u[campo] = await hashearContrasena(nueva);
     u.tokenVersion = (u.tokenVersion || 0) + 1;
     await u.save();
     const sid = await dejarSoloEstaSesion(req, u);

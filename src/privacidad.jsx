@@ -192,7 +192,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
 
       <Grupo titulo="Cómo se usan tus datos">
         <Control
-          Icon={MapPin} titulo="Usar mi ubicación" desc="Para ordenar los negocios por cercanía en la búsqueda con asistente. No se guarda."
+          Icon={MapPin} titulo="Usar mi ubicación" desc="Para ordenar los negocios por cercanía y mostrar el clima de donde estás. No se guarda."
           activo={prefs.ubicacionBusqueda} onChange={(v) => cambiar("ubicacionBusqueda", v)} disabled={guardando === "ubicacionBusqueda"}
         />
         <Control

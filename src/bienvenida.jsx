@@ -1,9 +1,9 @@
 // Primera pantalla de Mi Zona: bienvenida animada (como la de Mi Asistente), elegir Registrarme / Iniciar sesión,
 // y crear usuario y contraseña. Se muestra mientras no haya sesión; con sesión abierta la app entra directo al inicio.
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, UtensilsCrossed, HeartPulse, Wrench, Home, ShoppingBag, Scissors, Eye, EyeOff, Check, UserPlus, LogIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, UtensilsCrossed, HeartPulse, Wrench, Home, ShoppingBag, Scissors, Eye, EyeOff, Check } from "lucide-react";
 import "./bienvenida.css";
-import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, completarCuenta, usuarioDisponible } from "./api.js";
+import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, revisarCorreo, completarCuenta, usuarioDisponible } from "./api.js";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 
 const RUBROS = [
@@ -24,10 +24,12 @@ function Marca() {
 function Escena() {
   return (
     <div className="bv-escena" aria-hidden="true">
-      <div className="bv-halo" /><div className="bv-orbita" /><div className="bv-anillo" />
-      {RUBROS.map(({ Icon, color, a }) => (
-        <div className="bv-item" key={a} style={{ "--a": `${a}deg` }}><div className="bv-burbuja"><Icon size={21} color={color} strokeWidth={2.2} /></div></div>
-      ))}
+      <div className="bv-halo" /><div className="bv-orbita" />
+      <div className="bv-anillo">
+        {RUBROS.map(({ Icon, color, a }) => (
+          <div className="bv-item" key={a} style={{ "--a": `${a}deg` }}><div className="bv-burbuja"><Icon size={21} color={color} strokeWidth={2.2} /></div></div>
+        ))}
+      </div>
       <svg className="bv-pin" viewBox="0 0 150 168" role="img" aria-label="Ubicación">
         <defs>
           <linearGradient id="bvPin" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#8fb0ff" /><stop offset=".5" stopColor="#2f66ff" /><stop offset="1" stopColor="#1536c8" /></linearGradient>
@@ -58,9 +60,10 @@ const GoogleG = () => (
   </svg>
 );
 
-// ---------- paso final: elegir usuario y contraseña ----------
-function FormCrear({ pedirNombre, nombreInicial = "", onListo }) {
+// ---------- paso final: primero el usuario, después la contraseña ----------
+function FormCrear({ pedirNombre, pedirClave = true, nombreInicial = "", onListo }) {
   const [nombre, setNombre] = useState(nombreInicial);
+  const [paso, setPaso] = useState("usuario"); // usuario | clave
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [ver, setVer] = useState(false);
@@ -89,45 +92,56 @@ function FormCrear({ pedirNombre, nombreInicial = "", onListo }) {
 
   const reglas = requisitosContrasena(clave);
   const errClave = clave ? validarContrasena(clave, usuario) : "";
+  const usuarioOk = disp.estado === "libre" || disp.estado === "error";
   const nombreOk = !pedirNombre || nombre.trim().length >= 2;
-  const puede = nombreOk && (disp.estado === "libre" || disp.estado === "error") && clave && !errClave && !busy;
   const claseUsuario = disp.estado === "libre" ? "bien" : disp.estado === "invalido" || disp.estado === "ocupado" ? "mal" : "";
 
-  const enviar = async (e) => {
-    e.preventDefault();
-    if (!puede) return;
+  const guardar = async () => {
     setBusy(true); setError("");
     try {
-      onListo(await completarCuenta(normalizarUsuario(usuario), clave, pedirNombre ? nombre.trim() : undefined));
+      onListo(await completarCuenta(normalizarUsuario(usuario), pedirClave ? clave : "", pedirNombre ? nombre.trim() : undefined));
     } catch (err) {
-      if (err.datos?.codigo === "usuario_existente") setDisp({ estado: "ocupado", msg: err.message });
+      if (err.datos?.codigo === "usuario_existente") { setDisp({ estado: "ocupado", msg: err.message }); setPaso("usuario"); }
       else setError(err.message);
       setBusy(false);
     }
   };
+  const alUsuario = (e) => { e.preventDefault(); if (!usuarioOk || !nombreOk || busy) return; if (pedirClave) { setError(""); setPaso("clave"); } else guardar(); };
+  const alClave = (e) => { e.preventDefault(); if (!clave || errClave || busy) return; guardar(); };
 
+  if (paso === "clave") {
+    return (
+      <form className="bv-form" onSubmit={alClave} noValidate>
+        <div className="bv-fijo"><span>@{normalizarUsuario(usuario)}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setError(""); }}>Cambiar</button></div>
+        <div className="bv-campo"><label htmlFor="bv-clave">Tu contraseña</label>
+          <div className="caja"><input id="bv-clave" className={`con-ver ${clave && errClave ? "mal" : clave ? "bien" : ""}`} type={ver ? "text" : "password"} value={clave} onChange={(e) => setClave(e.target.value)} maxLength={100}
+            autoComplete="new-password" placeholder="Creá tu contraseña" autoFocus />
+            <button type="button" className="ver" onClick={() => setVer(!ver)} aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}>{ver ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
+          <p className="bv-nota" style={{ marginTop: 6 }}>Es solo para entrar a Mi Zona con tu usuario; no es la contraseña de tu cuenta de Google. Puede ser solo números, solo letras o una mezcla.</p>
+          <ul className="bv-reglas">{reglas.map((r) => <li key={r.texto} className={r.ok ? "ok" : ""}><i><Check size={11} strokeWidth={3.4} /></i>{r.texto}</li>)}</ul>
+          {clave && errClave && /usuario|espacios/.test(errClave) && <p className="bv-nota mal">{errClave}</p>}
+        </div>
+        {error && <p className="bv-error" role="alert">{error}</p>}
+        <button className="bv-enviar" type="submit" disabled={!clave || !!errClave || busy}>{busy ? "Creando..." : "Crear mi cuenta"}</button>
+        <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Después podés cambiar tu usuario y tu contraseña desde Ajustes.</p>
+      </form>
+    );
+  }
   return (
-    <form className="bv-form" onSubmit={enviar} noValidate>
+    <form className="bv-form" onSubmit={alUsuario} noValidate>
       {pedirNombre && (
         <div className="bv-campo"><label htmlFor="bv-nombre">Tu nombre</label>
           <div className="caja"><input id="bv-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} autoComplete="name" placeholder="Cómo te llamás" /></div></div>
       )}
-      <div className="bv-campo"><label htmlFor="bv-usuario">Usuario</label>
+      <div className="bv-campo"><label htmlFor="bv-usuario">Tu usuario</label>
         <div className="caja"><input id="bv-usuario" className={claseUsuario} value={usuario} onChange={(e) => setUsuario(e.target.value.replace(/\s/g, ""))} maxLength={20}
-          autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="ej: maria.lopez24" /></div>
+          autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="ej: maria.lopez" autoFocus /></div>
         {disp.msg ? <p className={`bv-nota ${disp.estado === "libre" ? "bien" : disp.estado === "ocupado" || disp.estado === "invalido" ? "mal" : ""}`}>{disp.estado === "libre" && <Check size={14} />}{disp.msg}</p>
-          : <p className="bv-nota">De 5 a 20 caracteres, con una letra al inicio y al menos un número.</p>}
-      </div>
-      <div className="bv-campo"><label htmlFor="bv-clave">Contraseña</label>
-        <div className="caja"><input id="bv-clave" className={`con-ver ${clave && errClave ? "mal" : clave ? "bien" : ""}`} type={ver ? "text" : "password"} value={clave} onChange={(e) => setClave(e.target.value)} maxLength={100}
-          autoComplete="new-password" placeholder="Creá tu contraseña" />
-          <button type="button" className="ver" onClick={() => setVer(!ver)} aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}>{ver ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
-        <ul className="bv-reglas">{reglas.map((r) => <li key={r.texto} className={r.ok ? "ok" : ""}><i><Check size={11} strokeWidth={3.4} /></i>{r.texto}</li>)}</ul>
-        {clave && errClave && /usuario|espacios/.test(errClave) && <p className="bv-nota mal">{errClave}</p>}
+          : <p className="bv-nota">De 5 a 20 caracteres. Empieza con una letra; podés usar números, punto o guion bajo.</p>}
       </div>
       {error && <p className="bv-error" role="alert">{error}</p>}
-      <button className="bv-enviar" type="submit" disabled={!puede}>{busy ? "Creando..." : "Crear mi cuenta"}</button>
-      <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Después podés cambiar tu usuario y tu contraseña desde Ajustes.</p>
+      <button className="bv-enviar" type="submit" disabled={!usuarioOk || !nombreOk || busy}>{busy ? "Guardando..." : pedirClave ? "Continuar" : "Guardar usuario"}</button>
+      {!pedirClave && <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Seguís entrando con tu contraseña de siempre. Podés cambiar tu usuario desde Ajustes.</p>}
     </form>
   );
 }
@@ -140,15 +154,15 @@ export function PantallaCrearUsuario({ usuario, onListo, onSalir }) {
         <div className="bv-barra"><Marca />{onSalir && <button className="bv-link" style={{ marginLeft: "auto", color: "#bbd1fb", fontSize: ".85rem" }} onClick={onSalir}>Salir</button>}</div>
         <div className="bv-hoja">
           <h2>Último paso: creá tu usuario</h2>
-          <p className="bv-sub">Con tu usuario y contraseña vas a poder entrar a Mi Zona cuando quieras, además de Google.</p>
-          <FormCrear pedirNombre={!usuario?.nombre} nombreInicial={usuario?.nombre || ""} onListo={onListo} />
+          <p className="bv-sub">{usuario?.conClave ? "Elegí un usuario para entrar más fácil. Tu contraseña de siempre no cambia." : "Con tu usuario y contraseña vas a poder entrar a Mi Zona cuando quieras, además de Google."}</p>
+          <FormCrear pedirNombre={false} pedirClave={!usuario?.conClave} onListo={onListo} />
         </div>
       </div></div>
   );
 }
 
 export function PantallaBienvenida({ onLogged }) {
-  const [vista, setVista] = useState("inicio"); // inicio | opciones | login | registro | crear
+  const [vista, setVista] = useState("inicio"); // inicio | acceso | crear
   const [datosGoogle, setDatosGoogle] = useState(null);
   const pila = useRef([]);
   const ir = (v) => { pila.current.push(vista); window.history.pushState({ bv: v }, ""); setVista(v); };
@@ -160,27 +174,49 @@ export function PantallaBienvenida({ onLogged }) {
   }, []);
   useEffect(() => { if (vista !== "inicio") cargarGoogle().catch(() => {}); }, [vista]);
 
+  // correo/usuario y contraseña, en dos pasos
+  const [paso, setPaso] = useState("usuario"); // usuario | clave | google
   const [ident, setIdent] = useState("");
   const [clave, setClave] = useState("");
   const [ver, setVer] = useState(false);
   const [error, setError] = useState("");
+  const [errorGoogle, setErrorGoogle] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const conGoogle = async (modo) => {
+  // Tiene que llamarse directo desde un toque (si no, el navegador bloquea la ventana de Google)
+  // "hint": un correo escrito a mano (Google lo abre y pide su contraseña en su página). "enSilencio": si el navegador bloquea la ventana, queda el botón para tocar.
+  const conGoogle = async (modo, hint, enSilencio) => {
     if (busy) return;
-    setError("");
+    setErrorGoogle("");
     let token;
-    try { token = await pedirCuentaGoogle(); } catch (e) { if (!e.cancelado) setError(e.message); return; }
+    try { token = await pedirCuentaGoogle(hint); } catch (e) { if (!e.cancelado && !(enSilencio && e.bloqueada)) setErrorGoogle(e.message); return; }
     setBusy(true);
     try {
       const r = await loginConGoogle(token, modo);
       if (modo === "registro" && !r.usuario?.usuario) { setDatosGoogle(r); setBusy(false); ir("crear"); return; }
       onLogged(r.usuario);
-    } catch (e) { setError(e.message); setBusy(false); }
+    } catch (e) { setErrorGoogle(e.message); setBusy(false); }
+  };
+  // Con un usuario se pide la contraseña acá. Con un correo es lo mismo que "Acceder con Google", pero escribiendo el correo en vez de elegir la cuenta.
+  const continuar = async (e) => {
+    e.preventDefault();
+    const v = ident.trim();
+    if (!v || busy) return;
+    setError(""); setErrorGoogle("");
+    if (!v.includes("@")) { setPaso("clave"); return; }
+    setBusy(true);
+    try {
+      const r = await revisarCorreo(v);
+      setBusy(false);
+      if (r.paso === "crear") { setError("No encontramos una cuenta con ese correo. Tocá “Registrarme” para crearla."); return; }
+      if (r.paso === "clave") { setPaso("clave"); return; }
+      setPaso("google");
+      conGoogle("login", v.toLowerCase(), true);
+    } catch (err) { setError(err.message); setBusy(false); }
   };
   const entrar = async (e) => {
     e.preventDefault();
-    if (busy || !ident.trim() || !clave) return;
+    if (busy || !clave) return;
     setBusy(true); setError("");
     try { onLogged((await entrarConUsuario(ident.trim(), clave)).usuario); } catch (err) { setError(err.message); setBusy(false); }
   };
@@ -200,45 +236,51 @@ export function PantallaBienvenida({ onLogged }) {
             <div className="bv-paso"><b>2</b><span>Mirás reseñas, horarios y cómo llegar.</span></div>
             <div className="bv-paso"><b>3</b><span>Chateás con el asistente del negocio y guardás tus favoritos.</span></div>
           </div>
-          <button type="button" className="bv-cta" onClick={() => ir("opciones")}><span>Empezar</span><ArrowRight size={20} strokeWidth={2.4} /></button>
+          <button type="button" className="bv-cta" onClick={() => ir("acceso")}><span>Empezar</span><ArrowRight size={20} strokeWidth={2.4} /></button>
         </main></div></div>
     );
   }
 
-  const titulo = { opciones: "Bienvenido a Mi Zona", login: "Iniciar sesión", registro: "Crear tu cuenta", crear: "Creá tu usuario" }[vista];
   return (
     <div className="bv"><div className="bv-fondo" aria-hidden="true"><i /><i /><i /></div>
       <div className="bv-pantalla">
         <div className="bv-barra"><button className="bv-volver" onClick={volver} aria-label="Volver"><ArrowLeft size={20} strokeWidth={2.2} /></button><Marca /></div>
         <div className="bv-hoja" key={vista}>
-          <h2>{titulo}</h2>
-          {vista === "opciones" && (<>
-            <p className="bv-sub">¿Cómo querés entrar?</p>
-            <button className="bv-opcion principal" onClick={() => ir("registro")}><span className="ic"><UserPlus size={22} /></span><span><strong>Registrarme</strong><small>Creá tu cuenta con Google y elegí tu usuario y contraseña.</small></span></button>
-            <button className="bv-opcion" onClick={() => ir("login")}><span className="ic"><LogIn size={22} /></span><span><strong>Iniciar sesión</strong><small>Ya tengo cuenta: entro con mi usuario o con Google.</small></span></button>
-          </>)}
-          {vista === "login" && (<>
-            <p className="bv-sub">Entrá con tu usuario y tu contraseña.</p>
-            <form className="bv-form" onSubmit={entrar} noValidate>
-              <div className="bv-campo"><label htmlFor="bv-ident">Usuario</label><div className="caja"><input id="bv-ident" value={ident} onChange={(e) => setIdent(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Tu usuario" /></div></div>
-              <div className="bv-campo"><label htmlFor="bv-clave-l">Contraseña</label><div className="caja"><input id="bv-clave-l" className="con-ver" type={ver ? "text" : "password"} value={clave} onChange={(e) => setClave(e.target.value)} maxLength={100} autoComplete="current-password" placeholder="Tu contraseña" />
-                <button type="button" className="ver" onClick={() => setVer(!ver)} aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}>{ver ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
-              {error && <p className="bv-error" role="alert">{error}</p>}
-              <button className="bv-enviar" type="submit" disabled={busy || !ident.trim() || !clave}>{busy ? "Un momento..." : "Iniciar sesión"}</button>
-            </form>
-            <div className="bv-o">o</div>
-            <button className="bv-google" onClick={() => conGoogle("login")} disabled={busy}><GoogleG />Acceder con Google</button>
-            <p className="bv-pie">¿No tenés cuenta? <button className="bv-link" onClick={() => { setError(""); ir("registro"); }}>Registrarme</button></p>
-          </>)}
-          {vista === "registro" && (<>
-            <p className="bv-sub">Primero elegí la cuenta de Google con la que querés registrarte. Después vas a crear tu usuario y tu contraseña.</p>
-            <button className="bv-google" onClick={() => conGoogle("registro")} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Continuar con Google"}</button>
-            {error && <p className="bv-error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
-            <p className="bv-pie">¿Ya tenés cuenta? <button className="bv-link" onClick={() => { setError(""); ir("login"); }}>Iniciar sesión</button></p>
+          {vista === "acceso" && (<>
+            <h2>Entrá a tu cuenta</h2>
+            <p className="bv-sub">Entrá a Mi Zona o creá tu cuenta.</p>
+            <button className="bv-google" onClick={() => conGoogle("login")} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Acceder con Google"}</button>
+            {errorGoogle && <p className="bv-err-g" role="alert">{errorGoogle}</p>}
+            <div className="bv-o">o con tu usuario</div>
+            {paso === "usuario" ? (
+              <form className="bv-form" onSubmit={continuar} noValidate>
+                <div className="bv-campo"><div className="caja"><input value={ident} onChange={(e) => setIdent(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Usuario o correo electrónico" aria-label="Usuario o correo electrónico" /></div></div>
+                {error && <p className="bv-error" role="alert">{error}</p>}
+                <button className="bv-enviar" type="submit" disabled={!ident.trim() || busy}>{busy ? "Un momento..." : "Continuar"}</button>
+              </form>
+            ) : paso === "google" ? (
+              <div className="bv-form">
+                <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setErrorGoogle(""); }}>Cambiar</button></div>
+                <button className="bv-google" onClick={() => conGoogle("login", ident.trim().toLowerCase())} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Continuar con Google"}</button>
+                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Google te va a pedir la contraseña de ese correo en su propia página. Mi Zona nunca la ve.</p>
+              </div>
+            ) : (
+              <form className="bv-form" onSubmit={entrar} noValidate>
+                <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setClave(""); setError(""); }}>Cambiar</button></div>
+                <div className="bv-campo"><div className="caja bv-clave">
+                  <input type={ver ? "text" : "password"} value={clave} onChange={(e) => setClave(e.target.value)} maxLength={100} autoComplete="current-password" placeholder="Contraseña" aria-label="Contraseña" autoFocus />
+                  <button type="button" className="ver" onClick={() => setVer(!ver)} aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}>{ver ? <EyeOff size={19} /> : <Eye size={19} />}</button>
+                </div></div>
+                {error && <p className="bv-error" role="alert">{error}</p>}
+                <button className="bv-enviar" type="submit" disabled={busy || !clave}>{busy ? "Un momento..." : "Iniciar sesión"}</button>
+              </form>
+            )}
+            <p className="bv-pie">¿No tenés cuenta? <button className="bv-link" onClick={() => conGoogle("registro")} disabled={busy}>Registrarme</button></p>
           </>)}
           {vista === "crear" && (<>
+            <h2>Creá tu usuario</h2>
             <p className="bv-sub">Casi listo{datosGoogle?.usuario?.email ? `: tu cuenta de Google es ${datosGoogle.usuario.email}` : ""}. Elegí cómo vas a entrar a Mi Zona.</p>
-            <FormCrear pedirNombre={!datosGoogle?.usuario?.nombre} nombreInicial={datosGoogle?.nombreGoogle || datosGoogle?.usuario?.nombre || ""} onListo={onLogged} />
+            <FormCrear pedirNombre={false} pedirClave={!datosGoogle?.usuario?.conClave} onListo={onLogged} />
           </>)}
         </div>
       </div></div>
