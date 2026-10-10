@@ -14,6 +14,8 @@ const usuarioSchema = new mongoose.Schema(
     // por eso estas cuentas no se usan para reconocer negocios ni pagos de Mi Asistente).
     proveedor: { type: String, enum: ["google", "email"], default: "google" },
     passwordHash: { type: String, default: "" },
+    // true cuando la persona demostró que el correo es suyo (con Google o con un código enviado a ese correo)
+    correoVerificado: { type: Boolean, default: false },
     // Contraseña de Mi Zona para entrar con usuario (cuentas que se registraron con Google). Es independiente de passwordHash
     // (la contraseña de correo, que también usa Mi Asistente): así las dos nunca se mezclan ni se pisan.
     claveZona: { type: String, default: "" },

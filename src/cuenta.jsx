@@ -1100,76 +1100,109 @@ export function PlanesModal({ nombreNegocio, gratis, hastaGratis, vencimientoAct
   const base = vencimientoActual && vencimientoActual > hoyISO() ? vencimientoActual : hoyISO();
   const nuevoVencimiento = elegido ? sumarMeses(base, elegido.meses) : null;
 
+  const claves = planes ? Object.keys(planes) : [];
+  const masElegido = claves.length ? claves.reduce((a, b) => (planes[b].descuentoPorcentaje || 0) > (planes[a].descuentoPorcentaje || 0) ? b : a, claves[0]) : null;
+  const beneficios = ["Tu negocio visible para todos los clientes de Mi Zona", "Reseñas, fotos, horarios y ubicación en el mapa", "Perfil con tu logo, descuentos y novedades", "Podés agregar más meses cuando quieras"];
+  const deshabilitado = enviando || (!gratis && !plan);
+
   return (
-    <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center" style={{ background: "#0B1437aa" }} onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-sm p-5" style={{ borderRadius: "26px 26px 0 0", paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))" }} onClick={(e) => e.stopPropagation()}>
-        <span className="sm:hidden block mx-auto mb-3" style={{ width: 40, height: 4, borderRadius: 2, background: "#D3DAEA" }} />
-        <div className="flex items-center justify-between mb-1">
-          <h2 style={{ ...TITULO, fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em" }}>{gratis ? "Publicar mi negocio" : vencimientoActual ? "Agregar meses" : "Suscripción de tu negocio"}</h2>
-          <button onClick={onClose} aria-label="Cerrar"><X size={18} color="#5B6482" /></button>
+    <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center" style={{ background: "#0B1437b8", backdropFilter: "blur(3px)" }} onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-lg flex flex-col" style={{ borderRadius: "28px 28px 0 0", maxHeight: "94dvh", height: gratis ? "auto" : "94dvh", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+        {/* encabezado */}
+        <div className="relative px-6 pt-5 pb-5 text-white" style={{ background: "linear-gradient(135deg,#0B1437 0%,#1B3A8C 100%)" }}>
+          <span className="sm:hidden block mx-auto mb-3" style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,.35)" }} />
+          <button onClick={onClose} aria-label="Cerrar" className="absolute top-4 right-4 flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,.14)" }}><X size={18} color="#fff" /></button>
+          <p className="text-[11px] font-semibold uppercase" style={{ letterSpacing: ".12em", opacity: .75 }}>{gratis ? "Publicación" : vencimientoActual ? "Renovación" : "Suscripción"}</p>
+          <h2 style={{ ...TITULO, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: "#fff", marginTop: 4 }}>{gratis ? "Publicar mi negocio" : vencimientoActual ? "Agregar meses" : "Suscripción de tu negocio"}</h2>
+          {nombreNegocio && (
+            <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-medium max-w-full" style={{ borderRadius: 999, background: "rgba(255,255,255,.14)" }}>
+              <Store size={13} /> <span className="truncate">{nombreNegocio}</span>
+            </span>
+          )}
         </div>
-        {nombreNegocio && <p className="text-xs mb-3 truncate" style={{ color: "#5B6482" }}>{nombreNegocio}</p>}
 
-        {gratis ? (
-          <div className="p-3.5 mb-4" style={{ borderRadius: 14, background: "#E4F3EA", border: "1px solid #C6E6D3", color: "#1E6B44" }}>
-            <p className="text-sm font-semibold flex items-center gap-1.5 mb-1"><Sparkles size={14} /> Ya pagaste Mi Asistente</p>
-            <p className="text-xs" style={{ lineHeight: 1.5 }}>
-              Con esta cuenta de Google no pagás Mi Zona: tu negocio se publica sin costo{hastaGratis ? ` hasta el ${fmtFecha(hastaGratis)}` : ""} y se renueva junto con tu suscripción de Mi Asistente.
-            </p>
-          </div>
-        ) : (
-          <>
-            {vencimientoActual && (
-              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: "#2B3768" }}>
-                <Clock size={12} /> Hoy vence el {fmtFecha(vencimientoActual)}. Los meses nuevos se suman a esa fecha: no perdés nada.
+        {/* contenido */}
+        <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3" style={{ WebkitOverflowScrolling: "touch" }}>
+          {gratis ? (
+            <div className="p-4" style={{ borderRadius: 16, background: "#E4F3EA", border: "1px solid #C6E6D3", color: "#1E6B44" }}>
+              <p className="text-[15px] font-semibold flex items-center gap-2 mb-1.5"><Sparkles size={16} /> Ya pagaste Mi Asistente</p>
+              <p className="text-sm" style={{ lineHeight: 1.55 }}>
+                Con esta cuenta de Google no pagás Mi Zona: tu negocio se publica sin costo{hastaGratis ? ` hasta el ${fmtFecha(hastaGratis)}` : ""} y se renueva junto con tu suscripción de Mi Asistente.
               </p>
-            )}
-            {!vencimientoActual && (
-              <p className="text-xs mb-3" style={{ color: "#2B3768" }}>Elegí por cuánto tiempo querés publicar tu negocio. Podés agregar más meses cuando quieras.</p>
-            )}
-            <div className="flex flex-col gap-2 mb-3">
-              {!planes && !error && <p className="text-xs py-4 text-center" style={{ color: "#5B6482" }}>Cargando planes...</p>}
-              {planes && Object.entries(planes).map(([clave, p]) => {
-                const activo = plan === clave;
-                return (
-                  <button
-                    key={clave} onClick={() => setPlan(clave)}
-                    className="flex items-center gap-3 px-3.5 py-3 text-left"
-                    style={{ borderRadius: 14, border: `1.5px solid ${activo ? "var(--azul)" : "#E3E7F1"}`, background: activo ? "#F1F6FF" : "#fff", boxShadow: activo ? "0 0 0 3px rgba(var(--azul-rgb),.14)" : "none" }}
-                  >
-                    <span className="flex items-center justify-center shrink-0" style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${activo ? "var(--azul)" : "#CBD5E1"}` }}>
-                      {activo && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--azul)" }} />}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: "#0B1437" }}>{p.label}</span>
-                        {p.descuentoPorcentaje > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ borderRadius: 999, background: "#E4F3EA", color: "#1E6B44" }}>{p.descuentoPorcentaje}% OFF</span>
-                        )}
-                      </span>
-                      <span className="block text-[11px]" style={{ color: "#5B6482" }}>
-                        {fmtPesos(p.precioPorMes)} por mes{p.ahorro > 0 ? ` · ahorrás ${fmtPesos(p.ahorro)}` : ""}
-                      </span>
-                    </span>
-                    <span className="text-sm font-bold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{fmtPesos(p.precio)}</span>
-                  </button>
-                );
-              })}
             </div>
-            {nuevoVencimiento && (
-              <p className="text-xs mb-3" style={{ color: "#2B3768" }}>Tu negocio quedaría activo hasta el <b>{fmtFecha(nuevoVencimiento)}</b>.</p>
-            )}
-          </>
-        )}
+          ) : (
+            <>
+              <p className="text-sm mb-4" style={{ color: "#2B3768", lineHeight: 1.55 }}>
+                {vencimientoActual
+                  ? <>Hoy vence el <b>{fmtFecha(vencimientoActual)}</b>. Los meses nuevos se suman a esa fecha: no perdés nada.</>
+                  : "Elegí por cuánto tiempo querés publicar tu negocio. Cuanto más largo el plan, más ahorrás."}
+              </p>
 
-        {error && <p className="text-xs mb-3" style={{ color: "#C1443A" }}>{error}</p>}
-        <button
-          onClick={confirmar} disabled={enviando || (!gratis && !plan)}
-          className="w-full text-sm font-semibold py-3"
-          style={{ background: gratis ? "linear-gradient(180deg,#38B06E,#2C9A5F)" : "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", borderRadius: 14, boxShadow: gratis ? "0 10px 20px -8px rgba(44,154,95,.7)" : "0 10px 20px -8px rgba(var(--azul-rgb),.7)", opacity: enviando || (!gratis && !plan) ? 0.5 : 1 }}
-        >
-          {enviando ? (gratis ? "Publicando..." : "Abriendo Mercado Pago...") : gratis ? "Publicar mi negocio" : elegido ? `Pagar ${fmtPesos(elegido.precio)} con Mercado Pago` : "Elegí un plan"}
-        </button>
+              <div className="flex flex-col gap-3 mb-5">
+                {!planes && !error && <p className="text-sm py-8 text-center flex items-center justify-center gap-2" style={{ color: "#5B6482" }}><Loader2 size={16} className="animate-spin" /> Cargando planes...</p>}
+                {planes && Object.entries(planes).map(([clave, p]) => {
+                  const activo = plan === clave;
+                  const destacado = clave === masElegido && p.descuentoPorcentaje > 0;
+                  return (
+                    <button
+                      key={clave} onClick={() => setPlan(clave)} aria-pressed={activo}
+                      className="relative flex items-center gap-4 px-4 py-4 text-left"
+                      style={{ borderRadius: 18, border: `2px solid ${activo ? "var(--azul)" : "#E3E7F1"}`, background: activo ? "#F1F6FF" : "#fff", boxShadow: activo ? "0 0 0 4px rgba(var(--azul-rgb),.12)" : "0 1px 2px rgba(11,20,55,.04)", transition: "all .15s" }}
+                    >
+                      {destacado && <span className="absolute text-[10px] font-bold uppercase px-2.5 py-1" style={{ top: -10, right: 14, borderRadius: 999, letterSpacing: ".06em", background: "linear-gradient(180deg,#F5B83D,#E39A12)", color: "#3d2a00" }}>Más conveniente</span>}
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${activo ? "var(--azul)" : "#CBD5E1"}`, background: activo ? "var(--azul)" : "#fff" }}>
+                        {activo && <Check size={14} color="#fff" strokeWidth={3} />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[17px] font-semibold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{p.label}</span>
+                          {p.descuentoPorcentaje > 0 && <span className="text-[11px] font-bold px-2 py-0.5" style={{ borderRadius: 999, background: "#E4F3EA", color: "#1E6B44" }}>{p.descuentoPorcentaje}% OFF</span>}
+                        </span>
+                        <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>
+                          {fmtPesos(p.precioPorMes)} por mes{p.ahorro > 0 ? ` · ahorrás ${fmtPesos(p.ahorro)}` : ""}
+                        </span>
+                      </span>
+                      <span className="text-lg font-bold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{fmtPesos(p.precio)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 mb-4" style={{ borderRadius: 16, background: "#F6F8FC", border: "1px solid #E8ECF5" }}>
+                <p className="text-xs font-semibold uppercase mb-2.5" style={{ letterSpacing: ".08em", color: "#5B6482" }}>Qué incluye</p>
+                <ul className="flex flex-col gap-2">
+                  {beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2.5 text-sm" style={{ color: "#2B3768", lineHeight: 1.4 }}>
+                      <span className="flex items-center justify-center shrink-0 mt-px" style={{ width: 18, height: 18, borderRadius: "50%", background: "#E4F3EA" }}><Check size={11} color="#1E6B44" strokeWidth={3} /></span>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+          {error && <p className="text-sm mb-3 flex items-start gap-1.5" style={{ color: "#C1443A" }}><AlertTriangle size={15} className="shrink-0 mt-0.5" /> {error}</p>}
+        </div>
+
+        {/* pie fijo */}
+        <div className="px-5 pt-3" style={{ borderTop: "1px solid #E8ECF5", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", background: "#fff" }}>
+          {!gratis && elegido && (
+            <div className="flex items-end justify-between mb-3">
+              <div>
+                <p className="text-xs" style={{ color: "#5B6482" }}>Total a pagar</p>
+                <p className="text-[26px] font-bold leading-none mt-1" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)", letterSpacing: "-0.02em" }}>{fmtPesos(elegido.precio)}</p>
+              </div>
+              {nuevoVencimiento && <p className="text-xs text-right" style={{ color: "#2B3768" }}>Activo hasta el<br /><b className="text-sm">{fmtFecha(nuevoVencimiento)}</b></p>}
+            </div>
+          )}
+          <button
+            onClick={confirmar} disabled={deshabilitado}
+            className="w-full text-[15px] font-semibold py-4 flex items-center justify-center gap-2"
+            style={{ background: gratis ? "linear-gradient(180deg,#38B06E,#2C9A5F)" : "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))", color: "#fff", borderRadius: 16, boxShadow: gratis ? "0 12px 22px -8px rgba(44,154,95,.7)" : "0 12px 22px -8px rgba(var(--azul-rgb),.7)", opacity: deshabilitado ? 0.5 : 1 }}
+          >
+            {enviando ? <><Loader2 size={16} className="animate-spin" /> {gratis ? "Publicando..." : "Abriendo Mercado Pago..."}</> : gratis ? "Publicar mi negocio" : elegido ? <><ShieldCheck size={17} /> Pagar {fmtPesos(elegido.precio)} con Mercado Pago</> : "Elegí un plan"}
+          </button>
+          {!gratis && <p className="text-[11px] text-center mt-2.5 flex items-center justify-center gap-1" style={{ color: "#5B6482" }}><ShieldCheck size={12} /> Pago seguro con Mercado Pago. No guardamos los datos de tu tarjeta.</p>}
+        </div>
       </div>
     </div>
   );

@@ -220,7 +220,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         {usuario ? (
           <>
             <Dato etiqueta="Cuenta" valor={usuario.email} />
-            {resumen && <Dato etiqueta="Nombre" valor={resumen.cuenta.nombre || "Sin nombre"} />}
+            <Dato etiqueta="Usuario" valor={usuario.usuario ? `@${usuario.usuario}` : "Sin usuario"} />
             {resumen && <Dato etiqueta="Entrás con" valor={resumen.cuenta.proveedor === "email" ? "Correo y contraseña" : "Google"} />}
             {resumen && esDueno && <Dato etiqueta="Negocios" valor={resumen.negocios.length} />}
             {resumen && esDueno && <Dato etiqueta="Eventos y tareas de agenda" valor={nAgenda} />}
@@ -248,6 +248,8 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
 
       <Grupo titulo="Quién recibe datos" desc="Mi Zona funciona con estos servicios.">
         <Servicio nombre="Google" desc="Confirma quién sos al entrar. Solo nos da tu correo y nombre." />
+        <Servicio nombre="Servicio de correo" desc="Entrega el código de 6 números que te mandamos al correo cuando entrás con él." />
+        <Servicio nombre="OpenStreetMap y Esri" desc="Dibujan el mapa y buscan direcciones. Reciben la dirección o el punto que buscás o elegís en el mapa." />
         <Servicio nombre="Mi Asistente" desc="Recibe tus mensajes, pedidos y puntos para atenderte." />
         <Servicio nombre="Inteligencia artificial" desc="Procesa tu búsqueda y, si lo permitís, tu agenda." />
         <Servicio nombre="Mercado Pago" desc="Cobra las suscripciones de los negocios. Nunca vemos tu tarjeta." />

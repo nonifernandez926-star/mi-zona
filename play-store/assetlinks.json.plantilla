@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "PONER.AQUI.EL.ID.DEL.PAQUETE",
+      "sha256_cert_fingerprints": ["PONER:AQUI:LA:HUELLA:SHA-256:DE:PLAY:APP:SIGNING"]
+    }
+  }
+]

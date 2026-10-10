@@ -1,0 +1,19 @@
+{
+  "packageId": "PONER.AQUI.EL.ID.DEL.PAQUETE",
+  "host": "TU-DOMINIO.com",
+  "name": "Mi Zona",
+  "launcherName": "Mi Zona",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0B1437",
+  "navigationColor": "#0B1437",
+  "backgroundColor": "#0B1437",
+  "startUrl": "/",
+  "iconUrl": "https://TU-DOMINIO.com/icono-512.png",
+  "maskableIconUrl": "https://TU-DOMINIO.com/icono-maskable-512.png",
+  "enableNotifications": true,
+  "fallbackType": "customtabs",
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": { "path": "./mizona-upload.keystore", "alias": "mizona" }
+}

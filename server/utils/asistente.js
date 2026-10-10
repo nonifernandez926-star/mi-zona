@@ -63,7 +63,7 @@ export async function refrescarAsistentes() {
 // `negocio` puede ser null (todavía no cargó ninguno): en ese caso solo informa si está cubierto.
 export async function sincronizarCobertura(negocio, usuario) {
   // Las cuentas de correo y contraseña no tienen el correo verificado: no se pueden usar para reconocer pagos de Mi Asistente
-  if (usuario.proveedor === "email") return { consultado: false, cubierto: false, hasta: null };
+  if (usuario.proveedor === "email" && !usuario.correoVerificado) return { consultado: false, cubierto: false, hasta: null };
   const cuenta = await consultarCuentaAsistente({ googleId: usuario.googleId, email: usuario.email });
   if (!cuenta) return { consultado: false, cubierto: false, hasta: null };
 

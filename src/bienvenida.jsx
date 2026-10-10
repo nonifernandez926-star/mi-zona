@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, UtensilsCrossed, HeartPulse, Wrench, Home, ShoppingBag, Scissors, Eye, EyeOff, Check } from "lucide-react";
 import "./bienvenida.css";
-import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, revisarCorreo, completarCuenta, usuarioDisponible } from "./api.js";
+import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, pedirCodigoCorreo, entrarConCodigo, completarCuenta, usuarioDisponible } from "./api.js";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 
 const RUBROS = [
@@ -175,7 +175,14 @@ export function PantallaBienvenida({ onLogged }) {
   useEffect(() => { if (vista !== "inicio") cargarGoogle().catch(() => {}); }, [vista]);
 
   // correo/usuario y contraseña, en dos pasos
-  const [paso, setPaso] = useState("usuario"); // usuario | clave | google
+  const [paso, setPaso] = useState("usuario"); // usuario | clave | codigo
+  const [codigo, setCodigo] = useState("");
+  const [espera, setEspera] = useState(0); // segundos hasta poder pedir otro código
+  useEffect(() => {
+    if (espera <= 0) return undefined;
+    const t = setTimeout(() => setEspera((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [espera]);
   const [ident, setIdent] = useState("");
   const [clave, setClave] = useState("");
   const [ver, setVer] = useState(false);
@@ -197,22 +204,31 @@ export function PantallaBienvenida({ onLogged }) {
       onLogged(r.usuario);
     } catch (e) { setErrorGoogle(e.message); setBusy(false); }
   };
-  // Con un usuario se pide la contraseña acá. Con un correo es lo mismo que "Acceder con Google", pero escribiendo el correo en vez de elegir la cuenta.
-  const continuar = async (e) => {
+  // Con un usuario se pide la contraseña acá. Con un correo se manda un código de 6 números a ese correo y se entra con él.
+  const pedirCodigo = async (v) => {
+    setBusy(true); setError("");
+    try {
+      const r = await pedirCodigoCorreo(v);
+      setBusy(false);
+      if (r.paso === "crear") { setPaso("usuario"); setError("No encontramos una cuenta con ese correo. Tocá “Registrarme” para crearla."); return; }
+      setCodigo(""); setEspera(r.espera || 45); setPaso("codigo");
+    } catch (err) { setError(err.message); setBusy(false); }
+  };
+  const continuar = (e) => {
     e.preventDefault();
     const v = ident.trim();
     if (!v || busy) return;
     setError(""); setErrorGoogle("");
     if (!v.includes("@")) { setPaso("clave"); return; }
-    setBusy(true);
-    try {
-      const r = await revisarCorreo(v);
-      setBusy(false);
-      if (r.paso === "crear") { setError("No encontramos una cuenta con ese correo. Tocá “Registrarme” para crearla."); return; }
-      if (r.paso === "clave") { setPaso("clave"); return; }
-      setPaso("google"); // paso aparte: Google pide ahí la contraseña del correo; no se entra solo
-    } catch (err) { setError(err.message); setBusy(false); }
+    pedirCodigo(v.toLowerCase());
   };
+  const verificarCodigo = async (valor) => {
+    if (busy) return;
+    setBusy(true); setError("");
+    try { onLogged((await entrarConCodigo(ident.trim().toLowerCase(), valor)).usuario); }
+    catch (err) { setError(err.message); setCodigo(""); setBusy(false); }
+  };
+  const alCodigo = (e) => { e.preventDefault(); if (codigo.length === 6) verificarCodigo(codigo); };
   const entrar = async (e) => {
     e.preventDefault();
     if (busy || !clave) return;
@@ -250,19 +266,28 @@ export function PantallaBienvenida({ onLogged }) {
             <p className="bv-sub">Entrá a Mi Zona o creá tu cuenta.</p>
             <button className="bv-google" onClick={() => conGoogle("login")} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Acceder con Google"}</button>
             {errorGoogle && <p className="bv-err-g" role="alert">{errorGoogle}</p>}
-            <div className="bv-o">o con tu usuario</div>
+            <div className="bv-o">o con tu usuario o correo</div>
             {paso === "usuario" ? (
               <form className="bv-form" onSubmit={continuar} noValidate>
                 <div className="bv-campo"><div className="caja"><input value={ident} onChange={(e) => setIdent(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Usuario o correo electrónico" aria-label="Usuario o correo electrónico" /></div></div>
                 {error && <p className="bv-error" role="alert">{error}</p>}
                 <button className="bv-enviar" type="submit" disabled={!ident.trim() || busy}>{busy ? "Un momento..." : "Continuar"}</button>
               </form>
-            ) : paso === "google" ? (
-              <div className="bv-form">
-                <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setErrorGoogle(""); }}>Cambiar</button></div>
-                <button className="bv-google" onClick={() => conGoogle("login", ident.trim().toLowerCase())} disabled={busy}><GoogleG />{busy ? "Entrando..." : "Continuar con contraseña del correo"}</button>
-                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Tocá el botón y Google te va a pedir la contraseña de ese correo en su propia página. Mi Zona nunca la ve.</p>
-              </div>
+            ) : paso === "codigo" ? (
+              <form className="bv-form" onSubmit={alCodigo} noValidate>
+                <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setCodigo(""); setError(""); }}>Cambiar</button></div>
+                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>Te mandamos un código de 6 números a tu correo. Revisá también la carpeta de spam.</p>
+                <div className="bv-campo"><div className="caja">
+                  <input value={codigo} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 6); setCodigo(v); if (v.length === 6) verificarCodigo(v); }}
+                    inputMode="numeric" autoComplete="one-time-code" placeholder="000000" aria-label="Código de 6 números" maxLength={6} autoFocus
+                    style={{ textAlign: "center", letterSpacing: ".5em", fontSize: "1.5rem", fontWeight: 700 }} />
+                </div></div>
+                {error && <p className="bv-error" role="alert">{error}</p>}
+                <button className="bv-enviar" type="submit" disabled={busy || codigo.length !== 6}>{busy ? "Verificando..." : "Entrar"}</button>
+                <p className="bv-nota" style={{ justifyContent: "center", textAlign: "center" }}>
+                  {espera > 0 ? `Podés pedir otro código en ${espera} s` : <button type="button" className="bv-link" disabled={busy} onClick={() => pedirCodigo(ident.trim().toLowerCase())}>Reenviar código</button>}
+                </p>
+              </form>
             ) : (
               <form className="bv-form" onSubmit={entrar} noValidate>
                 <div className="bv-fijo"><span>{ident}</span><button type="button" className="bv-link" onClick={() => { setPaso("usuario"); setClave(""); setError(""); }}>Cambiar</button></div>

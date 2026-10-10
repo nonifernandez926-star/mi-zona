@@ -158,13 +158,6 @@ img[loading="lazy"], img.object-cover { background: linear-gradient(110deg, #EEF
 /* =====================================================================
    PANTALLA PRINCIPAL Y NAVEGACIÓN — detalles de producto
    ===================================================================== */
-/* portada: textura sutil de puntos para dar profundidad al degradado */
-[data-conservar-color].relative.overflow-hidden::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 28px 28px;
-  -webkit-mask-image: radial-gradient(ellipse at 80% 0%, #000 0%, transparent 70%); mask-image: radial-gradient(ellipse at 80% 0%, #000 0%, transparent 70%);
-}
 /* buscador: el contenedor completo reacciona al foco */
 div:has(> input[placeholder^="Buscá"]) > input { box-shadow: none !important; border: 0 !important; }
 div:has(> input[placeholder^="Buscá"]) > input:focus, div:has(> input[placeholder^="Buscá"]) > input:focus-visible { box-shadow: none !important; outline: none !important; border: 0 !important; }

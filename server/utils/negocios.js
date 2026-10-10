@@ -108,7 +108,8 @@ export function huellaAutor(usuarioId) {
 //  · las reseñas existentes no se pueden borrar ni modificar (solo el dueño puede agregar/cambiar la respuesta)
 //  · cualquiera con cuenta puede sumar UNA reseña nueva, que el servidor limpia y firma con la huella de su cuenta
 // Devuelve la lista nueva, o null si el pedido no es válido.
-export function combinarResenas(actuales = [], enviadas, { esDueno, usuarioId, hoy }) {
+// "nombreAutor" es el usuario de la cuenta que publica (lo pone el servidor, nunca viene de la web, así nadie puede firmar con otro nombre).
+export function combinarResenas(actuales = [], enviadas, { esDueno, usuarioId, nombreAutor = "", hoy }) {
   if (!Array.isArray(enviadas)) return null;
   const porId = new Map(enviadas.filter((x) => x && typeof x.id === "string").map((x) => [x.id, x]));
   if (enviadas.length > actuales.length + 1 || enviadas.length < actuales.length) return null;
@@ -133,7 +134,7 @@ export function combinarResenas(actuales = [], enviadas, { esDueno, usuarioId, h
     const id = txt(60)(n.id);
     if (!texto || !id || !Number.isInteger(rating) || rating < 1 || rating > 5) return null;
     resultado.push({
-      id, rating, text: texto, name: txt(60)(n.name) || "Anónimo", date: hoy,
+      id, rating, text: texto, name: txt(60)(nombreAutor) || "Anónimo", conUsuario: !!nombreAutor, date: hoy,
       autorId: txt(80)(n.autorId) || "", autorUid: huellaAutor(usuarioId),
     });
   }

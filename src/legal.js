@@ -7,7 +7,7 @@ export const TERMINOS = [
     "Al usar Mi Zona aceptás estos términos. Si no estás de acuerdo, no uses la aplicación.",
   ] },
   { t: "2. Tu cuenta", p: [
-    "Para usar Mi Zona necesitás una cuenta, que se crea eligiendo tu cuenta de Google y, después, un nombre de usuario y una contraseña.",
+    "Para usar Mi Zona necesitás una cuenta, que se crea eligiendo tu cuenta de Google y, después, un nombre de usuario y una contraseña. Para volver a entrar podés usar Google, tu usuario y contraseña, o tu correo: te mandamos un código de 6 números y lo escribís.",
     "Sos responsable de mantener tu contraseña y tus dispositivos seguros. Si notás un acceso que no reconocés, cerrá las demás sesiones y cambiá tu contraseña desde Ajustes → Seguridad. Tenés que darnos datos verdaderos y no podés usar la cuenta de otra persona.",
     "Podés eliminar tu cuenta cuando quieras desde Ajustes → Mi cuenta.",
   ] },
@@ -64,11 +64,13 @@ export const PRIVACIDAD_TEXTO = [
     "Mi Zona funciona con servicios de terceros, y cada uno recibe solo lo que necesita:",
   ], l: [
     "Google: confirma quién sos al entrar. Nos da tu correo y tu nombre.",
+    "Servicio de correo: entrega el código de 6 números que te mandamos cuando entrás con tu correo.",
+    "OpenStreetMap y Esri: dibujan el mapa y buscan direcciones; reciben la dirección o el punto que buscás o elegís en el mapa.",
     "Mi Asistente: recibe tus mensajes, pedidos y puntos para atenderte cuando chateás con un negocio.",
     "Inteligencia artificial: procesa tu búsqueda con asistente y, si lo permitís, tu agenda. Podés apagarlo en Ajustes → Privacidad. Las fotos de agenda se analizan y se descartan.",
     "Mercado Pago: cobra las suscripciones. Nunca vemos los datos de tu tarjeta.",
     "Cloudinary: aloja las fotos que sube un negocio, que son visibles para todos.",
-    "Proveedores de mapas (CARTO, Esri y OpenStreetMap): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
+    "Proveedores de mapas (OpenStreetMap y Esri): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
     "Open-Meteo: si permitís el uso de tu ubicación, recibe una ubicación aproximada para mostrarte el clima de tu zona.",
     "OpenStreetMap (Nominatim) y datos.gob.ar (Georef): reciben la dirección o localidad que escribís para ubicarla en el mapa.",
     "Google Fonts: recibe la dirección IP de tu dispositivo para entregarte la tipografía de la aplicación.",
@@ -97,5 +99,5 @@ export const LICENCIAS = [
   { nombre: "Lucide", licencia: "ISC" },
   { nombre: "Tailwind CSS", licencia: "MIT" },
   { nombre: "Datos de mapas © OpenStreetMap contributors", licencia: "ODbL" },
-  { nombre: "Teselas de mapa CARTO y Esri", licencia: "Uso según sus términos" },
+  { nombre: "Teselas de mapa OpenStreetMap y Esri", licencia: "Uso según sus términos" },
 ];

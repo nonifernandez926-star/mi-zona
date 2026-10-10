@@ -19,6 +19,7 @@ import {
   traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, soporteApi,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
+import { SelectorUbicacion } from "./selectorUbicacion.jsx";
 import { PrivacidadScreen } from "./privacidad.jsx";
 import { AparienciaScreen } from "./apariencia.jsx";
 import { FondoClima } from "./clima.jsx";
@@ -659,6 +660,14 @@ function isDiscountActive(d) {
 function activeDiscounts(biz) {
   return (biz.discounts || []).filter(isDiscountActive);
 }
+
+// Opciones de orden del inicio (se eligen en una hoja con íconos, no con el menú nativo del celular)
+const ORDEN_OPCIONES = [
+  { id: "destacados", Icon: Star, titulo: "Destacados", desc: "Los negocios mejor valorados y promocionados", color: "#E08A1E", fondo: "#FFF4E0" },
+  { id: "vistas", Icon: Eye, titulo: "Más visitados", desc: "Los que más personas están mirando", color: "#2A58FF", fondo: "#E8EEFF" },
+  { id: "descuentos", Icon: Tag, titulo: "Descuentos", desc: "Solo negocios con promociones vigentes", color: "#2C9A5F", fondo: "#E4F3EA" },
+  { id: "cercanos", Icon: Navigation, titulo: "Más cercanos", desc: "Ordenados por la distancia desde tu ubicación", color: "#C1443A", fondo: "#FDF1EF" },
+];
 
 function emptyBusiness() {
   return {
@@ -1485,14 +1494,13 @@ function numeroWhatsapp(t) {
   return `549${d}`;
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, miUsuario, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showEmpleoDetalle, setShowEmpleoDetalle] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
-  const [reviewName, setReviewName] = useState("");
   const [tab, setTab] = useState("info"); // info | opiniones | fotos
   const [replyingId, setReplyingId] = useState(null);
   const [reportandoId, setReportandoId] = useState(null);
@@ -1559,9 +1567,9 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
   const submitReview = () => {
     if (!reviewText.trim() || !reviewRating) return;
-    const ok = onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), name: reviewName.trim() || "Anónimo", date: todayISO(), autorId: getAutorResenasId() });
+    const ok = onAddReview(biz.id, { id: uid(), rating: reviewRating, text: reviewText.trim(), date: todayISO(), autorId: getAutorResenasId() });
     if (ok === false) return; // todavía no se registró: no perdemos lo que escribió
-    setReviewText(""); setReviewName(""); setReviewRating(0);
+    setReviewText(""); setReviewRating(0);
   };
 
   const TabButton = ({ id, label }) => (
@@ -1830,14 +1838,11 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <p className="text-sm font-semibold mb-2" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 {!reviewRating && <p className="text-xs mt-1.5" style={{ color: "#5B6482" }}>Tocá una estrella para calificar.</p>}
-                <input
-                  value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Tu nombre (opcional)"
-                  className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
-                />
                 <textarea
                   value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
-                  rows={3} className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
+                  rows={3} className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                 />
+                {miUsuario && <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Tu reseña se publica como <b style={{ color: "#0B1437" }}>@{miUsuario}</b>.</p>}
                 <button onClick={submitReview} disabled={!reviewRating || !reviewText.trim()} className="text-sm font-semibold px-5 py-2.5" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 12 }}>
                   Publicar reseña
                 </button>
@@ -1849,7 +1854,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   {[...biz.reviews].reverse().filter((r) => !ocultas.includes(r.id)).map((r) => (
                     <div key={r.id} className="bg-white p-4" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{r.name}</span>
+                        <span className="text-sm font-medium">{r.conUsuario ? `@${r.name}` : r.name}</span>
                         <span className="flex items-center gap-1.5">
                           <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
                           <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 9, background: reportandoId === r.id ? "var(--azul-suave)" : "transparent" }}>
@@ -2436,8 +2441,8 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
 const CAPAS_MAPA = {
   mapa: {
     label: "Mapa", muestra: "linear-gradient(135deg,#EAF1E4 0%,#F6F1E6 45%,#CFE3F5 100%)",
-    atribucion: "© OpenStreetMap · © CARTO",
-    capas: [{ url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", opciones: { maxZoom: 19, subdomains: "abcd", detectRetina: true } }],
+    atribucion: "© OpenStreetMap",
+    capas: [{ url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", opciones: { maxZoom: 19 } }],
   },
   relieve: {
     label: "Relieve", muestra: "linear-gradient(135deg,#BFD8A2 0%,#E4D9B0 45%,#9CBFA0 100%)",
@@ -2499,7 +2504,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   const [quiereUbicarme, setQuiereUbicarme] = useState(false);
   const [aviso, setAviso] = useState(null);
   const [zoom, setZoom] = useState(12);
-  const [capa, setCapa] = useState(() => { try { const c = localStorage.getItem("miZonaCapaMapa"); return CAPAS_MAPA[c] ? c : "mapa"; } catch { return "mapa"; } });
+  const [capa, setCapa] = useState(() => { try { const c = localStorage.getItem("miZonaCapaMapa2"); return CAPAS_MAPA[c] ? c : "relieve"; } catch { return "relieve"; } });
   const [capasAbierto, setCapasAbierto] = useState(false);
   const capasRef = useRef([]);
   const verNombres = zoom >= 14; // con el mapa muy alejado solo se ven los círculos, para que no se amontonen los nombres
@@ -2545,7 +2550,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
       if (i > 0) l.bringToFront();
       return l;
     });
-    try { localStorage.setItem("miZonaCapaMapa", capa); } catch { /* sin almacenamiento */ }
+    try { localStorage.setItem("miZonaCapaMapa2", capa); } catch { /* sin almacenamiento */ }
     return undefined;
   }, [capa]);
 
@@ -2567,7 +2572,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
     if (!mapDivRef.current || mapRef.current) return;
     const map = L.map(mapDivRef.current, { zoomControl: false, attributionControl: false, zoomSnap: 0.5, wheelPxPerZoomLevel: 90, maxZoom: 19 }).setView([-26.8241, -65.2226], 12); // Tucumán por defecto
     map.on("zoomend", () => setZoom(map.getZoom()));
-    L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
+    L.control.attribution({ prefix: false, position: "bottomleft" }).addAttribution("&copy; OpenStreetMap y Esri").addTo(map);
     map.on("click", () => setSelectedId(null));
     mapRef.current = map;
     // Leaflet calcula mal su tamaño si el contenedor todavía no terminó de acomodarse: sin esto el mapa puede verse en blanco
@@ -4016,7 +4021,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
     <div>
       <SeccionAjustes Icon={User}>Cuenta y personalización</SeccionAjustes>
       <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
-        <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.nombre || usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
+        <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.usuario ? `@${usuario.usuario}` : usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
         <Row Icon={Bell} tono="violeta" title="Notificaciones" desc="Qué avisos recibís, sonido y dispositivos" onClick={() => setSub("notificaciones")} />
         <Row Icon={ShieldCheck} tono="verde" title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
         <Row Icon={IconoSolLuna} tono="naranja" title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
@@ -4082,8 +4087,9 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
 
 /* ---------- formulario de negocio (admin y alta pública) ---------- */
 
-function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
+function BusinessForm({ initial, onSave, onCancel, abrirMapa, publicMode = false }) {
   const [form, setForm] = useState(initial);
+  const ubicElegida = useRef(null); // dirección elegida en el mapa: sus coordenadas ya son exactas, no hace falta buscarlas de nuevo
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingPortada, setUploadingPortada] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -4164,7 +4170,8 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
     setSaving(true);
     let coords = { lat: form.lat ?? null, lng: form.lng ?? null };
     // Si cambió la dirección o todavía no tiene coordenadas, geocodificamos automáticamente
-    if (form.loc?.trim() && (!coords.lat || form.loc !== initial.loc || form.zone !== initial.zone)) {
+    const elegidaEnMapa = ubicElegida.current && ubicElegida.current.loc === form.loc && coords.lat != null;
+    if (form.loc?.trim() && !elegidaEnMapa && (!coords.lat || form.loc !== initial.loc || form.zone !== initial.zone)) {
       const geo = await geocodeAddress(form.loc, form.zone);
       if (geo) coords = geo;
     }
@@ -4304,7 +4311,25 @@ function BusinessForm({ initial, onSave, onCancel, publicMode = false }) {
             {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
           </div>
 
-          <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <div>
+            <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+            {abrirMapa && (
+              <button type="button" className="mt-2 w-full py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
+                style={{ borderRadius: 8, border: "1px solid var(--azul, #1F4FE0)", color: "var(--azul, #1F4FE0)", background: "#fff" }}
+                onClick={() => abrirMapa({
+                  direccion: form.loc || "", zona: form.zone,
+                  // si cambió el texto, el pin arranca en la dirección escrita (no en las coordenadas viejas)
+                  ...((form.loc === initial.loc || ubicElegida.current?.loc === form.loc) && form.lat != null ? { lat: form.lat, lng: form.lng } : { lat: null, lng: null }),
+                  alConfirmar: (r) => {
+                    const loc = r.direccion || "Ubicación marcada en el mapa";
+                    ubicElegida.current = { loc };
+                    setForm((f) => ({ ...f, loc, lat: r.lat, lng: r.lng }));
+                  },
+                })}>
+                <MapPin size={16} /> {form.lat != null ? "Cambiar ubicación en el mapa" : "Elegir en el mapa"}
+              </button>
+            )}
+          </div>
 
           <div>
             <p className="text-xs font-medium mb-1.5" style={{ color: "#2B3768" }}>Horarios de la semana</p>
@@ -4622,6 +4647,7 @@ export default function MiZona() {
   const [onlyNuevos, setOnlyNuevos] = useState(false);
   const [onlyEmpleo, setOnlyEmpleo] = useState(false); // negocios que buscan personal
   const [sortBy, setSortBy] = useState("destacados");
+  const [showOrden, setShowOrden] = useState(false); // hoja para elegir cómo se ordenan los negocios
   const [selectedId, setSelectedId] = useState(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -4658,6 +4684,7 @@ export default function MiZona() {
 
   // panel del dueño
   const [showEditOwnerBiz, setShowEditOwnerBiz] = useState(false);
+  const [selectorUbic, setSelectorUbic] = useState(null); // mapa para elegir la ubicación del negocio: { direccion, zona, lat, lng, alConfirmar }
 
   // agregar mi local + suscripción
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -4701,8 +4728,7 @@ export default function MiZona() {
     setUsuario(r.usuario);
     setShowLogin(null);
     if (r.yaExistia && r.desdeRegistro) setAvisoOk("Ya estabas registrado con esa cuenta: te iniciamos sesión.");
-    if (r.requiereNombre) setNombrePendiente({ sugerido: r.nombreGoogle, despues });
-    else continuarDespues(despues);
+    continuarDespues(despues);
   };
   const cerrarSesion = async () => {
     try { await desactivarPush(); } catch { /* no había push activo */ }
@@ -4833,7 +4859,6 @@ export default function MiZona() {
         const u = await traerMiSesion();
         if (!u) return;
         setUsuario(u);
-        if (!u.nombre && u.usuario) setNombrePendiente({ sugerido: "", despues: null });
       } finally { setSesionRevisada(true); }
     })();
   }, []);
@@ -5038,8 +5063,9 @@ export default function MiZona() {
 
   const addReview = (id, review) => {
     if (!requerirSesion("Para dejar una reseña necesitás una cuenta de Mi Zona.")) return false;
-    const nombre = review.name && review.name !== "Anónimo" ? review.name : (usuario.nombre || "Anónimo");
-    persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, { ...review, name: nombre }] }));
+    // siempre con el usuario de la cuenta (el servidor también lo pone, así nadie puede firmar con otro nombre)
+    const nombre = usuario.usuario || usuario.nombre || "Anónimo";
+    persistOne(id, (b) => ({ ...b, reviews: [...b.reviews, { ...review, name: nombre, conUsuario: !!usuario.usuario }] }));
     return true;
   };
   const replyToReview = (bizId, reviewId, texto, esDueño) => {
@@ -5068,6 +5094,7 @@ export default function MiZona() {
 
   // Botón "atrás" de Android: cierra la pantalla o ventana de más arriba en vez de salir de la app (de abajo hacia arriba)
   useAtrasDeCapas([
+    [showOrden, () => setShowOrden(false)],
     [!!selectedId, () => setSelectedId(null)],
     [showFavoritos, () => setShowFavoritos(false)],
     [showMapa, () => setShowMapa(false)],
@@ -5088,6 +5115,7 @@ export default function MiZona() {
     [!!showLogin, () => setShowLogin(null)],
     [confirmarSalida, () => setConfirmarSalida(false)],
     [!!lightboxSrc, () => setLightboxSrc(null)],
+    [!!selectorUbic, () => setSelectorUbic(null)],
   ]);
 
   // Puerta de entrada: sin sesión se ve la bienvenida (Empezar → Registrarme / Iniciar sesión); con sesión abierta se entra directo al inicio.
@@ -5240,7 +5268,7 @@ export default function MiZona() {
         {globalStyle}
         <BusinessDetail
           biz={selected} onBack={() => setSelectedId(null)} onOpenPhoto={setLightboxSrc} onAddReview={addReview}
-          onReplyReview={replyToReview} esDueño={misIds.has(selected.id)}
+          onReplyReview={replyToReview} miUsuario={usuario?.usuario} esDueño={misIds.has(selected.id)}
           onOpenChat={abrirChat} isFavorite={favorites.includes(selected.id)} onToggleFavorite={toggleFavorite}
           rank={businessRankPosition(selected, businesses)}
           onTrack={trackEvento}
@@ -5368,7 +5396,39 @@ export default function MiZona() {
           initial={ownerBiz}
           onSave={(data) => { persistOne(ownerBizId, data); setShowEditOwnerBiz(false); }}
           onCancel={() => setShowEditOwnerBiz(false)}
+          abrirMapa={setSelectorUbic}
         />
+      )}
+
+      {showOrden && (
+        <div className="fixed inset-0 z-[78] flex items-end sm:items-center sm:justify-center" style={{ background: "rgba(5,12,40,.55)", backdropFilter: "blur(2px)" }} onClick={() => setShowOrden(false)} role="dialog" aria-modal="true" aria-label="Ordenar negocios">
+          <div className="w-full sm:max-w-sm bg-white px-4 pt-2.5 pb-5" style={{ borderRadius: "26px 26px 0 0", boxShadow: "0 -12px 40px rgba(5,12,40,.35)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3" style={{ width: 42, height: 4, borderRadius: 4, background: "#D5DCF0" }} />
+            <div className="flex items-center justify-between mb-1 px-1">
+              <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 19, letterSpacing: "-0.02em", color: "#0B1437" }}>Ordenar negocios por</h3>
+              <button onClick={() => setShowOrden(false)} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 11, background: "#F3F5FA" }}><X size={17} color="#2B3768" /></button>
+            </div>
+            <p className="px-1 mb-3 text-[13px]" style={{ color: "#5B6482" }}>Elegí cómo querés ver la lista.</p>
+            <div className="flex flex-col gap-2">
+              {ORDEN_OPCIONES.map((o) => {
+                const activo = sortBy === o.id;
+                return (
+                  <button key={o.id} onClick={() => { setSortBy(o.id); setShowOrden(false); }} className="flex items-center gap-3.5 text-left p-3"
+                    style={{ borderRadius: 16, border: `1.5px solid ${activo ? "var(--azul)" : "#E6ECF5"}`, background: activo ? "var(--azul-suave)" : "#fff" }}>
+                    <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: o.fondo }}><o.Icon size={21} color={o.color} strokeWidth={2.2} /></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15.5, color: "#0B1437" }}>{o.titulo}</span>
+                      <span className="block text-[12.5px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>{o.desc}</span>
+                    </span>
+                    <span className="flex items-center justify-center shrink-0" style={{ width: 24, height: 24, borderRadius: "50%", background: activo ? "var(--azul)" : "transparent", border: activo ? "none" : "1.5px solid #C9D2E8" }}>
+                      {activo && <Check size={14} color="#fff" strokeWidth={3} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {showAddSheet && (
@@ -5402,6 +5462,15 @@ export default function MiZona() {
           initial={emptyBusiness()}
           onSave={submitPublicBusiness}
           onCancel={() => { setShowAddBusiness(false); setBorrador(null); }}
+          abrirMapa={setSelectorUbic}
+        />
+      )}
+
+      {selectorUbic && (
+        <SelectorUbicacion
+          direccion={selectorUbic.direccion} zona={selectorUbic.zona} lat={selectorUbic.lat} lng={selectorUbic.lng}
+          onCancelar={() => setSelectorUbic(null)}
+          onConfirmar={(r) => { selectorUbic.alConfirmar(r); setSelectorUbic(null); }}
         />
       )}
 
@@ -5504,19 +5573,20 @@ export default function MiZona() {
             </p>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
-            <div className="relative">
-              <select
-                value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none font-medium pl-3.5 pr-8 py-2"
-                style={{ fontSize: 13, borderRadius: 20, border: "1px solid #E3E7F1", color: "#0B1437", backgroundColor: "#fff" }}
-              >
-                <option value="destacados">⭐ Destacados</option>
-                <option value="vistas">👁️ Más visitados</option>
-                <option value="descuentos">🏷️ Descuentos</option>
-                <option value="cercanos">📍 Más cercanos</option>
-              </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" color="#5B6482" />
-            </div>
+            {(() => {
+              const op = ORDEN_OPCIONES.find((o) => o.id === sortBy) || ORDEN_OPCIONES[0];
+              return (
+                <button
+                  onClick={() => setShowOrden(true)} aria-haspopup="dialog" aria-label={`Ordenar por: ${op.titulo}`}
+                  className="flex items-center gap-2 font-semibold pl-2 pr-3 py-1.5"
+                  style={{ fontSize: 13, borderRadius: 20, border: "1px solid #D5DCF0", color: "#0B1437", backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06)" }}
+                >
+                  <span className="flex items-center justify-center" style={{ width: 24, height: 24, borderRadius: 8, background: op.fondo }}><op.Icon size={14} color={op.color} strokeWidth={2.3} /></span>
+                  {op.titulo}
+                  <ChevronDown size={14} color="#5B6482" />
+                </button>
+              );
+            })()}
             {onlyFavorites && (
               <button
                 onClick={() => setOnlyFavorites(false)}

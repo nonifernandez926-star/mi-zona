@@ -51,7 +51,7 @@ router.get("/", async (req, res) => {
 router.get("/mios", requiereUsuario, async (req, res) => {
   try {
     const usuario = req.actor.usuario;
-    if (usuario.proveedor !== "email") { // el correo solo es de fiar si lo verificó Google
+    if (usuario.proveedor !== "email" || usuario.correoVerificado) { // el correo solo es de fiar si lo verificó Google
       await Business.updateMany(
         { ownerEmail: usuario.email, $or: [{ ownerId: { $exists: false } }, { ownerId: "" }, { ownerId: null }] },
         { $set: { ownerId: String(usuario._id) } }
@@ -93,7 +93,9 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
       const uidActor = String(actor.usuario._id);
       const dejaNueva = Array.isArray(body.reviews) && body.reviews.length > (biz.reviews || []).length;
       if (!dejaNueva || (await permitir(`resena|${uidActor}`, 10, 3600 * 1000))) {
-        const lista = combinarResenas(biz.reviews || [], body.reviews, { esDueno, usuarioId: uidActor, hoy: hoyISO() });
+        // la reseña se firma con el usuario de la cuenta (si por algún motivo no tiene, con su nombre)
+        const nombreAutor = actor.usuario.usuario || actor.usuario.nombre || "";
+        const lista = combinarResenas(biz.reviews || [], body.reviews, { esDueno, usuarioId: uidActor, nombreAutor, hoy: hoyISO() });
         // solo se escribe si hay una reseña nueva o una respuesta nueva (así un pedido viejo no pisa reseñas recién llegadas)
         if (lista && JSON.stringify(lista) !== JSON.stringify(biz.reviews || [])) cambios.reviews = lista;
       }

@@ -119,6 +119,18 @@ async function accesoConCorreo(ruta, cuerpo) {
 // Paso 1 del ingreso con correo: { paso: "clave" | "crear" | "google" }
 export const revisarCorreo = (email) => pedirJSON("/auth/correo", { method: "POST", body: JSON.stringify({ email }) }, { "Content-Type": "application/json" });
 
+// Ingreso con código: se manda un código de 6 números al correo y se entra con él. Responde { paso: "crear" } si no hay cuenta, o { ok, espera }.
+export const pedirCodigoCorreo = (email) => accesoSinToken("/auth/codigo/enviar", { email });
+export const entrarConCodigo = (email, codigo) => accesoConCorreo("/auth/codigo/verificar", { email, codigo });
+async function accesoSinToken(ruta, cuerpo) {
+  try {
+    return await pedirJSON(ruta, { method: "POST", body: JSON.stringify(cuerpo) }, { "Content-Type": "application/json" });
+  } catch (e) {
+    if (e.status === undefined) e.message = "No se pudo conectar con el servidor. Si estaba dormido, esperá un minuto y probá de nuevo.";
+    throw e;
+  }
+}
+
 // Enlace para descargar Mi Asistente. Poné el link exacto en Netlify con la variable VITE_PLAY_STORE_URL.
 // Contacto directo opcional en Soporte: si no se configuran, esos botones no se muestran. VITE_SOPORTE_WHATSAPP va solo con números y código de país (ej. 5491122334455).
 export const SOPORTE_EMAIL = import.meta.env.VITE_SOPORTE_EMAIL || "";
