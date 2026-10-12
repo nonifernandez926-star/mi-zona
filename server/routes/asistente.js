@@ -71,6 +71,13 @@ router.post("/mis-conversaciones", identificar, requiereUsuario, async (req, res
 // mandaba el navegador, y cualquiera que lo conociera podía ver o gastar puntos ajenos. Ahora exigen sesión y usan
 // siempre el id de la cuenta, armado por el servidor.
 
+// POST /api/asistente/mis-pedidos
+// Los pedidos que hizo la persona en los asistentes de los negocios, con el estado que les pone cada dueño.
+// El id de cliente sale siempre de la cuenta (nunca del navegador): nadie puede ver los pedidos de otra persona.
+router.post("/mis-pedidos", identificar, requiereUsuario, limitar("mis-pedidos", 60, 10 * 60 * 1000), async (req, res) =>
+  reenviar(res, "/integracion/pedidos-cliente", { method: "POST", body: JSON.stringify({ sesionClienteId: await sesionClienteDe(req.actor.usuario) }) })
+);
+
 // POST /api/asistente/cliente/actividad
 // Pedidos, turnos, puntos y canjes del cliente: con esto la web arma su centro de notificaciones.
 router.post("/cliente/actividad", identificar, requiereUsuario, async (req, res) =>

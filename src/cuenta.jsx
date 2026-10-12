@@ -1,6 +1,6 @@
 // Cuenta de Google, nombre, suscripción del negocio y notificaciones push de Mi Zona.
 import { useEffect, useRef, useState } from "react";
-import { X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays, CreditCard, MessageCircle, ShieldAlert, Send, Info } from "lucide-react";
+import { Package, X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays, CreditCard, MessageCircle, ShieldAlert, Send, Info } from "lucide-react";
 import { tonoDe } from "./tonos";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 import {
@@ -1038,6 +1038,7 @@ export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
             <div className="overflow-hidden" style={TARJETA_SEG}>
               <FilaAviso Icon={CalendarDays} titulo="Recordatorios de tu agenda" desc="Eventos y tareas que cargaste." activo={prefs.agenda} onChange={(v) => guardarPref("agenda", v)} />
               <FilaAviso Icon={CreditCard} titulo="Tu suscripción" desc="Aviso antes de que venza la de tu negocio y cuando vence." activo={prefs.suscripcion} onChange={(v) => guardarPref("suscripcion", v)} />
+              <FilaAviso Icon={Package} titulo="Estado de tus pedidos" desc="Cuando un negocio confirma, prepara, deja listo o entrega tu pedido." activo={prefs.pedidos} onChange={(v) => guardarPref("pedidos", v)} />
               <FilaAviso Icon={MessageCircle} titulo="Respuestas del equipo" desc="Cuando respondemos una consulta, reseña o reporte tuyo." activo={prefs.soporte} onChange={(v) => guardarPref("soporte", v)} />
               <FilaAviso Icon={ShieldAlert} titulo="Alertas de seguridad" desc="Cuando alguien entra a tu cuenta desde un dispositivo nuevo." activo={prefs.seguridad} onChange={(v) => guardarPref("seguridad", v)} ultimo />
             </div>

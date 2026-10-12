@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 import businessesRoutes from "./routes/businesses.js";
 import asistenteRoutes from "./routes/asistente.js";
 import eventosRoutes from "./routes/eventos.js";
+import integracionRoutes from "./routes/integracion.js";
 import authRoutes from "./routes/auth.js";
 import suscripcionRoutes from "./routes/suscripcion.js";
 import pushRoutes from "./routes/push.js";
@@ -45,6 +46,7 @@ app.get("/", (req, res) => {
 app.use("/api/businesses", businessesRoutes);
 app.use("/api/asistente", asistenteRoutes);
 app.use("/api/eventos", eventosRoutes);
+app.use("/api/integracion", integracionRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suscripcion", suscripcionRoutes);
 app.use("/api/push", pushRoutes);

@@ -351,3 +351,12 @@ Ahora hay un botón explícito **"Activar ubicación"** que aparece al elegir "M
 - **Cuentas viejas creadas con correo y contraseña sin verificar:** la primera vez que entran con un código, se les borra la contraseña vieja y se cierran sus sesiones anteriores (cualquiera pudo haberlas creado con el correo de otra persona). Después quedan como cuentas con correo verificado.
 - **Mapa en el formulario del negocio:** debajo de "Dirección" está el botón **Elegir en el mapa**. Se mueve el pin (arrastrándolo o tocando el mapa), se puede buscar una calle o usar "mi ubicación", y con **Confirmar ubicación** la dirección se escribe sola en el campo. El negocio guarda las coordenadas exactas (no se vuelve a buscar la dirección). Funciona con el botón "atrás" de Android.
 - **Sin Brevo (más simple):** se puede enviar desde tu propio Gmail con un script de Google gratis. Abrí `server/correo-apps-script.gs` y seguí los 4 pasos de los comentarios; después cargá en Render `APPS_SCRIPT_URL` y `APPS_SCRIPT_CLAVE`. Gmail gratis permite unos 100 correos por día. Si está cargado, tiene prioridad sobre Brevo.
+
+## Mis pedidos (Herramientas → Mis pedidos)
+
+El cliente sigue el estado de sus pedidos (Enviado → Confirmado → En preparación → Listo → Entregado). El estado lo pone el dueño desde Mi Asistente.
+
+- **Datos:** la web pide `POST /api/asistente/mis-pedidos`; el servidor de Mi Zona consulta a Mi Asistente (`POST /api/integracion/pedidos-cliente`) con el id de cliente de la cuenta, nunca con uno que mande el navegador. Se actualiza al abrir la app, al volver a ella, cada 2 minutos y cada 30 segundos con la pantalla abierta.
+- **Aviso al celular:** cuando el dueño cambia el estado, Mi Asistente llama a `POST /api/integracion/pedido-estado` (de este servidor) y se manda un push ("Tu pedido está listo", etc.). Tocar el aviso abre la app en Mis pedidos. Se puede apagar en Ajustes → Notificaciones → "Estado de tus pedidos".
+- **Configuración nueva en el servidor de Mi Asistente:** `MIZONA_API_URL` = dirección del servidor de Mi Zona terminada en `/api` (ej. `https://tu-mizona.onrender.com/api`). La clave `INTEGRACION_KEY` ya existe y es la misma en los dos servidores. Sin `MIZONA_API_URL` todo funciona igual, solo que no se manda el aviso push (la campana de la app igual muestra el cambio al actualizarse).
+- **Cambios en Mi Asistente:** `utils/miZona.js` (nuevo), `routes/pedidos.js` (avisa al cambiar el estado) y `routes/integracion.js` (nuevo endpoint `pedidos-cliente`). Están en `mi-asistente-pedidos.patch`.

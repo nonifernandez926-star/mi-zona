@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useAtrasDeCapas } from "./atras.js";
 import { QrLocal } from "./qr.jsx";
 import L from "leaflet";
@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, soporteApi,
+  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, traerMisPedidos, soporteApi,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { SelectorUbicacion } from "./selectorUbicacion.jsx";
+import { CAPAS_MAPA } from "./capasMapa.js";
 import { PrivacidadScreen } from "./privacidad.jsx";
+import { PedidosScreen } from "./pedidos.jsx";
 import { AparienciaScreen } from "./apariencia.jsx";
 import { FondoClima } from "./clima.jsx";
 import { TONOS as TONOS_ICONOS } from "./tonos.js";
@@ -2436,30 +2438,6 @@ function FavoritosScreen({ businesses, favorites, onToggleFavorite, onOpenBusine
 /* ---------- mapa profesional de Mi Zona (solo negocios registrados) ---------- */
 
 // Marcador con el LOGO del negocio (o su inicial sobre el color del rubro si todavía no cargó logo)
-// Capas del mapa, todas gratuitas y sin clave. Solo se dibujan los negocios registrados en Mi Zona (marcadores propios).
-//  · Mapa: calles claras al estilo Google Maps  · Relieve: sombreado de cerros, vegetación, ríos  · Satélite: fotos aéreas + nombres de calles
-const CAPAS_MAPA = {
-  mapa: {
-    label: "Mapa", muestra: "linear-gradient(135deg,#EAF1E4 0%,#F6F1E6 45%,#CFE3F5 100%)",
-    atribucion: "© OpenStreetMap",
-    capas: [{ url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", opciones: { maxZoom: 19 } }],
-  },
-  relieve: {
-    label: "Relieve", muestra: "linear-gradient(135deg,#BFD8A2 0%,#E4D9B0 45%,#9CBFA0 100%)",
-    atribucion: "Tiles © Esri — Esri, USGS, NOAA, HERE, Garmin, OpenStreetMap contributors",
-    capas: [{ url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17 } }],
-  },
-  satelite: {
-    label: "Satélite", muestra: "linear-gradient(135deg,#27402B 0%,#5D5A3A 45%,#2F4A5E 100%)",
-    atribucion: "Imágenes © Esri, Maxar, Earthstar Geographics · Nombres © Esri",
-    capas: [
-      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 18 } },
-      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17, opacity: 0.9 } },
-      { url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", opciones: { maxZoom: 19, maxNativeZoom: 17 } },
-    ],
-  },
-};
-
 function crearIconoNegocio(b, seleccionado, mostrarNombre = true) {
   const c = catInfo(b.cat);
   const color = c?.color || "var(--azul)";
@@ -3723,7 +3701,7 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
+function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPedidos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
   const [subiendoHistoria, setSubiendoHistoria] = useState(false);
   const historiaInputRef = useRef(null);
 
@@ -3789,6 +3767,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   const herramientasDeTodos = (
     <>
+      <Tool Icon={Package} bg="#2350F5" title="Mis pedidos" desc="Seguí el estado de lo que pediste." onClick={onOpenPedidos} />
       <Tool Icon={Heart} bg="#E5484D" title="Favoritos" desc="Los negocios que guardaste." onClick={onOpenFavoritos} />
       <Tool Icon={Coins} bg="#F59E0B" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
       <Tool Icon={Trophy} bg="#8B5CF6" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
@@ -4822,6 +4801,13 @@ export default function MiZona() {
   const [showRanking, setShowRanking] = useState(false);
   const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
+  // Mis pedidos: lista con el estado de cada pedido (viene de Mi Asistente) y su recarga
+  const [showPedidos, setShowPedidos] = useState(false);
+  const [misPedidos, setMisPedidos] = useState([]);
+  const [pedidosCargando, setPedidosCargando] = useState(true);
+  const [pedidosError, setPedidosError] = useState(false);
+  const recargarRef = useRef(null);
+  const recargarPedidos = useCallback(() => recargarRef.current?.(), []);
   const [mapaFiltros, setMapaFiltros] = useState(null); // filtros con los que se abre el mapa (null = mapa cerrado)
 
   // centro de notificaciones y puntos del cliente
@@ -4952,17 +4938,33 @@ export default function MiZona() {
     if (!usuario?.id) { setActividad({ pedidos: [], turnos: [], puntos: [], canjes: [] }); return; } // la actividad es de la cuenta: sin sesión no hay nada que pedir
     let cancelado = false;
     const cargar = async () => {
-      try {
-        const a = await fetchActividad();
-        if (!cancelado) { setActividad(a); setActividadLista(true); }
-      } catch { /* sin conexión con Mi Asistente: se muestran solo los avisos locales */ }
+      setPedidosCargando(true);
+      // Se piden juntos: la actividad (turnos, puntos, canjes) y los pedidos con su estado. Si una falla, la otra igual se muestra.
+      const [a, mis] = await Promise.all([fetchActividad().catch(() => null), traerMisPedidos().catch(() => null)]);
+      if (cancelado) return;
+      const base = a ? { ...a } : { pedidos: [], turnos: [], puntos: [], canjes: [] };
+      if (mis) {
+        setMisPedidos(mis); setPedidosError(false);
+        // los avisos de pedidos de la campana salen de esta lista (es la fuente más completa)
+        base.pedidos = mis.map((p) => ({ id: p.id, estado: p.estado, negocio: p.negocio?.nombre || "Negocio", total: p.total, actualizadoEn: p.actualizado, codigoPublico: p.negocio?.codigoPublico }));
+      } else if (!a) setPedidosError(true);
+      if (a || mis) { setActividad(base); setActividadLista(true); }
+      setPedidosCargando(false);
     };
+    recargarRef.current = cargar;
     cargar();
     const timer = setInterval(() => { if (document.visibilityState === "visible") cargar(); }, 120000);
     const alVolver = () => { if (document.visibilityState === "visible") cargar(); };
     document.addEventListener("visibilitychange", alVolver);
     return () => { cancelado = true; clearInterval(timer); document.removeEventListener("visibilitychange", alVolver); };
   }, [usuario?.id]);
+
+  // Al tocar el aviso de "tu pedido está listo" la app se abre en Mis pedidos
+  useEffect(() => {
+    if (!usuario?.usuario) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("abrir") === "pedidos") { setShowPedidos(true); window.history.replaceState(null, "", window.location.pathname); }
+  }, [usuario?.usuario]);
 
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
   const notificaciones = useMemo(
@@ -5116,6 +5118,7 @@ export default function MiZona() {
     [confirmarSalida, () => setConfirmarSalida(false)],
     [!!lightboxSrc, () => setLightboxSrc(null)],
     [!!selectorUbic, () => setSelectorUbic(null)],
+    [showPedidos, () => setShowPedidos(false)],
   ]);
 
   // Puerta de entrada: sin sesión se ve la bienvenida (Empezar → Registrarme / Iniciar sesión); con sesión abierta se entra directo al inicio.
@@ -5244,6 +5247,20 @@ export default function MiZona() {
   }
 
   /* ---- vista de favoritos ---- */
+  if (showPedidos) {
+    return (
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
+        {globalStyle}
+        <PedidosScreen
+          pedidos={misPedidos} cargando={pedidosCargando} error={pedidosError}
+          onRecargar={recargarPedidos}
+          onBack={() => setShowPedidos(false)}
+          onAbrirNegocio={(codigo) => { const b = businesses.find((x) => x.asistenteCodigoPublico === codigo); if (b) { setShowPedidos(false); openDetail(b.id); } }}
+        />
+      </div>
+    );
+  }
+
   if (showFavoritos) {
     return (
       <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
@@ -5540,6 +5557,7 @@ export default function MiZona() {
             onOpenRanking={() => setShowRanking(true)}
             onOpenPuntos={() => setPuntosView({})}
             onOpenFavoritos={() => setShowFavoritos(true)}
+            onOpenPedidos={() => setShowPedidos(true)}
             onOpenAgenda={() => { setShowAgenda(true); window.scrollTo(0, 0); }}
             onSaveDiscount={saveOwnerDiscount}
             onToggleDiscount={toggleOwnerDiscount}

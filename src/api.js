@@ -151,6 +151,8 @@ export async function traerMiSesion() {
 
 // Liga el id de cliente de este dispositivo a la cuenta (devuelve el de la cuenta si ya tenía uno) y trae sus chats
 export const vincularSesionCliente = (sesionClienteId) => enviarUsuarioJSON("/auth/sesion-cliente", "POST", { sesionClienteId });
+// Los pedidos de la persona con el estado que les pone cada negocio (el servidor usa el id de la cuenta)
+export const traerMisPedidos = () => enviarUsuarioJSON("/asistente/mis-pedidos", "POST", {}).then((r) => r.pedidos || []);
 export const traerMisConversaciones = () => enviarUsuarioJSON("/asistente/mis-conversaciones", "POST", {});
 
 // Seguridad: cambiar la contraseña (cuentas con correo) y cerrar sesión en los demás dispositivos. Ambas devuelven un token nuevo para este dispositivo.

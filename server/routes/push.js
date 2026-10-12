@@ -47,11 +47,12 @@ router.post("/cancelar", identificar, requiereUsuario, async (req, res) => {
   }
 });
 
-const CATEGORIAS = ["agenda", "suscripcion", "soporte"];
+const CATEGORIAS = ["agenda", "suscripcion", "soporte", "pedidos"];
 const prefsDe = (u) => ({
   agenda: u.notificaciones?.agenda !== false,
   suscripcion: u.notificaciones?.suscripcion !== false,
   soporte: u.notificaciones?.soporte !== false,
+  pedidos: u.notificaciones?.pedidos !== false,
   seguridad: u.seguridad?.alertasInicio !== false,
 });
 

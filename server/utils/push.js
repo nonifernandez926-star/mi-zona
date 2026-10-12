@@ -17,7 +17,7 @@ if (pushConfigurado()) {
 
 // Manda un push a todos los dispositivos de un usuario. Borra los que ya no existen (navegador desinstalado, etc.).
 // Devuelve la cantidad de dispositivos a los que llegó.
-// "categoria" (agenda | suscripcion | soporte): si la persona apagó ese tipo de aviso en Ajustes → Notificaciones, no se envía.
+// "categoria" (agenda | suscripcion | soporte | pedidos): si la persona apagó ese tipo de aviso en Ajustes → Notificaciones, no se envía.
 export async function enviarPushAUsuario(usuarioId, datos, categoria) {
   if (!pushConfigurado()) return 0;
   if (categoria) {

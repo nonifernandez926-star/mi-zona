@@ -32,6 +32,7 @@ const usuarioSchema = new mongoose.Schema(
       agenda: { type: Boolean, default: true }, // recordatorios de la agenda
       suscripcion: { type: Boolean, default: true }, // vencimiento de la suscripción de un negocio
       soporte: { type: Boolean, default: true }, // respuestas del equipo (consultas, reseñas y reportes)
+      pedidos: { type: Boolean, default: true }, // cambios de estado de los pedidos que hizo (en preparación, listo, entregado)
     },
     // Controles de privacidad que el SERVIDOR respeta (la búsqueda con asistente y las funciones de IA de la agenda los consultan)
     privacidad: {
