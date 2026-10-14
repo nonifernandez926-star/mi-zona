@@ -30,8 +30,7 @@ import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } f
 import { PantallaBienvenida, PantallaCrearUsuario, PantallaDeclaracion } from "./bienvenida.jsx";
 import { PerfilPublicoScreen } from "./perfil.jsx";
 import { OficiosScreen, DetalleOficio, FormularioOficio, PasoOficioActivado, MisFichasScreen } from "./oficios.jsx";
-import { oficiosApi, alquileresApi, eliminarNegocio } from "./api.js";
-import { AlquileresScreen } from "./alquileres.jsx";
+import { oficiosApi, eliminarNegocio } from "./api.js";
 import { uploadImage } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
@@ -2039,7 +2038,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenAlquileres, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2190,10 +2189,6 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
                 </button>
               );
             })}
-            <button onClick={onOpenAlquileres} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: "#E5EDFF", transition: "all .2s" }}><Home size={21} color="#2350F5" /></span>
-              <span className="text-[11px] text-center leading-tight font-medium" style={{ color: "#2B3768" }}>Alquileres</span>
-            </button>
           </div>
         </div>
         {/* Oficios y servicios: se busca por rubro y zona (electricista, plomero, jardinero...) */}
@@ -2205,7 +2200,6 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           </span>
           <ChevronDown size={18} color="#8D95B0" style={{ transform: "rotate(-90deg)" }} />
         </button>
-
       </div>
     </>
   );
@@ -4683,7 +4677,6 @@ export default function MiZona() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   // Oficios y servicios (Fase 4): listado, ficha, formulario, paso final y "Mis fichas"
   const [oficiosAbierto, setOficiosAbierto] = useState(false);
-  const [alquileresAbierto, setAlquileresAbierto] = useState(false);
   const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
   const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
   const [oficioActivado, setOficioActivado] = useState(null);
@@ -4715,7 +4708,6 @@ export default function MiZona() {
   const continuarDespues = (despues) => {
     if (despues === "agregar") setShowAddBusiness(true);
     else if (despues === "oficio") abrirOfrecerOficio();
-    else if (despues === "alquiler") setAlquileresAbierto(true);
     else if (despues?.tipo === "chat") setChatBiz(despues.biz);
   };
   // "Ofrecer mis servicios": si ya tiene su ficha de oficios se abre "Mis fichas" (una por persona); si no, el formulario
@@ -5422,7 +5414,6 @@ export default function MiZona() {
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
           onOpenOficios={() => setOficiosAbierto(true)}
-          onOpenAlquileres={() => setAlquileresAbierto(true)}
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
           onAjustes={() => irATab("ajustes")}
@@ -5468,17 +5459,6 @@ export default function MiZona() {
         />
       )}
 
-      {alquileresAbierto && (
-        <div className="fixed inset-0 z-[73] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <AlquileresScreen
-            key={usuario?._id || usuario?.id || "publico"}
-            usuario={usuario}
-            onVolver={() => setAlquileresAbierto(false)}
-            onSolicitarSesion={() => abrirLogin("Para publicar o administrar alquileres necesitás una cuenta de Mi Zona.", "alquiler", "registro")}
-          />
-        </div>
-      )}
-
       {/* Oficios y servicios + Mis fichas: pantallas completas encima de la principal (por debajo del formulario de negocio) */}
       {oficiosAbierto && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
@@ -5495,7 +5475,6 @@ export default function MiZona() {
             onVerNegocio={(id) => openDetail(id)} onEditarNegocio={(id) => { setNegocioEditandoId(id); setShowEditOwnerBiz(true); }} onEliminarNegocio={eliminarNegocioPropio}
             onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
             onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }}
-            onAlquileres={() => { setMisFichasAbierto(false); setAlquileresAbierto(true); }}
           />
         </div>
       )}
@@ -5592,14 +5571,6 @@ export default function MiZona() {
                 <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Ofrecer mis servicios</span>
                 <span className="block text-xs" style={{ color: "#5B6482" }}>Electricista, plomero, jardinero... armá tu ficha de oficios.</span>
               </span>
-            </button>
-            <button
-              onClick={() => { setShowAddSheet(false); setAlquileresAbierto(true); }}
-              className="w-full flex items-center gap-3 p-3.5 text-left mt-3"
-              style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
-            >
-              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#E5EDFF" }}><Home size={19} color="#2350F5" /></span>
-              <span><span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Publicar un alquiler</span><span className="block text-xs" style={{ color: "#5B6482" }}>Ofrecé casas, salones, artículos o herramientas.</span></span>
             </button>
           </div>
         </div>
