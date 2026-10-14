@@ -209,6 +209,18 @@ export const oficiosApi = {
   disponibilidad: (id, disponible) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}/disponibilidad`, "PUT", { disponible }).then((r) => r.oficio),
   eliminar: (id) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}`, "DELETE", {}),
 };
+export const alquileresApi = {
+  listar: (filtros = {}) => pedirJSON(`/alquileres?${consulta(filtros)}`, { method: "GET" }, {}),
+  ver: (id) => pedirJSON(`/alquileres/${encodeURIComponent(id)}`, { method: "GET" }, {}).then((r) => r.alquiler),
+  mio: () => getUsuarioJSON("/alquileres/mio").then((r) => r.alquiler),
+  crear: (datos) => enviarUsuarioJSON("/alquileres", "POST", datos).then((r) => r.alquiler),
+  editar: (id, datos) => enviarUsuarioJSON(`/alquileres/${encodeURIComponent(id)}`, "PUT", datos).then((r) => r.alquiler),
+  estado: (id, status) => enviarUsuarioJSON(`/alquileres/${encodeURIComponent(id)}/estado`, "PUT", { status }).then((r) => r.alquiler),
+  estadoArticulo: (id, articuloId, estado) => enviarUsuarioJSON(`/alquileres/${encodeURIComponent(id)}/articulos/${encodeURIComponent(articuloId)}/estado`, "PUT", { estado }).then((r) => r.alquiler),
+  eliminar: (id) => enviarUsuarioJSON(`/alquileres/${encodeURIComponent(id)}`, "DELETE", {}),
+  contacto: (id, mensaje) => pedirJSON(`/alquileres/${encodeURIComponent(id)}/contacto`, { method: "POST", body: JSON.stringify({ mensaje }) }, { "Content-Type": "application/json" }).then((r) => r.url),
+};
+
 // Eliminar un negocio propio (solo su dueño; la web pide confirmación antes)
 export const eliminarNegocio = (id) => enviarUsuarioJSON(`/businesses/${encodeURIComponent(id)}`, "DELETE", {});
 export const guardarUsuario = (usuario) => enviarUsuarioJSON("/auth/perfil", "PUT", { usuario }).then((r) => r.usuario);

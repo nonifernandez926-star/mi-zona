@@ -602,7 +602,7 @@ function FilaFicha({ icono: Icono, tono, titulo, sub, chip, children }) {
   );
 }
 
-export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, refrescar }) {
+export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, onAlquileres, refrescar }) {
   const [oficio, setOficio] = useState(undefined); // undefined = cargando · null = no tiene
   const [error, setError] = useState(false);
   const [dialogo, setDialogo] = useState(null); // { tipo: "pausar"|"activar"|"eliminarOficio"|"eliminarNegocio", dato }
@@ -676,6 +676,7 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
         <div className="flex flex-col gap-2 mt-2">
           {!oficio && <button type="button" onClick={onCrearOficio} style={{ ...botonPrincipal, width: "100%" }}><Plus size={18} aria-hidden="true" /> Ofrecer mis servicios (oficios)</button>}
           <button type="button" onClick={onAgregarNegocio} style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Agregar un negocio</button>
+          {onAlquileres && <button type="button" onClick={onAlquileres} style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Administrar mis alquileres</button>}
         </div>
       )}
       {textos && <DialogoAdvertencia {...textos} cargando={trabajando} onAceptar={confirmar} onCancelar={() => !trabajando && setDialogo(null)} />}
