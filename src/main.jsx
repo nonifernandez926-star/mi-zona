@@ -1,7 +1,11 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
+
+// Galería de componentes: solo existe con "npm run dev" y abriendo /?galeria. No entra en la versión publicada.
+const Galeria = import.meta.env.DEV ? lazy(() => import("./componentes/Galeria.jsx")) : null;
+const verGaleria = import.meta.env.DEV && new URLSearchParams(window.location.search).has("galeria");
 
 // Si algo falla al dibujar una pantalla, en vez de quedar en blanco se muestra este aviso con un botón para reintentar.
 class AvisoDeError extends React.Component {
@@ -26,7 +30,7 @@ class AvisoDeError extends React.Component {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AvisoDeError>
-      <App />
+      {verGaleria && Galeria ? <Suspense fallback={null}><Galeria /></Suspense> : <App />}
     </AvisoDeError>
   </React.StrictMode>
 );

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Package, X, Check, LogOut, User, Bell, BellOff, ChevronLeft, ChevronRight, Mail, Clock, Sparkles, Trash2, AlertTriangle, Loader2, ShieldCheck, KeyRound, MonitorSmartphone, Smartphone, Monitor, Tablet, History, BellRing, Store, Star, Heart, CalendarDays, CreditCard, MessageCircle, ShieldAlert, Send, Info } from "lucide-react";
 import { tonoDe } from "./tonos";
+import { EditorPerfil } from "./perfil.jsx";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 import {
   cargarGoogle, pedirCuentaGoogle, cambiarClave, guardarUsuario, usuarioDisponible, cerrarOtrasSesiones, loginConGoogle, guardarNombre, traerPlanes,
@@ -392,7 +393,7 @@ function EditorUsuario({ usuario, onGuardado }) {
   );
 }
 
-export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onAbrirFavoritos, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada }) {
+export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbrirNegocio, onAbrirFavoritos, onAbrirMisFichas, onBack, onLogged, onUsuarioActualizado, onCerrarSesion, onCuentaEliminada, onVerPerfil }) {
   const [estado, setEstado] = useState(null); // null | "guardando" | "ok" | { error }
   const [resumen, setResumen] = useState(null); // lo que Mi Zona tiene de esta cuenta (cantidades, negocios, fecha de alta)
   const [vista, setVista] = useState(null); // null | "desde" | "resenas" | "favoritos" | "negocios"
@@ -443,12 +444,17 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             </div>
           </div>
 
+          <Etiqueta>Tu perfil público</Etiqueta>
+          <div className="p-4" style={TARJETA_SEG}>
+            <EditorPerfil usuario={usuario} onGuardado={onUsuarioActualizado} onVerPerfil={onVerPerfil} />
+          </div>
+
           <Etiqueta>Tu actividad en Mi Zona</Etiqueta>
           <div className="overflow-hidden" style={TARJETA_SEG}>
             <FilaMenu Icon={CalendarDays} color="var(--azul)" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
             <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
             <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => (onAbrirFavoritos ? onAbrirFavoritos() : setVista("favoritos"))} />
-            <FilaMenu Icon={Store} color="#0B1437" titulo="Mis negocios" valor={resumen ? String(negocios.length) : null} onClick={() => setVista("negocios")} ultimo />
+            <FilaMenu Icon={Store} color="#0B1437" titulo={onAbrirMisFichas ? "Mis fichas" : "Mis negocios"} valor={resumen ? String(negocios.length + (onAbrirMisFichas ? (resumen.oficios?.length || 0) : 0)) : null} onClick={() => (onAbrirMisFichas ? onAbrirMisFichas() : setVista("negocios"))} ultimo />
           </div>
 
           <button
@@ -510,7 +516,14 @@ function EliminarCuenta({ usuario, onEliminada }) {
   return (
     <div className="mt-5 p-4" style={{ borderRadius: 16, border: "1px solid #F0D3D0", background: "#fff" }}>
       <p className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: "#9A3B34" }}><AlertTriangle size={16} /> Eliminar mi cuenta</p>
-      <p className="text-sm mb-2" style={{ color: "#2B3768", lineHeight: 1.5 }}>Se borran tu cuenta, tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
+      <p className="text-sm mb-2" style={{ color: "#2B3768", lineHeight: 1.5 }}>Se borran tu cuenta, tu perfil público (nombre, foto, descripción y localidad), tu agenda, tus notificaciones y las reseñas que escribiste. No se puede deshacer.</p>
+      {negocios.some((n) => n.estado !== "pendiente" && n.venceEl && new Date(n.venceEl) > new Date()) && (
+        <p role="alert" className="text-sm mb-3 p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.5 }}>
+          <b>Tenés una suscripción activa:</b>{" "}
+          {negocios.filter((n) => n.estado !== "pendiente" && n.venceEl && new Date(n.venceEl) > new Date()).map((n) => `${n.nombre} (hasta el ${fmtFecha(String(n.venceEl).slice(0, 10))})`).join(", ")}.
+          {" "}Si eliminás la cuenta ahora, perdés lo que ya pagaste: no se reembolsa.
+        </p>
+      )}
       {negocios.length > 0 && (
         <>
           <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>
@@ -521,6 +534,9 @@ function EliminarCuenta({ usuario, onEliminada }) {
             Entiendo que mi negocio se elimina con la cuenta.
           </label>
         </>
+      )}
+      {resumen?.oficios?.length > 0 && (
+        <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>También se elimina <b>tu ficha de oficios</b> ({resumen.oficios.map((o) => o.nombre).join(", ")}): deja de aparecer en las búsquedas.</p>
       )}
       <p className="text-[13px] mb-3" style={{ color: "#5B6482", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
       {esClave && (

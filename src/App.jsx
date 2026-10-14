@@ -27,7 +27,11 @@ import { AparienciaScreen } from "./apariencia.jsx";
 import { FondoClima } from "./clima.jsx";
 import { TONOS as TONOS_ICONOS } from "./tonos.js";
 import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } from "./apariencia.js";
-import { PantallaBienvenida, PantallaCrearUsuario } from "./bienvenida.jsx";
+import { PantallaBienvenida, PantallaCrearUsuario, PantallaDeclaracion } from "./bienvenida.jsx";
+import { PerfilPublicoScreen } from "./perfil.jsx";
+import { OficiosScreen, DetalleOficio, FormularioOficio, PasoOficioActivado, MisFichasScreen } from "./oficios.jsx";
+import { oficiosApi, eliminarNegocio } from "./api.js";
+import { uploadImage } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
   LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver, BotonAtras,
@@ -251,7 +255,7 @@ function rankingScore(biz) {
 }
 function rankedBusinesses(businesses) {
   return [...businesses]
-    .filter((b) => b.kind !== "job" && b.status === "active")
+    .filter((b) => b.kind !== "job" && b.status === "active" && enListados(b))
     .sort((a, b) => rankingScore(b) - rankingScore(a));
 }
 // Posición de un negocio puntual dentro del Top 10 de su propia zona (o null si no entra)
@@ -570,7 +574,7 @@ function buildNotificaciones({ actividad, businesses, favorites, autorId, ownerB
   });
 
   // novedades de los negocios que sigo (favoritos): promociones vigentes y historias activas
-  businesses.filter((b) => favorites.includes(b.id) && b.kind !== "job" && b.status === "active").forEach((b) => {
+  businesses.filter((b) => favorites.includes(b.id) && b.kind !== "job" && b.status === "active" && enListados(b)).forEach((b) => {
     activeDiscounts(b).forEach((d) => {
       if (!d.startDate || new Date(`${d.startDate}T12:00:00`).getTime() < hace30d) return;
       out.push({
@@ -608,7 +612,7 @@ function escapeHtml(str) {
 // Solo negocios REGISTRADOS en Mi Zona (nada de negocios externos), activos y de la zona elegida.
 function filtrarParaMapa(businesses, zone, f, favorites) {
   return businesses.filter((b) => {
-    if (b.kind === "job" || b.status !== "active") return false;
+    if (b.kind === "job" || b.status !== "active" || !enListados(b)) return false;
     if (b.zone !== zone) return false;
     if (f.cat && b.cat !== f.cat) return false;
     if (f.abiertos && !isOpenNow(b.weekHours)) return false;
@@ -690,6 +694,10 @@ function emptyBusiness() {
 
 /* ---------- almacenamiento persistente (backend Express + MongoDB) ---------- */
 
+// El dueño puede sacar su ficha de las búsquedas y listados (Ajustes → Privacidad). El servidor ya no la manda a los demás;
+// esto cubre al propio dueño, que la sigue viendo en "sus negocios" pero no mezclada con los resultados.
+const enListados = (b) => b.apareceEnBusquedas !== false;
+
 function normalizeBusiness(b) {
   return {
     kind: "business",
@@ -737,22 +745,7 @@ async function toggleFavoritoOnServer(id, delta) {
   }
 }
 
-const CLOUDINARY_CLOUD_NAME = "hiyaxxdk";
-const CLOUDINARY_UPLOAD_PRESET = "mi-zona-fotos";
-
-async function uploadImage(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) throw new Error("Error al subir la imagen a Cloudinary");
-  const data = await res.json();
-  return data.secure_url;
-}
+// (La subida de fotos a Cloudinary está en subirFoto.js)
 
 /* ---------- piezas visuales chicas ---------- */
 
@@ -1496,7 +1489,7 @@ function numeroWhatsapp(t) {
   return `549${d}`;
 }
 
-function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, miUsuario, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos }) {
+function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, miUsuario, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos, onOpenPerfil }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
   const [showAllPhotos, setShowAllPhotos] = useState(false);
@@ -1644,6 +1637,9 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <span className="rounded-full inline-block" style={{ width: 7, height: 7, background: c?.color }} /> {c?.label} · {biz.zone}
                 </p>
                 <div className="mt-1.5"><OpenBadge weekHours={biz.weekHours} /></div>
+                {biz.dueno && onOpenPerfil && (
+                  <button type="button" onClick={() => onOpenPerfil(biz.dueno)} className="mt-1.5 text-xs font-semibold flex items-center" style={{ color: "var(--azul)", minHeight: 32 }}>Dueño: @{biz.dueno}</button>
+                )}
               </div>
             </div>
 
@@ -1692,6 +1688,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                   <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${principales.length}, minmax(0, 1fr))` }}>
                     {principales.map((a) => <Boton key={a.label} {...a} />)}
                   </div>
+                  {biz.whatsappOculto && <p className="text-xs" style={{ color: "#4A5372", lineHeight: 1.45 }}>Este negocio eligió no mostrar su WhatsApp. Podés escribirle por sus redes o chatear con su asistente, si lo tiene.</p>}
                   {redes.length > 0 && (
                     <div className="grid grid-cols-2 gap-2">
                       {/* de a dos; si queda uno solo, ocupa todo el ancho para que no se vea desparejo */}
@@ -2041,7 +2038,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2194,6 +2191,15 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             })}
           </div>
         </div>
+        {/* Oficios y servicios: se busca por rubro y zona (electricista, plomero, jardinero...) */}
+        <button onClick={onOpenOficios} className="w-full flex items-center gap-3 mt-3 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "12px 14px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
+          <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "#FFE8C2" }}><Wrench size={21} color="#8A5B12" /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Oficios y servicios</span>
+            <span className="block text-xs" style={{ color: "#5B6482" }}>Electricistas, plomeros, jardineros y más cerca tuyo.</span>
+          </span>
+          <ChevronDown size={18} color="#8D95B0" style={{ transform: "rotate(-90deg)" }} />
+        </button>
       </div>
     </>
   );
@@ -2497,7 +2503,7 @@ function MapaScreen({ businesses, zone, favorites, onToggleFavorite, onOpenBusin
   useEffect(() => {
     let cancelado = false;
     const pendientes = businesses
-      .filter((b) => b.kind !== "job" && b.status === "active" && b.zone === zone && b.loc && !(b.lat && b.lng) && !coordsExtra[b.id])
+      .filter((b) => b.kind !== "job" && b.status === "active" && enListados(b) && b.zone === zone && b.loc && !(b.lat && b.lng) && !coordsExtra[b.id])
       .slice(0, 25);
     if (!pendientes.length) return;
     (async () => {
@@ -3894,7 +3900,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   );
 }
 
-function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrirFavoritos, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada }) {
+function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrirFavoritos, onAbrirMisFichas, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada, onVerPerfil }) {
   const tema = useApariencia().tema;
   // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
   useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
@@ -3943,10 +3949,11 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
   if (sub === "cuenta") {
     return (
       <MiCuentaScreen
-        usuario={usuario} local={{ favoritos: getFavorites().length }} negocios={negocios} onAbrirNegocio={onAbrirNegocio} onAbrirFavoritos={onAbrirFavoritos} onBack={() => setSub(null)} onLogged={onLogged}
+        usuario={usuario} local={{ favoritos: getFavorites().length }} negocios={negocios} onAbrirNegocio={onAbrirNegocio} onAbrirFavoritos={onAbrirFavoritos} onAbrirMisFichas={onAbrirMisFichas} onBack={() => setSub(null)} onLogged={onLogged}
         onUsuarioActualizado={onUsuarioActualizado}
         onCerrarSesion={onCerrarSesion}
         onCuentaEliminada={onCuentaEliminada}
+        onVerPerfil={onVerPerfil}
       />
     );
   }
@@ -4628,6 +4635,7 @@ export default function MiZona() {
   const [sortBy, setSortBy] = useState("destacados");
   const [showOrden, setShowOrden] = useState(false); // hoja para elegir cómo se ordenan los negocios
   const [selectedId, setSelectedId] = useState(null);
+  const [perfilVer, setPerfilVer] = useState(null); // usuario cuyo perfil público está abierto
   const [showAllCats, setShowAllCats] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
@@ -4667,6 +4675,14 @@ export default function MiZona() {
 
   // agregar mi local + suscripción
   const [showAddSheet, setShowAddSheet] = useState(false);
+  // Oficios y servicios (Fase 4): listado, ficha, formulario, paso final y "Mis fichas"
+  const [oficiosAbierto, setOficiosAbierto] = useState(false);
+  const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
+  const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
+  const [oficioActivado, setOficioActivado] = useState(null);
+  const [misFichasAbierto, setMisFichasAbierto] = useState(false);
+  const [fichasVersion, setFichasVersion] = useState(0); // sube cuando cambia una ficha, para que "Mis fichas" la vuelva a pedir
+  const [negocioEditandoId, setNegocioEditandoId] = useState(null); // negocio que se edita desde "Mis fichas" (si no, el primero)
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [borrador, setBorrador] = useState(null); // negocio recién completado, esperando que elija el plan
   const [planesModal, setPlanesModal] = useState(null); // { modo: "nuevo" | "renovar", gratis, hasta, vencimiento }
@@ -4691,7 +4707,23 @@ export default function MiZona() {
   const abrirLogin = (motivo, despues = null, modo = "login") => setShowLogin({ motivo, despues, modo });
   const continuarDespues = (despues) => {
     if (despues === "agregar") setShowAddBusiness(true);
+    else if (despues === "oficio") abrirOfrecerOficio();
     else if (despues?.tipo === "chat") setChatBiz(despues.biz);
+  };
+  // "Ofrecer mis servicios": si ya tiene su ficha de oficios se abre "Mis fichas" (una por persona); si no, el formulario
+  const abrirOfrecerOficio = async () => {
+    if (!requerirSesion("Para ofrecer tus servicios necesitás una cuenta de Mi Zona. Es rápido y gratis.", "oficio")) return;
+    try {
+      const mio = await oficiosApi.mio();
+      if (mio) setMisFichasAbierto(true); else setOficioForm({ inicial: null });
+    } catch { setOficioForm({ inicial: null }); }
+  };
+  // Eliminar un negocio propio (la confirmación la pide "Mis fichas")
+  const eliminarNegocioPropio = async (id) => {
+    await eliminarNegocio(id);
+    setBusinesses((prev) => prev.filter((b) => b.id !== id));
+    setFavorites((prev) => prev.filter((f) => f !== id));
+    await recargarMisNegocios();
   };
   // Funciones importantes (registrar un negocio, dejar una reseña, chatear con el asistente) piden registrarse con Google primero
   const requerirSesion = (motivo, despues = null) => {
@@ -4967,6 +4999,7 @@ export default function MiZona() {
   }, [usuario?.usuario]);
 
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
+  const bizEditando = negocioEditandoId ? businesses.find((b) => b.id === negocioEditandoId) : ownerBiz; // el que se está editando (desde Herramientas, el primero)
   const notificaciones = useMemo(
     () => buildNotificaciones({ actividad, businesses, favorites, autorId: getAutorResenasId(), ownerBizs: misNegocios.map((m) => businesses.find((b) => b.id === m.id) || m) }).filter((n) => !notifEliminadas.has(n.id)),
     [actividad, businesses, favorites, notifEliminadas, misNegocios]
@@ -5021,7 +5054,7 @@ export default function MiZona() {
     const q = query.trim().toLowerCase();
     let list = businesses.filter((b) => {
       if (b.kind === "job") return false;
-      if (b.status !== "active") return false;
+      if (b.status !== "active" || !enListados(b)) return false;
       const matchCat = activeCat ? b.cat === activeCat : true;
       const matchZone = b.zone === zone;
       const haystack = [b.name, b.desc, ...(b.services || []), ...(b.specialties || [])].join(" ").toLowerCase();
@@ -5108,7 +5141,13 @@ export default function MiZona() {
     [!!chatBiz, () => setChatBiz(null)],
     [!!subHerramientas, () => setSubHerramientas(null)],
     [!!subAjustes, () => setSubAjustes(null)],
-    [showEditOwnerBiz, () => setShowEditOwnerBiz(false)],
+    [oficiosAbierto, () => setOficiosAbierto(false)],
+    [misFichasAbierto, () => setMisFichasAbierto(false)],
+    [!!oficioVer, () => setOficioVer(null)],
+    [!!oficioForm, () => setOficioForm(null)],
+    [!!oficioActivado, () => setOficioActivado(null)],
+    [showEditOwnerBiz, () => { setShowEditOwnerBiz(false); setNegocioEditandoId(null); }],
+    [!!perfilVer, () => setPerfilVer(null)],
     [showAddSheet, () => setShowAddSheet(false)],
     [showAddBusiness, () => setShowAddBusiness(false)],
     [!!borrador, () => setBorrador(null)],
@@ -5125,6 +5164,7 @@ export default function MiZona() {
   if (!sesionRevisada) return <div style={{ position: "fixed", inset: 0, background: "#050b2a" }} aria-hidden="true" />;
   if (!usuario) return <PantallaBienvenida onLogged={(u) => setUsuario(u)} />;
   if (!usuario.usuario) return <PantallaCrearUsuario usuario={usuario} onListo={(u) => setUsuario(u)} onSalir={cerrarSesion} />;
+  if (usuario.declaracionPendiente) return <PantallaDeclaracion onListo={(u) => setUsuario(u)} onSalir={cerrarSesion} />;
 
   if (loading) {
     return <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }} className="flex items-center justify-center text-sm" ><span style={{color:"#5B6482"}}>Cargando...</span></div>;
@@ -5278,6 +5318,16 @@ export default function MiZona() {
     );
   }
 
+  /* ---- perfil público de una persona ---- */
+  if (perfilVer) {
+    return (
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
+        {globalStyle}
+        <PerfilPublicoScreen usuario={perfilVer} onBack={() => setPerfilVer(null)} onAbrirNegocio={(id) => { setPerfilVer(null); openDetail(id); }} onAbrirOficio={(id) => { setPerfilVer(null); setOficioVer({ id }); }} />
+      </div>
+    );
+  }
+
   /* ---- vista ficha de negocio ---- */
   if (selected) {
     return (
@@ -5290,6 +5340,7 @@ export default function MiZona() {
           rank={businessRankPosition(selected, businesses)}
           onTrack={trackEvento}
           onOpenPuntos={(codigoPublico) => setPuntosView({ codigoPublico })}
+          onOpenPerfil={setPerfilVer}
         />
         {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       </div>
@@ -5362,6 +5413,7 @@ export default function MiZona() {
           zone={zone} setZone={setZone} query={query} setQuery={setQuery}
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
+          onOpenOficios={() => setOficiosAbierto(true)}
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
           onAjustes={() => irATab("ajustes")}
@@ -5407,12 +5459,50 @@ export default function MiZona() {
         />
       )}
 
-      {showEditOwnerBiz && ownerBiz && (
+      {/* Oficios y servicios + Mis fichas: pantallas completas encima de la principal (por debajo del formulario de negocio) */}
+      {oficiosAbierto && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <OficiosScreen
+            usuario={usuario} onVolver={() => setOficiosAbierto(false)} onAbrir={(id, rubro) => setOficioVer({ id, rubro })}
+            onOfrecer={abrirOfrecerOficio} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }}
+          />
+        </div>
+      )}
+      {misFichasAbierto && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <MisFichasScreen
+            key={fichasVersion} usuario={usuario} negocios={misNegocios} onVolver={() => setMisFichasAbierto(false)}
+            onVerNegocio={(id) => openDetail(id)} onEditarNegocio={(id) => { setNegocioEditandoId(id); setShowEditOwnerBiz(true); }} onEliminarNegocio={eliminarNegocioPropio}
+            onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
+            onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }}
+          />
+        </div>
+      )}
+      {oficioVer && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <DetalleOficio key={oficioVer.id} id={oficioVer.id} rubroConsulta={oficioVer.rubro || ""} onVolver={() => setOficioVer(null)} onAbrirPerfil={(u) => { setOficioVer(null); setPerfilVer(u); }} />
+        </div>
+      )}
+      {oficioForm && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <FormularioOficio
+            inicial={oficioForm.inicial} usuario={usuario} onCancelar={() => setOficioForm(null)}
+            onGuardado={(o, nueva) => { setOficioForm(null); setFichasVersion((v) => v + 1); if (nueva) setOficioActivado(o); }}
+          />
+        </div>
+      )}
+      {oficioActivado && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <PasoOficioActivado oficio={oficioActivado} onVerFicha={() => setOficioVer({ id: oficioActivado.id })} onListo={() => { setOficioActivado(null); setMisFichasAbierto(true); }} />
+        </div>
+      )}
+
+      {showEditOwnerBiz && bizEditando && (
         <BusinessForm
           publicMode
-          initial={ownerBiz}
-          onSave={(data) => { persistOne(ownerBizId, data); setShowEditOwnerBiz(false); }}
-          onCancel={() => setShowEditOwnerBiz(false)}
+          initial={bizEditando}
+          onSave={(data) => { persistOne(bizEditando.id, data); setShowEditOwnerBiz(false); setNegocioEditandoId(null); }}
+          onCancel={() => { setShowEditOwnerBiz(false); setNegocioEditandoId(null); }}
           abrirMapa={setSelectorUbic}
         />
       )}
@@ -5469,6 +5559,19 @@ export default function MiZona() {
                 <span className="block text-xs" style={{ color: "#5B6482" }}>Sumá tu negocio a Mi Zona y empezá a recibir clientes.</span>
               </span>
             </button>
+            <button
+              onClick={() => { setShowAddSheet(false); abrirOfrecerOficio(); }}
+              className="w-full flex items-center gap-3 p-3.5 text-left mt-3"
+              style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
+            >
+              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#FFE8C2" }}>
+                <Wrench size={19} color="#8A5B12" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Ofrecer mis servicios</span>
+                <span className="block text-xs" style={{ color: "#5B6482" }}>Electricista, plomero, jardinero... armá tu ficha de oficios.</span>
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -5513,10 +5616,11 @@ export default function MiZona() {
           <AjustesScreen
             sub={subAjustes} setSub={setSubAjustes}
             usuario={usuario}
-            negocios={businesses} onAbrirNegocio={openDetail} onAbrirFavoritos={() => setShowFavoritos(true)}
+            negocios={businesses} onAbrirNegocio={openDetail} onAbrirFavoritos={() => setShowFavoritos(true)} onAbrirMisFichas={() => setMisFichasAbierto(true)}
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}
+            onVerPerfil={setPerfilVer}
             onCerrarSesion={() => setConfirmarSalida(true)}
             onBorrarDatosLocales={() => {
               borrarDatosLocales(); // también se borró el token: la sesión de este dispositivo queda cerrada

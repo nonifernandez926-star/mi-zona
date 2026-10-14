@@ -171,6 +171,37 @@ export const ARTICULOS = [
     contactar: "negocio",
   },
   {
+    id: "oficios-ofrecer", cat: "negocio", titulo: "Ofrecer mis servicios (oficios)",
+    claves: "oficio oficios servicios electricista plomero ficha rubros whatsapp disponible ocupado mis fichas",
+    cuerpo: [
+      "Si hacés un trabajo (electricista, plomero, jardinero, fletes...), podés tener una ficha de oficios en Mi Zona. Es una sola ficha por persona y podés elegir varios rubros: aparecés en la búsqueda de cada uno.",
+      { pasos: ["Tocá el botón + y elegí «Ofrecer mis servicios» (o entrá desde Oficios y servicios).", "Elegí tus rubros, contá qué hacés y elegí tu localidad. El resto es opcional: dirección, WhatsApp, redes, fotos, horarios y precio orientativo.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
+      "Desde Ajustes → Mi cuenta → Mis fichas podés marcar «Disponible hoy» u «Ocupado» con un toque, editar tu ficha, pausarla (deja de verse sin borrar nada) o eliminarla.",
+      { nota: "«Disponible hoy» se apaga solo a medianoche. Mi Zona no verifica ni certifica a quienes publican sus servicios." },
+    ],
+    relacionados: ["oficios-buscar", "privacidad-fichas"],
+  },
+  {
+    id: "oficios-buscar", cat: "empezar", titulo: "Buscar un oficio o servicio",
+    claves: "buscar oficio servicio electricista plomero whatsapp contactar rubro zona",
+    cuerpo: [
+      "En el Inicio tocá «Oficios y servicios». Elegí un rubro, escribí lo que necesitás y ajustá la zona (tu localidad, tu departamento, tu provincia o todo el país).",
+      { pasos: ["Abrí la ficha para ver qué hace, dónde trabaja, horarios y precio orientativo.", "Si tiene botón de WhatsApp, tocalo: se abre el chat con un mensaje que podés cambiar antes de enviarlo.", "Pedí presupuesto y referencias antes de contratar."] },
+      { nota: "Mi Zona no envía mensajes por vos: solo abre WhatsApp con el texto para que lo revises." },
+    ],
+    relacionados: ["oficios-ofrecer"],
+  },
+  {
+    id: "privacidad-fichas", cat: "privacidad", titulo: "Mostrar u ocultar el WhatsApp y las búsquedas de una ficha",
+    claves: "privacidad whatsapp ocultar buscar búsquedas ficha dueño negocio oficio interruptor",
+    cuerpo: [
+      "En Ajustes → Privacidad cada ficha (tu negocio o tu ficha de oficios) tiene sus propios interruptores. Cambiar uno vale solo para esa ficha.",
+      { pasos: ["«Mostrar WhatsApp»: si lo apagás, la ficha oculta tu WhatsApp al público (no se ve el número ni el botón).", "«Aparecer en búsquedas»: si lo apagás, la ficha no sale en búsquedas ni listados. Vos la seguís viendo en Mis fichas.", "«Dueño de» y «Dueño: @usuario»: elegís si tu perfil muestra la ficha y si la ficha muestra tu usuario."] },
+      "Antes de cada cambio te avisamos qué va a pasar, y podés aceptar o cancelar.",
+    ],
+    relacionados: ["oficios-ofrecer"],
+  },
+  {
     id: "agenda", cat: "negocio", titulo: "Usar la agenda del negocio",
     claves: "turnos eventos tareas recordatorios foto papel ia organizar",
     cuerpo: [
@@ -387,7 +418,7 @@ export function sugeridosPara(motivo) {
     resenas: ["dejar-resena", "borrar-resenas", "responder-resena"],
     error: ["no-cargan-negocios", "no-llegan-notificaciones", "ubicacion-no-funciona"],
     sugerencia: [],
-    otro: ["que-es", "buscar-filtros"],
+    otro: ["que-es", "buscar-filtros", "oficios-buscar"],
   }[motivo] || [];
   return ids.map(articuloPorId).filter(Boolean);
 }

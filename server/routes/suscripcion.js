@@ -8,6 +8,7 @@ import { hoyISO, sumarMeses } from "../utils/fechas.js";
 import { sincronizarCobertura } from "../utils/asistente.js";
 import { cargarMercadoPago, webhookEsValido } from "../utils/mercadopago.js";
 import { revisarVencimientos } from "../utils/vencimientos.js";
+import { declaracionPendiente } from "../utils/perfil.js";
 
 const router = express.Router();
 
@@ -63,6 +64,9 @@ router.post("/iniciar", identificar, requiereUsuario, async (req, res) => {
     const usuario = req.actor.usuario;
     const { plan, business, bizId } = req.body || {};
     const planElegido = Object.prototype.hasOwnProperty.call(PLANES, plan) ? PLANES[plan] : undefined;
+
+    // Para publicar algo nuevo hace falta haber confirmado los 18 años, aceptado los términos y elegido la localidad (lo exige el servidor, no solo la pantalla)
+    if (business && declaracionPendiente(usuario)) return res.status(403).json({ error: "Primero completá tu cuenta (18 años o más, términos y localidad)." });
 
     let negocio;
     if (business) {

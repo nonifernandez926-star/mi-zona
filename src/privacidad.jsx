@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   MapPin, MessageCircle, Sparkles, BarChart3, Download, Trash2, Star, CalendarCheck, Smartphone, Lock, ChevronDown, Check, Loader2, User, UserX,
-  Eye, History, BellOff, ShieldCheck,
+  Eye, History, BellOff, ShieldCheck, Store, Search,
 } from "lucide-react";
 import { tonoDe } from "./tonos";
 import { BotonVolver } from "./cuenta.jsx";
-import { getPrivacidad, setPrivacidadLocal, privacidadApi, desactivarPush } from "./api.js";
+import { getPrivacidad, setPrivacidadLocal, privacidadApi, perfilesApi, desactivarPush } from "./api.js";
+import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 
 // Mismo lenguaje visual que Ajustes: tarjetas blancas con borde suave, filas con ícono azul y texto legible.
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1437" };
@@ -133,6 +134,80 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
   );
 }
 
+// Qué ven otras personas sobre vos: perfil visible y, por cada ficha (negocio u oficio), cuatro interruptores independientes:
+//  · «Dueño de» en tu perfil  · «Dueño: @usuario» en la ficha  · Mostrar WhatsApp  · Aparecer en búsquedas
+// Todos nacen como los define el servidor (los dos primeros apagados). Cada cambio avisa qué va a pasar (Aceptar o Cancelar) y lo valida el servidor.
+// Los cuatro valen "por ficha": se cambian solo para esa ficha, y solo el dueño puede hacerlo.
+const TIPO_FICHA = { negocio: "Negocio", oficio: "Oficio" };
+
+function textosAviso(f, campo, v) {
+  const n = f.nombre;
+  if (campo === "perfil") return { titulo: "¿Mostrar esta ficha en tu perfil?", queHace: `Tu perfil va a mostrar «Dueño de: ${n}», con un acceso a la ficha.`, paraQue: "Sirve para que quienes vean tu perfil conozcan lo que ofrecés.", queSucedera: "Cualquier persona que abra tu perfil lo va a ver (siempre que tu perfil sea visible). Podés desactivarlo cuando quieras.", textoAceptar: "Sí, mostrarlo" };
+  if (campo === "ficha") return { titulo: "¿Mostrar tu usuario en la ficha?", queHace: `La ficha de ${n} va a mostrar «Dueño: @usuario», con un acceso a tu perfil.`, paraQue: "Sirve para que los clientes sepan quién atiende y puedan ver tu perfil.", queSucedera: "Tu usuario y tu perfil público se van a ver en la ficha, para todas las personas. Podés desactivarlo cuando quieras.", textoAceptar: "Sí, mostrarlo" };
+  if (campo === "whatsapp") {
+    return v
+      ? { titulo: `¿Mostrar el WhatsApp de ${n}?`, queHace: "El botón de WhatsApp vuelve a aparecer en la ficha.", paraQue: "Sirve para que los clientes te escriban directo.", queSucedera: "Quien toque el botón va a ver tu número y va a poder escribirte. Ese número no se puede esconder de quien toca el botón. Podés apagarlo cuando quieras.", textoAceptar: "Sí, mostrarlo" }
+      : { titulo: `¿Ocultar el WhatsApp de ${n}?`, queHace: "Saca el botón y el número de WhatsApp de la ficha.", paraQue: "Sirve si no querés que te escriban por ese medio por ahora.", queSucedera: "Nadie va a ver tu número en la ficha y los clientes no van a poder escribirte por WhatsApp desde Mi Zona. El número queda guardado en tu ficha y podés volver a mostrarlo cuando quieras.", textoAceptar: "Sí, ocultarlo" };
+  }
+  return v
+    ? { titulo: `¿Mostrar ${n} en las búsquedas?`, queHace: "La ficha vuelve a aparecer en las búsquedas y en los listados de Mi Zona.", paraQue: "Sirve para que los clientes de tu zona te encuentren.", queSucedera: "Cualquier persona va a poder verla y contactarte.", textoAceptar: "Sí, mostrarla" }
+    : { titulo: `¿Sacar ${n} de las búsquedas?`, queHace: "La ficha deja de aparecer en las búsquedas y en los listados.", paraQue: "Sirve para frenar las visitas sin borrar nada.", queSucedera: "Nadie va a poder encontrarla ni abrirla, y desaparece de los favoritos de otras personas. Vos la seguís viendo en tus fichas y la podés volver a mostrar cuando quieras.", textoAceptar: "Sí, sacarla" };
+}
+
+function ControlesPerfil({ resumen, onCambio }) {
+  const [guardando, setGuardando] = useState(null);
+  const [error, setError] = useState(null);
+  const [aviso, setAviso] = useState(null); // { f, campo, valor }
+  const visible = resumen.preferencias?.perfilVisible !== false;
+  const fichas = [
+    ...resumen.negocios.map((n) => ({ ...n, tipo: "negocio" })),
+    ...(resumen.oficios || []).map((o) => ({ ...o, tipo: "oficio" })),
+  ];
+  const guardar = async (clave, accion) => {
+    setGuardando(clave); setError(null);
+    try { await accion(); await onCambio(); return true; } catch (e) { setError(e.message || "No se pudo guardar el cambio."); return false; } finally { setGuardando(null); }
+  };
+  // Cada campo lo guarda el servidor, que revisa que sea el dueño de ESA ficha y que el valor sea true o false
+  const cambiar = (f, campo, v) => guardar(`${f.tipo}${f.id}${campo}`, () => (
+    campo === "perfil" ? perfilesApi.duenoFicha(f.tipo, f.id, { enPerfil: v })
+      : campo === "ficha" ? perfilesApi.duenoFicha(f.tipo, f.id, { enFicha: v })
+        : campo === "whatsapp" ? perfilesApi.privacidadFicha(f.tipo, f.id, { mostrarWhatsapp: v })
+          : perfilesApi.privacidadFicha(f.tipo, f.id, { apareceEnBusquedas: v })
+  ));
+  // Apagar «Dueño…» es directo; todo lo demás avisa antes, tanto al encender como al apagar
+  const pedir = (f, campo, v) => ((campo === "perfil" || campo === "ficha") && !v ? cambiar(f, campo, false) : setAviso({ f, campo, valor: v }));
+  const claveAviso = aviso && `${aviso.f.tipo}${aviso.f.id}${aviso.campo}`;
+  return (
+    <>
+      <Grupo titulo="Tu perfil" desc="Elegí qué ven otras personas sobre vos. Tu correo y tu teléfono nunca se muestran.">
+        <Control
+          Icon={User} titulo="Mi perfil es visible" desc="Otras personas pueden ver tu nombre, foto, localidad y descripción. Si lo apagás, solo ven que tu perfil es privado."
+          activo={visible} onChange={(v) => guardar("perfil", () => privacidadApi.guardarPreferencias({ perfilVisible: v }))} disabled={guardando === "perfil"} ultimo
+        />
+      </Grupo>
+      {fichas.map((f) => {
+        const k = (campo) => `${f.tipo}${f.id}${campo}`;
+        return (
+          <Grupo key={`${f.tipo}${f.id}`} titulo={`${TIPO_FICHA[f.tipo]}: ${f.nombre}`} desc="Estos cambios valen solo para esta ficha.">
+            <Control Icon={Store} titulo="«Dueño de» en mi perfil" desc="Tu perfil muestra esta ficha como tuya." activo={!!f.duenoEnPerfil} onChange={(v) => pedir(f, "perfil", v)} disabled={guardando === k("perfil")} />
+            <Control Icon={Store} titulo="«Dueño: @usuario» en la ficha" desc="La ficha muestra tu usuario y lleva a tu perfil." activo={!!f.duenoEnFicha} onChange={(v) => pedir(f, "ficha", v)} disabled={guardando === k("ficha")} />
+            <Control Icon={MessageCircle} titulo="Mostrar WhatsApp" desc="Si lo apagás, la ficha oculta tu WhatsApp al público: no se ve el número ni el botón." activo={f.mostrarWhatsapp !== false} onChange={(v) => pedir(f, "whatsapp", v)} disabled={guardando === k("whatsapp")} />
+            <Control Icon={Search} titulo="Aparecer en búsquedas" desc="Si lo apagás, la ficha no sale en búsquedas ni listados. Vos la seguís viendo en tus fichas." activo={f.apareceEnBusquedas !== false} onChange={(v) => pedir(f, "busquedas", v)} disabled={guardando === k("busquedas")} ultimo />
+          </Grupo>
+        );
+      })}
+      {error && <p role="alert" className="text-sm -mt-3 mb-5 px-1" style={{ color: "#9A3B34" }}>{error}</p>}
+      {aviso && (
+        <DialogoAdvertencia
+          {...textosAviso(aviso.f, aviso.campo, aviso.valor)} cargando={guardando === claveAviso}
+          onAceptar={async () => { const { f, campo, valor } = aviso; const ok = await cambiar(f, campo, valor); if (ok) setAviso(null); }}
+          onCancelar={() => setAviso(null)}
+        />
+      )}
+    </>
+  );
+}
+
 export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeguridad, local, onBorrarVistos, onBorrarDatosLocales }) {
   const [contLocal, setContLocal] = useState(local); // cantidades de este dispositivo (se actualizan al borrar)
   const [prefs, setPrefs] = useState(() => getPrivacidad());
@@ -216,11 +291,14 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
       </Grupo>
       {errorPref && <p className="text-sm -mt-3 mb-5 px-1" style={{ color: "#C1443A" }}>{errorPref}</p>}
 
+      {resumen && <ControlesPerfil resumen={resumen} onCambio={cargar} />}
+
       <Grupo titulo="Lo que guardamos de vos" desc="Esto es todo lo que Mi Zona tiene sobre vos.">
         {usuario ? (
           <>
             <Dato etiqueta="Cuenta" valor={usuario.email} />
             <Dato etiqueta="Usuario" valor={usuario.usuario ? `@${usuario.usuario}` : "Sin usuario"} />
+            {usuario.localidad?.localidad && <Dato etiqueta="Localidad" valor={`${usuario.localidad.localidad}, ${usuario.localidad.provincia}`} />}
             {resumen && <Dato etiqueta="Entrás con" valor={resumen.cuenta.proveedor === "email" ? "Correo y contraseña" : "Google"} />}
             {resumen && esDueno && <Dato etiqueta="Negocios" valor={resumen.negocios.length} />}
             {resumen && esDueno && <Dato etiqueta="Eventos y tareas de agenda" valor={nAgenda} />}
@@ -241,7 +319,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
       </Grupo>
 
       <Grupo titulo="Qué es público y qué es privado">
-        <Servicio nombre="Público" desc="Los datos de un negocio (nombre, dirección, teléfono, fotos) y las reseñas, que se muestran con el nombre que pusiste al escribirlas." />
+        <Servicio nombre="Público" desc="Los datos de un negocio (nombre, dirección, teléfono, fotos), las reseñas (con el nombre que pusiste al escribirlas) y, si tu perfil es visible, tu nombre, foto, localidad y descripción. Nunca tu correo ni tu teléfono." />
         <Servicio nombre="Privado" desc="Tu correo, tu agenda, tus pagos, tus favoritos y tus chats. Nadie más los ve." />
         <Servicio nombre="Tu ubicación" desc="Se usa solo en el momento de buscar y no se guarda en el servidor." ultimo />
       </Grupo>
@@ -253,7 +331,8 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         <Servicio nombre="Mi Asistente" desc="Recibe tus mensajes, pedidos y puntos para atenderte." />
         <Servicio nombre="Inteligencia artificial" desc="Procesa tu búsqueda y, si lo permitís, tu agenda." />
         <Servicio nombre="Mercado Pago" desc="Cobra las suscripciones de los negocios. Nunca vemos tu tarjeta." />
-        <Servicio nombre="Cloudinary" desc="Aloja las fotos que sube un negocio, visibles para todos." ultimo />
+        <Servicio nombre="Georef (datos.gob.ar)" desc="Es la lista oficial de provincias y localidades que usamos para que elijas tu localidad. Recibe tu consulta a la lista, no tus datos." />
+        <Servicio nombre="Cloudinary" desc="Aloja las fotos que sube un negocio y tu foto de perfil, visibles para todos." ultimo />
       </Grupo>
 
       <Grupo titulo="Tus datos">

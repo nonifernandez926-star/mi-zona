@@ -1,5 +1,5 @@
 // Textos legales de Mi Zona. Si cambia algo de lo que la app hace con los datos, hay que actualizar también estas fechas y textos.
-export const LEGAL_ACTUALIZADO = "9 de octubre de 2026";
+export const LEGAL_ACTUALIZADO = "13 de octubre de 2026";
 
 export const TERMINOS = [
   { t: "1. Qué es Mi Zona", p: [
@@ -9,6 +9,7 @@ export const TERMINOS = [
   { t: "2. Tu cuenta", p: [
     "Para usar Mi Zona necesitás una cuenta, que se crea eligiendo tu cuenta de Google y, después, un nombre de usuario y una contraseña. Para volver a entrar podés usar Google, tu usuario y contraseña, o tu correo: te mandamos un código de 6 números y lo escribís.",
     "Sos responsable de mantener tu contraseña y tus dispositivos seguros. Si notás un acceso que no reconocés, cerrá las demás sesiones y cambiá tu contraseña desde Ajustes → Seguridad. Tenés que darnos datos verdaderos y no podés usar la cuenta de otra persona.",
+    "Mi Zona es para personas de 18 años o más. Al registrarte declarás que tenés 18 años o más y aceptás estos términos y la Política de privacidad: guardamos esa declaración y la fecha en que la hiciste, no tu edad ni tu fecha de nacimiento. Si comprobamos que una cuenta pertenece a una persona menor de 18, podemos cerrarla.",
     "Podés eliminar tu cuenta cuando quieras desde Ajustes → Mi cuenta.",
   ] },
   { t: "3. Negocios y contenido publicado", p: [
@@ -45,8 +46,11 @@ export const PRIVACIDAD_TEXTO = [
   ], l: [
     "Tu correo, tu nombre, tu nombre de usuario y tu contraseña (esta última siempre cifrada: nunca se guarda en texto).",
     "Los dispositivos con sesión abierta y un registro de actividad de seguridad (inicios de sesión y cambios), por un máximo de 90 días.",
+    "Tu localidad (la provincia y la localidad que elegís; el departamento lo completamos solos con la lista oficial), para mostrarte lo de tu zona, y la declaración de que tenés 18 años o más con la fecha en que aceptaste los términos (no pedimos tu edad ni tu fecha de nacimiento).",
+    "Si querés, tu foto y una descripción corta. Tu perfil público muestra tu nombre, foto, localidad y descripción mientras lo tengas visible, y podés ocultarlo en Ajustes → Privacidad. Nunca mostramos tu correo ni tu teléfono.",
     "Las reseñas que escribís y las consultas que le mandás a Soporte.",
     "Si tenés un negocio: los datos que cargás de él (públicos) y tu agenda (privada).",
+    "Si ofrecés tus servicios con una ficha de oficios: los datos que cargues en ella (nombre de la ficha, rubros, descripción, localidad y, si querés, dirección, WhatsApp, redes, fotos, horarios y precio orientativo). Esa ficha es pública mientras esté activa; tu número de WhatsApp solo se entrega a quien toca el botón de contacto, y solo si decidís mostrarlo.",
     "Los dispositivos en los que activaste las notificaciones, para poder enviarlas.",
     "Las fotos que subís para tu negocio (visibles para todos) y las acciones sobre un negocio (ver, guardar, contactar) para armar sus estadísticas.",
     "Tus preferencias de privacidad (ubicación, chats, IA en la agenda).",
@@ -69,10 +73,10 @@ export const PRIVACIDAD_TEXTO = [
     "Mi Asistente: recibe tus mensajes, pedidos y puntos para atenderte cuando chateás con un negocio.",
     "Inteligencia artificial: procesa tu búsqueda con asistente y, si lo permitís, tu agenda. Podés apagarlo en Ajustes → Privacidad. Las fotos de agenda se analizan y se descartan.",
     "Mercado Pago: cobra las suscripciones. Nunca vemos los datos de tu tarjeta.",
-    "Cloudinary: aloja las fotos que sube un negocio, que son visibles para todos.",
+    "Cloudinary: aloja las fotos que sube un negocio y tu foto de perfil, que son visibles para todos.",
     "Proveedores de mapas (OpenStreetMap y Esri): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
     "Open-Meteo: si permitís el uso de tu ubicación, recibe una ubicación aproximada para mostrarte el clima de tu zona.",
-    "OpenStreetMap (Nominatim) y datos.gob.ar (Georef): reciben la dirección o localidad que escribís para ubicarla en el mapa.",
+    "OpenStreetMap (Nominatim) y datos.gob.ar (Georef): reciben la dirección o localidad que escribís para ubicarla en el mapa. Georef también recibe tu consulta a la lista oficial de provincias y localidades cuando elegís tu localidad.",
     "Google Fonts: recibe la dirección IP de tu dispositivo para entregarte la tipografía de la aplicación.",
     "Servicios de alojamiento (servidor, base de datos y sitio web): guardan la información de la aplicación en nuestro nombre y no la usan para otros fines.",
   ], p2: [

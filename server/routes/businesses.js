@@ -1,5 +1,8 @@
 import express from "express";
 import Business from "../models/Business.js";
+import Usuario from "../models/Usuario.js";
+import Evento from "../models/Evento.js";
+import mongoose from "mongoose";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
 import { sanearNegocio, combinarResenas } from "../utils/negocios.js";
 import { sincronizarCobertura } from "../utils/asistente.js";
@@ -10,14 +13,24 @@ const router = express.Router();
 router.use(identificar);
 
 // Datos internos que NUNCA salen en las respuestas públicas
-const SECRETOS = ["ownerId", "ownerEmail", "ownerCode", "colabCode", "suscripcion", "pendientePago", "asistenteCodigo", "geoIntentos"];
+const SECRETOS = ["ownerId", "ownerEmail", "ownerCode", "colabCode", "suscripcion", "pendientePago", "asistenteCodigo", "geoIntentos", "duenoEnPerfil", "duenoEnFicha"];
+
+// Lo que decide el dueño en Privacidad. Para el público, el WhatsApp apagado NO sale (ni el número ni el botón): solo se avisa que está oculto.
+export const whatsappVisible = (b) => b?.mostrarWhatsapp !== false;
+export const apareceEnBusquedas = (b) => b?.apareceEnBusquedas !== false;
 
 function limpiarSalida(doc, { completo = false } = {}) {
   const obj = doc.toObject ? doc.toObject() : { ...doc };
-  if (!completo) SECRETOS.forEach((k) => delete obj[k]);
-  else if (obj.suscripcion) {
-    // ni siquiera al dueño le mostramos el historial interno de pagos
-    obj.suscripcion = { plan: obj.suscripcion.plan, origen: obj.suscripcion.origen };
+  if (!completo) {
+    SECRETOS.forEach((k) => delete obj[k]);
+    if (!whatsappVisible(obj)) { delete obj.phone; obj.acceptsWhatsapp = false; obj.whatsappOculto = true; }
+    delete obj.mostrarWhatsapp; delete obj.apareceEnBusquedas;
+  } else {
+    obj.mostrarWhatsapp = whatsappVisible(obj); obj.apareceEnBusquedas = apareceEnBusquedas(obj);
+    if (obj.suscripcion) {
+      // ni siquiera al dueño le mostramos el historial interno de pagos
+      obj.suscripcion = { plan: obj.suscripcion.plan, origen: obj.suscripcion.origen };
+    }
   }
   delete obj.__v;
   // la huella interna de quien escribió cada reseña nunca sale
@@ -39,8 +52,20 @@ router.get("/", async (req, res) => {
         { $set: { status: "inactive" } }
       );
     }
-    const list = await Business.find({ pendientePago: { $ne: true } });
-    res.json(list.map((b) => limpiarSalida(b)));
+    // las fichas que su dueño sacó de las búsquedas no salen en ningún listado público
+    const list = await Business.find({ pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false } });
+    // "Dueño: @usuario" solo aparece si el dueño lo activó para esa ficha Y su perfil es visible
+    const idsDuenos = [...new Set(list.filter((b) => b.duenoEnFicha && b.ownerId && mongoose.isValidObjectId(b.ownerId)).map((b) => b.ownerId))];
+    const duenos = new Map();
+    if (idsDuenos.length) {
+      const us = await Usuario.find({ _id: { $in: idsDuenos }, "privacidad.perfilVisible": { $ne: false }, usuario: { $gt: "" } }).select("usuario").lean();
+      us.forEach((x) => duenos.set(String(x._id), x.usuario));
+    }
+    res.json(list.map((b) => {
+      const salida = limpiarSalida(b);
+      const dueno = b.duenoEnFicha ? duenos.get(String(b.ownerId)) : null;
+      return dueno ? { ...salida, dueno } : salida;
+    }));
   } catch (e) {
     res.status(500).json({ error: "Error del servidor" });
   }
@@ -84,6 +109,8 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
     const biz = await Business.findOne({ id: String(req.params.id) });
     if (!biz) return res.status(404).json({ error: "Negocio no encontrado" });
     const esDueno = actor?.tipo === "usuario" && !!biz.ownerId && biz.ownerId === String(actor.usuario._id);
+    // una ficha oculta de las búsquedas (o que todavía espera el pago) no se puede ver ni tocar desde afuera, aunque se conozca su id
+    if (!esDueno && (biz.pendientePago || !apareceEnBusquedas(biz))) return res.status(404).json({ error: "Negocio no encontrado" });
 
     const cambios = esDueno ? sanearNegocio(body) : {};
     // visitas: solo puede subir de a una por pedido (evita inflar el ranking de un golpe)
@@ -110,6 +137,41 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "No se pudo guardar el negocio." });
+  }
+});
+
+// PUT /api/businesses/:id/dueno   { enPerfil?, enFicha? }  → el dueño elige (y puede desactivar cuando quiera) si se muestra
+// "Dueño de: [negocio]" en su perfil y "Dueño: @usuario" en la ficha. Son dos opciones independientes. Solo el dueño puede cambiarlas.
+router.put("/:id/dueno", requiereUsuario, limitar("dueno", 60, 3600 * 1000), async (req, res) => {
+  try {
+    const biz = await Business.findOne({ id: String(req.params.id) });
+    if (!biz || !biz.ownerId || biz.ownerId !== String(req.actor.usuario._id)) return res.status(404).json({ error: "Negocio no encontrado" });
+    if (typeof req.body?.enPerfil === "boolean") biz.duenoEnPerfil = req.body.enPerfil;
+    if (typeof req.body?.enFicha === "boolean") biz.duenoEnFicha = req.body.enFicha;
+    await biz.save();
+    res.json({ duenoEnPerfil: !!biz.duenoEnPerfil, duenoEnFicha: !!biz.duenoEnFicha });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar." });
+  }
+});
+
+// PUT /api/businesses/:id/privacidad   { mostrarWhatsapp?, apareceEnBusquedas? }  → el dueño decide, ficha por ficha, si se muestra el WhatsApp
+// al público y si la ficha aparece en búsquedas y listados. Solo el dueño puede cambiarlo y solo se aceptan valores true/false.
+router.put("/:id/privacidad", requiereUsuario, limitar("privacidad-ficha", 60, 3600 * 1000), async (req, res) => {
+  try {
+    const biz = await Business.findOne({ id: String(req.params.id) });
+    if (!biz || !biz.ownerId || biz.ownerId !== String(req.actor.usuario._id)) return res.status(404).json({ error: "Negocio no encontrado" });
+    const { mostrarWhatsapp, apareceEnBusquedas: aparece } = req.body || {};
+    const hayCambio = typeof mostrarWhatsapp === "boolean" || typeof aparece === "boolean";
+    if (!hayCambio) return res.status(400).json({ error: "No hay nada para cambiar." });
+    if (typeof mostrarWhatsapp === "boolean") biz.mostrarWhatsapp = mostrarWhatsapp;
+    if (typeof aparece === "boolean") biz.apareceEnBusquedas = aparece;
+    await biz.save();
+    res.json({ mostrarWhatsapp: whatsappVisible(biz), apareceEnBusquedas: apareceEnBusquedas(biz) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar." });
   }
 });
 
@@ -140,6 +202,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(403).json({ error: "No tenés permiso para eliminar este negocio." });
     }
     await Business.deleteOne({ id: String(req.params.id) });
+    await Evento.deleteMany({ bizId: biz.id }); // sus estadísticas se van con la ficha (igual que al eliminar la cuenta)
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: "Error del servidor" });

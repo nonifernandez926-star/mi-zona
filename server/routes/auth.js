@@ -15,6 +15,7 @@ import { permitir, olvidar } from "../utils/limitador.js";
 import CodigoCorreo from "../models/CodigoCorreo.js";
 import { enviarCodigoIngreso } from "../utils/correo.js";
 import { validarUsuario, validarContrasena, normalizarUsuario } from "../utils/credenciales.js";
+import { declaracionPendiente, errorDeclaracion, aplicarDeclaracion, localidadDe } from "../utils/perfil.js";
 
 const router = express.Router();
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -32,7 +33,12 @@ async function separarClaves(u) {
     await u.save();
   }
 }
-const usuarioPublico = (u) => ({ id: String(u._id), email: u.email, usuario: u.usuario || "", nombre: u.nombre, conClave: !!(u.passwordHash || u.claveZona) });
+const usuarioPublico = (u) => ({
+  id: String(u._id), email: u.email, usuario: u.usuario || "", nombre: u.nombre, conClave: !!(u.passwordHash || u.claveZona),
+  // true hasta que la persona confirme que es mayor de 18, acepte los términos y elija su localidad
+  declaracionPendiente: declaracionPendiente(u),
+  localidad: localidadDe(u), descripcion: u.descripcion || "", foto: u.foto || "", perfilVisible: u.privacidad?.perfilVisible !== false,
+});
 
 // Une a la cuenta los negocios que tengan su email como dueño (negocios cargados antes de que existiera el login).
 async function vincularNegociosPorEmail(usuario) {
@@ -301,6 +307,12 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
     const errClave = pedirClave ? validarContrasena(password, nuevo) : "";
     if (errClave) return res.status(400).json({ error: errClave, codigo: "clave_invalida" });
     if (await Usuario.findOne({ usuario: nuevo, _id: { $ne: u._id } })) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
+    // Cuentas nuevas (y viejas sin declaración): hace falta confirmar los 18 años, aceptar los términos y elegir la localidad
+    const exigeDeclaracion = declaracionPendiente(u);
+    if (exigeDeclaracion) {
+      const errDeclaracion = errorDeclaracion(req.body);
+      if (errDeclaracion) return res.status(400).json(errDeclaracion);
+    }
     if (req.body?.nombre !== undefined) {
       const nombre = String(req.body.nombre || "").replace(/\s+/g, " ").trim();
       if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
@@ -309,12 +321,30 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
     u.usuario = nuevo;
     if (!u.nombre) u.nombre = nuevo; // ya no se pide el nombre: alcanza con el usuario
     if (pedirClave) u.claveZona = await hashearContrasena(password);
+    if (exigeDeclaracion) aplicarDeclaracion(u, req.body);
     await u.save();
     await registrarActividad(u._id, "usuario_creado", req);
     res.json({ usuario: usuarioPublico(u) });
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: "Ese usuario ya está ocupado. Elegí otro.", codigo: "usuario_existente" });
     console.error("Error al completar la cuenta:", e.message);
+    res.status(500).json({ error: "No se pudo guardar. Probá de nuevo." });
+  }
+});
+
+// PUT /api/auth/declaracion   { declaracion: { mayor18: true, terminos: true }, localidad }
+// Para las cuentas que ya existían: confirman que son mayores de 18, aceptan los términos y eligen su localidad.
+router.put("/declaracion", identificar, requiereUsuario, async (req, res) => {
+  try {
+    const u = req.actor.usuario;
+    if (!(await permitir(`declaracion|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000))) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
+    const err = errorDeclaracion(req.body);
+    if (err) return res.status(400).json(err);
+    aplicarDeclaracion(u, req.body);
+    await u.save();
+    res.json({ usuario: usuarioPublico(u) });
+  } catch (e) {
+    console.error("Error al guardar la declaración:", e.message);
     res.status(500).json({ error: "No se pudo guardar. Probá de nuevo." });
   }
 });

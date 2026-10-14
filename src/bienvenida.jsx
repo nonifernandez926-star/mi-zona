@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, UtensilsCrossed, HeartPulse, Wrench, Home, ShoppingBag, Scissors, Eye, EyeOff, Check } from "lucide-react";
 import "./bienvenida.css";
-import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, pedirCodigoCorreo, entrarConCodigo, completarCuenta, usuarioDisponible } from "./api.js";
+import { cargarGoogle, pedirCuentaGoogle, loginConGoogle, entrarConUsuario, pedirCodigoCorreo, entrarConCodigo, completarCuenta, guardarDeclaracion, usuarioDisponible } from "./api.js";
+import SelectorLocalidad from "./selectorLocalidad.jsx";
 import { validarUsuario, validarContrasena, requisitosContrasena, normalizarUsuario } from "./credenciales.js";
 
 const RUBROS = [
@@ -61,9 +62,29 @@ const GoogleG = () => (
 );
 
 // ---------- paso final: primero el usuario, después la contraseña ----------
-function FormCrear({ pedirNombre, pedirClave = true, nombreInicial = "", onListo }) {
+// Localidad + confirmar los 18 años + aceptar los términos. Se pide una sola vez, al registrarse (o a las cuentas viejas, la próxima vez que entran).
+// No se pregunta edad ni fecha de nacimiento: alcanza con la casilla.
+function BloqueDeclaracion({ loc, onLoc, mayor, onMayor, terminos, onTerminos }) {
+  return (
+    <>
+      <div className="bv-campo">
+        <p style={{ margin: "0 0 8px", fontSize: ".78rem", fontWeight: 700, color: "#2b3768" }}>¿Dónde estás?</p>
+        <SelectorLocalidad valor={loc} onChange={onLoc} />
+      </div>
+      <label className="bv-check"><input type="checkbox" checked={mayor} onChange={(e) => onMayor(e.target.checked)} /><span>Tengo 18 años o más.</span></label>
+      <label className="bv-check"><input type="checkbox" checked={terminos} onChange={(e) => onTerminos(e.target.checked)} />
+        <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener noreferrer">Términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label>
+    </>
+  );
+}
+
+function FormCrear({ pedirNombre, pedirClave = true, pedirDeclaracion = false, nombreInicial = "", onListo }) {
   const [nombre, setNombre] = useState(nombreInicial);
-  const [paso, setPaso] = useState("usuario"); // usuario | clave
+  const [loc, setLoc] = useState(null);
+  const [mayor, setMayor] = useState(false);
+  const [terminos, setTerminos] = useState(false);
+  const declOk = !pedirDeclaracion || (!!loc && mayor && terminos);
+  const [paso, setPaso] = useState(pedirDeclaracion ? "datos" : "usuario"); // datos | usuario | clave
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [ver, setVer] = useState(false);
@@ -99,9 +120,11 @@ function FormCrear({ pedirNombre, pedirClave = true, nombreInicial = "", onListo
   const guardar = async () => {
     setBusy(true); setError("");
     try {
-      onListo(await completarCuenta(normalizarUsuario(usuario), pedirClave ? clave : "", pedirNombre ? nombre.trim() : undefined));
+      const extra = pedirDeclaracion ? { declaracion: { mayor18: mayor, terminos }, localidad: loc } : undefined;
+      onListo(await completarCuenta(normalizarUsuario(usuario), pedirClave ? clave : "", pedirNombre ? nombre.trim() : undefined, extra));
     } catch (err) {
-      if (err.datos?.codigo === "usuario_existente") { setDisp({ estado: "ocupado", msg: err.message }); setPaso("usuario"); }
+      if (["mayor18_requerido", "terminos_requeridos", "localidad_invalida"].includes(err.datos?.codigo)) { setError(err.message); setPaso("datos"); }
+      else if (err.datos?.codigo === "usuario_existente") { setDisp({ estado: "ocupado", msg: err.message }); setPaso("usuario"); }
       else setError(err.message);
       setBusy(false);
     }
@@ -109,6 +132,15 @@ function FormCrear({ pedirNombre, pedirClave = true, nombreInicial = "", onListo
   const alUsuario = (e) => { e.preventDefault(); if (!usuarioOk || !nombreOk || busy) return; if (pedirClave) { setError(""); setPaso("clave"); } else guardar(); };
   const alClave = (e) => { e.preventDefault(); if (!clave || errClave || busy) return; guardar(); };
 
+  if (paso === "datos") {
+    return (
+      <form className="bv-form" onSubmit={(e) => { e.preventDefault(); if (declOk) { setError(""); setPaso("usuario"); } }} noValidate>
+        <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} />
+        {error && <p className="bv-error" role="alert">{error}</p>}
+        <button className="bv-enviar" type="submit" disabled={!declOk}>Continuar</button>
+      </form>
+    );
+  }
   if (paso === "clave") {
     return (
       <form className="bv-form" onSubmit={alClave} noValidate>
@@ -129,6 +161,7 @@ function FormCrear({ pedirNombre, pedirClave = true, nombreInicial = "", onListo
   }
   return (
     <form className="bv-form" onSubmit={alUsuario} noValidate>
+      {pedirDeclaracion && loc && <div className="bv-fijo"><span>{loc.localidad}, {loc.provincia}</span><button type="button" className="bv-link" onClick={() => setPaso("datos")}>Cambiar</button></div>}
       {pedirNombre && (
         <div className="bv-campo"><label htmlFor="bv-nombre">Tu nombre</label>
           <div className="caja"><input id="bv-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} autoComplete="name" placeholder="Cómo te llamás" /></div></div>
@@ -153,9 +186,40 @@ export function PantallaCrearUsuario({ usuario, onListo, onSalir }) {
       <div className="bv-pantalla">
         <div className="bv-barra"><Marca />{onSalir && <button className="bv-link" style={{ marginLeft: "auto", color: "var(--azul-palido)", fontSize: ".85rem" }} onClick={onSalir}>Salir</button>}</div>
         <div className="bv-hoja">
-          <h2>Último paso: creá tu usuario</h2>
-          <p className="bv-sub">{usuario?.conClave ? "Elegí un usuario para entrar más fácil. Tu contraseña de siempre no cambia." : "Con tu usuario y contraseña vas a poder entrar a Mi Zona cuando quieras, además de Google."}</p>
-          <FormCrear pedirNombre={false} pedirClave={!usuario?.conClave} onListo={onListo} />
+          <h2>{usuario?.declaracionPendiente ? "Último paso: completá tu cuenta" : "Último paso: creá tu usuario"}</h2>
+          <p className="bv-sub">{usuario?.declaracionPendiente ? "Contanos dónde estás, confirmá estos datos y elegí tu usuario." : usuario?.conClave ? "Elegí un usuario para entrar más fácil. Tu contraseña de siempre no cambia." : "Con tu usuario y contraseña vas a poder entrar a Mi Zona cuando quieras, además de Google."}</p>
+          <FormCrear pedirNombre={false} pedirClave={!usuario?.conClave} pedirDeclaracion={!!usuario?.declaracionPendiente} onListo={onListo} />
+        </div>
+      </div></div>
+  );
+}
+
+// Para las cuentas que ya existían y todavía no confirmaron que son mayores de 18, ni aceptaron los términos, ni eligieron su localidad.
+export function PantallaDeclaracion({ onListo, onSalir }) {
+  const [loc, setLoc] = useState(null);
+  const [mayor, setMayor] = useState(false);
+  const [terminos, setTerminos] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const listo = !!loc && mayor && terminos;
+  const guardar = async (e) => {
+    e.preventDefault();
+    if (!listo || busy) return;
+    setBusy(true); setError("");
+    try { onListo(await guardarDeclaracion(loc)); } catch (err) { setError(err.message); setBusy(false); }
+  };
+  return (
+    <div className="bv"><div className="bv-fondo" aria-hidden="true"><i /><i /><i /></div>
+      <div className="bv-pantalla">
+        <div className="bv-barra"><Marca />{onSalir && <button className="bv-link" style={{ marginLeft: "auto", color: "var(--azul-palido)", fontSize: ".85rem" }} onClick={onSalir}>Salir</button>}</div>
+        <div className="bv-hoja">
+          <h2>Antes de seguir</h2>
+          <p className="bv-sub">Para seguir usando Mi Zona, confirmá estos datos. Es una sola vez.</p>
+          <form className="bv-form" onSubmit={guardar} noValidate>
+            <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} />
+            {error && <p className="bv-error" role="alert">{error}</p>}
+            <button className="bv-enviar" type="submit" disabled={!listo || busy}>{busy ? "Guardando..." : "Guardar y seguir"}</button>
+          </form>
         </div>
       </div></div>
   );
@@ -304,7 +368,7 @@ export function PantallaBienvenida({ onLogged }) {
           {vista === "crear" && (<>
             <h2>Creá tu usuario</h2>
             <p className="bv-sub">Casi listo{datosGoogle?.usuario?.email ? `: tu cuenta de Google es ${datosGoogle.usuario.email}` : ""}. Elegí cómo vas a entrar a Mi Zona.</p>
-            <FormCrear pedirNombre={false} pedirClave={!datosGoogle?.usuario?.conClave} onListo={onLogged} />
+            <FormCrear pedirNombre={false} pedirClave={!datosGoogle?.usuario?.conClave} pedirDeclaracion={!!datosGoogle?.usuario?.declaracionPendiente} onListo={onLogged} />
           </>)}
         </div>
       </div></div>

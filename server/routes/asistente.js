@@ -140,7 +140,7 @@ router.post("/buscar", identificar, limitar("buscar", 30, 10 * 60 * 1000), async
     }
 
     // Traemos los negocios activos para que el asistente pueda recomendar entre ellos
-    const negocios = await Business.find({ status: "active", kind: { $ne: "job" } })
+    const negocios = await Business.find({ status: "active", kind: { $ne: "job" }, pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false } })
       .select("id name cat zone desc services specialties loc lat lng delivery")
       .limit(300);
 

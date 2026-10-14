@@ -179,8 +179,38 @@ export const seguridadApi = {
 // Usuario y contraseña propios (además de Google)
 export const entrarConUsuario = (identificador, password) => accesoConCorreo("/auth/login", { identificador, password });
 export const usuarioDisponible = (u) => pedirJSON(`/auth/usuario-disponible?u=${encodeURIComponent(u)}`, { method: "GET" }, {});
-export const completarCuenta = (usuario, password, nombre) =>
-  enviarUsuarioJSON("/auth/completar", "PUT", { usuario, password, ...(nombre !== undefined ? { nombre } : {}) }).then((r) => r.usuario);
+// extra: { declaracion: { mayor18: true, terminos: true }, localidad } cuando la cuenta todavía no la hizo (registro nuevo)
+export const completarCuenta = (usuario, password, nombre, extra) =>
+  enviarUsuarioJSON("/auth/completar", "PUT", { usuario, password, ...(nombre !== undefined ? { nombre } : {}), ...(extra || {}) }).then((r) => r.usuario);
+// Cuentas que ya existían: confirman que son mayores de 18, aceptan los términos y eligen su localidad
+export const guardarDeclaracion = (localidad) =>
+  enviarUsuarioJSON("/auth/declaracion", "PUT", { declaracion: { mayor18: true, terminos: true }, localidad }).then((r) => r.usuario);
+// Perfil público (ver el de cualquiera, editar el mío) y qué muestra cada negocio sobre su dueño
+export const perfilesApi = {
+  ver: (usuario) => pedirJSON(`/perfiles/${encodeURIComponent(usuario)}`, { method: "GET" }, {}).then((r) => r.perfil),
+  guardarMio: (cambios) => enviarUsuarioJSON("/perfiles/mio", "PUT", cambios).then((r) => r.perfil),
+  duenoNegocio: (id, cambios) => enviarUsuarioJSON(`/businesses/${encodeURIComponent(id)}/dueno`, "PUT", cambios),
+  // Lo mismo para cualquier ficha: tipo "negocio" o "oficio". Cada ficha tiene sus propios interruptores (el servidor valida y solo el dueño puede cambiarlos).
+  //   dueno: { enPerfil?, enFicha? } · privacidad: { mostrarWhatsapp?, apareceEnBusquedas? }
+  duenoFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${tipo === "oficio" ? "oficios" : "businesses"}/${encodeURIComponent(id)}/dueno`, "PUT", cambios),
+  privacidadFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${tipo === "oficio" ? "oficios" : "businesses"}/${encodeURIComponent(id)}/privacidad`, "PUT", cambios),
+};
+// Oficios y servicios: listado público, MI ficha (una por persona) y su gestión. Todo lo valida el servidor.
+const consulta = (f) => { const p = new URLSearchParams(); Object.entries(f || {}).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") p.set(k, v); }); return p.toString(); };
+export const oficiosApi = {
+  listar: (filtros) => pedirJSON(`/oficios?${consulta(filtros)}`, { method: "GET" }, {}), // { oficios, total, pagina, hayMas }
+  ver: (id) => pedirJSON(`/oficios/${encodeURIComponent(id)}`, { method: "GET" }, {}).then((r) => r.oficio),
+  // Enlace oficial de WhatsApp con el mensaje inicial. El número solo se entrega al tocar el botón; Mi Zona no envía nada.
+  contacto: (id, mensaje) => pedirJSON(`/oficios/${encodeURIComponent(id)}/contacto`, { method: "POST", body: JSON.stringify({ mensaje }) }, { "Content-Type": "application/json" }).then((r) => r.url),
+  mio: () => getUsuarioJSON("/oficios/mio").then((r) => r.oficio),
+  crear: (datos) => enviarUsuarioJSON("/oficios", "POST", datos).then((r) => r.oficio),
+  editar: (id, datos) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}`, "PUT", datos).then((r) => r.oficio),
+  estado: (id, status) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}/estado`, "PUT", { status }).then((r) => r.oficio),
+  disponibilidad: (id, disponible) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}/disponibilidad`, "PUT", { disponible }).then((r) => r.oficio),
+  eliminar: (id) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}`, "DELETE", {}),
+};
+// Eliminar un negocio propio (solo su dueño; la web pide confirmación antes)
+export const eliminarNegocio = (id) => enviarUsuarioJSON(`/businesses/${encodeURIComponent(id)}`, "DELETE", {});
 export const guardarUsuario = (usuario) => enviarUsuarioJSON("/auth/perfil", "PUT", { usuario }).then((r) => r.usuario);
 export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT", { nombre }).then((r) => r.usuario);
 

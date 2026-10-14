@@ -37,6 +37,15 @@ const businessSchema = new mongoose.Schema(
     asistenteActivo: { type: Boolean, default: false },
     // Dueño: se identifica por su cuenta de Google (ya no hay códigos de dueño ni de colaborador)
     ownerId: { type: String, index: true },
+    // El dueño decide (y puede desactivar cuando quiera): que su perfil muestre "Dueño de: este negocio" y que la ficha muestre "Dueño: @usuario"
+    duenoEnPerfil: { type: Boolean, default: false },
+    duenoEnFicha: { type: Boolean, default: false },
+    // Privacidad de la ficha (la decide el dueño en Ajustes → Privacidad; el servidor la hace respetar en lo que sale al público):
+    //  · mostrarWhatsapp: si está apagado, el teléfono/WhatsApp del negocio NO sale al público (sigue siendo obligatorio al cargarlo)
+    //  · apareceEnBusquedas: si está apagado, la ficha no sale en búsquedas ni listados; el dueño la sigue viendo en sus negocios
+    // Las fichas anteriores no tienen estos campos: se toman como "encendido".
+    mostrarWhatsapp: { type: Boolean, default: true },
+    apareceEnBusquedas: { type: Boolean, default: true },
     ownerEmail: { type: String, index: true }, // permite que el admin asigne un negocio viejo a una cuenta de Google
     // Suscripción del negocio en Mi Zona. expiresAt (YYYY-MM-DD) es la fecha de vencimiento real.
     pendientePago: { type: Boolean, default: false }, // cargado pero todavía sin pagar → no se muestra al público

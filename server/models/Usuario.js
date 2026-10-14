@@ -20,6 +20,20 @@ const usuarioSchema = new mongoose.Schema(
     // (la contraseña de correo, que también usa Mi Asistente): así las dos nunca se mezclan ni se pisan.
     claveZona: { type: String, default: "" },
     sesionClienteId: { type: String, default: "" },
+    // Declaración al registrarse. NO se guarda edad ni fecha de nacimiento: solo que declaró tener 18 años o más y cuándo aceptó los términos.
+    mayor18: { type: Boolean, default: false },
+    mayor18Fecha: { type: Date, default: null },
+    terminosAceptadosEn: { type: Date, default: null },
+    terminosVersion: { type: String, default: "" },
+    // Perfil público sencillo (nombre, foto opcional, localidad y descripción opcional). El correo y el teléfono nunca se muestran.
+    descripcion: { type: String, default: "" },
+    foto: { type: String, default: "" }, // foto subida a Cloudinary (opcional)
+    // Localidad del catálogo oficial (Georef): sirve para filtrar y para mostrar Comunidad por departamento
+    localidad: {
+      provinciaId: { type: String, default: "" }, provincia: { type: String, default: "" },
+      departamentoId: { type: String, default: "" }, departamento: { type: String, default: "" },
+      localidadId: { type: String, default: "" }, localidad: { type: String, default: "" },
+    },
     // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
     tokenVersion: { type: Number, default: 0 },
     // Alertas de seguridad (Seguridad → Alertas de inicio de sesión): avisos por notificación cuando entran a la cuenta desde un dispositivo nuevo
@@ -39,6 +53,7 @@ const usuarioSchema = new mongoose.Schema(
       ubicacionBusqueda: { type: Boolean, default: true }, // usar mi ubicación para ordenar negocios por cercanía
       chatsBusqueda: { type: Boolean, default: true }, // usar un resumen de mis últimos chats para recomendarme
       iaAgenda: { type: Boolean, default: true }, // permitir que la IA lea mi agenda para organizar, interpretar y responder
+      perfilVisible: { type: Boolean, default: true }, // que otras personas puedan ver mi perfil (si se apaga, solo se ve que es privado)
     },
   },
   { timestamps: true }

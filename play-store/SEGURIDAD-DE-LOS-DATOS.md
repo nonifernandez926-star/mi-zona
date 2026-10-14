@@ -11,9 +11,9 @@ Armado a partir de lo que el código hace hoy. **Verificalo vos**: Google compar
 ## Datos que se recopilan
 | Tipo | Dato | Para qué | ¿Se comparte con terceros? | ¿Opcional? |
 |---|---|---|---|---|
-| Información personal | Nombre, correo, ID de usuario | Funciones de la app, cuenta | Google (inicio de sesión) | No |
+| Información personal | Nombre, correo, ID de usuario; si ofrecés tus servicios: nombre de la ficha, localidad y, opcionalmente, dirección y WhatsApp (públicos mientras la ficha esté activa) | Funciones de la app, cuenta | Google (inicio de sesión) | No |
 | Ubicación | Aproximada y precisa | Funciones de la app (cercanía, clima) | Open-Meteo recibe ubicación aproximada | Sí |
-| Fotos y videos | Fotos de negocio; fotos de agenda (se analizan y se descartan) | Funciones de la app | Cloudinary (fotos de negocio), proveedor de IA (agenda) | Sí |
+| Fotos y videos | Fotos de negocio; logo y fotos de trabajos de la ficha de oficios; fotos de agenda (se analizan y se descartan) | Funciones de la app | Cloudinary (fotos de negocio), proveedor de IA (agenda) | Sí |
 | Mensajes | Chats con el asistente de un negocio y reseñas | Funciones de la app | Mi Asistente | Sí |
 | Actividad en la app | Visitas, guardados y contactos a un negocio; búsquedas con el asistente | Funciones y estadísticas del negocio | Proveedor de IA (búsquedas) | No |
 | Identificadores | ID de cliente del dispositivo y suscripción a notificaciones | Notificaciones y seguridad | No | Sí |
