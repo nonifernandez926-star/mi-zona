@@ -12,7 +12,7 @@ import {
   Croissant, Droplet, Printer, KeyRound, Scissors, Package, Gift, HardHat,
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
-  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff,
+  Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
@@ -36,7 +36,8 @@ import BuscadorScreen from "./buscador.jsx";
 import FavoritosPantalla from "./favoritosPantalla.jsx";
 import { compartirFicha, compartirTexto, textoInvitacion, avisoDeCompartir, usePulsacionLarga, ESTILO_PULSACION } from "./compartir.js";
 import { registrarFavNegocio, borrarFavFichas } from "./favoritos.js";
-import { oficiosApi, alquileresApi, eliminarNegocio } from "./api.js";
+import { oficiosApi, alquileresApi, comunidadApi, eliminarNegocio } from "./api.js";
+import { ComunidadScreen, DetalleComunidad, FormularioComunidad, PasoPublicado } from "./comunidad.jsx";
 import { uploadImage } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
@@ -2039,7 +2040,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenAlquileres, onBuscarTodo, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenAlquileres, onOpenComunidad, onBuscarTodo, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2220,6 +2221,15 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             </span>
           </button>
         </div>
+        {onOpenComunidad && (
+          <button onClick={onOpenComunidad} className="flex items-center gap-2.5 text-left bg-white w-full mt-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#DDF3EA" }}><Users size={20} color="#1E6B44" /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437" }}>Comunidad</span>
+              <span className="block text-[11px] leading-tight mt-0.5" style={{ color: "#5B6482" }}>Avisos, perdidos, regalos y eventos de tu zona</span>
+            </span>
+          </button>
+        )}
       </div>
     </>
   );
@@ -4751,6 +4761,16 @@ export default function MiZona() {
       if (mias.length >= 5) setMisFichasAbierto(true); else setAlquilerForm({ inicial: null });
     } catch { setAlquilerForm({ inicial: null }); }
   };
+  // Comunidad: hace falta cuenta y localidad (de ahí sale el departamento que ve lo publicado)
+  const abrirComunidad = () => {
+    if (!requerirSesion("Para ver Comunidad necesitás una cuenta de Mi Zona. Es rápido y gratis.", null)) return;
+    setComunidadAbierta(true);
+  };
+  const abrirPublicarComunidad = (tipo = null, titulo = "") => {
+    if (!requerirSesion("Para publicar en Comunidad necesitás una cuenta de Mi Zona. Es rápido y gratis.", null)) return;
+    if (!usuario?.localidad?.localidadId) { alert("Para publicar en Comunidad elegí primero tu localidad en tu perfil."); return; }
+    setComunidadForm({ inicial: null, tipo, titulo });
+  };
   // Eliminar un negocio propio (la confirmación la pide "Mis fichas")
   const eliminarNegocioPropio = async (id) => {
     await eliminarNegocio(id);
@@ -4869,6 +4889,14 @@ export default function MiZona() {
   const [showRanking, setShowRanking] = useState(false);
   const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
+  // Comunidad (Fase 7): se ve solo si el servidor la tiene habilitada (se enciende al completar la moderación, Fase 8)
+  const [comunidadHabilitada, setComunidadHabilitada] = useState(false);
+  const [comunidadAbierta, setComunidadAbierta] = useState(false);
+  const [comunidadVer, setComunidadVer] = useState(null); // { id }
+  const [comunidadForm, setComunidadForm] = useState(null); // { inicial, tipo, titulo }
+  const [comunidadPublicada, setComunidadPublicada] = useState(null); // publicación recién creada
+  const [comunidadVersion, setComunidadVersion] = useState(0); // sube cuando algo cambia, para refrescar la lista
+  useEffect(() => { comunidadApi.estado().then(setComunidadHabilitada); }, []);
   const [buscador, setBuscador] = useState(null); // { inicial } cuando está abierto el buscador único (Fase 6)
   const [pasoNegocio, setPasoNegocio] = useState(null); // negocio recién activado: se le muestra el paso de compartir
   // Mis pedidos: lista con el estado de cada pedido (viene de Mi Asistente) y su recarga
@@ -5176,6 +5204,10 @@ export default function MiZona() {
     [!!selectedId, () => setSelectedId(null)],
     [showFavoritos, () => setShowFavoritos(false)],
     [!!buscador, () => setBuscador(null)],
+    [comunidadAbierta, () => setComunidadAbierta(false)],
+    [!!comunidadVer, () => setComunidadVer(null)],
+    [!!comunidadForm, () => setComunidadForm(null)],
+    [!!comunidadPublicada, () => setComunidadPublicada(null)],
     [showMapa, () => setShowMapa(false)],
     [showRanking, () => setShowRanking(false)],
     [showAgenda, () => setShowAgenda(false)],
@@ -5448,6 +5480,7 @@ export default function MiZona() {
           onOpenOficios={() => setOficiosAbierto(true)}
           onOpenAlquileres={() => setAlquileresAbierto(true)}
           onBuscarTodo={(q) => setBuscador({ inicial: q })}
+          onOpenComunidad={comunidadHabilitada ? abrirComunidad : undefined}
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
           onAjustes={() => irATab("ajustes")}
@@ -5518,6 +5551,7 @@ export default function MiZona() {
             onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
             onVerAlquiler={(id) => setAlquilerVer({ id })} onEditarAlquiler={(a) => setAlquilerForm({ inicial: a })} onCrearAlquiler={() => setAlquilerForm({ inicial: null })}
             onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }}
+            comunidad={comunidadHabilitada ? { onVer: (id) => setComunidadVer({ id }), onEditar: (p) => setComunidadForm({ inicial: p, tipo: p.tipo }), onPublicar: (t) => abrirPublicarComunidad(t) } : undefined}
           />
         </div>
       )}
@@ -5539,7 +5573,30 @@ export default function MiZona() {
             onVolver={() => setBuscador(null)}
             onAbrirNegocio={(id) => { setBuscador(null); openDetail(id); }}
             onAbrirOficio={(id, rubro) => setOficioVer({ id, rubro })} onAbrirAlquiler={(id) => setAlquilerVer({ id })}
+            onPublicarNecesidad={comunidadHabilitada ? (q) => abrirPublicarComunidad("ayuda", q) : undefined}
           />
+        </div>
+      )}
+      {comunidadAbierta && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <ComunidadScreen usuario={usuario} refrescarKey={comunidadVersion} onVolver={() => setComunidadAbierta(false)} onAbrir={(id) => setComunidadVer({ id })}
+            onPublicar={(t) => abrirPublicarComunidad(t)} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }} />
+        </div>
+      )}
+      {comunidadVer && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <DetalleComunidad key={comunidadVer.id + comunidadVersion} id={comunidadVer.id} onVolver={() => setComunidadVer(null)} onEditar={(p) => setComunidadForm({ inicial: p, tipo: p.tipo })} onCambio={() => { setComunidadVersion((v) => v + 1); setFichasVersion((v) => v + 1); }} />
+        </div>
+      )}
+      {comunidadForm && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <FormularioComunidad inicial={comunidadForm.inicial} tipoInicial={comunidadForm.tipo} tituloInicial={comunidadForm.titulo || ""} usuario={usuario} onCancelar={() => setComunidadForm(null)}
+            onGuardado={(p, nueva) => { setComunidadForm(null); setComunidadVersion((v) => v + 1); setFichasVersion((v) => v + 1); if (nueva) setComunidadPublicada(p); }} />
+        </div>
+      )}
+      {comunidadPublicada && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <PasoPublicado publicacion={comunidadPublicada} onVer={() => { setComunidadVer({ id: comunidadPublicada.id }); setComunidadPublicada(null); }} onListo={() => { setComunidadPublicada(null); setComunidadAbierta(true); }} />
         </div>
       )}
       {oficioVer && (
@@ -5675,6 +5732,21 @@ export default function MiZona() {
                 <span className="block text-xs" style={{ color: "#5B6482" }}>Casas, salones, sillas, herramientas... armá tu ficha con sus artículos.</span>
               </span>
             </button>
+            {comunidadHabilitada && (
+              <button
+                onClick={() => { setShowAddSheet(false); abrirPublicarComunidad(null); }}
+                className="w-full flex items-center gap-3 p-3.5 text-left mt-3"
+                style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
+              >
+                <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#DDF3EA" }}>
+                  <Users size={19} color="#1E6B44" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Publicar en Comunidad</span>
+                  <span className="block text-xs" style={{ color: "#5B6482" }}>Un aviso, algo perdido, un regalo, un evento... Es gratis.</span>
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -34,7 +34,7 @@ const TIPOS = [["todo", "Todo"], ["negocios", "Negocios"], ["oficios", "Oficios"
 const rubrosTexto = (o) => { const n = [...(o.rubros || []).map((r) => r.label), ...(o.otros || [])]; return n.length > 2 ? `${n.slice(0, 2).join(", ")} +${n.length - 2}` : n.join(", "); };
 const tiposTexto = (a) => { const n = (a.tipos || []).map((t) => t.label); return n.length > 2 ? `${n.slice(0, 2).join(", ")} +${n.length - 2}` : n.join(", "); };
 
-export default function BuscadorScreen({ usuario, inicial = "", negocios = [], categoriasNegocio = [], onVolver, onAbrirNegocio, onAbrirOficio, onAbrirAlquiler }) {
+export default function BuscadorScreen({ usuario, inicial = "", negocios = [], categoriasNegocio = [], onVolver, onAbrirNegocio, onAbrirOficio, onAbrirAlquiler, onPublicarNecesidad }) {
   const [q, setQ] = useState(inicial);
   const [qFinal, setQFinal] = useState(inicial.trim());
   const [tipo, setTipo] = useState("todo");
@@ -207,6 +207,7 @@ export default function BuscadorScreen({ usuario, inicial = "", negocios = [], c
               {tipo !== "negocios" && siguiente
                 ? <EstadoVacio icono={Search} titulo="No encontramos resultados" mensaje={`No hay nada para «${qFinal}» en ${textoZona.toLowerCase()}. Probá ampliando la zona de búsqueda.`} accion={{ texto: "Ampliar la búsqueda", onClick: () => cambiarZona({ ...zona, alcance: siguiente }) }} />
                 : <EstadoVacio icono={Search} titulo="No encontramos resultados" mensaje="Probá con otra palabra, más corta o más general. Por ejemplo, «plomero» en vez de «arreglo de cañerías»." />}
+              {onPublicarNecesidad && <button type="button" onClick={() => onPublicarNecesidad(qFinal)} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 52 }}>Publicar lo que necesitás en Comunidad (gratis)</button>}
             </div>
           )}
           {estado === "ok" && hayResultados && (

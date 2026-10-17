@@ -17,6 +17,7 @@ import privacidadRoutes from "./routes/privacidad.js";
 import soporteRoutes from "./routes/soporte.js";
 import buscarRoutes from "./routes/buscar.js";
 import favoritosRoutes from "./routes/favoritos.js";
+import comunidadRoutes from "./routes/comunidad.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
 import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 
@@ -63,6 +64,7 @@ app.use("/api/privacidad", privacidadRoutes);
 app.use("/api/soporte", soporteRoutes);
 app.use("/api/buscar", buscarRoutes);
 app.use("/api/favoritos", favoritosRoutes);
+app.use("/api/comunidad", comunidadRoutes);
 
 // Salud para monitores externos (UptimeRobot, cron-job.org) que además evitan que Render gratis se duerma
 app.get("/healthz", (req, res) => res.json({ ok: true }));

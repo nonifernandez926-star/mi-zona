@@ -8,20 +8,21 @@ import { ENLACE_DESCARGA_MIZONA } from "./api.js";
 
 const corto = (t, max) => { const s = String(t || "").replace(/\s+/g, " ").trim(); return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s; };
 
-export const pieDescarga = () => `Descargá Mi Zona: ${ENLACE_DESCARGA_MIZONA}`;
+// Si por algún motivo no hay un enlace válido, no se agrega la línea (nunca sale «null» ni un enlace roto)
+export const pieDescarga = () => (/^https?:\/\//i.test(ENLACE_DESCARGA_MIZONA || "") ? `Descargá Mi Zona: ${ENLACE_DESCARGA_MIZONA}` : "");
 
 // ficha: { tipo: "negocio"|"oficio"|"alquiler", nombre, zona, detalle }  →  texto breve + enlace de descarga al final
 export function textoCompartirFicha({ tipo, nombre, zona, detalle }) {
-  const que = { negocio: "un negocio", oficio: "un servicio", alquiler: "un alquiler" }[tipo] || "algo";
+  const que = { negocio: "un negocio", oficio: "un servicio", alquiler: "un alquiler", comunidad: "una publicación" }[tipo] || "algo";
   const lineas = [`Mirá ${que} de nuestra zona en Mi Zona: ${nombre}.`];
   if (zona) lineas.push(`📍 ${zona}`);
   if (detalle) lineas.push(corto(detalle, 140));
-  return `${lineas.join("\n")}\n\n${pieDescarga()}`;
+  return `${lineas.join("\n")}${pieDescarga() ? `\n\n${pieDescarga()}` : ""}`;
 }
 
 // Mensaje del paso que aparece al activar un negocio, oficio o alquiler
 export function textoInvitacion(nombre) {
-  return `Ya estoy en Mi Zona${nombre ? ` con “${corto(nombre, 50)}”` : ""}. Ahí encontrás negocios, oficios y alquileres de nuestra zona. Descargá la app para encontrarme y contactarme.\n\n${pieDescarga()}`;
+  return `Ya estoy en Mi Zona${nombre ? ` con “${corto(nombre, 50)}”` : ""}. Ahí encontrás negocios, oficios y alquileres de nuestra zona. Descargá la app para encontrarme y contactarme.${pieDescarga() ? `\n\n${pieDescarga()}` : ""}`;
 }
 
 // Intenta bajar la imagen (máx. 5 s y 4 MB) para compartirla junto al texto. Si no se puede, se comparte solo el texto.

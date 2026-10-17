@@ -404,3 +404,18 @@ export const favoritosApi = {
 export const compartidoApi = {
   marcar: (tipo, id) => enviarUsuarioJSON(`/${RUTA_FICHA[tipo] || "businesses"}/${encodeURIComponent(id)}/compartido`, "POST", {}),
 };
+
+// Fase 7 · Comunidad. Gratis. Cada publicación la ven los vecinos del mismo departamento; todo lo decide el servidor.
+const C = (id, resto = "") => `/comunidad/${encodeURIComponent(id)}${resto}`;
+export const comunidadApi = {
+  estado: () => pedirJSON("/comunidad/estado", { method: "GET" }, {}).then((r) => !!r.habilitada).catch(() => false), // false = la sección todavía no está disponible
+  listar: (filtros) => getUsuarioJSON(`/comunidad?${consulta(filtros)}`), // { publicaciones, total, pagina, hayMas, departamento }
+  ver: (id) => getUsuarioJSON(C(id)), // { publicacion, esMia }
+  mias: () => getUsuarioJSON("/comunidad/mias").then((r) => r.publicaciones),
+  crear: (datos) => enviarUsuarioJSON("/comunidad", "POST", datos).then((r) => r.publicacion),
+  editar: (id, datos) => enviarUsuarioJSON(C(id), "PUT", datos).then((r) => r.publicacion),
+  resuelta: (id, resuelta) => enviarUsuarioJSON(C(id, "/resuelta"), "POST", { resuelta }).then((r) => r.publicacion),
+  estadoEvento: (id, estado) => enviarUsuarioJSON(C(id, "/evento"), "POST", { estado }).then((r) => r.publicacion),
+  eliminar: (id) => enviarUsuarioJSON(C(id), "DELETE", {}),
+  contacto: (id, mensaje) => enviarUsuarioJSON(C(id, "/contacto"), "POST", { mensaje }).then((r) => r.url),
+};

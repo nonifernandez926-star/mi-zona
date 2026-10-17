@@ -10,6 +10,7 @@ import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 import ComoFunciona from "./componentes/ComoFunciona.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError, EstadoExito } from "./componentes/Estados.jsx";
 import PasoCompartir from "./componentes/PasoCompartir.jsx";
+import { MisPublicaciones } from "./comunidad.jsx";
 import { infoSuscripcion } from "./cuenta.jsx";
 
 // "Mis fichas": todo lo que la persona ofrece en Mi Zona (negocios, ficha de oficios y fichas de alquiler) y su gestión.
@@ -45,7 +46,7 @@ function FilaFicha({ icono: Icono, tono, titulo, sub, chip, children }) {
   );
 }
 
-export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, onVerAlquiler, onEditarAlquiler, onCrearAlquiler, refrescar }) {
+export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, onVerAlquiler, onEditarAlquiler, onCrearAlquiler, comunidad, refrescar }) {
   const [oficio, setOficio] = useState(undefined); // undefined = cargando · null = no tiene
   const [alquileres, setAlquileres] = useState(undefined); // undefined = cargando · [] = no tiene
   const [error, setError] = useState(false);
@@ -184,6 +185,7 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
           <button type="button" onClick={onAgregarNegocio} style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Agregar un negocio</button>
         </div>
       )}
+      {comunidad && !cargando && !error && <MisPublicaciones onVer={comunidad.onVer} onEditar={comunidad.onEditar} onPublicar={comunidad.onPublicar} />}
       {textos && <DialogoAdvertencia {...textos} cargando={trabajando} onAceptar={confirmar} onCancelar={() => !trabajando && setDialogo(null)} />}
     </Pagina>
   );

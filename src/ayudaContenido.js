@@ -232,6 +232,17 @@ export const ARTICULOS = [
     relacionados: ["buscador-unico"],
   },
   {
+    id: "comunidad", cat: "empezar", titulo: "Comunidad: publicar y ver lo de tu zona",
+    claves: "comunidad avisos seguridad perdido encontrado ayuda regalo deporte evento feria publicar gratis vence departamento",
+    cuerpo: [
+      "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes y eventos. Publicar es gratis.",
+      { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», o entrá a Comunidad desde Inicio.", "Elegí el tipo, completá el formulario corto y leé el aviso antes de publicar.", "Tu publicación la ven las personas de tu departamento y vence sola: los avisos duran pocas horas."] },
+      { nota: "Los avisos de seguridad se muestran como «No verificado». Si fue un delito, denunciálo a la policía. No subas fotos de personas ni nombres." },
+      "Podés editar, marcar como resuelta o eliminar lo que publicaste desde Mis fichas.",
+    ],
+    relacionados: ["buscador-unico"],
+  },
+  {
     id: "privacidad-fichas", cat: "privacidad", titulo: "Mostrar u ocultar el WhatsApp y las búsquedas de una ficha",
     claves: "privacidad whatsapp ocultar buscar búsquedas ficha dueño negocio oficio interruptor",
     cuerpo: [

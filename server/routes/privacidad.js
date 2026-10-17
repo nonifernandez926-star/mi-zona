@@ -3,6 +3,7 @@ import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
 import Oficio from "../models/Oficio.js";
 import Alquiler from "../models/Alquiler.js";
+import Publicacion from "../models/Publicacion.js";
 import AgendaItem from "../models/AgendaItem.js";
 import PushSuscripcion from "../models/PushSuscripcion.js";
 import UsoFotoAgenda from "../models/UsoFotoAgenda.js";
@@ -27,7 +28,7 @@ router.get("/", async (req, res) => {
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficio, alquileres, agenda, tareas, dispositivosPush, resenas] = await Promise.all([
+    const [negocios, oficio, alquileres, agenda, tareas, dispositivosPush, resenas, publicacionesComunidad] = await Promise.all([
       Business.find({ ownerId: id }).select("id name status pendientePago expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas"),
       Oficio.findOne({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp"),
       Alquiler.find({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp").sort({ createdAt: 1 }),
@@ -35,6 +36,7 @@ router.get("/", async (req, res) => {
       AgendaItem.countDocuments({ usuarioId: id, tipo: "tarea" }),
       PushSuscripcion.countDocuments({ usuarioId: id }),
       Business.aggregate([{ $unwind: "$reviews" }, { $match: { "reviews.autorUid": huellaAutor(id) } }, { $count: "n" }]),
+      Publicacion.countDocuments({ ownerId: id }),
     ]);
     res.json({
       cuenta: { email: u.email, nombre: u.nombre, proveedor: u.proveedor, creadaEn: u.createdAt, conClave: !!(u.passwordHash || u.claveZona) },
@@ -45,6 +47,7 @@ router.get("/", async (req, res) => {
       agenda: { eventos: agenda, tareas },
       dispositivosPush,
       resenas: resenas[0]?.n || 0,
+      publicacionesComunidad,
       chatsVinculados: !!u.sesionClienteId,
       preferencias: prefsDe(u),
     });
@@ -88,13 +91,14 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas] = await Promise.all([
+    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas, publicaciones] = await Promise.all([
       Business.find({ ownerId: id }),
       Oficio.findOne({ ownerId: id }).lean(),
       Alquiler.find({ ownerId: id }).lean(),
       AgendaItem.find({ usuarioId: id }).lean(),
       PushSuscripcion.find({ usuarioId: id }).select("createdAt").lean(),
       Consulta.find({ usuarioId: id }).select("motivo asunto mensaje estado respuesta createdAt -_id").lean(),
+      Publicacion.find({ ownerId: id }).lean(),
     ]);
     const huella = huellaAutor(id);
     const misResenas = await Business.aggregate([
@@ -118,6 +122,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       }),
       fichaDeOficios: oficioPropio ? (({ _id, __v, ownerId, textoBusqueda, ...r }) => r)(oficioPropio) : null,
       fichasDeAlquiler: alquileresPropios.map(({ _id, __v, ownerId, textoBusqueda, ...r }) => r),
+      publicacionesDeComunidad: publicaciones.map(({ _id, __v, ownerId, textoBusqueda, borrarEn, departamentoId, ...r }) => r),
       agenda: agenda.map(({ _id, __v, usuarioId, ...r }) => r),
       reseñasQueEscribí: misResenas,
       dispositivosConNotificaciones: push.length,
@@ -193,6 +198,7 @@ router.delete("/cuenta", async (req, res) => {
     await Promise.all([
       Oficio.deleteMany({ ownerId: id }),
       Alquiler.deleteMany({ ownerId: id }),
+      Publicacion.deleteMany({ ownerId: id }),
       AgendaItem.deleteMany({ usuarioId: id }),
       PushSuscripcion.deleteMany({ usuarioId: id }),
       UsoFotoAgenda.deleteMany({ usuarioId: id }),
