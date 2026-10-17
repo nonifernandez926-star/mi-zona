@@ -1,3 +1,20 @@
+# Mi Zona — Fase 7: Comunidad (volver a publicar servidor Y web · variable nueva en el SERVIDOR)
+
+- **Está APAGADA por defecto** (regla de la Fase 7: no se habilita al público hasta completar la Fase 8). Para PROBARLA: en el servidor (Render) poné `COMUNIDAD_HABILITADA=true` y reiniciá. Con `false` o sin la variable, la web ni muestra la tarjeta, ni el «+» ni nada, y el servidor responde 403.
+- **Qué es:** fichas breves de los vecinos, **gratis**. 7 tipos: Aviso de la zona (vence en 2 a 48 horas, nombres neutros, importancia informativo/importante/urgente), Seguridad (sin fotos, sin contacto, sin teléfonos en el texto, siempre «No verificado» + «denunciálo a la policía»), Perdido o encontrado (mascotas con especie/tamaño/color/señas, hasta 3 fotos), Ayuda vecinal (necesito/ofrezco), Regalo, Deporte o actividad, Evento o feria (inicio y fin, lugar general, gratis/precio, enlace https, cancelado/reprogramado).
+- **Quién ve qué:** solo las personas del **mismo departamento** que el autor (sale de la localidad de su perfil; hace falta cuenta con localidad). Filtro por localidad dentro del departamento, por tipo, por actividad (deportes) y por categoría (eventos). Eventos y deportes: vistas Hoy / Esta semana / Fin de semana (hora de Argentina) y «Ya pasaron» (historial de 60 días); orden cronológico. Avisos urgentes primero.
+- **Vencimiento:** todas vencen. Estados: activa, resuelta, vencida. Las vencidas y resueltas dejan de aparecer; MongoDB las borra solo (vencimiento + 90 días, índice TTL). Cambiar la fecha de un evento lo marca «reprogramado».
+- **Antispam:** máx. 5 publicaciones por día, 60 segundos de espera entre una y otra, máx. 15 activas por persona.
+- **Contacto:** WhatsApp opcional (no en avisos ni seguridad); el número nunca sale en los listados: el servidor entrega el enlace al tocar el botón y solo a vecinos del departamento.
+- **Autor:** edita (con «Renovar desde hoy»), marca resuelta y elimina (con confirmación) desde el detalle o **Mis fichas → Mis publicaciones**. Antes de publicar se muestra qué se publica, a quién se muestra y cuánto dura.
+- **Compartir:** mantener apretada una publicación o ícono dentro de la ficha (mismo mensaje con enlace de descarga al final).
+- **Búsqueda sin resultados:** botón «Publicar lo que necesitás en Comunidad» (abre «Ayuda vecinal» con el texto buscado).
+- **Rutas nuevas:** `GET /api/comunidad/estado`, `GET /api/comunidad`, `GET /api/comunidad/mias`, `GET|PUT|DELETE /api/comunidad/:id`, `POST /api/comunidad`, `POST /api/comunidad/:id/{resuelta|evento|contacto}`. Descargar mis datos y Eliminar cuenta ya incluyen las publicaciones.
+- **Archivos nuevos:** `server/models/Publicacion.js`, `server/utils/comunidad.js`, `server/routes/comunidad.js`, `src/comunidad.js`, `src/comunidad.jsx`.
+- **Pendiente / enganches:** botón **Denunciar** y bloqueo (Fase 8: hay un comentario `ENGANCHE Fase 8` en el detalle). Recordatorios y avisos push de eventos (fase de notificaciones; hoy no se envía ninguna por publicación). Resultados de Comunidad dentro del buscador único. Ampliar a departamentos vecinos: ver propuesta en el resumen de la fase.
+
+---
+
 # Mi Zona — Fase 6: Buscador, favoritos y compartir (volver a publicar servidor Y web · variable nueva opcional)
 
 - **Buscador único:** en Inicio, botón «Buscar en negocios, oficios y alquileres» (o Enter en la barra). Resultados **clasificados por tipo**, filtros manuales (tipo, categoría, zona), sugerencias al escribir, recientes (comparte la lista de la barra de Inicio) y «Ampliar la búsqueda» cuando no hay resultados. Varias palabras y plurales («sillas» encuentra «silla»). Sin IA (eso es la Fase 10). Ruta: `GET /api/buscar` (oficios y alquileres; los negocios se buscan en la lista que la web ya trae).
