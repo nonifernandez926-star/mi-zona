@@ -6,6 +6,7 @@ const ESTADOS = {
   disponibleHoy: { texto: "Disponible hoy", fg: "#1E6B44", bg: "#E4F3EA", punto: "#2C9A5F" },
   ocupado: { texto: "Ocupado", fg: "#8A5B12", bg: "#FFF3D6", punto: "#E08A12" },
   pausada: { texto: "Pausada", fg: "#4A5372", bg: "#EEF1F8", punto: "#8D95B0" },
+  sinConfirmar: { texto: "Sin confirmar", fg: "#4A5372", bg: "#EEF1F8", punto: "#8D95B0" },
   yaNoLoTengo: { texto: "Ya no lo tengo", fg: "#4A5372", bg: "#EEF1F8", punto: "#8D95B0" },
   vencida: { texto: "Vencida", fg: "#9A3B34", bg: "#FDF1EF", punto: "#C1443A" },
   cancelado: { texto: "Cancelado", fg: "#9A3B34", bg: "#FDF1EF", punto: "#C1443A" },

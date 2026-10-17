@@ -192,10 +192,50 @@ export const ARTICULOS = [
     relacionados: ["oficios-ofrecer"],
   },
   {
+    id: "alquileres-ofrecer", cat: "negocio", titulo: "Ofrecer algo en alquiler",
+    claves: "alquiler alquileres alquilar casa departamento salon sillas mesas pelotero herramientas articulos disponible ocupado ya no lo tengo mis fichas",
+    cuerpo: [
+      "Si alquilás viviendas, salones, sillas, mesas, peloteros, herramientas u otras cosas, armá una ficha de alquiler con tus artículos. Podés tener hasta 5 fichas (por ejemplo, una de eventos y otra de herramientas).",
+      { pasos: ["Tocá el botón + y elegí «Ofrecer en alquiler» (o entrá desde Alquileres en el Inicio).", "Elegí la categoría y qué alquilás, contá cómo trabajás y elegí tu localidad. Dirección, WhatsApp, redes, fotos y condiciones son opcionales.", "Cargá al menos un artículo: nombre, precio (por hora, día, semana, mes o «Consultar precio») y, si querés, una foto.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
+      "Desde Ajustes → Mi cuenta → Mis fichas → Artículos cambiás el estado de cada uno con un toque: Disponible, Ocupado o Ya no lo tengo (este último lo oculta al público). También podés agregar, editar o quitar artículos sin tocar el resto de la ficha, y pausar o eliminar la ficha entera.",
+      { nota: "Si pasan más de 30 días sin confirmar un artículo, se muestra como «Sin confirmar» para no prometer lo que quizá ya no está. Con «Todo sigue igual» lo renovás de un toque. Mi Zona no maneja pagos ni reservas de alquileres." },
+    ],
+    relacionados: ["alquileres-buscar", "privacidad-fichas"],
+  },
+  {
+    id: "alquileres-buscar", cat: "empezar", titulo: "Buscar un alquiler",
+    claves: "buscar alquiler alquileres casa departamento habitacion salon quincho sillas mesas pelotero herramientas estafa",
+    cuerpo: [
+      "En el Inicio tocá «Alquileres». Elegí una categoría (viviendas y espacios, cumpleaños y eventos, herramientas y equipos u otros), afiná por tipo y ajustá la zona. En viviendas también podés filtrar por dormitorios y amoblado.",
+      { pasos: ["Abrí la ficha para ver sus artículos, precios, condiciones y qué está disponible.", "Fijate cuánto hace que se actualizó: lo «Sin confirmar» conviene preguntarlo antes.", "Si tiene botón de WhatsApp, tocalo: se abre el chat con un mensaje que podés cambiar antes de enviarlo."] },
+      { nota: "No pagues por adelantado sin ver el lugar o a la persona. Mi Zona no maneja pagos ni reservas: el acuerdo es entre ustedes." },
+    ],
+    relacionados: ["alquileres-ofrecer"],
+  },
+  {
+    id: "buscador-unico", cat: "empezar", titulo: "Buscar en todo Mi Zona",
+    claves: "buscar buscador negocios oficios alquileres sugerencias recientes filtros ampliar zona",
+    cuerpo: [
+      "Con un solo buscador encontrás negocios, oficios y alquileres. Los resultados aparecen separados por tipo.",
+      { pasos: ["En Inicio tocá «Buscar en negocios, oficios y alquileres» o escribí en la barra y apretá buscar.", "Elegí qué ver (Todo, Negocios, Oficios o Alquileres) y, si querés, una categoría y la zona.", "Si no hay resultados, tocá «Ampliar la búsqueda» para sumar localidades cercanas."] },
+      { nota: "Las búsquedas recientes quedan solo en tu celular. Podés borrarlas con «Borrar»." },
+    ],
+    relacionados: ["favoritos-fichas"],
+  },
+  {
+    id: "favoritos-fichas", cat: "empezar", titulo: "Guardar favoritos y compartir",
+    claves: "favoritos corazon guardar compartir mantener apretado pulsacion larga zona fecha",
+    cuerpo: [
+      "Tocá el corazón en un negocio, un oficio o un alquiler para guardarlo. En Favoritos podés filtrar por tipo, zona y fecha.",
+      { pasos: ["Para compartir una ficha, mantenela apretada un momento o tocá el ícono de compartir dentro de la ficha.", "Se envía un texto breve con el enlace para descargar Mi Zona (no un enlace a la ficha).", "Si una ficha guardada se pausa o vence, deja de verse en Favoritos y vuelve sola si se reactiva."] },
+    ],
+    relacionados: ["buscador-unico"],
+  },
+  {
     id: "privacidad-fichas", cat: "privacidad", titulo: "Mostrar u ocultar el WhatsApp y las búsquedas de una ficha",
     claves: "privacidad whatsapp ocultar buscar búsquedas ficha dueño negocio oficio interruptor",
     cuerpo: [
-      "En Ajustes → Privacidad cada ficha (tu negocio o tu ficha de oficios) tiene sus propios interruptores. Cambiar uno vale solo para esa ficha.",
+      "En Ajustes → Privacidad cada ficha (tu negocio, tu ficha de oficios o tus fichas de alquiler) tiene sus propios interruptores. Cambiar uno vale solo para esa ficha.",
       { pasos: ["«Mostrar WhatsApp»: si lo apagás, la ficha oculta tu WhatsApp al público (no se ve el número ni el botón).", "«Aparecer en búsquedas»: si lo apagás, la ficha no sale en búsquedas ni listados. Vos la seguís viendo en Mis fichas.", "«Dueño de» y «Dueño: @usuario»: elegís si tu perfil muestra la ficha y si la ficha muestra tu usuario."] },
       "Antes de cada cambio te avisamos qué va a pasar, y podés aceptar o cancelar.",
     ],
@@ -418,7 +458,7 @@ export function sugeridosPara(motivo) {
     resenas: ["dejar-resena", "borrar-resenas", "responder-resena"],
     error: ["no-cargan-negocios", "no-llegan-notificaciones", "ubicacion-no-funciona"],
     sugerencia: [],
-    otro: ["que-es", "buscar-filtros", "oficios-buscar"],
+    otro: ["que-es", "buscar-filtros", "oficios-buscar", "alquileres-buscar"],
   }[motivo] || [];
   return ids.map(articuloPorId).filter(Boolean);
 }

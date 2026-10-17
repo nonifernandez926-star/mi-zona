@@ -134,11 +134,11 @@ function FilaAccion({ Icon, titulo, desc, boton, confirmar, ejecutar, danger, de
   );
 }
 
-// Qué ven otras personas sobre vos: perfil visible y, por cada ficha (negocio u oficio), cuatro interruptores independientes:
+// Qué ven otras personas sobre vos: perfil visible y, por cada ficha (negocio, oficio o alquiler), cuatro interruptores independientes:
 //  · «Dueño de» en tu perfil  · «Dueño: @usuario» en la ficha  · Mostrar WhatsApp  · Aparecer en búsquedas
 // Todos nacen como los define el servidor (los dos primeros apagados). Cada cambio avisa qué va a pasar (Aceptar o Cancelar) y lo valida el servidor.
 // Los cuatro valen "por ficha": se cambian solo para esa ficha, y solo el dueño puede hacerlo.
-const TIPO_FICHA = { negocio: "Negocio", oficio: "Oficio" };
+const TIPO_FICHA = { negocio: "Negocio", oficio: "Oficio", alquiler: "Alquiler" };
 
 function textosAviso(f, campo, v) {
   const n = f.nombre;
@@ -162,6 +162,7 @@ function ControlesPerfil({ resumen, onCambio }) {
   const fichas = [
     ...resumen.negocios.map((n) => ({ ...n, tipo: "negocio" })),
     ...(resumen.oficios || []).map((o) => ({ ...o, tipo: "oficio" })),
+    ...(resumen.alquileres || []).map((o) => ({ ...o, tipo: "alquiler" })),
   ];
   const guardar = async (clave, accion) => {
     setGuardando(clave); setError(null);

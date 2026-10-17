@@ -51,6 +51,7 @@ const businessSchema = new mongoose.Schema(
     pendientePago: { type: Boolean, default: false }, // cargado pero todavía sin pagar → no se muestra al público
     suscripcion: { type: mongoose.Schema.Types.Mixed, default: {} }, // { plan, origen, ultimoPagoId, pagosProcesados, ultimoAviso... }
     historias: { type: mongoose.Schema.Types.Mixed, default: [] },
+    compartioEn: { type: Date, default: null }, // Fase 6: cuándo completó el menú de compartir (no prueba que el mensaje llegó)
     asistenteCodigo: String,
     asistenteCodigoPublico: String,
     busquedaEmpleo: { type: mongoose.Schema.Types.Mixed, default: null },

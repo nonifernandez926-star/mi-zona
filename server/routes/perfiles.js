@@ -2,6 +2,7 @@ import express from "express";
 import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
 import Oficio from "../models/Oficio.js";
+import Alquiler from "../models/Alquiler.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { estadoOficio } from "../utils/oficios.js";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
@@ -56,6 +57,10 @@ router.get("/:usuario", limitar("perfil-get", 120, 10 * 60 * 1000), async (req, 
     // la ficha de oficios, solo si el dueño eligió mostrarla, está activa y aparece en las búsquedas
     const oficio = await Oficio.findOne({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false } }).select("id nombre rubros logo localidad zona status expiresAt").lean();
     const oficioVisible = oficio && estadoOficio(oficio, ahoraArgentina().fecha) === "activa" ? oficio : null;
+    // las fichas de alquiler, con la misma regla
+    const alqs = await Alquiler.find({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false } }).select("id nombre categoria logo localidad zona status expiresAt").lean();
+    const hoyAr = ahoraArgentina().fecha;
+    const alquileresVisibles = alqs.filter((a) => estadoOficio(a, hoyAr) === "activa");
     const l = localidadDe(u);
     res.json({
       perfil: {
@@ -64,6 +69,7 @@ router.get("/:usuario", limitar("perfil-get", 120, 10 * 60 * 1000), async (req, 
         duenoDe: [
           ...negocios.map((n) => ({ tipo: "negocio", id: n.id, nombre: n.name, cat: n.cat, logo: n.logo || "", zona: n.zone || "" })),
           ...(oficioVisible ? [{ tipo: "oficio", id: oficioVisible.id, nombre: oficioVisible.nombre, logo: oficioVisible.logo || "", zona: oficioVisible.localidad?.localidad || "", rubros: oficioVisible.rubros }] : []),
+          ...alquileresVisibles.map((a) => ({ tipo: "alquiler", id: a.id, nombre: a.nombre, logo: a.logo || "", zona: a.localidad?.localidad || "", categoria: a.categoria })),
         ],
       },
     });

@@ -7,9 +7,10 @@ import SelectorLocalidad from "./selectorLocalidad.jsx";
 import DetalleFicha, { SeccionDetalle } from "./componentes/DetalleFicha.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError } from "./componentes/Estados.jsx";
+import { iconoCategoria } from "./alquileres.jsx";
 
 // Perfil público de una persona: nombre, foto, localidad, descripción y, solo si el dueño lo eligió, "Dueño de".
-export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOficio }) {
+export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOficio, onAbrirAlquiler }) {
   const [perfil, setPerfil] = useState(null);
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
   const cargar = () => {
@@ -37,7 +38,7 @@ export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOf
             <SeccionDetalle titulo="Dueño de" icono={Store}>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {perfil.duenoDe.map((n) => (
-                  <TarjetaFicha key={`${n.tipo || "negocio"}${n.id}`} titulo={n.nombre} zona={n.zona} datoClave={n.tipo === "oficio" ? "Oficios y servicios" : undefined} icono={n.tipo === "oficio" ? Wrench : undefined} tono={n.tipo === "oficio" ? "naranja" : undefined} imagen={n.logo} onAbrir={() => (n.tipo === "oficio" ? onAbrirOficio && onAbrirOficio(n.id) : onAbrirNegocio && onAbrirNegocio(n.id))} />
+                  <TarjetaFicha key={`${n.tipo || "negocio"}${n.id}`} titulo={n.nombre} zona={n.zona} datoClave={n.tipo === "oficio" ? "Oficios y servicios" : n.tipo === "alquiler" ? "Alquileres" : undefined} icono={n.tipo === "oficio" ? Wrench : n.tipo === "alquiler" ? iconoCategoria(n.categoria) : undefined} tono={n.tipo === "oficio" ? "naranja" : n.tipo === "alquiler" ? "violeta" : undefined} imagen={n.logo} onAbrir={() => (n.tipo === "oficio" ? onAbrirOficio && onAbrirOficio(n.id) : n.tipo === "alquiler" ? onAbrirAlquiler && onAbrirAlquiler(n.id) : onAbrirNegocio && onAbrirNegocio(n.id))} />
                 ))}
               </div>
             </SeccionDetalle>

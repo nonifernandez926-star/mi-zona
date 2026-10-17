@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 import businessesRoutes from "./routes/businesses.js";
 import perfilesRoutes from "./routes/perfiles.js";
 import oficiosRoutes from "./routes/oficios.js";
+import alquileresRoutes from "./routes/alquileres.js";
 import asistenteRoutes from "./routes/asistente.js";
 import eventosRoutes from "./routes/eventos.js";
 import integracionRoutes from "./routes/integracion.js";
@@ -14,6 +15,8 @@ import pushRoutes from "./routes/push.js";
 import agendaRoutes from "./routes/agenda.js";
 import privacidadRoutes from "./routes/privacidad.js";
 import soporteRoutes from "./routes/soporte.js";
+import buscarRoutes from "./routes/buscar.js";
+import favoritosRoutes from "./routes/favoritos.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
 import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 
@@ -52,11 +55,14 @@ app.use("/api/integracion", integracionRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/perfiles", perfilesRoutes);
 app.use("/api/oficios", oficiosRoutes);
+app.use("/api/alquileres", alquileresRoutes);
 app.use("/api/suscripcion", suscripcionRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/agenda", agendaRoutes);
 app.use("/api/privacidad", privacidadRoutes);
 app.use("/api/soporte", soporteRoutes);
+app.use("/api/buscar", buscarRoutes);
+app.use("/api/favoritos", favoritosRoutes);
 
 // Salud para monitores externos (UptimeRobot, cron-job.org) que además evitan que Render gratis se duerma
 app.get("/healthz", (req, res) => res.json({ ok: true }));

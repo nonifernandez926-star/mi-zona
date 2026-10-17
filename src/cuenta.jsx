@@ -454,7 +454,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             <FilaMenu Icon={CalendarDays} color="var(--azul)" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
             <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
             <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => (onAbrirFavoritos ? onAbrirFavoritos() : setVista("favoritos"))} />
-            <FilaMenu Icon={Store} color="#0B1437" titulo={onAbrirMisFichas ? "Mis fichas" : "Mis negocios"} valor={resumen ? String(negocios.length + (onAbrirMisFichas ? (resumen.oficios?.length || 0) : 0)) : null} onClick={() => (onAbrirMisFichas ? onAbrirMisFichas() : setVista("negocios"))} ultimo />
+            <FilaMenu Icon={Store} color="#0B1437" titulo={onAbrirMisFichas ? "Mis fichas" : "Mis negocios"} valor={resumen ? String(negocios.length + (onAbrirMisFichas ? (resumen.oficios?.length || 0) + (resumen.alquileres?.length || 0) : 0)) : null} onClick={() => (onAbrirMisFichas ? onAbrirMisFichas() : setVista("negocios"))} ultimo />
           </div>
 
           <button
@@ -534,6 +534,9 @@ function EliminarCuenta({ usuario, onEliminada }) {
             Entiendo que mi negocio se elimina con la cuenta.
           </label>
         </>
+      )}
+      {resumen?.alquileres?.length > 0 && (
+        <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>También se {resumen.alquileres.length === 1 ? "elimina tu ficha de alquiler" : "eliminan tus fichas de alquiler"} con sus artículos ({resumen.alquileres.map((o) => o.nombre).join(", ")}): dejan de aparecer en las búsquedas.</p>
       )}
       {resumen?.oficios?.length > 0 && (
         <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>También se elimina <b>tu ficha de oficios</b> ({resumen.oficios.map((o) => o.nombre).join(", ")}): deja de aparecer en las búsquedas.</p>

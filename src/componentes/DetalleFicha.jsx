@@ -4,7 +4,7 @@ import { TONOS } from "../tonos.js";
 import ChipEstado from "./ChipEstado.jsx";
 
 // Subpantalla de detalle de una ficha. Cabecera marino con "Volver", tarjeta de presentación y secciones (children).
-// acciones: botones de ícono arriba a la derecha, p. ej. [{ icono: Share2, etiqueta: "Compartir", onClick }]. Solo se dibujan los que pasas.
+// acciones: botones de ícono arriba a la derecha, p. ej. [{ icono: Share2, etiqueta: "Compartir", onClick }]; con activo (true/false) el ícono se rellena (p. ej. el corazón de favoritos). Solo se dibujan los que pasas.
 // pie: contenido fijo abajo (botones de contacto). contexto: texto corto de la cabecera ("Oficio", "Alquiler").
 // Al abrirla desde la app, conéctala con useAtrasDeCapas para que el botón "atrás" de Android la cierre.
 export default function DetalleFicha({ titulo, subtitulo, imagen, icono: Icono = Store, tono = "azul", estado, estadoTexto, contexto, acciones = [], pie, onVolver, children }) {
@@ -17,8 +17,8 @@ export default function DetalleFicha({ titulo, subtitulo, imagen, icono: Icono =
         <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-3" style={{ paddingTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
           <button type="button" onClick={onVolver} aria-label="Volver" style={botonCabecera}><ArrowLeft size={20} color="#fff" aria-hidden="true" /></button>
           <p className="flex-1 min-w-0" style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: "1.0625rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contexto}</p>
-          {acciones.map(({ icono: I, etiqueta, onClick }) => (
-            <button key={etiqueta} type="button" onClick={onClick} aria-label={etiqueta} style={botonCabecera}><I size={20} color="#fff" aria-hidden="true" /></button>
+          {acciones.map(({ icono: I, etiqueta, onClick, activo }) => (
+            <button key={etiqueta} type="button" onClick={onClick} aria-label={etiqueta} aria-pressed={activo === undefined ? undefined : !!activo} style={botonCabecera}><I size={20} color={activo ? "#FF8A8F" : "#fff"} fill={activo ? "#FF8A8F" : "none"} aria-hidden="true" /></button>
           ))}
         </div>
       </div>

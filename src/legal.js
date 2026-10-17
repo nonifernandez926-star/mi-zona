@@ -51,6 +51,8 @@ export const PRIVACIDAD_TEXTO = [
     "Las reseñas que escribís y las consultas que le mandás a Soporte.",
     "Si tenés un negocio: los datos que cargás de él (públicos) y tu agenda (privada).",
     "Si ofrecés tus servicios con una ficha de oficios: los datos que cargues en ella (nombre de la ficha, rubros, descripción, localidad y, si querés, dirección, WhatsApp, redes, fotos, horarios y precio orientativo). Esa ficha es pública mientras esté activa; tu número de WhatsApp solo se entrega a quien toca el botón de contacto, y solo si decidís mostrarlo.",
+    "Si ofrecés algo en alquiler con una ficha de alquiler (hasta 5): los datos de la ficha (nombre, categoría, descripción, condiciones, localidad y, si querés, dirección, WhatsApp, redes, fotos, y en viviendas dormitorios, baños, capacidad, si es amoblado o acepta mascotas) y sus artículos (nombre, foto opcional, precio y estado). Es pública mientras esté activa; el número de WhatsApp solo se entrega a quien toca el botón, y solo si decidís mostrarlo. Mi Zona no procesa pagos ni reservas de alquileres.",
+    "Si compartís Mi Zona al activar una ficha, guardamos solo la fecha en que completaste el menú de compartir (para no volver a recordártelo). No guardamos con quién ni por dónde compartiste, y no podemos saber si el mensaje llegó.",
     "Los dispositivos en los que activaste las notificaciones, para poder enviarlas.",
     "Las fotos que subís para tu negocio (visibles para todos) y las acciones sobre un negocio (ver, guardar, contactar) para armar sus estadísticas.",
     "Tus preferencias de privacidad (ubicación, chats, IA en la agenda).",
@@ -59,7 +61,7 @@ export const PRIVACIDAD_TEXTO = [
     "Si lo permitís, usamos la ubicación de tu dispositivo (solo mientras usás la aplicación) para ordenar los negocios por cercanía y mostrarte el clima. Cuando buscás con el asistente, la ubicación se envía a nuestro servidor solo para calcular distancias en ese momento: no la guardamos ni la usamos en segundo plano. Podés negarte o retirar el permiso desde los ajustes de tu celular y desde Ajustes → Privacidad.",
   ] },
   { t: "2. Lo que queda en tu dispositivo", p: [
-    "Tus favoritos, los chats guardados, los negocios vistos, las búsquedas recientes y tus preferencias (como el modo oscuro) se guardan en tu dispositivo, no en nuestro servidor. Podés borrarlos desde Ajustes → Privacidad.",
+    "Tus favoritos (de negocios, oficios y alquileres), los chats guardados, los negocios vistos, las búsquedas recientes y tus preferencias (como el modo oscuro) se guardan en tu dispositivo, no en nuestro servidor. Podés borrarlos desde Ajustes → Privacidad.",
   ] },
   { t: "3. Para qué los usamos", p: [
     "Para que puedas entrar a tu cuenta y mantenerla segura, mostrar tu negocio y tus reseñas, procesar suscripciones, enviarte avisos que pediste (vencimientos, recordatorios de agenda, alertas de acceso), responder tus consultas y mejorar el funcionamiento de la aplicación. No vendemos tus datos.",

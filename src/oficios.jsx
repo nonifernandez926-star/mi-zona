@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Wrench, MapPin, MessageCircle, Search, Plus, X, Pencil, Trash2, Power, Check, Clock, Instagram, Facebook, Music2, Store, User, ChevronDown, ChevronRight, Eye, Briefcase, ImageIcon, Info, ShieldCheck } from "lucide-react";
+import { Share2, Heart, ArrowLeft, Wrench, MapPin, MessageCircle, Search, Plus, X, Pencil, Trash2, Power, Check, Clock, Instagram, Facebook, Music2, Store, User, ChevronDown, ChevronRight, Eye, Briefcase, ImageIcon, Info, ShieldCheck } from "lucide-react";
 import { oficiosApi } from "./api.js";
 import { textoLocalidad } from "./localidades.js";
 import { RUBROS, GRUPOS_RUBROS } from "./rubros.js";
@@ -7,11 +7,13 @@ import SelectorLocalidad from "./selectorLocalidad.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import DetalleFicha, { SeccionDetalle, FilaDato } from "./componentes/DetalleFicha.jsx";
 import ChipEstado from "./componentes/ChipEstado.jsx";
+import PasoCompartir from "./componentes/PasoCompartir.jsx";
+import { compartirFicha, avisoDeCompartir } from "./compartir.js";
+import { alternarFavFicha, useEsFavFicha, useFavFichas } from "./favoritos.js";
 import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 import ComoFunciona from "./componentes/ComoFunciona.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError, EstadoExito } from "./componentes/Estados.jsx";
 import { uploadImage, comprimirFoto, comprimirImagen } from "./subirFoto.js";
-import { infoSuscripcion } from "./cuenta.jsx";
 
 // Oficios y servicios (Fase 4). Una ficha por persona, con varios rubros. Pantallas: listado, ficha, formulario, "Mis fichas" y paso final.
 // La navegación entre ellas la maneja App.jsx (para que el botón "atrás" de Android funcione); acá solo están las pantallas.
@@ -21,18 +23,18 @@ const ETIQUETAS = [["urgencias", "Urgencias"], ["finesDeSemana", "Fines de seman
 const ETIQUETA_TXT = Object.fromEntries(ETIQUETAS);
 const ETIQUETA_RUBRO = Object.fromEntries(RUBROS.map((r) => [r.id, r.label]));
 const MAX_RUBROS = 6, MAX_OTROS = 3, MAX_FOTOS = 8;
-const FONDO = "#F3F5FA";
+export const FONDO = "#F3F5FA";
 
-const botonPrincipal = { minHeight: 50, borderRadius: 14, border: 0, color: "#fff", backgroundColor: "#2350F5", fontWeight: 700, fontSize: "1rem", padding: "0 20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 };
-const botonSecundario = { minHeight: 46, borderRadius: 14, border: "1px solid #CFD6E8", background: "#fff", color: "#0B1437", fontWeight: 700, fontSize: "0.9375rem", padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
-const caja = { width: "100%", boxSizing: "border-box", minHeight: 48, border: "1px solid #CFD6E8", borderRadius: 12, padding: "11px 14px", font: "inherit", fontSize: "1rem", background: "#fff", color: "#0B1437" };
+export const botonPrincipal = { minHeight: 50, borderRadius: 14, border: 0, color: "#fff", backgroundColor: "#2350F5", fontWeight: 700, fontSize: "1rem", padding: "0 20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 };
+export const botonSecundario = { minHeight: 46, borderRadius: 14, border: "1px solid #CFD6E8", background: "#fff", color: "#0B1437", fontWeight: 700, fontSize: "0.9375rem", padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+export const caja = { width: "100%", boxSizing: "border-box", minHeight: 48, border: "1px solid #CFD6E8", borderRadius: 12, padding: "11px 14px", font: "inherit", fontSize: "1rem", background: "#fff", color: "#0B1437" };
 
 const rubrosTexto = (o, primero = "", max = 2) => {
   const nombres = [...(o.rubros || []).map((r) => r.label), ...(o.otros || [])];
   if (primero) nombres.sort((a, b) => (b === primero) - (a === primero));
   return nombres.length > max ? `${nombres.slice(0, max).join(", ")} +${nombres.length - max}` : nombres.join(", ");
 };
-const diasDesde = (iso) => { if (!iso) return null; const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); return d < 1 ? "hoy" : d === 1 ? "ayer" : `hace ${d} días`; };
+export const diasDesde = (iso) => { if (!iso) return null; const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); return d < 1 ? "hoy" : d === 1 ? "ayer" : `hace ${d} días`; };
 
 // ---------- piezas comunes ----------
 
@@ -48,7 +50,7 @@ function Cabecera({ titulo, onVolver, derecha }) {
   );
 }
 
-function Pagina({ titulo, onVolver, derecha, children, pie }) {
+export function Pagina({ titulo, onVolver, derecha, children, pie }) {
   return (
     <div style={{ backgroundColor: FONDO, minHeight: "100vh" }}>
       <Cabecera titulo={titulo} onVolver={onVolver} derecha={derecha} />
@@ -63,7 +65,7 @@ function Pagina({ titulo, onVolver, derecha, children, pie }) {
 }
 
 // Hoja que sube desde abajo (rubros, zona, mensaje de WhatsApp)
-function Hoja({ titulo, onCerrar, children }) {
+export function Hoja({ titulo, onCerrar, children }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center" style={{ background: "#0B143799" }} onClick={onCerrar}>
       <div role="dialog" aria-modal="true" aria-label={titulo} className="bg-white w-full sm:max-w-md" style={{ borderRadius: "22px 22px 0 0", maxHeight: "88dvh", overflowY: "auto", padding: "18px 18px calc(18px + env(safe-area-inset-bottom, 0px))" }} onClick={(e) => e.stopPropagation()}>
@@ -77,7 +79,7 @@ function Hoja({ titulo, onCerrar, children }) {
   );
 }
 
-function Chip({ activo, children, onClick, quitar }) {
+export function Chip({ activo, children, onClick, quitar }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={activo === undefined ? undefined : activo}
       style={{ minHeight: 40, borderRadius: 999, padding: "0 14px", fontSize: "0.9375rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${activo ? "#2350F5" : "#CFD6E8"}`, background: activo ? "#EDF1FF" : "#fff", color: activo ? "#1B3FB8" : "#0B1437" }}>
@@ -90,15 +92,17 @@ function Chip({ activo, children, onClick, quitar }) {
 
 const ZONA_KEY = "miZonaZonaOficios";
 const CACHE_KEY = "miZonaOficiosCache";
-const leerZona = () => { try { return JSON.parse(localStorage.getItem(ZONA_KEY) || "null"); } catch { return null; } };
-const guardarZona = (z) => { try { localStorage.setItem(ZONA_KEY, JSON.stringify(z)); } catch { /* sin almacenamiento */ } };
+export const leerZona = () => { try { return JSON.parse(localStorage.getItem(ZONA_KEY) || "null"); } catch { return null; } };
+export const guardarZona = (z) => { try { localStorage.setItem(ZONA_KEY, JSON.stringify(z)); } catch { /* sin almacenamiento */ } };
 const leerCache = (clave) => { try { return (JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"))[clave] || null; } catch { return null; } };
 const guardarCache = (clave, valor) => { try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"); const claves = Object.keys(c); if (claves.length >= 6 && !c[clave]) delete c[claves[0]]; c[clave] = valor; localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* sin almacenamiento */ } };
 
-const ALCANCES = [["localidad", "Mi localidad"], ["departamento", "Mi departamento"], ["provincia", "Mi provincia"], ["todo", "Todo el país"]];
-const SIGUIENTE = { localidad: "departamento", departamento: "provincia", provincia: "todo" };
+export const ALCANCES = [["localidad", "Mi localidad"], ["departamento", "Mi departamento"], ["provincia", "Mi provincia"], ["todo", "Todo el país"]];
+export const SIGUIENTE = { localidad: "departamento", departamento: "provincia", provincia: "todo" };
 
 export function OficiosScreen({ usuario, onVolver, onAbrir, onOfrecer, onMisFichas }) {
+  const favs = useFavFichas();
+  const [avisoCompartir, setAvisoCompartir] = useState("");
   const [zona, setZona] = useState(() => leerZona() || (usuario?.localidad ? { alcance: "departamento", loc: usuario.localidad } : { alcance: "todo", loc: null }));
   const [rubro, setRubro] = useState("");
   const [q, setQ] = useState("");
@@ -196,10 +200,13 @@ export function OficiosScreen({ usuario, onVolver, onAbrir, onOfrecer, onMisFich
         )}
         {estado === "ok" && items.length > 0 && (
           <>
-            <p className="text-sm" style={{ color: "#4A5372" }} role="status">{total} {total === 1 ? "ficha" : "fichas"}</p>
+            <p className="text-sm" style={{ color: "#4A5372" }} role="status">{total} {total === 1 ? "ficha" : "fichas"} · mantené apretada una para compartirla</p>
+            {avisoCompartir && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}
             {items.map((o) => (
               <TarjetaFicha key={o.id} titulo={o.nombre} zona={textoLocalidad(o.localidad)} datoClave={rubrosTexto(o, rubro ? ETIQUETA_RUBRO[rubro] : "")}
-                estado={o.disponibilidad || undefined} imagen={o.logo || o.fotos?.[0]} icono={Wrench} tono="naranja" onAbrir={() => onAbrir(o.id, rubro ? ETIQUETA_RUBRO[rubro] : "")} />
+                estado={o.disponibilidad || undefined} imagen={o.logo || o.fotos?.[0]} icono={Wrench} tono="naranja" onAbrir={() => onAbrir(o.id, rubro ? ETIQUETA_RUBRO[rubro] : "")}
+                esFavorito={favs.some((x) => x.tipo === "oficio" && x.id === o.id)} onFavorito={() => alternarFavFicha("oficio", o.id)}
+                onCompartir={async () => setAvisoCompartir(avisoDeCompartir(await compartirFicha({ tipo: "oficio", nombre: o.nombre, zona: textoLocalidad(o.localidad), detalle: o.desc, imagen: o.logo || o.fotos?.[0] })) || "")} />
             ))}
             {hayMas && <button type="button" onClick={verMas} disabled={masCargando} style={{ ...botonSecundario, minHeight: 50 }}>{masCargando ? "Cargando..." : "Ver más"}</button>}
           </>
@@ -227,7 +234,7 @@ export function OficiosScreen({ usuario, onVolver, onAbrir, onOfrecer, onMisFich
   );
 }
 
-function HojaZona({ zona, usuario, onCambiar, onCerrar }) {
+export function HojaZona({ zona, usuario, onCambiar, onCerrar }) {
   const [otra, setOtra] = useState(false);
   const loc = zona.loc || usuario?.localidad || null;
   return (
@@ -249,33 +256,35 @@ function HojaZona({ zona, usuario, onCambiar, onCerrar }) {
 
 // ---------- ficha pública ----------
 
-function Fotos({ fotos }) {
+export function Fotos({ fotos, alt = "Foto de un trabajo" }) {
   const [abierta, setAbierta] = useState(null);
   return (
     <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
         {fotos.map((f) => (
-          <button key={f} type="button" onClick={() => setAbierta(f)} aria-label="Ver foto de trabajo" style={{ padding: 0, border: 0, borderRadius: 12, overflow: "hidden", aspectRatio: "1 / 1", background: "#EEF1F8" }}>
-            <img src={f} alt="Foto de un trabajo" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <button key={f} type="button" onClick={() => setAbierta(f)} aria-label="Ver foto" style={{ padding: 0, border: 0, borderRadius: 12, overflow: "hidden", aspectRatio: "1 / 1", background: "#EEF1F8" }}>
+            <img src={f} alt={alt} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </button>
         ))}
       </div>
       {abierta && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-3" style={{ background: "#000000e6" }} onClick={() => setAbierta(null)}>
           <button type="button" aria-label="Cerrar" onClick={() => setAbierta(null)} style={{ position: "absolute", top: "calc(12px + env(safe-area-inset-top, 0px))", right: 12, width: 48, height: 48 }}><X size={26} color="#fff" /></button>
-          <img src={abierta} alt="Foto de un trabajo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          <img src={abierta} alt={alt} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
         </div>
       )}
     </>
   );
 }
 
-const urlRed = (v, base) => (/^https:\/\//i.test(v) ? v : `${base}${v}`);
+export const urlRed = (v, base) => (/^https:\/\//i.test(v) ? v : `${base}${v}`);
 
 export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil }) {
   const [o, setO] = useState(null);
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
   const [wa, setWa] = useState(false);
+  const [aviso, setAviso] = useState("");
+  const esFav = useEsFavFicha("oficio", id);
   const cargar = useCallback(() => {
     setEstado("cargando");
     oficiosApi.ver(id).then((x) => { setO(x); setEstado("ok"); }).catch((e) => setEstado(e.status === 404 ? "noExiste" : "error"));
@@ -297,7 +306,12 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
   return (
     <DetalleFicha titulo={o.nombre} subtitulo={rubrosTexto(o, rubroConsulta, 3)} imagen={o.logo || o.fotos?.[0]} icono={Wrench} tono="naranja"
       estado={o.disponibilidad || undefined} contexto="Oficio" onVolver={onVolver}
+      acciones={[
+        { icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha({ tipo: "oficio", nombre: o.nombre, zona: textoLocalidad(o.localidad), detalle: o.desc, imagen: o.logo || o.fotos?.[0] })) || "") },
+        { icono: Heart, etiqueta: esFav ? "Quitar de favoritos" : "Guardar en favoritos", activo: esFav, onClick: () => alternarFavFicha("oficio", id) },
+      ]}
       pie={o.conWhatsapp ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Contactar por WhatsApp</button> : undefined}>
+      {aviso && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{aviso}</p>}
       <SeccionDetalle titulo="Rubros" icono={Wrench}>
         <div className="flex flex-wrap gap-2">{[...o.rubros.map((r) => r.label), ...o.otros].map((n) => <span key={n} style={{ borderRadius: 999, padding: "4px 12px", background: "#EEF1F8", color: "#0B1437", fontSize: "0.9375rem", fontWeight: 600 }}>{n}</span>)}</div>
         {o.etiquetas.length > 0 && <div className="flex flex-wrap gap-2 mt-2">{o.etiquetas.map((e) => <span key={e} style={{ borderRadius: 999, padding: "4px 12px", background: "#E4F3EA", color: "#1E6B44", fontSize: "0.875rem", fontWeight: 700 }}>{ETIQUETA_TXT[e] ? ETIQUETAS.find(([k]) => k === e)[1] : e}</span>)}</div>}
@@ -335,12 +349,12 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
 }
 
 // Mensaje inicial editable. Al tocar "Abrir WhatsApp" el servidor arma el enlace oficial (con el número) y se abre el chat: Mi Zona no envía nada.
-function HojaWhatsapp({ id, nombre, rubro, onCerrar }) {
-  const [texto, setTexto] = useState(`Hola, te encontré en Mi Zona. Quería consultar por tus servicios de ${rubro.toLowerCase()}.`);
+export function HojaWhatsapp({ id, nombre, rubro, onCerrar, contactar = oficiosApi.contacto, mensajeInicial }) {
+  const [texto, setTexto] = useState(mensajeInicial || `Hola, te encontré en Mi Zona. Quería consultar por tus servicios de ${rubro.toLowerCase()}.`);
   const [estado, setEstado] = useState(null); // null | "abriendo" | { error }
   const abrir = async () => {
     setEstado("abriendo");
-    try { const url = await oficiosApi.contacto(id, texto.trim()); window.location.assign(url); setEstado(null); onCerrar(); }
+    try { const url = await contactar(id, texto.trim()); window.location.assign(url); setEstado(null); onCerrar(); }
     catch (e) { setEstado({ error: e.message || "No pudimos abrir WhatsApp. Probá de nuevo." }); }
   };
   return (
@@ -361,7 +375,7 @@ function HojaWhatsapp({ id, nombre, rubro, onCerrar }) {
 
 const INICIAL = { nombre: "", rubros: [], otros: [], desc: "", zona: "", direccion: "", whatsapp: "", mostrarWhatsapp: false, ig: "", facebook: "", tiktok: "", logo: "", fotos: [], dias: [], horario: "", precio: "", etiquetas: [] };
 
-function Campo({ id, etiqueta, ayuda, children, contador }) {
+export function Campo({ id, etiqueta, ayuda, children, contador }) {
   return (
     <div className="mb-4">
       <div className="flex items-baseline justify-between gap-2 mb-1.5">
@@ -373,7 +387,7 @@ function Campo({ id, etiqueta, ayuda, children, contador }) {
     </div>
   );
 }
-const Bloque = ({ titulo, children }) => (
+export const Bloque = ({ titulo, children }) => (
   <section className="bg-white mb-3" style={{ border: "1px solid #E3E7F1", borderRadius: 20, padding: 16 }}>
     <h2 style={{ fontWeight: 800, fontSize: "1.0625rem", color: "#0B1437", marginBottom: 12 }}>{titulo}</h2>{children}
   </section>
@@ -564,121 +578,14 @@ export function FormularioOficio({ inicial, usuario, onGuardado, onCancelar }) {
 
 // ---------- paso final al activar ----------
 
-// ENGANCHE Fase 6: acá va el paso de "compartir Mi Zona" (botón que abre el menú de compartir con el enlace de descarga).
+// Fase 6: el paso de "compartir Mi Zona" (PasoCompartir) va dentro de esta pantalla.
 // ENGANCHE Fase 9: acá se muestra cuándo termina el mes gratis. Por ahora solo confirma que la ficha está activa.
 export function PasoOficioActivado({ oficio, onVerFicha, onListo }) {
   return (
     <Pagina titulo="Tu ficha está activa" onVolver={onListo}>
-      <EstadoExito titulo="¡Listo! Tu ficha ya es pública" mensaje={`${oficio.nombre} ya aparece en las búsquedas de ${rubrosTexto(oficio, "", 3)}. Podés editarla, pausarla o eliminarla cuando quieras desde Mis fichas.`} accion={{ texto: "Ir a Mis fichas", onClick: onListo }} />
+      <EstadoExito titulo="¡Listo! Tu ficha ya es pública" mensaje={`${oficio.nombre} ya aparece en las búsquedas de ${rubrosTexto(oficio, "", 3)}. Podés editarla, pausarla o eliminarla cuando quieras desde Mis fichas.`} />
+      <PasoCompartir tipo="oficio" ficha={{ id: oficio.id, nombre: oficio.nombre }} onSalir={onListo} />
       <button type="button" onClick={onVerFicha} className="w-full mt-3" style={botonSecundario}>Ver cómo la ven los demás</button>
-    </Pagina>
-  );
-}
-
-// ---------- Mis fichas ----------
-
-// Estado de un negocio propio, con las mismas reglas que Mi cuenta (pendiente de pago, activa, por vencer, vencida)
-function infoNegocio(n) {
-  const i = infoSuscripcion(n);
-  if (!i) return { estado: "activa" };
-  if (i.estado === "pendiente") return { estado: "pausada", texto: "Esperando el pago" };
-  if (i.estado === "vencida") return { estado: "vencida" };
-  return i.estado === "por_vencer" ? { estado: "activa", texto: `Vence en ${i.dias} ${i.dias === 1 ? "día" : "días"}` } : { estado: "activa" };
-}
-
-function FilaFicha({ icono: Icono, tono, titulo, sub, chip, children }) {
-  return (
-    <div className="bg-white mb-3" style={{ border: "1px solid #E3E7F1", borderRadius: 20, padding: 14 }}>
-      <div className="flex items-center gap-3">
-        <span style={{ width: 52, height: 52, borderRadius: 16, background: tono, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icono size={24} color="#0B1437" aria-hidden="true" /></span>
-        <span className="flex-1 min-w-0">
-          <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: "1.0625rem", color: "#0B1437", overflowWrap: "anywhere" }}>{titulo}</span>
-          {sub && <span className="block text-sm" style={{ color: "#4A5372" }}>{sub}</span>}
-          <span className="inline-block mt-1">{chip}</span>
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2 mt-3">{children}</div>
-    </div>
-  );
-}
-
-export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, refrescar }) {
-  const [oficio, setOficio] = useState(undefined); // undefined = cargando · null = no tiene
-  const [error, setError] = useState(false);
-  const [dialogo, setDialogo] = useState(null); // { tipo: "pausar"|"activar"|"eliminarOficio"|"eliminarNegocio", dato }
-  const [trabajando, setTrabajando] = useState(false);
-  const [aviso, setAviso] = useState(null);
-  const cargar = useCallback(() => { setError(false); oficiosApi.mio().then(setOficio).catch(() => { setError(true); setOficio(null); }); }, []);
-  useEffect(() => { cargar(); }, [cargar]);
-
-  const correr = async (accion, mensajeOk) => {
-    setTrabajando(true); setAviso(null);
-    try { await accion(); if (mensajeOk) setAviso({ ok: mensajeOk }); } catch (e) { setAviso({ error: e.message || "No se pudo completar. Probá de nuevo." }); }
-    setTrabajando(false); setDialogo(null);
-  };
-  const disponibilidad = (valor) => correr(async () => setOficio(await oficiosApi.disponibilidad(oficio.id, valor)));
-  const textos = dialogo && ({
-    pausar: { titulo: "¿Pausar tu ficha de oficios?", queHace: "Oculta tu ficha.", paraQue: "Sirve si no podés tomar trabajos por un tiempo.", queSucedera: "No aparece en búsquedas ni listados y nadie puede abrirla. No se borra nada: podés activarla de nuevo cuando quieras.", textoAceptar: "Sí, pausar" },
-    activar: { titulo: "¿Activar tu ficha otra vez?", queHace: "Vuelve a publicar tu ficha.", paraQue: "Sirve para que te encuentren de nuevo.", queSucedera: "Va a ser pública otra vez y otras personas podrán contactarte.", textoAceptar: "Sí, activar" },
-    eliminarOficio: { titulo: "¿Eliminar tu ficha de oficios?", queHace: "Borra tu ficha para siempre, con sus fotos y datos.", paraQue: "Sirve si ya no querés ofrecer tus servicios en Mi Zona.", queSucedera: "Desaparece de las búsquedas y de los favoritos. No se puede deshacer. Si solo querés frenarla un tiempo, mejor pausala.", textoAceptar: "Sí, eliminar", peligro: true },
-    eliminarNegocio: { titulo: `¿Eliminar ${dialogo.dato?.nombre}?`, queHace: "Borra tu negocio para siempre, con sus reseñas, promociones y estadísticas.", paraQue: "Sirve si ya no querés tener este negocio en Mi Zona.", queSucedera: "Desaparece de las búsquedas, del mapa y de los favoritos. No se puede deshacer y la suscripción que ya pagaste no se reembolsa. Si no querés perderlo, no lo elimines.", textoAceptar: "Sí, eliminar", peligro: true },
-  })[dialogo.tipo];
-  const confirmar = () => {
-    if (dialogo.tipo === "pausar" || dialogo.tipo === "activar") return correr(async () => setOficio(await oficiosApi.estado(oficio.id, dialogo.tipo === "pausar" ? "paused" : "active")), dialogo.tipo === "pausar" ? "Tu ficha quedó pausada." : "Tu ficha está activa otra vez.");
-    if (dialogo.tipo === "eliminarOficio") return correr(async () => { await oficiosApi.eliminar(oficio.id); setOficio(null); }, "Tu ficha de oficios se eliminó.");
-    return correr(async () => { await onEliminarNegocio(dialogo.dato.id); }, "Tu negocio se eliminó.");
-  };
-  const total = (negocios?.length || 0) + (oficio ? 1 : 0);
-
-  return (
-    <Pagina titulo="Mis fichas" onVolver={onVolver}>
-      <ComoFunciona pasos={["Acá ves todo lo que ofrecés en Mi Zona: tu negocio y tu ficha de oficios.", "Tocá una ficha para verla, editarla, pausarla o eliminarla.", "Pausar oculta la ficha sin borrar nada. Eliminar la borra para siempre."]} />
-      {aviso?.ok && <p role="status" className="text-sm mt-3 p-3 flex items-center gap-2" style={{ borderRadius: 12, background: "#EBF7F0", color: "#1E6B44", fontWeight: 600 }}><Check size={16} aria-hidden="true" /> {aviso.ok}</p>}
-      {aviso?.error && <p role="alert" className="text-sm mt-3 p-3" style={{ borderRadius: 12, background: "#FDF1EF", color: "#9A3B34" }}>{aviso.error}</p>}
-      <div className="mt-4" />
-
-      {oficio === undefined && <EstadoCarga texto="Cargando tus fichas..." filas={2} />}
-      {error && <EstadoError onReintentar={cargar} />}
-
-      {negocios?.map((n) => {
-        const i = infoNegocio(n);
-        return (
-          <FilaFicha key={n.id} icono={Store} tono="#DCEFE4" titulo={n.name || n.nombre} sub="Negocio" chip={<ChipEstado estado={i.estado} texto={i.texto} compacto />}>
-            <button type="button" onClick={() => onVerNegocio(n.id)} style={botonSecundario}><Eye size={16} aria-hidden="true" /> Ver</button>
-            <button type="button" onClick={() => onEditarNegocio(n.id)} style={botonSecundario}><Pencil size={16} aria-hidden="true" /> Editar</button>
-            <button type="button" onClick={() => setDialogo({ tipo: "eliminarNegocio", dato: { id: n.id, nombre: n.name || n.nombre } })} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>
-          </FilaFicha>
-        );
-      })}
-
-      {oficio && (
-        <FilaFicha icono={Wrench} tono="#FFE8C2" titulo={oficio.nombre} sub={`Oficios · ${rubrosTexto(oficio, "", 3)}`} chip={<ChipEstado estado={oficio.estado} compacto />}>
-          <div className="w-full">
-            <p className="text-sm font-bold mb-1.5" style={{ color: "#0B1437" }}>¿Estás disponible?</p>
-            <div className="flex gap-2" role="group" aria-label="Disponibilidad">
-              <Chip activo={oficio.disponibilidad === "disponibleHoy"} onClick={() => !trabajando && disponibilidad(true)}>Disponible hoy</Chip>
-              <Chip activo={oficio.disponibilidad === "ocupado"} onClick={() => !trabajando && disponibilidad(false)}>Ocupado</Chip>
-            </div>
-            <p className="text-sm mt-1.5" style={{ color: "#4A5372", lineHeight: 1.4 }}>«Disponible hoy» se apaga solo a medianoche, para no prometer lo que ya no es cierto.</p>
-          </div>
-          {oficio.estado === "activa" && <button type="button" onClick={() => onVerOficio(oficio.id)} style={botonSecundario}><Eye size={16} aria-hidden="true" /> Ver</button>}
-          <button type="button" onClick={() => onEditarOficio(oficio)} style={botonSecundario}><Pencil size={16} aria-hidden="true" /> Editar</button>
-          {oficio.estado === "pausada"
-            ? <button type="button" onClick={() => setDialogo({ tipo: "activar" })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Activar</button>
-            : <button type="button" onClick={() => setDialogo({ tipo: "pausar" })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Pausar</button>}
-          <button type="button" onClick={() => setDialogo({ tipo: "eliminarOficio" })} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>
-        </FilaFicha>
-      )}
-      {oficio?.estado === "pausada" && <p className="text-sm px-1 mb-3" style={{ color: "#4A5372" }}>Tu ficha está pausada: nadie puede verla hasta que la actives.</p>}
-
-      {oficio !== undefined && !error && total === 0 && <EstadoVacio icono={Store} titulo="Todavía no tenés fichas" mensaje="Podés sumar tu negocio o ofrecer tus servicios de oficio." />}
-      {oficio !== undefined && !error && (
-        <div className="flex flex-col gap-2 mt-2">
-          {!oficio && <button type="button" onClick={onCrearOficio} style={{ ...botonPrincipal, width: "100%" }}><Plus size={18} aria-hidden="true" /> Ofrecer mis servicios (oficios)</button>}
-          <button type="button" onClick={onAgregarNegocio} style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Agregar un negocio</button>
-        </div>
-      )}
-      {textos && <DialogoAdvertencia {...textos} cargando={trabajando} onAceptar={confirmar} onCancelar={() => !trabajando && setDialogo(null)} />}
     </Pagina>
   );
 }

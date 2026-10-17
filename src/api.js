@@ -137,6 +137,10 @@ export const SOPORTE_EMAIL = import.meta.env.VITE_SOPORTE_EMAIL || "";
 export const SOPORTE_WHATSAPP = String(import.meta.env.VITE_SOPORTE_WHATSAPP || "").replace(/\D/g, "");
 export const APP_VERSION = "1.1.0";
 
+// Enlace de descarga de MI ZONA (es el que va al final de todo lo que se comparte). Poné el link de Mi Zona en Google Play en Netlify con
+// VITE_MIZONA_DESCARGA_URL. Mientras no exista la ficha en Play Store se usa la dirección web de la app, así el mensaje nunca sale sin enlace.
+export const ENLACE_DESCARGA_MIZONA = import.meta.env.VITE_MIZONA_DESCARGA_URL || (typeof window !== "undefined" ? window.location.origin : "");
+
 export const PLAY_STORE_URL = import.meta.env.VITE_PLAY_STORE_URL || "https://play.google.com/store/search?q=Mi%20Asistente&c=apps";
 
 export async function traerMiSesion() {
@@ -185,6 +189,7 @@ export const completarCuenta = (usuario, password, nombre, extra) =>
 // Cuentas que ya existían: confirman que son mayores de 18, aceptan los términos y eligen su localidad
 export const guardarDeclaracion = (localidad) =>
   enviarUsuarioJSON("/auth/declaracion", "PUT", { declaracion: { mayor18: true, terminos: true }, localidad }).then((r) => r.usuario);
+const RUTA_FICHA = { negocio: "businesses", oficio: "oficios", alquiler: "alquileres" };
 // Perfil público (ver el de cualquiera, editar el mío) y qué muestra cada negocio sobre su dueño
 export const perfilesApi = {
   ver: (usuario) => pedirJSON(`/perfiles/${encodeURIComponent(usuario)}`, { method: "GET" }, {}).then((r) => r.perfil),
@@ -192,8 +197,8 @@ export const perfilesApi = {
   duenoNegocio: (id, cambios) => enviarUsuarioJSON(`/businesses/${encodeURIComponent(id)}/dueno`, "PUT", cambios),
   // Lo mismo para cualquier ficha: tipo "negocio" o "oficio". Cada ficha tiene sus propios interruptores (el servidor valida y solo el dueño puede cambiarlos).
   //   dueno: { enPerfil?, enFicha? } · privacidad: { mostrarWhatsapp?, apareceEnBusquedas? }
-  duenoFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${tipo === "oficio" ? "oficios" : "businesses"}/${encodeURIComponent(id)}/dueno`, "PUT", cambios),
-  privacidadFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${tipo === "oficio" ? "oficios" : "businesses"}/${encodeURIComponent(id)}/privacidad`, "PUT", cambios),
+  duenoFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${RUTA_FICHA[tipo] || "businesses"}/${encodeURIComponent(id)}/dueno`, "PUT", cambios),
+  privacidadFicha: (tipo, id, cambios) => enviarUsuarioJSON(`/${RUTA_FICHA[tipo] || "businesses"}/${encodeURIComponent(id)}/privacidad`, "PUT", cambios),
 };
 // Oficios y servicios: listado público, MI ficha (una por persona) y su gestión. Todo lo valida el servidor.
 const consulta = (f) => { const p = new URLSearchParams(); Object.entries(f || {}).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") p.set(k, v); }); return p.toString(); };
@@ -208,6 +213,24 @@ export const oficiosApi = {
   estado: (id, status) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}/estado`, "PUT", { status }).then((r) => r.oficio),
   disponibilidad: (id, disponible) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}/disponibilidad`, "PUT", { disponible }).then((r) => r.oficio),
   eliminar: (id) => enviarUsuarioJSON(`/oficios/${encodeURIComponent(id)}`, "DELETE", {}),
+};
+// Alquileres: listado público, MIS fichas (hasta 5) y sus artículos. Todo lo valida el servidor.
+const A = (id, resto = "") => `/alquileres/${encodeURIComponent(id)}${resto}`;
+export const alquileresApi = {
+  listar: (filtros) => pedirJSON(`/alquileres?${consulta(filtros)}`, { method: "GET" }, {}), // { alquileres, total, pagina, hayMas }
+  ver: (id) => pedirJSON(A(id), { method: "GET" }, {}).then((r) => r.alquiler),
+  contacto: (id, mensaje) => pedirJSON(A(id, "/contacto"), { method: "POST", body: JSON.stringify({ mensaje }) }, { "Content-Type": "application/json" }).then((r) => r.url),
+  mios: () => getUsuarioJSON("/alquileres/mios").then((r) => r.alquileres),
+  crear: (datos) => enviarUsuarioJSON("/alquileres", "POST", datos).then((r) => r.alquiler),
+  editar: (id, datos) => enviarUsuarioJSON(A(id), "PUT", datos).then((r) => r.alquiler),
+  estado: (id, status) => enviarUsuarioJSON(A(id, "/estado"), "PUT", { status }).then((r) => r.alquiler),
+  eliminar: (id) => enviarUsuarioJSON(A(id), "DELETE", {}),
+  // artículos (cada respuesta trae la ficha completa y actualizada)
+  agregarArticulo: (id, datos) => enviarUsuarioJSON(A(id, "/articulos"), "POST", datos).then((r) => r.alquiler),
+  editarArticulo: (id, aid, datos) => enviarUsuarioJSON(A(id, `/articulos/${encodeURIComponent(aid)}`), "PUT", datos).then((r) => r.alquiler),
+  estadoArticulo: (id, aid, estado) => enviarUsuarioJSON(A(id, `/articulos/${encodeURIComponent(aid)}/estado`), "PUT", { estado }).then((r) => r.alquiler),
+  quitarArticulo: (id, aid) => enviarUsuarioJSON(A(id, `/articulos/${encodeURIComponent(aid)}`), "DELETE", {}).then((r) => r.alquiler),
+  confirmar: (id) => enviarUsuarioJSON(A(id, "/confirmar"), "POST", {}).then((r) => r.alquiler),
 };
 // Eliminar un negocio propio (solo su dueño; la web pide confirmación antes)
 export const eliminarNegocio = (id) => enviarUsuarioJSON(`/businesses/${encodeURIComponent(id)}`, "DELETE", {});
@@ -366,4 +389,18 @@ export const soporteApi = {
   enviar: (cuerpo) => enviarUsuarioJSON("/soporte", "POST", cuerpo).then((r) => r.consulta),
   mias: () => getUsuarioJSON("/soporte/mias").then((r) => r.consultas),
   cerrar: (id) => enviarUsuarioJSON(`/soporte/${id}/cerrar`, "POST", {}).then((r) => r.consulta),
+};
+
+// Fase 6 · buscador único, favoritos de fichas y "ya compartió". Todo lo decide el servidor; la web solo muestra.
+// Buscar: { oficios, alquileres, totalOficios, totalAlquileres } (hasta 10 de cada tipo). Los negocios se buscan en la lista que la web ya trae.
+export const buscarApi = {
+  buscar: (filtros) => pedirJSON(`/buscar?${consulta(filtros)}`, { method: "GET" }, {}),
+};
+// Favoritos de oficios y alquileres: se guardan en el dispositivo; el servidor devuelve cuáles siguen visibles (y cuáles ya no existen).
+export const favoritosApi = {
+  resolver: (items) => pedirJSON("/favoritos/resolver", { method: "POST", body: JSON.stringify({ items }) }, { "Content-Type": "application/json" }),
+};
+// El dueño completó el menú de compartir tras activar su ficha. Solo guarda cuándo; no prueba que el mensaje llegó.
+export const compartidoApi = {
+  marcar: (tipo, id) => enviarUsuarioJSON(`/${RUTA_FICHA[tipo] || "businesses"}/${encodeURIComponent(id)}/compartido`, "POST", {}),
 };

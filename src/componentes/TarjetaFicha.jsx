@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { MapPin, ChevronRight, Store } from "lucide-react";
+import { MapPin, ChevronRight, Store, Heart } from "lucide-react";
 import { TONOS } from "../tonos.js";
 import ChipEstado from "./ChipEstado.jsx";
+import { usePulsacionLarga, ESTILO_PULSACION } from "../compartir.js";
 
 // Tarjeta breve de una ficha (negocio, oficio, alquiler...). Al tocarla se abre el detalle (onAbrir).
 // imagen: foto o logo opcional; sin imagen (o si falla) se muestra una baldosa con el icono.
+// onCompartir: si se pasa, mantener apretada la tarjeta abre el menú de compartir. onFavorito + esFavorito: corazón para guardar.
 // estado: clave de ChipEstado (activa, pausada, vencida, disponibleHoy, ocupado...). datoClave: lo más útil de un vistazo.
-export default function TarjetaFicha({ titulo, zona, datoClave, estado, estadoTexto, imagen, icono: Icono = Store, tono = "azul", onAbrir }) {
+export default function TarjetaFicha({ titulo, zona, datoClave, estado, estadoTexto, imagen, icono: Icono = Store, tono = "azul", onAbrir, onCompartir, onFavorito, esFavorito = false }) {
   const [falla, setFalla] = useState(false);
   const t = TONOS[tono] || TONOS.azul;
   const lado = 68;
+  const pulsacion = usePulsacionLarga(onCompartir);
   return (
+    <div style={{ position: "relative" }}>
     <button
-      type="button" onClick={onAbrir}
+      type="button" onClick={onAbrir} {...pulsacion}
       className="w-full text-left flex items-center gap-3"
-      style={{ background: "#fff", border: "1px solid #E3E7F1", borderRadius: 20, padding: 12, minHeight: 92, boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}
+      style={{ background: "#fff", border: "1px solid #E3E7F1", borderRadius: 20, padding: 12, paddingRight: onFavorito ? 60 : 12, minHeight: 92, boxShadow: "0 1px 2px rgba(11,20,55,.04)", ...(onCompartir ? ESTILO_PULSACION : {}) }}
     >
       {imagen && !falla ? (
         <img src={imagen} alt="" loading="lazy" onError={() => setFalla(true)}
@@ -40,7 +44,14 @@ export default function TarjetaFicha({ titulo, zona, datoClave, estado, estadoTe
           </span>
         )}
       </span>
-      <ChevronRight size={20} color="#8D95B0" aria-hidden="true" style={{ flexShrink: 0 }} />
+      {!onFavorito && <ChevronRight size={20} color="#8D95B0" aria-hidden="true" style={{ flexShrink: 0 }} />}
     </button>
+    {onFavorito && (
+      <button type="button" onClick={onFavorito} aria-label={esFavorito ? "Quitar de favoritos" : "Guardar en favoritos"} aria-pressed={esFavorito}
+        style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", width: 48, height: 48, borderRadius: 24, display: "inline-flex", alignItems: "center", justifyContent: "center", background: esFavorito ? "#FDF1EF" : "transparent" }}>
+        <Heart size={22} color={esFavorito ? "#E5484D" : "#64748B"} fill={esFavorito ? "#E5484D" : "none"} aria-hidden="true" />
+      </button>
+    )}
+    </div>
   );
 }

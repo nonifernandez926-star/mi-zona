@@ -156,6 +156,21 @@ router.put("/:id/dueno", requiereUsuario, limitar("dueno", 60, 3600 * 1000), asy
   }
 });
 
+// POST /api/businesses/:id/compartido → el dueño completó el menú de compartir tras publicar su negocio (Fase 6).
+// Solo guarda CUÁNDO: no prueba que el mensaje llegó a alguien y no se usa para dar ni quitar nada.
+router.post("/:id/compartido", requiereUsuario, limitar("negocio-compartido", 30, 3600 * 1000), async (req, res) => {
+  try {
+    const biz = await Business.findOne({ id: String(req.params.id) }).select("ownerId id").lean();
+    if (!biz || !biz.ownerId || biz.ownerId !== String(req.actor.usuario._id)) return res.status(404).json({ error: "Negocio no encontrado" });
+    const cuando = new Date();
+    await Business.updateOne({ id: biz.id }, { $set: { compartioEn: cuando } }, { timestamps: false });
+    res.json({ compartioEn: cuando });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar." });
+  }
+});
+
 // PUT /api/businesses/:id/privacidad   { mostrarWhatsapp?, apareceEnBusquedas? }  → el dueño decide, ficha por ficha, si se muestra el WhatsApp
 // al público y si la ficha aparece en búsquedas y listados. Solo el dueño puede cambiarlo y solo se aceptan valores true/false.
 router.put("/:id/privacidad", requiereUsuario, limitar("privacidad-ficha", 60, 3600 * 1000), async (req, res) => {

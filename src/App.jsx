@@ -29,8 +29,14 @@ import { TONOS as TONOS_ICONOS } from "./tonos.js";
 import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } from "./apariencia.js";
 import { PantallaBienvenida, PantallaCrearUsuario, PantallaDeclaracion } from "./bienvenida.jsx";
 import { PerfilPublicoScreen } from "./perfil.jsx";
-import { OficiosScreen, DetalleOficio, FormularioOficio, PasoOficioActivado, MisFichasScreen } from "./oficios.jsx";
-import { oficiosApi, eliminarNegocio } from "./api.js";
+import { OficiosScreen, DetalleOficio, FormularioOficio, PasoOficioActivado } from "./oficios.jsx";
+import { AlquileresScreen, DetalleAlquiler, FormularioAlquiler, PasoAlquilerActivado } from "./alquileres.jsx";
+import { MisFichasScreen, PasoNegocioActivado } from "./misFichas.jsx";
+import BuscadorScreen from "./buscador.jsx";
+import FavoritosPantalla from "./favoritosPantalla.jsx";
+import { compartirFicha, compartirTexto, textoInvitacion, avisoDeCompartir, usePulsacionLarga, ESTILO_PULSACION } from "./compartir.js";
+import { registrarFavNegocio, borrarFavFichas } from "./favoritos.js";
+import { oficiosApi, alquileresApi, eliminarNegocio } from "./api.js";
 import { uploadImage } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import {
@@ -281,15 +287,9 @@ function saveFavorites(list) {
 /* ---------- compartir un negocio ---------- */
 
 async function shareBusiness(biz) {
-  const url = `${window.location.origin}${window.location.pathname}?negocio=${biz.id}`;
-  const data = { title: biz.name, text: `Mirá ${biz.name} en Mi Zona`, url };
-  if (navigator.share) {
-    try { await navigator.share(data); return; } catch { /* el usuario canceló */ }
-  }
-  try {
-    await navigator.clipboard.writeText(url);
-    alert("Enlace copiado al portapapeles");
-  } catch { /* nada más que hacer */ }
+  const r = await compartirFicha({ tipo: "negocio", nombre: biz.name, zona: biz.zone, detalle: biz.desc, imagen: biz.logo || biz.photos?.[0] });
+  const aviso = avisoDeCompartir(r);
+  if (aviso) alert(aviso);
 }
 
 /* ---------- chat con el asistente del negocio (memoria local del dispositivo) ---------- */
@@ -1386,6 +1386,7 @@ function WeekHoursEditor({ value, onChange }) {
 /* ---------- ficha pública del negocio ---------- */
 
 function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, onToggleFavorite, onTrack }) {
+  const pulsacion = usePulsacionLarga(() => shareBusiness(biz));
   const c = catInfo(biz.cat);
   const rating = avgRating(biz.reviews);
   const discounts = activeDiscounts(biz);
@@ -1394,9 +1395,9 @@ function BusinessCard({ biz, onOpen, onOpenPhoto, distanceKm, rank, isFavorite, 
     <div
       role="button" tabIndex={0}
       onClick={() => onOpen(biz.id)}
-      onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)}
+      onKeyDown={(e) => (e.key === "Enter" ? onOpen(biz.id) : null)} {...pulsacion}
       className="bg-white flex flex-col overflow-hidden text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl"
-      style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}
+      style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)", ...ESTILO_PULSACION }}
     >
       <div className="relative">
         <Photo cat={biz.cat} src={biz.portada || biz.logo || null} height={176} radius="0px" iconSize={42} clickable={false} />
@@ -2038,7 +2039,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenAlquileres, onBuscarTodo, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2100,13 +2101,24 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             <Search size={18} color="var(--azul)" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); onBuscarTodo?.(query.trim()); } }}
               onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
               placeholder="Buscá un negocio, producto o servicio..."
               className="w-full outline-none text-sm bg-transparent buscador-portada" style={{ color: "#0B1437", WebkitTextFillColor: "#0B1437" }}
             />
             {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#5B6482" /></button>}
           </div>
+
+          {onBuscarTodo && (
+            <button
+              type="button" onClick={() => onBuscarTodo(query.trim())}
+              className="flex items-center gap-1.5 mt-2.5 text-xs font-semibold px-3 py-2"
+              style={{ borderRadius: 20, background: "#ffffff1a", color: "#fff", border: "1px solid #ffffff26", minHeight: 40, maxWidth: "100%" }}
+            >
+              <Search size={13} aria-hidden="true" />
+              <span className="truncate">{query.trim().length >= 2 ? `Buscar «${query.trim()}» en negocios, oficios y alquileres` : "Buscar en negocios, oficios y alquileres"}</span>
+            </button>
+          )}
 
           {!query && historial.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto">
@@ -2191,15 +2203,23 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             })}
           </div>
         </div>
-        {/* Oficios y servicios: se busca por rubro y zona (electricista, plomero, jardinero...) */}
-        <button onClick={onOpenOficios} className="w-full flex items-center gap-3 mt-3 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "12px 14px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
-          <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: "#FFE8C2" }}><Wrench size={21} color="#8A5B12" /></span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Oficios y servicios</span>
-            <span className="block text-xs" style={{ color: "#5B6482" }}>Electricistas, plomeros, jardineros y más cerca tuyo.</span>
-          </span>
-          <ChevronDown size={18} color="#8D95B0" style={{ transform: "rotate(-90deg)" }} />
-        </button>
+        {/* Oficios y servicios y Alquileres: dos accesos en una sola fila (no se llena la pantalla de botones) */}
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <button onClick={onOpenOficios} className="flex items-center gap-2.5 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#FFE8C2" }}><Wrench size={20} color="#8A5B12" /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437" }}>Oficios y servicios</span>
+              <span className="block text-[11px] leading-tight mt-0.5" style={{ color: "#5B6482" }}>Electricistas, plomeros...</span>
+            </span>
+          </button>
+          <button onClick={onOpenAlquileres} className="flex items-center gap-2.5 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#E3E8FD" }}><Home size={20} color="#2B3E9E" /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437" }}>Alquileres</span>
+              <span className="block text-[11px] leading-tight mt-0.5" style={{ color: "#5B6482" }}>Casas, sillas, equipos...</span>
+            </span>
+          </button>
+        </div>
       </div>
     </>
   );
@@ -2236,9 +2256,8 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
           <div style={{ borderTop: "1px solid #EEF0F6", margin: "8px 0" }} />
           <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
-            const data = { title: "Mi Zona", text: "Descubrí negocios de tu zona con Mi Zona", url: window.location.origin };
-            if (navigator.share) { try { await navigator.share(data); } catch {} }
-            else { try { await navigator.clipboard.writeText(window.location.origin); alert("Enlace copiado al portapapeles"); } catch {} }
+            const aviso = avisoDeCompartir(await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion("") }));
+            if (aviso) alert(aviso);
             onClose();
           }} />
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onAyuda} />
@@ -3837,7 +3856,7 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
           />
           <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
           <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14 }}>
-            Compartir enlace
+            Compartir mi negocio
           </button>
         </div>
       </SubPantalla>
@@ -4680,6 +4699,11 @@ export default function MiZona() {
   const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
   const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
   const [oficioActivado, setOficioActivado] = useState(null);
+  // Alquileres (Fase 5): listado, ficha, formulario y paso final (se ven por encima de "Mis fichas")
+  const [alquileresAbierto, setAlquileresAbierto] = useState(false);
+  const [alquilerVer, setAlquilerVer] = useState(null); // { id }
+  const [alquilerForm, setAlquilerForm] = useState(null); // { inicial } (null = crear)
+  const [alquilerActivado, setAlquilerActivado] = useState(null);
   const [misFichasAbierto, setMisFichasAbierto] = useState(false);
   const [fichasVersion, setFichasVersion] = useState(0); // sube cuando cambia una ficha, para que "Mis fichas" la vuelva a pedir
   const [negocioEditandoId, setNegocioEditandoId] = useState(null); // negocio que se edita desde "Mis fichas" (si no, el primero)
@@ -4708,6 +4732,7 @@ export default function MiZona() {
   const continuarDespues = (despues) => {
     if (despues === "agregar") setShowAddBusiness(true);
     else if (despues === "oficio") abrirOfrecerOficio();
+    else if (despues === "alquiler") abrirOfrecerAlquiler();
     else if (despues?.tipo === "chat") setChatBiz(despues.biz);
   };
   // "Ofrecer mis servicios": si ya tiene su ficha de oficios se abre "Mis fichas" (una por persona); si no, el formulario
@@ -4717,6 +4742,14 @@ export default function MiZona() {
       const mio = await oficiosApi.mio();
       if (mio) setMisFichasAbierto(true); else setOficioForm({ inicial: null });
     } catch { setOficioForm({ inicial: null }); }
+  };
+  // "Ofrecer en alquiler": se pueden tener hasta 5 fichas; si ya llegó al máximo se abre "Mis fichas"
+  const abrirOfrecerAlquiler = async () => {
+    if (!requerirSesion("Para ofrecer algo en alquiler necesitás una cuenta de Mi Zona. Es rápido y gratis.", "alquiler")) return;
+    try {
+      const mias = await alquileresApi.mios();
+      if (mias.length >= 5) setMisFichasAbierto(true); else setAlquilerForm({ inicial: null });
+    } catch { setAlquilerForm({ inicial: null }); }
   };
   // Eliminar un negocio propio (la confirmación la pide "Mis fichas")
   const eliminarNegocioPropio = async (id) => {
@@ -4754,6 +4787,7 @@ export default function MiZona() {
   const borrarDatosLocales = () => {
     Object.keys(localStorage).filter((k) => k.startsWith("miZona")).forEach((k) => localStorage.removeItem(k));
     setFavorites([]);
+    borrarFavFichas(); // favoritos de oficios y alquileres de este dispositivo
     setOnlyFavorites(false);
     setNotifLeidas(new Set());
     setNotifEliminadas(new Set());
@@ -4781,8 +4815,9 @@ export default function MiZona() {
     const r = await iniciarPago(cuerpo);
     if (r.cubiertoPorAsistente) {
       setPlanesModal(null); setBorrador(null); setShowAddBusiness(false);
-      await recargarMisNegocios();
-      setAddBusinessDone({ hasta: r.expiresAt });
+      const antesIds = new Set((misNegociosRef.current || []).map((m) => m.id));
+      const mios = await recargarMisNegocios();
+      setAddBusinessDone({ hasta: r.expiresAt, negocio: (mios || []).find((m) => !antesIds.has(m.id)) || null });
       return;
     }
     if (r.initPoint) { window.location.href = r.initPoint; return; } // sigue en Mercado Pago
@@ -4813,6 +4848,7 @@ export default function MiZona() {
   const [favorites, setFavorites] = useState(() => getFavorites());
   const toggleFavorite = (bizId) => {
     const yaEsFavorito = favorites.includes(bizId);
+    registrarFavNegocio(bizId, !yaEsFavorito); // guarda la fecha para filtrar Favoritos por fecha
     setFavorites((prev) => {
       const next = yaEsFavorito ? prev.filter((id) => id !== bizId) : [...prev, bizId];
       saveFavorites(next);
@@ -4833,6 +4869,8 @@ export default function MiZona() {
   const [showRanking, setShowRanking] = useState(false);
   const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
+  const [buscador, setBuscador] = useState(null); // { inicial } cuando está abierto el buscador único (Fase 6)
+  const [pasoNegocio, setPasoNegocio] = useState(null); // negocio recién activado: se le muestra el paso de compartir
   // Mis pedidos: lista con el estado de cada pedido (viene de Mi Asistente) y su recarga
   const [showPedidos, setShowPedidos] = useState(false);
   const [misPedidos, setMisPedidos] = useState([]);
@@ -4935,7 +4973,12 @@ export default function MiZona() {
           return !m.pendientePago && (!previo || previo.pendientePago || (m.expiresAt || "") > (previo.expiresAt || ""));
         });
         if (confirmado) {
-          if (!cancelado) { setAvisoOk("¡Pago confirmado! Tu suscripción ya está activa."); setConfirmandoPago(false); }
+          if (!cancelado) {
+            setAvisoOk("¡Pago confirmado! Tu suscripción ya está activa."); setConfirmandoPago(false);
+            // si es un negocio que recién se activa (no una renovación), se le muestra el paso de compartir
+            const nuevo = mios.find((m) => !m.pendientePago && (!antes[m.id] || antes[m.id].pendientePago));
+            if (nuevo && !nuevo.compartioEn) setPasoNegocio(nuevo);
+          }
           return;
         }
         await new Promise((r) => setTimeout(r, 3000));
@@ -5132,6 +5175,7 @@ export default function MiZona() {
     [showOrden, () => setShowOrden(false)],
     [!!selectedId, () => setSelectedId(null)],
     [showFavoritos, () => setShowFavoritos(false)],
+    [!!buscador, () => setBuscador(null)],
     [showMapa, () => setShowMapa(false)],
     [showRanking, () => setShowRanking(false)],
     [showAgenda, () => setShowAgenda(false)],
@@ -5146,6 +5190,10 @@ export default function MiZona() {
     [!!oficioVer, () => setOficioVer(null)],
     [!!oficioForm, () => setOficioForm(null)],
     [!!oficioActivado, () => setOficioActivado(null)],
+    [alquileresAbierto, () => setAlquileresAbierto(false)],
+    [!!alquilerVer, () => setAlquilerVer(null)],
+    [!!alquilerForm, () => setAlquilerForm(null)],
+    [!!alquilerActivado, () => setAlquilerActivado(null)],
     [showEditOwnerBiz, () => { setShowEditOwnerBiz(false); setNegocioEditandoId(null); }],
     [!!perfilVer, () => setPerfilVer(null)],
     [showAddSheet, () => setShowAddSheet(false)],
@@ -5153,6 +5201,7 @@ export default function MiZona() {
     [!!borrador, () => setBorrador(null)],
     [!!planesModal, () => setPlanesModal(null)],
     [!!addBusinessDone, () => setAddBusinessDone(null)],
+    [!!pasoNegocio, () => setPasoNegocio(null)],
     [!!showLogin, () => setShowLogin(null)],
     [confirmarSalida, () => setConfirmarSalida(false)],
     [!!lightboxSrc, () => setLightboxSrc(null)],
@@ -5301,29 +5350,12 @@ export default function MiZona() {
     );
   }
 
-  if (showFavoritos) {
-    return (
-      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh", fontFamily: "var(--fuente-texto)" }}>
-        {globalStyle}
-        <div className="max-w-3xl mx-auto px-4 py-6" style={{ paddingBottom: 40 }}>
-          <FavoritosScreen
-            businesses={businesses}
-            favorites={favorites}
-            onToggleFavorite={toggleFavorite}
-            onBack={() => setShowFavoritos(false)}
-            onOpenBusiness={(id) => { setShowFavoritos(false); openDetail(id); }}
-          />
-        </div>
-      </div>
-    );
-  }
-
   /* ---- perfil público de una persona ---- */
   if (perfilVer) {
     return (
       <div style={{ fontFamily: "var(--fuente-texto)" }}>
         {globalStyle}
-        <PerfilPublicoScreen usuario={perfilVer} onBack={() => setPerfilVer(null)} onAbrirNegocio={(id) => { setPerfilVer(null); openDetail(id); }} onAbrirOficio={(id) => { setPerfilVer(null); setOficioVer({ id }); }} />
+        <PerfilPublicoScreen usuario={perfilVer} onBack={() => setPerfilVer(null)} onAbrirNegocio={(id) => { setPerfilVer(null); openDetail(id); }} onAbrirOficio={(id) => { setPerfilVer(null); setOficioVer({ id }); }} onAbrirAlquiler={(id) => { setPerfilVer(null); setAlquilerVer({ id }); }} />
       </div>
     );
   }
@@ -5414,6 +5446,8 @@ export default function MiZona() {
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
           onOpenOficios={() => setOficiosAbierto(true)}
+          onOpenAlquileres={() => setAlquileresAbierto(true)}
+          onBuscarTodo={(q) => setBuscador({ inicial: q })}
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
           onAjustes={() => irATab("ajustes")}
@@ -5468,13 +5502,43 @@ export default function MiZona() {
           />
         </div>
       )}
+      {alquileresAbierto && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <AlquileresScreen
+            usuario={usuario} onVolver={() => setAlquileresAbierto(false)} onAbrir={(id) => setAlquilerVer({ id })}
+            onOfrecer={abrirOfrecerAlquiler} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }}
+          />
+        </div>
+      )}
       {misFichasAbierto && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <MisFichasScreen
             key={fichasVersion} usuario={usuario} negocios={misNegocios} onVolver={() => setMisFichasAbierto(false)}
             onVerNegocio={(id) => openDetail(id)} onEditarNegocio={(id) => { setNegocioEditandoId(id); setShowEditOwnerBiz(true); }} onEliminarNegocio={eliminarNegocioPropio}
             onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
+            onVerAlquiler={(id) => setAlquilerVer({ id })} onEditarAlquiler={(a) => setAlquilerForm({ inicial: a })} onCrearAlquiler={() => setAlquilerForm({ inicial: null })}
             onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }}
+          />
+        </div>
+      )}
+      {showFavoritos && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <FavoritosPantalla
+            businesses={businesses} favorites={favorites} categoriasNegocio={CATEGORIES.map(({ id, label }) => ({ id, label }))}
+            onToggleFavorite={toggleFavorite} onCompartirNegocio={shareBusiness} onVolver={() => setShowFavoritos(false)}
+            onAbrirNegocio={(id) => { setShowFavoritos(false); openDetail(id); }}
+            onAbrirOficio={(id) => setOficioVer({ id })} onAbrirAlquiler={(id) => setAlquilerVer({ id })}
+          />
+        </div>
+      )}
+      {buscador && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <BuscadorScreen
+            usuario={usuario} inicial={buscador.inicial || ""} categoriasNegocio={CATEGORIES.map(({ id, label }) => ({ id, label }))}
+            negocios={businesses.filter((b) => b.kind !== "job" && b.status === "active" && enListados(b) && b.zone === zone)}
+            onVolver={() => setBuscador(null)}
+            onAbrirNegocio={(id) => { setBuscador(null); openDetail(id); }}
+            onAbrirOficio={(id, rubro) => setOficioVer({ id, rubro })} onAbrirAlquiler={(id) => setAlquilerVer({ id })}
           />
         </div>
       )}
@@ -5494,6 +5558,32 @@ export default function MiZona() {
       {oficioActivado && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <PasoOficioActivado oficio={oficioActivado} onVerFicha={() => setOficioVer({ id: oficioActivado.id })} onListo={() => { setOficioActivado(null); setMisFichasAbierto(true); }} />
+        </div>
+      )}
+
+      {alquilerVer && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <DetalleAlquiler key={alquilerVer.id} id={alquilerVer.id} usuario={usuario} onVolver={() => setAlquilerVer(null)} onAbrirPerfil={(u) => { setAlquilerVer(null); setPerfilVer(u); }}
+            onGestionar={() => { setAlquilerVer(null); setMisFichasAbierto(true); }} />
+        </div>
+      )}
+      {alquilerForm && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <FormularioAlquiler
+            inicial={alquilerForm.inicial} usuario={usuario} onCancelar={() => setAlquilerForm(null)}
+            onGuardado={(a, nueva) => { setAlquilerForm(null); setFichasVersion((v) => v + 1); if (nueva) setAlquilerActivado(a); }}
+          />
+        </div>
+      )}
+      {alquilerActivado && (
+        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <PasoAlquilerActivado alquiler={alquilerActivado} onVerFicha={() => setAlquilerVer({ id: alquilerActivado.id })} onListo={() => { setAlquilerActivado(null); setMisFichasAbierto(true); }} />
+        </div>
+      )}
+
+      {pasoNegocio && (
+        <div className="fixed inset-0 z-[73] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+          <PasoNegocioActivado negocio={pasoNegocio} onListo={() => { setPasoNegocio(null); setMisFichasAbierto(true); }} />
         </div>
       )}
 
@@ -5572,6 +5662,19 @@ export default function MiZona() {
                 <span className="block text-xs" style={{ color: "#5B6482" }}>Electricista, plomero, jardinero... armá tu ficha de oficios.</span>
               </span>
             </button>
+            <button
+              onClick={() => { setShowAddSheet(false); abrirOfrecerAlquiler(); }}
+              className="w-full flex items-center gap-3 p-3.5 text-left mt-3"
+              style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 2px 8px #0000000d" }}
+            >
+              <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 12, background: "#E3E8FD" }}>
+                <Home size={19} color="#2B3E9E" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold" style={{ color: "#0B1437" }}>Ofrecer en alquiler</span>
+                <span className="block text-xs" style={{ color: "#5B6482" }}>Casas, salones, sillas, herramientas... armá tu ficha con sus artículos.</span>
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -5604,7 +5707,7 @@ export default function MiZona() {
             <p className="text-sm mb-5" style={{ color: "#2B3768" }}>
               Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
             </p>
-                        <button onClick={() => setAddBusinessDone(null)} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}>
+                        <button onClick={() => { const n = addBusinessDone.negocio; setAddBusinessDone(null); if (n) setPasoNegocio(n); }} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}>
               Entendido
             </button>
           </div>

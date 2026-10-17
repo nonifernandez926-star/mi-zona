@@ -38,6 +38,8 @@ const oficioSchema = new mongoose.Schema(
     duenoEnFicha: { type: Boolean, default: false },
     apareceEnBusquedas: { type: Boolean, default: true },
     textoBusqueda: { type: String, default: "" }, // rubros + descripción + zona, sin tildes
+    // Fase 6: cuándo el dueño completó el menú de compartir tras activar la ficha. NO prueba que el mensaje llegó: solo que lo abrió y lo completó.
+    compartioEn: { type: Date, default: null },
   },
   { timestamps: true }
 );

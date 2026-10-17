@@ -240,4 +240,19 @@ router.delete("/:id", requiereUsuario, limitar("oficio-borrar", 30, 3600 * 1000)
   }
 });
 
+// POST /api/oficios/:id/compartido → el dueño completó el menú de compartir tras activar (Fase 6).
+// Solo guarda CUÁNDO: no prueba que el mensaje llegó a alguien, y no se usa para dar ni quitar nada.
+router.post("/:id/compartido", requiereUsuario, limitar("oficio-compartido", 30, 3600 * 1000), async (req, res) => {
+  try {
+    const f = await miFicha(req, res);
+    if (!f) return;
+    const cuando = new Date();
+    await Oficio.updateOne({ id: f.id }, { $set: { compartioEn: cuando } }, { timestamps: false });
+    res.json({ compartioEn: cuando });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "No se pudo guardar." });
+  }
+});
+
 export default router;

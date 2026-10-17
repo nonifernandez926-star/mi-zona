@@ -2,6 +2,7 @@ import express from "express";
 import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
 import Oficio from "../models/Oficio.js";
+import Alquiler from "../models/Alquiler.js";
 import AgendaItem from "../models/AgendaItem.js";
 import PushSuscripcion from "../models/PushSuscripcion.js";
 import UsoFotoAgenda from "../models/UsoFotoAgenda.js";
@@ -26,9 +27,10 @@ router.get("/", async (req, res) => {
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficio, agenda, tareas, dispositivosPush, resenas] = await Promise.all([
+    const [negocios, oficio, alquileres, agenda, tareas, dispositivosPush, resenas] = await Promise.all([
       Business.find({ ownerId: id }).select("id name status pendientePago expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas"),
       Oficio.findOne({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp"),
+      Alquiler.find({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp").sort({ createdAt: 1 }),
       AgendaItem.countDocuments({ usuarioId: id, tipo: "evento" }),
       AgendaItem.countDocuments({ usuarioId: id, tipo: "tarea" }),
       PushSuscripcion.countDocuments({ usuarioId: id }),
@@ -39,6 +41,7 @@ router.get("/", async (req, res) => {
       sesion: { venceEn: req.tokenExp ? new Date(req.tokenExp * 1000).toISOString() : null },
       negocios: negocios.map((n) => ({ id: n.id, nombre: n.name, estado: n.pendientePago ? "pendiente" : n.status, venceEl: n.expiresAt, duenoEnPerfil: !!n.duenoEnPerfil, duenoEnFicha: !!n.duenoEnFicha, mostrarWhatsapp: n.mostrarWhatsapp !== false, apareceEnBusquedas: n.apareceEnBusquedas !== false })),
       oficios: oficio ? [{ id: oficio.id, nombre: oficio.nombre, estado: oficio.status === "paused" ? "pausada" : "activa", venceEl: oficio.expiresAt || null, duenoEnPerfil: !!oficio.duenoEnPerfil, duenoEnFicha: !!oficio.duenoEnFicha, mostrarWhatsapp: oficio.mostrarWhatsapp === true, apareceEnBusquedas: oficio.apareceEnBusquedas !== false, tieneWhatsapp: !!oficio.whatsapp }] : [],
+      alquileres: alquileres.map((a) => ({ id: a.id, nombre: a.nombre, estado: a.status === "paused" ? "pausada" : "activa", venceEl: a.expiresAt || null, duenoEnPerfil: !!a.duenoEnPerfil, duenoEnFicha: !!a.duenoEnFicha, mostrarWhatsapp: a.mostrarWhatsapp === true, apareceEnBusquedas: a.apareceEnBusquedas !== false, tieneWhatsapp: !!a.whatsapp })),
       agenda: { eventos: agenda, tareas },
       dispositivosPush,
       resenas: resenas[0]?.n || 0,
@@ -85,9 +88,10 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficioPropio, agenda, push, consultas] = await Promise.all([
+    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas] = await Promise.all([
       Business.find({ ownerId: id }),
       Oficio.findOne({ ownerId: id }).lean(),
+      Alquiler.find({ ownerId: id }).lean(),
       AgendaItem.find({ usuarioId: id }).lean(),
       PushSuscripcion.find({ usuarioId: id }).select("createdAt").lean(),
       Consulta.find({ usuarioId: id }).select("motivo asunto mensaje estado respuesta createdAt -_id").lean(),
@@ -113,6 +117,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
         return { ...resto, suscripcion: { plan: suscripcion?.plan || null, origen: suscripcion?.origen || null }, reviews: (o.reviews || []).map(({ autorUid, ...r }) => r) };
       }),
       fichaDeOficios: oficioPropio ? (({ _id, __v, ownerId, textoBusqueda, ...r }) => r)(oficioPropio) : null,
+      fichasDeAlquiler: alquileresPropios.map(({ _id, __v, ownerId, textoBusqueda, ...r }) => r),
       agenda: agenda.map(({ _id, __v, usuarioId, ...r }) => r),
       reseñasQueEscribí: misResenas,
       dispositivosConNotificaciones: push.length,
@@ -187,6 +192,7 @@ router.delete("/cuenta", async (req, res) => {
     if (u.sesionClienteId) await Evento.deleteMany({ clienteId: u.sesionClienteId });
     await Promise.all([
       Oficio.deleteMany({ ownerId: id }),
+      Alquiler.deleteMany({ ownerId: id }),
       AgendaItem.deleteMany({ usuarioId: id }),
       PushSuscripcion.deleteMany({ usuarioId: id }),
       UsoFotoAgenda.deleteMany({ usuarioId: id }),
