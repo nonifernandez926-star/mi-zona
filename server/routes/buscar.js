@@ -2,6 +2,7 @@ import express from "express";
 import Oficio from "../models/Oficio.js";
 import Alquiler from "../models/Alquiler.js";
 import { identificar, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { RUBRO_IDS } from "../utils/rubros.js";
 import { oficioPublico, estadoOficio, normalizar } from "../utils/oficios.js";
@@ -22,8 +23,8 @@ export function palabrasDeBusqueda(q) {
   return normalizar(String(q ?? "")).slice(0, 60).split(" ").filter((w) => w.length >= 2).slice(0, 5).map(raiz);
 }
 
-const visible = (h) => ({
-  status: "active", apareceEnBusquedas: { $ne: false },
+const visible = (h, excluidos = []) => ({
+  status: "active", pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true }, ownerId: { $nin: excluidos },
   $or: [{ expiresAt: null }, { expiresAt: "" }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: h } }],
 });
 
@@ -52,8 +53,9 @@ router.get("/", limitar("buscar-todo", 120, 10 * 60 * 1000), async (req, res) =>
     if (req.query.rubro) { if (!RUBRO_IDS.has(String(req.query.rubro))) return res.status(400).json({ error: "Ese rubro no existe." }); extraO.push({ rubros: String(req.query.rubro) }); }
     if (req.query.categoria) { if (!CATEGORIA_IDS.has(String(req.query.categoria))) return res.status(400).json({ error: "Esa categoría no existe." }); extraA.push({ categoria: String(req.query.categoria) }); }
 
-    const matchO = { $and: [visible(h), ...comunes.y, ...extraO] };
-    const matchA = { $and: [visible(h), ...comunes.y, ...extraA] };
+    const excluidos = await ownersExcluidos(req); // Fase 8: cuentas suspendidas y personas bloqueadas
+    const matchO = { $and: [visible(h, excluidos), ...comunes.y, ...extraO] };
+    const matchA = { $and: [visible(h, excluidos), ...comunes.y, ...extraA] };
     const [totalOficios, filasO, totalAlquileres, filasA] = await Promise.all([
       tipo === "alquileres" ? 0 : Oficio.countDocuments(matchO),
       tipo === "alquileres" ? [] : Oficio.find(matchO).sort({ updatedAt: -1, _id: 1 }).limit(POR_TIPO).lean(),

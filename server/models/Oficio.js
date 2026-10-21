@@ -30,6 +30,10 @@ const oficioSchema = new mongoose.Schema(
     // Estado: "active" | "paused". "Vencida" se calcula con expiresAt (vacío mientras no se cobre: se conecta en la Fase 9)
     status: { type: String, enum: ["active", "paused"], default: "active" },
     expiresAt: { type: String, default: null },
+    // Fase 9: la ficha se muestra solo si tiene tiempo vigente (mes gratis, compra de Google Play o días de invitación).
+    // pendientePago: cargada pero todavía sin mes gratis ni compra → no se muestra al público. Al vencer se OCULTA (no se borra) y vuelve al renovar.
+    pendientePago: { type: Boolean, default: false },
+    suscripcion: { type: mongoose.Schema.Types.Mixed, default: {} }, // { origen: gratis|play|invitacion, plan, ultimoAvisoUmbral, ultimoAvisoVencimiento }
     // Disponible hoy / Ocupado, con un toque. "Disponible hoy" solo vale el día en que se marcó (disponibleEl, YYYY-MM-DD hora Argentina)
     disponible: { type: Boolean, default: null },
     disponibleEl: { type: String, default: null },
@@ -37,6 +41,11 @@ const oficioSchema = new mongoose.Schema(
     duenoEnPerfil: { type: Boolean, default: false },
     duenoEnFicha: { type: Boolean, default: false },
     apareceEnBusquedas: { type: Boolean, default: true },
+    // Fase 8: si el equipo de Mi Zona la ocultó por una denuncia, no sale en listados, búsquedas ni se abre desde afuera. El dueño la sigue viendo y puede apelar.
+    ocultaPorEquipo: { type: Boolean, default: false },
+    ocultaMotivo: { type: String, default: "" },
+    ocultaDesde: { type: Date, default: null },
+    ocultaMedidaId: { type: String, default: "" },
     textoBusqueda: { type: String, default: "" }, // rubros + descripción + zona, sin tildes
     // Fase 6: cuándo el dueño completó el menú de compartir tras activar la ficha. NO prueba que el mensaje llegó: solo que lo abrió y lo completó.
     compartioEn: { type: Date, default: null },

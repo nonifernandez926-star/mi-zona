@@ -4,9 +4,11 @@ import mongoose from "mongoose";
 import Oficio from "../models/Oficio.js";
 import Usuario from "../models/Usuario.js";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { declaracionPendiente } from "../utils/perfil.js";
 import { RUBROS, GRUPOS_RUBROS, RUBRO_IDS } from "../utils/rubros.js";
+import { anotarEvento } from "../utils/estadisticas.js";
 import { sanearOficio, textoBusqueda, normalizar, oficioPublico, oficioDelDueno, estadoOficio, enlaceWhatsapp, CAMPOS_FORMULARIO } from "../utils/oficios.js";
 
 const router = express.Router();
@@ -19,11 +21,11 @@ const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // Una ficha se ve en listados solo si está activa (ni pausada ni vencida) y su dueño no la sacó de las búsquedas
 function filtroVisible(h) {
   return {
-    status: "active", apareceEnBusquedas: { $ne: false },
+    status: "active", pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true },
     $or: [{ expiresAt: null }, { expiresAt: "" }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: h } }],
   };
 }
-const esVisible = (o, h) => o && estadoOficio(o, h) === "activa" && o.apareceEnBusquedas !== false;
+const esVisible = (o, h) => o && estadoOficio(o, h) === "activa" && o.apareceEnBusquedas !== false && o.ocultaPorEquipo !== true;
 
 // "Dueño: @usuario": solo si el dueño lo activó para esta ficha Y su perfil es visible
 async function usuariosDeFichas(lista) {
@@ -62,7 +64,8 @@ router.get("/", limitar("oficios-lista", 240, 10 * 60 * 1000), async (req, res) 
   try {
     const h = hoy();
     const { rubro, q, provinciaId, departamentoId, localidadId } = req.query;
-    const filtro = filtroVisible(h);
+    // Fase 8: no se muestran cuentas suspendidas ni personas bloqueadas (en ningún sentido)
+    const filtro = { ...filtroVisible(h), ownerId: { $nin: await ownersExcluidos(req) } };
     const y = [];
     if (rubro !== undefined && rubro !== "") {
       if (!RUBRO_IDS.has(String(rubro))) return res.status(400).json({ error: "Ese rubro no existe." });
@@ -101,8 +104,9 @@ router.get("/:id", limitar("oficios-ficha", 240, 10 * 60 * 1000), async (req, re
   try {
     const h = hoy();
     const o = await Oficio.findOne({ id: String(req.params.id) }).lean();
-    if (!esVisible(o, h)) return res.status(404).json({ error: "Esta ficha ya no está disponible." });
+    if (!esVisible(o, h) || (await ownerExcluido(req, o.ownerId))) return res.status(404).json({ error: "Esta ficha ya no está disponible." });
     const duenos = await usuariosDeFichas([o]);
+    anotarEvento(req, o.id, "visita", o.ownerId); // solo una cantidad para el panel del dueño; no se guarda quién fue
     res.json({ oficio: oficioPublico(o, h, o.duenoEnFicha ? duenos.get(o.ownerId) || null : null) });
   } catch (e) {
     console.error(e);
@@ -117,9 +121,10 @@ router.post("/:id/contacto", limitar("oficio-contacto", 40, 3600 * 1000), async 
   try {
     const h = hoy();
     const o = await Oficio.findOne({ id: String(req.params.id) }).lean();
-    if (!esVisible(o, h) || !o.whatsapp || o.mostrarWhatsapp !== true) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
+    if (!esVisible(o, h) || (await ownerExcluido(req, o.ownerId)) || !o.whatsapp || o.mostrarWhatsapp !== true) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
     const url = enlaceWhatsapp(o.whatsapp, req.body?.mensaje);
     if (!url) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
+    anotarEvento(req, o.id, "contacto", o.ownerId);
     res.json({ url });
   } catch (e) {
     console.error(e);
@@ -127,8 +132,7 @@ router.post("/:id/contacto", limitar("oficio-contacto", 40, 3600 * 1000), async 
   }
 });
 
-// POST /api/oficios → crear y ACTIVAR mi ficha (una por persona). Gratis por ahora.
-// ENGANCHE Fase 9: acá se conectan el mes gratis, el precio de 1000 y los días por invitación (hoy no se cobra ni se regala nada).
+// POST /api/oficios → crear y ACTIVAR mi ficha (una por persona). Queda PENDIENTE: no se muestra hasta que la persona empiece su mes gratis o compre un plan (Fase 9, POST /api/suscripcion/mes-gratis y /compra).
 // ENGANCHE Fase 6: la web muestra el paso de "compartir" después de esta respuesta.
 router.post("/", requiereUsuario, limitar("oficio-crear", 10, 3600 * 1000), async (req, res) => {
   try {
@@ -138,7 +142,7 @@ router.post("/", requiereUsuario, limitar("oficio-crear", 10, 3600 * 1000), asyn
     if (await Oficio.exists({ ownerId })) return res.status(409).json({ error: "Ya tenés una ficha de oficios. Editala o sumale rubros.", codigo: "ya_tiene" });
     const { datos, error } = sanearOficio(req.body);
     if (error) return res.status(400).json({ error });
-    const creada = await Oficio.create({ ...datos, id: crypto.randomBytes(8).toString("hex"), ownerId, status: "active", expiresAt: null, textoBusqueda: textoBusqueda(datos) });
+    const creada = await Oficio.create({ ...datos, id: crypto.randomBytes(8).toString("hex"), ownerId, status: "active", pendientePago: true, expiresAt: null, suscripcion: { plan: null, origen: null }, textoBusqueda: textoBusqueda(datos) });
     res.status(201).json({ oficio: oficioDelDueno(creada.toObject(), hoy()) });
   } catch (e) {
     if (e?.code === 11000) return res.status(409).json({ error: "Ya tenés una ficha de oficios. Editala o sumale rubros.", codigo: "ya_tiene" });

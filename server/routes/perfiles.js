@@ -6,6 +6,7 @@ import Alquiler from "../models/Alquiler.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { estadoOficio } from "../utils/oficios.js";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { normalizarUsuario, validarUsuario } from "../utils/credenciales.js";
 import { sanearLocalidad, sanearDescripcion, sanearFoto, localidadDe, DESCRIPCION_MAX } from "../utils/perfil.js";
 
@@ -46,19 +47,20 @@ router.put("/mio", identificar, requiereUsuario, limitar("perfil-put", 60, 10 * 
 
 // GET /api/perfiles/:usuario  → perfil público. Nunca incluye correo, teléfono ni ubicación exacta.
 // Si la persona lo puso como privado, solo se informa eso. "Dueño de" lista únicamente los negocios que el dueño eligió mostrar.
-router.get("/:usuario", limitar("perfil-get", 120, 10 * 60 * 1000), async (req, res) => {
+router.get("/:usuario", identificar, limitar("perfil-get", 120, 10 * 60 * 1000), async (req, res) => {
   try {
     const nombreUsuario = normalizarUsuario(req.params.usuario);
     if (validarUsuario(nombreUsuario)) return res.status(404).json({ error: "No encontramos ese perfil." });
     const u = await Usuario.findOne({ usuario: nombreUsuario }).select("usuario nombre foto descripcion localidad privacidad");
-    if (!u) return res.status(404).json({ error: "No encontramos ese perfil." });
+    // Fase 8: un perfil suspendido, o de alguien bloqueado (en cualquier sentido), no se abre
+    if (!u || (await ownerExcluido(req, u._id))) return res.status(404).json({ error: "No encontramos ese perfil." });
     if (u.privacidad?.perfilVisible === false) return res.json({ perfil: { usuario: u.usuario, privado: true } });
-    const negocios = await Business.find({ ownerId: String(u._id), duenoEnPerfil: true, status: "active", pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false } }).select("id name cat logo zone -_id").lean();
+    const negocios = await Business.find({ ownerId: String(u._id), duenoEnPerfil: true, status: "active", pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true } }).select("id name cat logo zone -_id").lean();
     // la ficha de oficios, solo si el dueño eligió mostrarla, está activa y aparece en las búsquedas
-    const oficio = await Oficio.findOne({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false } }).select("id nombre rubros logo localidad zona status expiresAt").lean();
+    const oficio = await Oficio.findOne({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true } }).select("id nombre rubros logo localidad zona status expiresAt pendientePago").lean();
     const oficioVisible = oficio && estadoOficio(oficio, ahoraArgentina().fecha) === "activa" ? oficio : null;
     // las fichas de alquiler, con la misma regla
-    const alqs = await Alquiler.find({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false } }).select("id nombre categoria logo localidad zona status expiresAt").lean();
+    const alqs = await Alquiler.find({ ownerId: String(u._id), duenoEnPerfil: true, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true } }).select("id nombre categoria logo localidad zona status expiresAt pendientePago").lean();
     const hoyAr = ahoraArgentina().fecha;
     const alquileresVisibles = alqs.filter((a) => estadoOficio(a, hoyAr) === "activa");
     const l = localidadDe(u);

@@ -10,12 +10,14 @@ import {
   identificar, requiereUsuario, sesionClienteDe, limitar, claveAdminOk,
 } from "../utils/auth.js";
 import { iniciarSesion, crearSesion, registrarActividad, avisarSeguridad } from "../utils/sesiones.js";
+import { suspensionVigente } from "../utils/moderacion.js";
 import { hashearContrasena, verificarContrasena } from "../utils/contrasenas.js";
 import { permitir, olvidar } from "../utils/limitador.js";
 import CodigoCorreo from "../models/CodigoCorreo.js";
 import { enviarCodigoIngreso } from "../utils/correo.js";
 import { validarUsuario, validarContrasena, normalizarUsuario } from "../utils/credenciales.js";
 import { declaracionPendiente, errorDeclaracion, aplicarDeclaracion, localidadDe } from "../utils/perfil.js";
+import { revisarCodigo, registrarInvitacion, asegurarCodigo, huellaDeRed } from "../utils/invitaciones.js";
 
 const router = express.Router();
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -38,6 +40,8 @@ const usuarioPublico = (u) => ({
   // true hasta que la persona confirme que es mayor de 18, acepte los términos y elija su localidad
   declaracionPendiente: declaracionPendiente(u),
   localidad: localidadDe(u), descripcion: u.descripcion || "", foto: u.foto || "", perfilVisible: u.privacidad?.perfilVisible !== false,
+  // Fase 8: si el equipo la suspendió, la web muestra el motivo y cómo apelar (null si no hay suspensión vigente)
+  suspension: (() => { const s = suspensionVigente(u); return s ? { permanente: s.permanente, hasta: s.hasta, motivo: s.motivo } : null; })(),
 });
 
 // Une a la cuenta los negocios que tengan su email como dueño (negocios cargados antes de que existiera el login).
@@ -313,6 +317,9 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
       const errDeclaracion = errorDeclaracion(req.body);
       if (errDeclaracion) return res.status(400).json(errDeclaracion);
     }
+    // Código de invitación (opcional): se revisa ANTES de guardar, para que la persona lo corrija si se equivocó
+    const inv = exigeDeclaracion ? await revisarCodigo(req.body?.codigoInvitacion, u) : {};
+    if (inv.error) return res.status(400).json({ error: inv.error, codigo: "invitacion_invalida" });
     if (req.body?.nombre !== undefined) {
       const nombre = String(req.body.nombre || "").replace(/\s+/g, " ").trim();
       if (nombre.length < 2 || nombre.length > 60) return res.status(400).json({ error: "Escribí tu nombre (entre 2 y 60 letras)." });
@@ -321,8 +328,10 @@ router.put("/completar", identificar, requiereUsuario, async (req, res) => {
     u.usuario = nuevo;
     if (!u.nombre) u.nombre = nuevo; // ya no se pide el nombre: alcanza con el usuario
     if (pedirClave) u.claveZona = await hashearContrasena(password);
-    if (exigeDeclaracion) aplicarDeclaracion(u, req.body);
+    if (exigeDeclaracion) { aplicarDeclaracion(u, req.body); u.ipRegistroHash = huellaDeRed(req); }
     await u.save();
+    await asegurarCodigo(u);
+    if (inv.invitador) await registrarInvitacion(u, inv.invitador, req); // queda pendiente: los días se regalan unos días después, si la cuenta es real
     await registrarActividad(u._id, "usuario_creado", req);
     res.json({ usuario: usuarioPublico(u) });
   } catch (e) {
@@ -340,8 +349,13 @@ router.put("/declaracion", identificar, requiereUsuario, async (req, res) => {
     if (!(await permitir(`declaracion|${ip(req)}|${u._id}`, 15, 15 * 60 * 1000))) return res.status(429).json({ error: "Demasiados intentos. Esperá unos minutos y probá de nuevo." });
     const err = errorDeclaracion(req.body);
     if (err) return res.status(400).json(err);
+    const inv = await revisarCodigo(req.body?.codigoInvitacion, u);
+    if (inv.error) return res.status(400).json({ error: inv.error, codigo: "invitacion_invalida" });
     aplicarDeclaracion(u, req.body);
+    if (!u.ipRegistroHash) u.ipRegistroHash = huellaDeRed(req);
     await u.save();
+    await asegurarCodigo(u);
+    if (inv.invitador) await registrarInvitacion(u, inv.invitador, req);
     res.json({ usuario: usuarioPublico(u) });
   } catch (e) {
     console.error("Error al guardar la declaración:", e.message);

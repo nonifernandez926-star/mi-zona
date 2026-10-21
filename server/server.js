@@ -18,6 +18,9 @@ import soporteRoutes from "./routes/soporte.js";
 import buscarRoutes from "./routes/buscar.js";
 import favoritosRoutes from "./routes/favoritos.js";
 import comunidadRoutes from "./routes/comunidad.js";
+import denunciasRoutes from "./routes/denuncias.js";
+import moderacionRoutes from "./routes/moderacion.js";
+import { moderacionLista } from "./utils/adminAuth.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
 import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
 
@@ -65,6 +68,8 @@ app.use("/api/soporte", soporteRoutes);
 app.use("/api/buscar", buscarRoutes);
 app.use("/api/favoritos", favoritosRoutes);
 app.use("/api/comunidad", comunidadRoutes);
+app.use("/api/denuncias", denunciasRoutes);
+app.use("/api/moderacion", moderacionRoutes);
 
 // Salud para monitores externos (UptimeRobot, cron-job.org) que además evitan que Render gratis se duerma
 app.get("/healthz", (req, res) => res.json({ ok: true }));
@@ -74,6 +79,8 @@ app.use("/api", (req, res) => res.status(404).json({ error: "No encontrado" }));
 
 if (!process.env.JWT_SECRET) console.warn("⚠️  Falta JWT_SECRET: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("⚠️  Falta GOOGLE_CLIENT_ID: el inicio de sesión con Google no va a funcionar hasta configurarlo.");
+
+if (String(process.env.COMUNIDAD_HABILITADA || "").toLowerCase() === "true" && !moderacionLista()) console.warn("⚠️  COMUNIDAD_HABILITADA=true pero la moderación no está lista (faltan SOPORTE_ADMIN_KEY, MODERACION_TOTP_SECRET o JWT_SECRET): Comunidad sigue apagada.");
 
 // Errores inesperados: siempre una respuesta JSON (nunca una página de error suelta)
 app.use((err, req, res, next) => {

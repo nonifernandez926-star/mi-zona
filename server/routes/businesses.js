@@ -7,7 +7,9 @@ import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
 import { sanearNegocio, combinarResenas } from "../utils/negocios.js";
 import { sincronizarCobertura } from "../utils/asistente.js";
 import { hoyISO } from "../utils/fechas.js";
+import { ocultaInfo } from "../utils/moderacion.js";
 import { permitir } from "../utils/limitador.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 
 const router = express.Router();
 router.use(identificar);
@@ -25,8 +27,11 @@ function limpiarSalida(doc, { completo = false } = {}) {
     SECRETOS.forEach((k) => delete obj[k]);
     if (!whatsappVisible(obj)) { delete obj.phone; obj.acceptsWhatsapp = false; obj.whatsappOculto = true; }
     delete obj.mostrarWhatsapp; delete obj.apareceEnBusquedas;
+    delete obj.ocultaPorEquipo; delete obj.ocultaMotivo; delete obj.ocultaDesde; delete obj.ocultaMedidaId;
   } else {
     obj.mostrarWhatsapp = whatsappVisible(obj); obj.apareceEnBusquedas = apareceEnBusquedas(obj);
+    obj.ocultaPorEquipo = ocultaInfo(obj); // Fase 8: si el equipo la ocultó, el dueño ve el motivo
+    delete obj.ocultaMotivo; delete obj.ocultaDesde; delete obj.ocultaMedidaId;
     if (obj.suscripcion) {
       // ni siquiera al dueño le mostramos el historial interno de pagos
       obj.suscripcion = { plan: obj.suscripcion.plan, origen: obj.suscripcion.origen };
@@ -53,7 +58,8 @@ router.get("/", async (req, res) => {
       );
     }
     // las fichas que su dueño sacó de las búsquedas no salen en ningún listado público
-    const list = await Business.find({ pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false } });
+    // Fase 8: tampoco salen los negocios ocultos por el equipo, ni los de cuentas suspendidas o personas bloqueadas (en ningún sentido)
+    const list = await Business.find({ pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true }, ownerId: { $nin: await ownersExcluidos(req) } });
     // "Dueño: @usuario" solo aparece si el dueño lo activó para esa ficha Y su perfil es visible
     const idsDuenos = [...new Set(list.filter((b) => b.duenoEnFicha && b.ownerId && mongoose.isValidObjectId(b.ownerId)).map((b) => b.ownerId))];
     const duenos = new Map();
@@ -110,7 +116,7 @@ router.put("/:id", limitar("negocio-put", 120, 10 * 60 * 1000), async (req, res)
     if (!biz) return res.status(404).json({ error: "Negocio no encontrado" });
     const esDueno = actor?.tipo === "usuario" && !!biz.ownerId && biz.ownerId === String(actor.usuario._id);
     // una ficha oculta de las búsquedas (o que todavía espera el pago) no se puede ver ni tocar desde afuera, aunque se conozca su id
-    if (!esDueno && (biz.pendientePago || !apareceEnBusquedas(biz))) return res.status(404).json({ error: "Negocio no encontrado" });
+    if (!esDueno && (biz.pendientePago || !apareceEnBusquedas(biz) || biz.ocultaPorEquipo === true || (await ownerExcluido(req, biz.ownerId)))) return res.status(404).json({ error: "Negocio no encontrado" });
 
     const cambios = esDueno ? sanearNegocio(body) : {};
     // visitas: solo puede subir de a una por pedido (evita inflar el ranking de un golpe)

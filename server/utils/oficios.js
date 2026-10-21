@@ -1,6 +1,7 @@
 // Fichas de oficios y servicios: validación y armado de lo que sale al público. No depende de Express ni de MongoDB,
 // así se puede probar suelto. Todo lo que manda la web se vuelve a revisar acá: la web solo ayuda a completar el formulario.
 import { RUBRO_IDS, ETIQUETA_RUBRO } from "./rubros.js";
+import { ocultaInfo } from "./moderacion.js";
 import { sanearLocalidad, sanearFoto } from "./perfil.js";
 
 export const LIMITES = { nombre: [2, 60], desc: [10, 300], rubros: 6, otros: 3, otro: [2, 40], zona: 80, direccion: 120, horario: 60, precio: 80, fotos: 8 };
@@ -91,6 +92,7 @@ export function textoBusqueda(d) {
 // Estado de la ficha: activa, pausada o vencida. "Vencida" sale de la fecha de vencimiento (YYYY-MM-DD): hoy todavía no se cobra,
 // así que expiresAt queda vacío; cuando se conecten los pagos (Fase 9) alcanza con cargar esa fecha y la ficha vence sola.
 export function estadoOficio(o, hoy) {
+  if (o.pendientePago === true) return "pendiente"; // Fase 9: todavía sin mes gratis ni compra
   if (o.status === "paused") return "pausada";
   if (o.expiresAt && o.expiresAt < hoy) return "vencida";
   return "activa";
@@ -124,9 +126,9 @@ export function oficioDelDueno(o, hoy) {
   return {
     ...oficioPublico(o, hoy),
     whatsapp: o.whatsapp || "", mostrarWhatsapp: o.mostrarWhatsapp === true,
-    estado: estadoOficio(o, hoy), status: o.status, vencimiento: o.expiresAt || null,
+    estado: estadoOficio(o, hoy), status: o.status, vencimiento: o.expiresAt || null, pendientePago: o.pendientePago === true, planOrigen: o.suscripcion?.origen || null,
     disponible: o.disponible === true ? true : o.disponible === false ? false : null, disponibleEl: o.disponibleEl || null,
-    duenoEnPerfil: !!o.duenoEnPerfil, duenoEnFicha: !!o.duenoEnFicha, apareceEnBusquedas: o.apareceEnBusquedas !== false,
+    duenoEnPerfil: !!o.duenoEnPerfil, duenoEnFicha: !!o.duenoEnFicha, apareceEnBusquedas: o.apareceEnBusquedas !== false, ocultaPorEquipo: ocultaInfo(o),
     localidadCompleta: o.localidad?.localidadId ? { provinciaId: o.localidad.provinciaId, provincia: o.localidad.provincia, departamentoId: o.localidad.departamentoId, departamento: o.localidad.departamento, localidadId: o.localidad.localidadId, localidad: o.localidad.localidad } : null,
     creadaEn: o.createdAt || null, compartioEn: o.compartioEn || null,
   };

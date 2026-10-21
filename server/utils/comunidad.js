@@ -2,6 +2,7 @@
 // así se puede probar suelto. Todo lo que manda la web se vuelve a revisar acá: la web solo ayuda a completar el formulario.
 import { sanearLocalidad, sanearFoto } from "./perfil.js";
 import { sanearWhatsapp } from "./oficios.js";
+import { ocultaInfo } from "./moderacion.js";
 
 const HORA = 3600 * 1000, DIA = 24 * HORA;
 const limpiar = (s) => String(s ?? "").replace(/[\u0000-\u001F\u007F<>]/g, " ").replace(/\s+/g, " ").trim();
@@ -187,7 +188,7 @@ export function publicacionPublica(p, ahora = new Date()) {
 export function publicacionDelAutor(p, ahora = new Date()) {
   return {
     ...publicacionPublica(p, ahora),
-    whatsapp: p.whatsapp || "", mostrarWhatsapp: p.mostrarWhatsapp === true,
+    whatsapp: p.whatsapp || "", mostrarWhatsapp: p.mostrarWhatsapp === true, ocultaPorEquipo: ocultaInfo(p),
     localidadCompleta: p.localidad?.localidadId ? { provinciaId: p.localidad.provinciaId, provincia: p.localidad.provincia, departamentoId: p.localidad.departamentoId, departamento: p.localidad.departamento, localidadId: p.localidad.localidadId, localidad: p.localidad.localidad } : null,
   };
 }

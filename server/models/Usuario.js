@@ -34,6 +34,23 @@ const usuarioSchema = new mongoose.Schema(
       departamentoId: { type: String, default: "" }, departamento: { type: String, default: "" },
       localidadId: { type: String, default: "" }, localidad: { type: String, default: "" },
     },
+    // Fase 8: suspensión decidida por el equipo de Mi Zona desde el panel de moderación. Mientras esté vigente la persona puede entrar,
+    // leer el motivo, apelar, descargar sus datos y eliminar su cuenta, pero no publicar, editar, contactar ni escribir reseñas, y no se ve lo que publicó.
+    suspension: {
+      activa: { type: Boolean, default: false },
+      permanente: { type: Boolean, default: false },
+      desde: { type: Date, default: null },
+      hasta: { type: Date, default: null }, // suspensión temporal: hasta cuándo
+      motivo: { type: String, default: "" },
+      medidaId: { type: String, default: "" },
+    },
+    // Fase 9 — invitaciones y mes gratis
+    codigoInvitacion: { type: String, default: "" }, // código corto que la persona comparte (se escribe, no es un enlace)
+    invitadoPor: { type: String, default: "" }, // id de quien la invitó (una sola vez)
+    ipRegistroHash: { type: String, default: "" }, // huella (no la IP) del registro: sirve para detectar cuentas repetidas
+    mesGratisUsado: { negocio: { type: String, default: "" }, oficio: { type: String, default: "" }, alquiler: { type: String, default: "" } }, // fecha en que se usó cada mes gratis (uno por tipo)
+    diasDisponibles: { type: Number, default: 0 }, // días regalados por invitaciones que todavía no se aplicaron a ninguna ficha
+    diasGanadosInvitando: { type: Number, default: 0 }, // total ganado por invitar (para el tope)
     // Sube cada vez que la persona cambia la contraseña o cierra sesión en los demás dispositivos: los tokens viejos dejan de servir.
     tokenVersion: { type: Number, default: 0 },
     // Alertas de seguridad (Seguridad → Alertas de inicio de sesión): avisos por notificación cuando entran a la cuenta desde un dispositivo nuevo
@@ -61,6 +78,8 @@ const usuarioSchema = new mongoose.Schema(
 
 // Un id de cliente no puede estar en dos cuentas (evita que alguien "adopte" el historial de otra persona)
 usuarioSchema.index({ usuario: 1 }, { unique: true, partialFilterExpression: { usuario: { $type: "string", $gt: "" } } });
+usuarioSchema.index({ "suspension.activa": 1 }, { partialFilterExpression: { "suspension.activa": true } });
+usuarioSchema.index({ codigoInvitacion: 1 }, { unique: true, partialFilterExpression: { codigoInvitacion: { $type: "string", $gt: "" } } });
 usuarioSchema.index({ sesionClienteId: 1 }, { unique: true, partialFilterExpression: { sesionClienteId: { $type: "string", $gt: "" } } });
 
 export default mongoose.model("Usuario", usuarioSchema);

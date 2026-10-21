@@ -1,6 +1,7 @@
 import express from "express";
 import Business from "../models/Business.js";
 import { identificar, requiereUsuario, sesionClienteDe, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 
 const router = express.Router();
 
@@ -140,7 +141,7 @@ router.post("/buscar", identificar, limitar("buscar", 30, 10 * 60 * 1000), async
     }
 
     // Traemos los negocios activos para que el asistente pueda recomendar entre ellos
-    const negocios = await Business.find({ status: "active", kind: { $ne: "job" }, pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false } })
+    const negocios = await Business.find({ status: "active", kind: { $ne: "job" }, pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true }, ownerId: { $nin: await ownersExcluidos(req) } })
       .select("id name cat zone desc services specialties loc lat lng delivery")
       .limit(300);
 

@@ -46,6 +46,11 @@ const businessSchema = new mongoose.Schema(
     // Las fichas anteriores no tienen estos campos: se toman como "encendido".
     mostrarWhatsapp: { type: Boolean, default: true },
     apareceEnBusquedas: { type: Boolean, default: true },
+    // Fase 8: si el equipo de Mi Zona la ocultó por una denuncia, no sale en listados, búsquedas ni se abre desde afuera. El dueño la sigue viendo y puede apelar.
+    ocultaPorEquipo: { type: Boolean, default: false },
+    ocultaMotivo: { type: String, default: "" },
+    ocultaDesde: { type: Date, default: null },
+    ocultaMedidaId: { type: String, default: "" },
     ownerEmail: { type: String, index: true }, // permite que el admin asigne un negocio viejo a una cuenta de Google
     // Suscripción del negocio en Mi Zona. expiresAt (YYYY-MM-DD) es la fecha de vencimiento real.
     pendientePago: { type: Boolean, default: false }, // cargado pero todavía sin pagar → no se muestra al público

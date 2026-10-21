@@ -90,7 +90,7 @@ export async function sincronizarCobertura(negocio, usuario) {
     if (cubierto && hasta && (!negocio.expiresAt || hasta > negocio.expiresAt)) {
       const estabaVencido = !negocio.expiresAt || negocio.expiresAt < hoyISO();
       cambios.expiresAt = hasta;
-      cambios["suscripcion.origen"] = negocio.suscripcion?.origen === "mercadopago" ? "mercadopago" : "asistente";
+      cambios["suscripcion.origen"] = ["play", "gratis"].includes(negocio.suscripcion?.origen) ? negocio.suscripcion.origen : "asistente";
       if (negocio.pendientePago || estabaVencido) {
         cambios.status = "active";
         cambios.pendientePago = false;

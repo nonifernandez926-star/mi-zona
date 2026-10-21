@@ -10,11 +10,17 @@ import UsoFotoAgenda from "../models/UsoFotoAgenda.js";
 import Evento from "../models/Evento.js";
 import Sesion from "../models/Sesion.js";
 import Consulta from "../models/Consulta.js";
+import Denuncia from "../models/Denuncia.js";
+import Bloqueo from "../models/Bloqueo.js";
+import Medida from "../models/Medida.js";
+import crypto from "crypto";
 import ActividadSeguridad from "../models/ActividadSeguridad.js";
 import { identificar, requiereUsuario, verificarAccessTokenGoogle, limitar } from "../utils/auth.js";
 import { verificarContrasena } from "../utils/contrasenas.js";
 import { huellaAutor } from "../utils/negocios.js";
 import { permitir } from "../utils/limitador.js";
+import Compra from "../models/Compra.js";
+import Invitacion from "../models/Invitacion.js";
 
 const router = express.Router();
 router.use(identificar, requiereUsuario);
@@ -30,8 +36,8 @@ router.get("/", async (req, res) => {
     const id = uid(req);
     const [negocios, oficio, alquileres, agenda, tareas, dispositivosPush, resenas, publicacionesComunidad] = await Promise.all([
       Business.find({ ownerId: id }).select("id name status pendientePago expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas"),
-      Oficio.findOne({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp"),
-      Alquiler.find({ ownerId: id }).select("id nombre status expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp").sort({ createdAt: 1 }),
+      Oficio.findOne({ ownerId: id }).select("id nombre status pendientePago expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp"),
+      Alquiler.find({ ownerId: id }).select("id nombre status pendientePago expiresAt duenoEnPerfil duenoEnFicha mostrarWhatsapp apareceEnBusquedas whatsapp").sort({ createdAt: 1 }),
       AgendaItem.countDocuments({ usuarioId: id, tipo: "evento" }),
       AgendaItem.countDocuments({ usuarioId: id, tipo: "tarea" }),
       PushSuscripcion.countDocuments({ usuarioId: id }),
@@ -42,8 +48,8 @@ router.get("/", async (req, res) => {
       cuenta: { email: u.email, nombre: u.nombre, proveedor: u.proveedor, creadaEn: u.createdAt, conClave: !!(u.passwordHash || u.claveZona) },
       sesion: { venceEn: req.tokenExp ? new Date(req.tokenExp * 1000).toISOString() : null },
       negocios: negocios.map((n) => ({ id: n.id, nombre: n.name, estado: n.pendientePago ? "pendiente" : n.status, venceEl: n.expiresAt, duenoEnPerfil: !!n.duenoEnPerfil, duenoEnFicha: !!n.duenoEnFicha, mostrarWhatsapp: n.mostrarWhatsapp !== false, apareceEnBusquedas: n.apareceEnBusquedas !== false })),
-      oficios: oficio ? [{ id: oficio.id, nombre: oficio.nombre, estado: oficio.status === "paused" ? "pausada" : "activa", venceEl: oficio.expiresAt || null, duenoEnPerfil: !!oficio.duenoEnPerfil, duenoEnFicha: !!oficio.duenoEnFicha, mostrarWhatsapp: oficio.mostrarWhatsapp === true, apareceEnBusquedas: oficio.apareceEnBusquedas !== false, tieneWhatsapp: !!oficio.whatsapp }] : [],
-      alquileres: alquileres.map((a) => ({ id: a.id, nombre: a.nombre, estado: a.status === "paused" ? "pausada" : "activa", venceEl: a.expiresAt || null, duenoEnPerfil: !!a.duenoEnPerfil, duenoEnFicha: !!a.duenoEnFicha, mostrarWhatsapp: a.mostrarWhatsapp === true, apareceEnBusquedas: a.apareceEnBusquedas !== false, tieneWhatsapp: !!a.whatsapp })),
+      oficios: oficio ? [{ id: oficio.id, nombre: oficio.nombre, estado: oficio.pendientePago ? "pendiente" : oficio.status === "paused" ? "pausada" : "activa", venceEl: oficio.expiresAt || null, duenoEnPerfil: !!oficio.duenoEnPerfil, duenoEnFicha: !!oficio.duenoEnFicha, mostrarWhatsapp: oficio.mostrarWhatsapp === true, apareceEnBusquedas: oficio.apareceEnBusquedas !== false, tieneWhatsapp: !!oficio.whatsapp }] : [],
+      alquileres: alquileres.map((a) => ({ id: a.id, nombre: a.nombre, estado: a.pendientePago ? "pendiente" : a.status === "paused" ? "pausada" : "activa", venceEl: a.expiresAt || null, duenoEnPerfil: !!a.duenoEnPerfil, duenoEnFicha: !!a.duenoEnFicha, mostrarWhatsapp: a.mostrarWhatsapp === true, apareceEnBusquedas: a.apareceEnBusquedas !== false, tieneWhatsapp: !!a.whatsapp })),
       agenda: { eventos: agenda, tareas },
       dispositivosPush,
       resenas: resenas[0]?.n || 0,
@@ -91,7 +97,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas, publicaciones] = await Promise.all([
+    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas, publicaciones, misDenuncias, misBloqueos, misMedidas] = await Promise.all([
       Business.find({ ownerId: id }),
       Oficio.findOne({ ownerId: id }).lean(),
       Alquiler.find({ ownerId: id }).lean(),
@@ -99,6 +105,9 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       PushSuscripcion.find({ usuarioId: id }).select("createdAt").lean(),
       Consulta.find({ usuarioId: id }).select("motivo asunto mensaje estado respuesta createdAt -_id").lean(),
       Publicacion.find({ ownerId: id }).lean(),
+      Denuncia.find({ denuncianteId: id }).select("objetoTipo motivo detalle estado createdAt -_id").lean(),
+      Bloqueo.find({ bloqueadorId: id }).select("usuario nombre createdAt -_id").lean(),
+      Medida.find({ usuarioId: id }).select("tipo motivo desde hasta permanente estado apelacion -_id").lean(),
     ]);
     const huella = huellaAutor(id);
     const misResenas = await Business.aggregate([
@@ -114,6 +123,11 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
         declaroSerMayorDe18: !!u.mayor18, fechaDeLaDeclaracion: u.mayor18Fecha || null, terminosAceptadosEl: u.terminosAceptadosEn || null,
       },
       preferenciasDePrivacidad: prefsDe(u),
+      suscripcion: {
+        mesGratisUsado: { negocio: u.mesGratisUsado?.negocio || null, oficio: u.mesGratisUsado?.oficio || null, alquiler: u.mesGratisUsado?.alquiler || null },
+        codigoDeInvitacion: u.codigoInvitacion || null, diasDeInvitacionDisponibles: u.diasDisponibles || 0,
+        compras: (await Compra.find({ usuarioId: id }).select("productoId plan meses venceDespues createdAt -_id").lean()),
+      },
       negocios: negocios.map((n) => {
         const o = n.toObject();
         // se incluye lo que cargó el dueño; los datos internos de pagos no
@@ -127,6 +141,9 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       reseñasQueEscribí: misResenas,
       dispositivosConNotificaciones: push.length,
       consultasASoporte: consultas,
+      denunciasQueHice: misDenuncias,
+      personasQueBloqueé: misBloqueos,
+      avisosDelEquipoSobreMiCuenta: misMedidas,
     });
   } catch (e) {
     console.error(e);
@@ -198,6 +215,7 @@ router.delete("/cuenta", async (req, res) => {
     await Promise.all([
       Oficio.deleteMany({ ownerId: id }),
       Alquiler.deleteMany({ ownerId: id }),
+      Invitacion.deleteMany({ $or: [{ invitadorId: id }, { invitadoId: id }] }),
       Publicacion.deleteMany({ ownerId: id }),
       AgendaItem.deleteMany({ usuarioId: id }),
       PushSuscripcion.deleteMany({ usuarioId: id }),
@@ -205,7 +223,14 @@ router.delete("/cuenta", async (req, res) => {
       Sesion.deleteMany({ usuarioId: id }),
       ActividadSeguridad.deleteMany({ usuarioId: id }),
       Consulta.deleteMany({ usuarioId: id }),
+      Bloqueo.deleteMany({ $or: [{ bloqueadorId: id }, { bloqueadoId: id }] }),
+      Medida.deleteMany({ usuarioId: id }),
+      Denuncia.deleteMany({ duenoId: id }), // denuncias sobre esta cuenta: ya no hay nada que moderar
     ]);
+    // las denuncias que ella hizo se conservan sin su identidad (el equipo puede estar revisándolas)
+    await Denuncia.updateMany({ denuncianteId: id }, { $set: { denuncianteId: `eliminado-${crypto.randomBytes(6).toString("hex")}` } });
+    // Los comprobantes de compra de Google Play se conservan sin su identidad (sirven ante un reclamo o reembolso y para la contabilidad)
+    await Compra.updateMany({ usuarioId: id }, { $set: { usuarioId: `eliminado-${crypto.randomBytes(6).toString("hex")}` } });
     await Usuario.deleteOne({ _id: u._id });
     res.json({ ok: true });
   } catch (e) {

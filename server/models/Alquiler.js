@@ -48,9 +48,18 @@ const alquilerSchema = new mongoose.Schema(
     articulos: { type: [articuloSchema], default: [] },
     status: { type: String, enum: ["active", "paused"], default: "active" },
     expiresAt: { type: String, default: null }, // vacío mientras no se cobre (Fase 9)
+    // Fase 9: la ficha se muestra solo si tiene tiempo vigente (mes gratis, compra de Google Play o días de invitación).
+    // pendientePago: cargada pero todavía sin mes gratis ni compra → no se muestra al público. Al vencer se OCULTA (no se borra) y vuelve al renovar.
+    pendientePago: { type: Boolean, default: false },
+    suscripcion: { type: mongoose.Schema.Types.Mixed, default: {} }, // { origen: gratis|play|invitacion, plan, ultimoAvisoUmbral, ultimoAvisoVencimiento }
     duenoEnPerfil: { type: Boolean, default: false },
     duenoEnFicha: { type: Boolean, default: false },
     apareceEnBusquedas: { type: Boolean, default: true },
+    // Fase 8: si el equipo de Mi Zona la ocultó por una denuncia, no sale en listados, búsquedas ni se abre desde afuera. El dueño la sigue viendo y puede apelar.
+    ocultaPorEquipo: { type: Boolean, default: false },
+    ocultaMotivo: { type: String, default: "" },
+    ocultaDesde: { type: Date, default: null },
+    ocultaMedidaId: { type: String, default: "" },
     textoBusqueda: { type: String, default: "" },
     compartioEn: { type: Date, default: null }, // Fase 6: cuándo completó el menú de compartir (no prueba que el mensaje llegó)
     actualizadoEn: { type: Date, default: Date.now }, // la última vez que el dueño tocó la ficha o un artículo ("Actualizado hace X días")

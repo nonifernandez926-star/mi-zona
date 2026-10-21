@@ -27,6 +27,11 @@ const publicacionSchema = new mongoose.Schema(
     estadoEvento: { type: String, default: "normal" }, // normal | cancelado | reprogramado
     textoBusqueda: { type: String, default: "" },
     borrarEn: { type: Date, required: true }, // se borra sola de la base de datos (vencimiento + 90 días)
+    // Fase 8: si el equipo de Mi Zona la ocultó por una denuncia, no sale en listados, búsquedas ni se abre desde afuera. El dueño la sigue viendo y puede apelar.
+    ocultaPorEquipo: { type: Boolean, default: false },
+    ocultaMotivo: { type: String, default: "" },
+    ocultaDesde: { type: Date, default: null },
+    ocultaMedidaId: { type: String, default: "" },
   },
   { timestamps: true }
 );

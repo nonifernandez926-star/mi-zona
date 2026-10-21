@@ -2,6 +2,7 @@ import express from "express";
 import Oficio from "../models/Oficio.js";
 import Alquiler from "../models/Alquiler.js";
 import { identificar, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { oficioPublico, estadoOficio } from "../utils/oficios.js";
 import { alquilerPublico, estadoFicha } from "../utils/alquileres.js";
@@ -22,6 +23,7 @@ router.post("/resolver", limitar("favoritos-resolver", 120, 10 * 60 * 1000), asy
     const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, MAX) : [];
     const idsO = ids(items, "oficio"), idsA = ids(items, "alquiler");
     const h = ahoraArgentina().fecha, ahora = new Date();
+    const excluidos = new Set(await ownersExcluidos(req)); // Fase 8: suspendidos y bloqueados no vuelven a aparecer
     const [filasO, filasA] = await Promise.all([
       idsO.length ? Oficio.find({ id: { $in: idsO } }).lean() : [],
       idsA.length ? Alquiler.find({ id: { $in: idsA } }).lean() : [],
@@ -29,8 +31,8 @@ router.post("/resolver", limitar("favoritos-resolver", 120, 10 * 60 * 1000), asy
     const hay = (filas) => new Set(filas.map((f) => f.id));
     const hayO = hay(filasO), hayA = hay(filasA);
     res.json({
-      oficios: filasO.filter((o) => estadoOficio(o, h) === "activa" && o.apareceEnBusquedas !== false).map((o) => oficioPublico(o, h, null)),
-      alquileres: filasA.filter((a) => estadoFicha(a, h) === "activa" && a.apareceEnBusquedas !== false).map((a) => { const p = alquilerPublico(a, null, ahora); delete p.articulos; return p; }),
+      oficios: filasO.filter((o) => estadoOficio(o, h) === "activa" && o.apareceEnBusquedas !== false && o.ocultaPorEquipo !== true && !excluidos.has(String(o.ownerId))).map((o) => oficioPublico(o, h, null)),
+      alquileres: filasA.filter((a) => estadoFicha(a, h) === "activa" && a.apareceEnBusquedas !== false && a.ocultaPorEquipo !== true && !excluidos.has(String(a.ownerId))).map((a) => { const p = alquilerPublico(a, null, ahora); delete p.articulos; return p; }),
       eliminados: [...idsO.filter((i) => !hayO.has(i)).map((id) => ({ tipo: "oficio", id })), ...idsA.filter((i) => !hayA.has(i)).map((id) => ({ tipo: "alquiler", id }))],
     });
   } catch (e) {

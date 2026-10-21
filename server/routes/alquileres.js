@@ -3,7 +3,9 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import Alquiler from "../models/Alquiler.js";
 import Usuario from "../models/Usuario.js";
+import { anotarEvento } from "../utils/estadisticas.js";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { ahoraArgentina } from "../utils/fechas.js";
 import { declaracionPendiente } from "../utils/perfil.js";
 import {
@@ -20,11 +22,11 @@ const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function filtroVisible(h) {
   return {
-    status: "active", apareceEnBusquedas: { $ne: false },
+    status: "active", pendientePago: { $ne: true }, apareceEnBusquedas: { $ne: false }, ocultaPorEquipo: { $ne: true },
     $or: [{ expiresAt: null }, { expiresAt: "" }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: h } }],
   };
 }
-const esVisible = (a, h) => a && estadoFicha(a, h) === "activa" && a.apareceEnBusquedas !== false;
+const esVisible = (a, h) => a && estadoFicha(a, h) === "activa" && a.apareceEnBusquedas !== false && a.ocultaPorEquipo !== true;
 
 async function usuariosDeFichas(lista) {
   const ids = [...new Set(lista.filter((a) => a.duenoEnFicha && mongoose.isValidObjectId(a.ownerId)).map((a) => a.ownerId))];
@@ -83,7 +85,8 @@ router.get("/", limitar("alquileres-lista", 240, 10 * 60 * 1000), async (req, re
     if (provinciaId !== undefined && provinciaId !== "") { if (!/^\d{2}$/.test(String(provinciaId))) return res.status(400).json({ error: "Provincia inválida." }); y.push({ "localidad.provinciaId": String(provinciaId) }); }
     if (departamentoId !== undefined && departamentoId !== "") { if (!/^\d{5}$/.test(String(departamentoId))) return res.status(400).json({ error: "Departamento inválido." }); y.push({ "localidad.departamentoId": String(departamentoId) }); }
     if (localidadId !== undefined && localidadId !== "") { if (!/^\d{5,12}$/.test(String(localidadId))) return res.status(400).json({ error: "Localidad inválida." }); y.push({ "localidad.localidadId": String(localidadId) }); }
-    const filtro = filtroVisible(h);
+    // Fase 8: no se muestran cuentas suspendidas ni personas bloqueadas (en ningún sentido)
+    const filtro = { ...filtroVisible(h), ownerId: { $nin: await ownersExcluidos(req) } };
     const match = y.length ? { $and: [filtro, ...y] } : filtro;
     const pagina = Math.min(50, Math.max(1, parseInt(req.query.pagina, 10) || 1));
     const [total, filas] = await Promise.all([
@@ -106,8 +109,9 @@ router.get("/", limitar("alquileres-lista", 240, 10 * 60 * 1000), async (req, re
 router.get("/:id", limitar("alquileres-ficha", 240, 10 * 60 * 1000), async (req, res) => {
   try {
     const a = await Alquiler.findOne({ id: String(req.params.id) }).lean();
-    if (!esVisible(a, hoy())) return res.status(404).json({ error: "Esta ficha ya no está disponible." });
+    if (!esVisible(a, hoy()) || (await ownerExcluido(req, a.ownerId))) return res.status(404).json({ error: "Esta ficha ya no está disponible." });
     const duenos = await usuariosDeFichas([a]);
+    anotarEvento(req, a.id, "visita", a.ownerId); // solo una cantidad para el panel del dueño; no se guarda quién fue
     res.json({ alquiler: alquilerPublico(a, a.duenoEnFicha ? duenos.get(a.ownerId) || null : null) });
   } catch (e) {
     console.error(e);
@@ -119,9 +123,10 @@ router.get("/:id", limitar("alquileres-ficha", 240, 10 * 60 * 1000), async (req,
 router.post("/:id/contacto", limitar("alquiler-contacto", 40, 3600 * 1000), async (req, res) => {
   try {
     const a = await Alquiler.findOne({ id: String(req.params.id) }).lean();
-    if (!esVisible(a, hoy()) || !a.whatsapp || a.mostrarWhatsapp !== true) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
+    if (!esVisible(a, hoy()) || (await ownerExcluido(req, a.ownerId)) || !a.whatsapp || a.mostrarWhatsapp !== true) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
     const url = enlaceWhatsapp(a.whatsapp, req.body?.mensaje);
     if (!url) return res.status(404).json({ error: "Esta ficha no tiene WhatsApp disponible." });
+    anotarEvento(req, a.id, "contacto", a.ownerId);
     res.json({ url });
   } catch (e) {
     console.error(e);
@@ -129,8 +134,7 @@ router.post("/:id/contacto", limitar("alquiler-contacto", 40, 3600 * 1000), asyn
   }
 });
 
-// POST /api/alquileres → crear y ACTIVAR una ficha con sus primeros artículos. Gratis por ahora.
-// ENGANCHE Fase 9: acá se conectan el mes gratis, el precio de 2000 y los días por invitación (hoy no se cobra ni se regala nada).
+// POST /api/alquileres → crear y ACTIVAR una ficha con sus primeros artículos. Queda PENDIENTE: no se muestra hasta que la persona empiece su mes gratis o compre un plan (Fase 9, POST /api/suscripcion/mes-gratis y /compra).
 // ENGANCHE Fase 6: la web muestra el paso de "compartir" después de esta respuesta.
 router.post("/", requiereUsuario, limitar("alquiler-crear", 15, 3600 * 1000), async (req, res) => {
   try {
@@ -145,7 +149,7 @@ router.post("/", requiereUsuario, limitar("alquiler-crear", 15, 3600 * 1000), as
     if (enviados.length > LIMITES.articulos) return res.status(400).json({ error: `Podés cargar hasta ${LIMITES.articulos} artículos.` });
     const articulos = [];
     for (const x of enviados) { const r = sanearArticulo(x); if (r.error) return res.status(400).json({ error: r.error }); articulos.push(nuevoArticulo(r.datos)); }
-    const creada = await Alquiler.create({ ...datos, articulos, id: crypto.randomBytes(8).toString("hex"), ownerId, status: "active", expiresAt: null, textoBusqueda: textoBusqueda({ ...datos, articulos }), actualizadoEn: new Date() });
+    const creada = await Alquiler.create({ ...datos, articulos, id: crypto.randomBytes(8).toString("hex"), ownerId, status: "active", pendientePago: true, expiresAt: null, suscripcion: { plan: null, origen: null }, textoBusqueda: textoBusqueda({ ...datos, articulos }), actualizadoEn: new Date() });
     res.status(201).json({ alquiler: alquilerDelDueno(creada.toObject(), hoy()) });
   } catch (e) {
     console.error("Error al crear la ficha de alquiler:", e);

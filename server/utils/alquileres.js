@@ -1,6 +1,7 @@
 // Fichas de alquiler y sus artículos: listas, validación y armado de lo que sale al público. No depende de Express ni de MongoDB,
 // así se puede probar suelto. Todo lo que manda la web se vuelve a revisar acá.
 import crypto from "crypto";
+import { ocultaInfo } from "./moderacion.js";
 import { sanearLocalidad, sanearFoto } from "./perfil.js";
 import { sanearWhatsapp, sanearRed, normalizar, estadoOficio, enlaceWhatsapp } from "./oficios.js";
 
@@ -159,8 +160,8 @@ export function alquilerDelDueno(a, hoy, ahora = new Date()) {
     articulos: (a.articulos || []).map((x) => articuloVista(x, ahora)).map((x, i) => ({ ...x, estadoGuardado: a.articulos[i].estado })),
     cantidadArticulos: (a.articulos || []).filter((x) => x.estado !== "retirado").length,
     whatsapp: a.whatsapp || "", mostrarWhatsapp: a.mostrarWhatsapp === true,
-    estado: estadoFicha(a, hoy), status: a.status, vencimiento: a.expiresAt || null,
-    duenoEnPerfil: !!a.duenoEnPerfil, duenoEnFicha: !!a.duenoEnFicha, apareceEnBusquedas: a.apareceEnBusquedas !== false, compartioEn: a.compartioEn || null,
+    estado: estadoFicha(a, hoy), status: a.status, vencimiento: a.expiresAt || null, pendientePago: a.pendientePago === true, planOrigen: a.suscripcion?.origen || null,
+    duenoEnPerfil: !!a.duenoEnPerfil, duenoEnFicha: !!a.duenoEnFicha, apareceEnBusquedas: a.apareceEnBusquedas !== false, ocultaPorEquipo: ocultaInfo(a), compartioEn: a.compartioEn || null,
     localidadCompleta: a.localidad?.localidadId ? { provinciaId: a.localidad.provinciaId, provincia: a.localidad.provincia, departamentoId: a.localidad.departamentoId, departamento: a.localidad.departamento, localidadId: a.localidad.localidadId, localidad: a.localidad.localidad } : null,
     creadaEn: a.createdAt || null,
   };

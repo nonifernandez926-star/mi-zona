@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import Usuario from "../models/Usuario.js";
 import Sesion from "../models/Sesion.js";
 import { permitir } from "./limitador.js";
+import { suspensionVigente, rutaPermitidaSuspendido } from "./moderacion.js";
 
 // ID de cliente de Google de la web de Mi Zona (es público: también va dentro de la web). El servidor siempre lo acepta,
 // y además acepta los que se carguen en GOOGLE_CLIENT_ID (separados por coma), así un error al cargar la variable no rompe el acceso con Google.
@@ -87,6 +88,19 @@ export async function identificar(req, res, next) {
             if (Date.now() - new Date(ses.ultimoUso).getTime() > 10 * 60 * 1000) Sesion.updateOne({ _id: ses._id }, { $set: { ultimoUso: new Date() } }).catch(() => {});
           }
         }
+      }
+    }
+    // Fase 8: cuenta suspendida por el equipo. Puede mirar, leer el motivo, apelar, descargar sus datos y eliminar su cuenta;
+    // cualquier otra acción que escriba datos (publicar, editar, contactar, reseñar) se rechaza acá, en el servidor.
+    const sus = req.actor ? suspensionVigente(req.actor.usuario) : null;
+    if (sus) {
+      req.actor.suspension = sus;
+      if (!rutaPermitidaSuspendido(req.method, req.originalUrl)) {
+        return res.status(403).json({
+          error: "Tu cuenta está suspendida y por ahora no podés hacer esto. Entrá a Ajustes → Avisos del equipo para ver el motivo y cómo apelar.",
+          codigo: "cuenta_suspendida",
+          suspension: { permanente: sus.permanente, hasta: sus.hasta, motivo: sus.motivo },
+        });
       }
     }
     next();

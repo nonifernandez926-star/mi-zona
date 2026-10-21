@@ -4,6 +4,8 @@ import Publicacion from "../models/Publicacion.js";
 import { identificar, requiereUsuario, limitar } from "../utils/auth.js";
 import { declaracionPendiente, localidadDe } from "../utils/perfil.js";
 import { enlaceWhatsapp } from "../utils/oficios.js";
+import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
+import { moderacionLista } from "../utils/adminAuth.js";
 import {
   TIPOS, TIPO_IDS, ESTADOS_EVENTO, LIMITES, sanearPublicacion, prioridadAviso, textoBusqueda,
   publicacionPublica, publicacionDelAutor, rangosAR,
@@ -17,7 +19,9 @@ router.use(identificar);
 
 const POR_PAGINA = 20;
 const DIA = 86400000;
-const habilitada = () => String(process.env.COMUNIDAD_HABILITADA || "").toLowerCase() === "true";
+// Fase 8: además de COMUNIDAD_HABILITADA=true, el panel de moderación tiene que estar configurado (clave del equipo + verificación en dos pasos).
+// Así Comunidad nunca queda abierta al público sin nadie que pueda atender las denuncias.
+const habilitada = () => String(process.env.COMUNIDAD_HABILITADA || "").toLowerCase() === "true" && moderacionLista();
 
 // GET /api/comunidad/estado → { habilitada }  (la web lo usa para mostrar u ocultar la sección)
 router.get("/estado", (req, res) => res.json({ habilitada: habilitada() }));
@@ -62,7 +66,8 @@ router.get("/", requiereUsuario, vecino, limitar("comunidad-lista", 240, 10 * 60
   try {
     const ahora = new Date();
     const { tipo, localidadId, actividad, categoria, vista, historial } = req.query;
-    const y = [{ departamentoId: req.vecino.departamentoId }];
+    // Fase 8: sin lo que el equipo ocultó, ni lo de cuentas suspendidas o personas bloqueadas (en cualquier sentido)
+    const y = [{ departamentoId: req.vecino.departamentoId }, { ocultaPorEquipo: { $ne: true } }, { ownerId: { $nin: await ownersExcluidos(req) } }];
     if (tipo !== undefined && tipo !== "") { if (!TIPOS[String(tipo)]) return res.status(400).json({ error: "Ese tipo no existe." }); y.push({ tipo: String(tipo) }); }
     if (localidadId) {
       if (!/^\d{5,12}$/.test(String(localidadId))) return res.status(400).json({ error: "Localidad inválida." });
@@ -108,7 +113,7 @@ router.get("/:id", requiereUsuario, limitar("comunidad-ficha", 240, 10 * 60 * 10
     if (!p) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
     if (esAutor(p, req)) return res.json({ publicacion: publicacionDelAutor(p, ahora), esMia: true });
     const loc = localidadDe(req.actor.usuario);
-    if (!loc || loc.departamentoId !== p.departamentoId) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
+    if (!loc || loc.departamentoId !== p.departamentoId || p.ocultaPorEquipo === true || (await ownerExcluido(req, p.ownerId))) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
     res.json({ publicacion: publicacionPublica(p, ahora), esMia: false });
   } catch (e) {
     console.error(e);
@@ -122,7 +127,7 @@ router.post("/:id/contacto", requiereUsuario, vecino, limitar("comunidad-contact
     const ahora = new Date();
     const p = await Publicacion.findOne({ id: String(req.params.id) }).lean();
     const publica = p && publicacionPublica(p, ahora);
-    if (!p || p.departamentoId !== req.vecino.departamentoId || publica.estado !== "activa" || !publica.conContacto) return res.status(404).json({ error: "Esta publicación no tiene contacto disponible." });
+    if (!p || p.departamentoId !== req.vecino.departamentoId || p.ocultaPorEquipo === true || (await ownerExcluido(req, p.ownerId)) || publica.estado !== "activa" || !publica.conContacto) return res.status(404).json({ error: "Esta publicación no tiene contacto disponible." });
     const url = enlaceWhatsapp(p.whatsapp, req.body?.mensaje);
     if (!url) return res.status(404).json({ error: "Esta publicación no tiene contacto disponible." });
     res.json({ url });
