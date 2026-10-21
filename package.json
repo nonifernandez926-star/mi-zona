@@ -1,26 +1,20 @@
 {
-  "name": "mi-zona-web",
+  "name": "mi-zona-server",
+  "version": "1.0.0",
   "private": true,
-  "version": "1.1.0",
   "type": "module",
+  "main": "server.js",
   "scripts": {
-    "dev": "vite",
-    "build": "node scripts-generar-legales.mjs && vite build",
-    "preview": "vite preview",
-    "legales": "node scripts-generar-legales.mjs"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
-    "leaflet": "^1.9.4",
-    "lucide-react": "^0.383.0",
-    "qrcode": "^1.5.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
-    "vite": "^5.2.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^9.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "web-push": "^3.6.7"
   }
 }
