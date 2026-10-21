@@ -331,7 +331,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         <Servicio nombre="OpenStreetMap y Esri" desc="Dibujan el mapa y buscan direcciones. Reciben la dirección o el punto que buscás o elegís en el mapa." />
         <Servicio nombre="Mi Asistente" desc="Recibe tus mensajes, pedidos y puntos para atenderte." />
         <Servicio nombre="Inteligencia artificial" desc="Procesa tu búsqueda y, si lo permitís, tu agenda." />
-        <Servicio nombre="Mercado Pago" desc="Cobra las suscripciones de los negocios. Nunca vemos tu tarjeta." />
+        <Servicio nombre="Google Play" desc="Cobra los planes de pago (negocios, oficios y alquileres). Nunca vemos tu tarjeta." />
         <Servicio nombre="Georef (datos.gob.ar)" desc="Es la lista oficial de provincias y localidades que usamos para que elijas tu localidad. Recibe tu consulta a la lista, no tus datos." />
         <Servicio nombre="Cloudinary" desc="Aloja las fotos que sube un negocio y tu foto de perfil, visibles para todos." ultimo />
       </Grupo>

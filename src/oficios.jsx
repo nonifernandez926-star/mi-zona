@@ -6,6 +6,7 @@ import { RUBROS, GRUPOS_RUBROS } from "./rubros.js";
 import SelectorLocalidad from "./selectorLocalidad.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import DetalleFicha, { SeccionDetalle, FilaDato } from "./componentes/DetalleFicha.jsx";
+import { HojaDenunciar, accionDenunciar } from "./denuncias.jsx";
 import ChipEstado from "./componentes/ChipEstado.jsx";
 import PasoCompartir from "./componentes/PasoCompartir.jsx";
 import { compartirFicha, avisoDeCompartir } from "./compartir.js";
@@ -284,6 +285,7 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
   const [wa, setWa] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [den, setDen] = useState(false); // hoja de denuncia (Fase 8)
   const esFav = useEsFavFicha("oficio", id);
   const cargar = useCallback(() => {
     setEstado("cargando");
@@ -309,6 +311,7 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
       acciones={[
         { icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha({ tipo: "oficio", nombre: o.nombre, zona: textoLocalidad(o.localidad), detalle: o.desc, imagen: o.logo || o.fotos?.[0] })) || "") },
         { icono: Heart, etiqueta: esFav ? "Quitar de favoritos" : "Guardar en favoritos", activo: esFav, onClick: () => alternarFavFicha("oficio", id) },
+        accionDenunciar(() => setDen(true)),
       ]}
       pie={o.conWhatsapp ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Contactar por WhatsApp</button> : undefined}>
       {aviso && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{aviso}</p>}
@@ -344,6 +347,7 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
         Mi Zona no verifica ni certifica a quienes publican sus servicios. Pedí presupuesto y referencias antes de contratar y no pagues por adelantado sin ver el trabajo.{actualizado ? ` Ficha actualizada ${actualizado}.` : ""}
       </p>
       {wa && <HojaWhatsapp id={o.id} nombre={o.nombre} rubro={principal} onCerrar={() => setWa(false)} />}
+      {den && <HojaDenunciar tipo="oficio" id={o.id} nombre={o.nombre} onCerrar={() => setDen(false)} onBloqueado={onVolver} />}
     </DetalleFicha>
   );
 }

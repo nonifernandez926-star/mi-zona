@@ -64,13 +64,20 @@ const GoogleG = () => (
 // ---------- paso final: primero el usuario, después la contraseña ----------
 // Localidad + confirmar los 18 años + aceptar los términos. Se pide una sola vez, al registrarse (o a las cuentas viejas, la próxima vez que entran).
 // No se pregunta edad ni fecha de nacimiento: alcanza con la casilla.
-function BloqueDeclaracion({ loc, onLoc, mayor, onMayor, terminos, onTerminos }) {
+function BloqueDeclaracion({ loc, onLoc, mayor, onMayor, terminos, onTerminos, codigo, onCodigo }) {
   return (
     <>
       <div className="bv-campo">
         <p style={{ margin: "0 0 8px", fontSize: ".78rem", fontWeight: 700, color: "#2b3768" }}>¿Dónde estás?</p>
         <SelectorLocalidad valor={loc} onChange={onLoc} />
       </div>
+      {onCodigo && (
+        <div className="bv-campo">
+          <label htmlFor="bv-codigo-invitacion" style={{ display: "block", margin: "0 0 8px", fontSize: ".78rem", fontWeight: 700, color: "#2b3768" }}>Código de invitación (opcional)</label>
+          <input id="bv-codigo-invitacion" type="text" value={codigo || ""} onChange={(e) => onCodigo(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))} autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="Si alguien te invitó, escribí su código" />
+          <p style={{ margin: "6px 0 0", fontSize: ".78rem", color: "#4A5372", lineHeight: 1.4 }}>Si te invitaron, los dos ganan días gratis para sus fichas. Podés dejarlo vacío.</p>
+        </div>
+      )}
       <label className="bv-check"><input type="checkbox" checked={mayor} onChange={(e) => onMayor(e.target.checked)} /><span>Tengo 18 años o más.</span></label>
       <label className="bv-check"><input type="checkbox" checked={terminos} onChange={(e) => onTerminos(e.target.checked)} />
         <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener noreferrer">Términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label>
@@ -83,6 +90,7 @@ function FormCrear({ pedirNombre, pedirClave = true, pedirDeclaracion = false, n
   const [loc, setLoc] = useState(null);
   const [mayor, setMayor] = useState(false);
   const [terminos, setTerminos] = useState(false);
+  const [codigo, setCodigo] = useState("");
   const declOk = !pedirDeclaracion || (!!loc && mayor && terminos);
   const [paso, setPaso] = useState(pedirDeclaracion ? "datos" : "usuario"); // datos | usuario | clave
   const [usuario, setUsuario] = useState("");
@@ -120,10 +128,10 @@ function FormCrear({ pedirNombre, pedirClave = true, pedirDeclaracion = false, n
   const guardar = async () => {
     setBusy(true); setError("");
     try {
-      const extra = pedirDeclaracion ? { declaracion: { mayor18: mayor, terminos }, localidad: loc } : undefined;
+      const extra = pedirDeclaracion ? { declaracion: { mayor18: mayor, terminos }, localidad: loc, ...(codigo ? { codigoInvitacion: codigo } : {}) } : undefined;
       onListo(await completarCuenta(normalizarUsuario(usuario), pedirClave ? clave : "", pedirNombre ? nombre.trim() : undefined, extra));
     } catch (err) {
-      if (["mayor18_requerido", "terminos_requeridos", "localidad_invalida"].includes(err.datos?.codigo)) { setError(err.message); setPaso("datos"); }
+      if (["mayor18_requerido", "terminos_requeridos", "localidad_invalida", "invitacion_invalida"].includes(err.datos?.codigo)) { setError(err.message); setPaso("datos"); }
       else if (err.datos?.codigo === "usuario_existente") { setDisp({ estado: "ocupado", msg: err.message }); setPaso("usuario"); }
       else setError(err.message);
       setBusy(false);
@@ -135,7 +143,7 @@ function FormCrear({ pedirNombre, pedirClave = true, pedirDeclaracion = false, n
   if (paso === "datos") {
     return (
       <form className="bv-form" onSubmit={(e) => { e.preventDefault(); if (declOk) { setError(""); setPaso("usuario"); } }} noValidate>
-        <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} />
+        <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} codigo={codigo} onCodigo={setCodigo} />
         {error && <p className="bv-error" role="alert">{error}</p>}
         <button className="bv-enviar" type="submit" disabled={!declOk}>Continuar</button>
       </form>
@@ -199,6 +207,7 @@ export function PantallaDeclaracion({ onListo, onSalir }) {
   const [loc, setLoc] = useState(null);
   const [mayor, setMayor] = useState(false);
   const [terminos, setTerminos] = useState(false);
+  const [codigo, setCodigo] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const listo = !!loc && mayor && terminos;
@@ -206,7 +215,7 @@ export function PantallaDeclaracion({ onListo, onSalir }) {
     e.preventDefault();
     if (!listo || busy) return;
     setBusy(true); setError("");
-    try { onListo(await guardarDeclaracion(loc)); } catch (err) { setError(err.message); setBusy(false); }
+    try { onListo(await guardarDeclaracion(loc, codigo)); } catch (err) { setError(err.message); setBusy(false); }
   };
   return (
     <div className="bv"><div className="bv-fondo" aria-hidden="true"><i /><i /><i /></div>
@@ -216,7 +225,7 @@ export function PantallaDeclaracion({ onListo, onSalir }) {
           <h2>Antes de seguir</h2>
           <p className="bv-sub">Para seguir usando Mi Zona, confirmá estos datos. Es una sola vez.</p>
           <form className="bv-form" onSubmit={guardar} noValidate>
-            <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} />
+            <BloqueDeclaracion loc={loc} onLoc={setLoc} mayor={mayor} onMayor={setMayor} terminos={terminos} onTerminos={setTerminos} codigo={codigo} onCodigo={setCodigo} />
             {error && <p className="bv-error" role="alert">{error}</p>}
             <button className="bv-enviar" type="submit" disabled={!listo || busy}>{busy ? "Guardando..." : "Guardar y seguir"}</button>
           </form>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Share2, Check, Users } from "lucide-react";
 import { compartirTexto, textoInvitacion, avisoDeCompartir } from "../compartir.js";
 import { compartidoApi } from "../api.js";
+import { useCodigoInvitacion } from "../invitaciones.js";
 
 // Paso "Compartí Mi Zona" que aparece al terminar de activar un negocio, oficio o alquiler (Fase 6).
 // Es parte del proceso: el botón grande es lo principal y "Ahora no" es chico. No bloquea nada: la ficha ya está activa.
@@ -12,10 +13,11 @@ export default function PasoCompartir({ tipo, ficha, onSalir, textoSalir = "Ir a
   const [estado, setEstado] = useState("inicial"); // inicial | compartido
   const [aviso, setAviso] = useState("");
   const [abriendo, setAbriendo] = useState(false);
+  const codigo = useCodigoInvitacion();
 
   const compartir = async () => {
     setAbriendo(true); setAviso("");
-    const r = await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion(ficha.nombre) });
+    const r = await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion(ficha.nombre, codigo) });
     setAbriendo(false);
     if (r === "compartido") {
       setEstado("compartido");

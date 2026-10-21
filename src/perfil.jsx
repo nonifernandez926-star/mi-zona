@@ -5,6 +5,7 @@ import { uploadImage, comprimirImagen } from "./subirFoto.js";
 import { textoLocalidad } from "./localidades.js";
 import SelectorLocalidad from "./selectorLocalidad.jsx";
 import DetalleFicha, { SeccionDetalle } from "./componentes/DetalleFicha.jsx";
+import { HojaDenunciar, accionDenunciar } from "./denuncias.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError } from "./componentes/Estados.jsx";
 import { iconoCategoria } from "./alquileres.jsx";
@@ -13,6 +14,7 @@ import { iconoCategoria } from "./alquileres.jsx";
 export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOficio, onAbrirAlquiler }) {
   const [perfil, setPerfil] = useState(null);
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
+  const [den, setDen] = useState(false); // hoja de denuncia (Fase 8)
   const cargar = () => {
     setEstado("cargando");
     perfilesApi.ver(usuario).then((p) => { setPerfil(p); setEstado("ok"); }).catch((e) => setEstado(e.status === 404 ? "noExiste" : "error"));
@@ -26,6 +28,7 @@ export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOf
       titulo={visible ? perfil.nombre : `@${usuario}`}
       subtitulo={visible ? `@${perfil.usuario}${lugar ? ` · ${lugar}` : ""}` : undefined}
       imagen={visible ? perfil.foto : undefined} icono={User} contexto="Perfil" onVolver={onBack}
+      acciones={visible ? [accionDenunciar(() => setDen(true))] : []}
     >
       {estado === "cargando" && <EstadoCarga texto="Cargando perfil..." />}
       {estado === "noExiste" && <EstadoVacio icono={UserX} titulo="No encontramos este perfil" mensaje="Puede que la persona haya cambiado su usuario o ya no esté en Mi Zona." />}
@@ -46,6 +49,7 @@ export function PerfilPublicoScreen({ usuario, onBack, onAbrirNegocio, onAbrirOf
           {!perfil.descripcion && perfil.duenoDe.length === 0 && <p style={{ fontSize: ".9375rem", color: "#4A5372" }}>Todavía no agregó más información.</p>}
         </>
       )}
+      {den && visible && <HojaDenunciar tipo="perfil" id={perfil.usuario} nombre={perfil.nombre} onCerrar={() => setDen(false)} onBloqueado={onBack} />}
     </DetalleFicha>
   );
 }

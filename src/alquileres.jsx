@@ -6,6 +6,7 @@ import { CATEGORIAS, ETIQUETA_CATEGORIA, ETIQUETA_TIPO, UNIDADES, MAX_ARTICULOS,
 import SelectorLocalidad from "./selectorLocalidad.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import DetalleFicha, { SeccionDetalle, FilaDato } from "./componentes/DetalleFicha.jsx";
+import { HojaDenunciar, accionDenunciar } from "./denuncias.jsx";
 import PasoCompartir from "./componentes/PasoCompartir.jsx";
 import { compartirFicha, avisoDeCompartir } from "./compartir.js";
 import { alternarFavFicha, useEsFavFicha, useFavFichas } from "./favoritos.js";
@@ -183,6 +184,7 @@ export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestio
   const [wa, setWa] = useState(false);
   const [esMia, setEsMia] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [den, setDen] = useState(false); // hoja de denuncia (Fase 8)
   const esFav = useEsFavFicha("alquiler", id);
   const cargar = useCallback(() => {
     setEstado("cargando");
@@ -212,6 +214,7 @@ export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestio
       acciones={[
         { icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha({ tipo: "alquiler", nombre: a.nombre, zona: textoLocalidad(a.localidad), detalle: a.desc, imagen: a.logo || a.fotos?.[0] })) || "") },
         { icono: Heart, etiqueta: esFav ? "Quitar de favoritos" : "Guardar en favoritos", activo: esFav, onClick: () => alternarFavFicha("alquiler", id) },
+        ...(esMia ? [] : [accionDenunciar(() => setDen(true))]),
       ]}
       pie={a.conWhatsapp ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Consultar por WhatsApp</button> : undefined}>
       {aviso && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{aviso}</p>}
@@ -286,6 +289,7 @@ export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestio
         {actualizado ? `Ficha actualizada ${actualizado}.` : ""}{vieja ? " Hace tiempo que no se actualiza: confirmá la disponibilidad antes de ir." : ""}
       </p>
       {wa && <HojaWhatsapp id={a.id} nombre={a.nombre} rubro="" contactar={alquileresApi.contacto} mensajeInicial={`Hola, te encontré en Mi Zona. Quería consultar por tu alquiler «${a.nombre}»: ¿está disponible?`} onCerrar={() => setWa(false)} />}
+      {den && <HojaDenunciar tipo="alquiler" id={a.id} nombre={a.nombre} onCerrar={() => setDen(false)} onBloqueado={onVolver} />}
     </DetalleFicha>
   );
 }

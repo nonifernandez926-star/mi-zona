@@ -1,5 +1,5 @@
 // Textos legales de Mi Zona. Si cambia algo de lo que la app hace con los datos, hay que actualizar también estas fechas y textos.
-export const LEGAL_ACTUALIZADO = "13 de octubre de 2026";
+export const LEGAL_ACTUALIZADO = "18 de octubre de 2026";
 
 export const TERMINOS = [
   { t: "1. Qué es Mi Zona", p: [
@@ -21,12 +21,18 @@ export const TERMINOS = [
     "Las reseñas deben reflejar una experiencia real. No se permiten reseñas falsas, ofensivas, discriminatorias ni que publiquen datos personales de terceros. Las reseñas se muestran con el nombre que escribas al enviarlas, y podés borrarlas desde Ajustes → Privacidad.",
   ] },
   { t: "5. Suscripciones y pagos", p: [
-    "Un negocio se muestra mientras su suscripción esté activa. Hay planes de 1, 3 y 6 meses, y el precio de cada uno se muestra antes de pagar. Los pagos se procesan a través de Mercado Pago: Mi Zona no recibe ni guarda los datos de tu tarjeta.",
+    "Un negocio, una ficha de oficios o una ficha de alquiler se muestran mientras su plan esté activo. Cada tipo de ficha tiene un mes gratis (uno por cuenta y por tipo), sin tarjeta. Después hay planes de 1, 3 y 6 meses; el de 3 meses tiene 10% de descuento y el de 6 meses, 20%. El precio se muestra antes de pagar. Son pagos únicos: no se renuevan solos. Cuando el plan termina, la ficha se oculta (no se borra) y vuelve a mostrarse al renovar. Los pagos se hacen únicamente con Google Play: Mi Zona no recibe ni guarda los datos de tu tarjeta ni de tu método de pago. Si invitás a otras personas con tu código, podés ganar días gratis (con un tope), siempre que la cuenta nueva sea real y cumpla las reglas; Mi Zona puede rechazar invitaciones sospechosas de abuso.",
     "Al renovar, los meses nuevos se suman al vencimiento actual. Cuando la suscripción vence, el negocio deja de mostrarse hasta que se renueve; no se borra.",
     "Si eliminás tu cuenta, no se reembolsa el período ya pagado de una suscripción. Si tenés un problema con un pago, escribinos desde Soporte.",
   ] },
   { t: "6. Uso aceptable", p: [
     "No podés usar Mi Zona para actividades ilegales, para engañar a otras personas, para enviar mensajes masivos no solicitados, para intentar acceder a cuentas o datos ajenos, ni para dañar o sobrecargar el servicio.",
+  ] },
+  { t: "6 bis. Denuncias, bloqueos y medidas del equipo", p: [
+    "Cualquier persona con cuenta puede denunciar un perfil, un negocio, una ficha o una publicación, y bloquear a otra persona. Quien denuncia no es revelado a la persona denunciada.",
+    "El equipo de Mi Zona revisa las denuncias y puede ocultar un contenido, enviar una advertencia o suspender una cuenta de forma temporal o permanente. Siempre se explica el motivo a la persona afectada.",
+    "Mientras una cuenta está suspendida no puede publicar, editar, contactar ni escribir reseñas, y lo que publicó deja de mostrarse. Puede entrar, leer el motivo, descargar sus datos y eliminar su cuenta.",
+    "Podés apelar cualquier medida una vez, dentro de los 30 días, desde Ajustes → Avisos del equipo. Una persona del equipo revisa la apelación y responde. Las reglas de convivencia están en Ajustes → Reglas de convivencia.",
   ] },
   { t: "7. Disponibilidad y responsabilidad", p: [
     "Hacemos lo posible para que Mi Zona funcione siempre, pero puede haber interrupciones por mantenimiento o causas ajenas a nosotros. La información de la aplicación se ofrece tal como está y puede contener errores.",
@@ -75,7 +81,7 @@ export const PRIVACIDAD_TEXTO = [
     "OpenStreetMap y Esri: dibujan el mapa y buscan direcciones; reciben la dirección o el punto que buscás o elegís en el mapa.",
     "Mi Asistente: recibe tus mensajes, pedidos y puntos para atenderte cuando chateás con un negocio.",
     "Inteligencia artificial: procesa tu búsqueda con asistente y, si lo permitís, tu agenda. Podés apagarlo en Ajustes → Privacidad. Las fotos de agenda se analizan y se descartan.",
-    "Mercado Pago: cobra las suscripciones. Nunca vemos los datos de tu tarjeta.",
+    "Google Play: cobra los planes de pago. Nunca vemos los datos de tu tarjeta.",
     "Cloudinary: aloja las fotos que sube un negocio y tu foto de perfil, que son visibles para todos.",
     "Proveedores de mapas (OpenStreetMap y Esri): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
     "Open-Meteo: si permitís el uso de tu ubicación, recibe una ubicación aproximada para mostrarte el clima de tu zona.",
@@ -84,6 +90,12 @@ export const PRIVACIDAD_TEXTO = [
     "Servicios de alojamiento (servidor, base de datos y sitio web): guardan la información de la aplicación en nuestro nombre y no la usan para otros fines.",
   ], p2: [
     "También podemos compartir información si una autoridad competente lo exige conforme a la ley.",
+  ] },
+  { t: "4 bis. Denuncias, bloqueos y medidas", p: [
+    "Si denunciás algo, guardamos tu denuncia (qué denunciaste, el motivo, lo que escribas y la fecha) y una copia de lo denunciado, para que el equipo pueda revisarla aunque después lo editen o lo borren. La persona denunciada no ve quién denunció.",
+    "Si bloqueás a alguien, guardamos que lo bloqueaste y su nombre público, solo para mostrarte tu lista de bloqueados y para que ninguno de los dos vea lo del otro.",
+    "Si el equipo toma una medida sobre tu cuenta (advertencia, contenido oculto o suspensión), guardamos el motivo, las fechas y tu apelación. Las acciones del equipo en el panel de moderación quedan en un registro interno (con la fecha y la IP de quien las hizo).",
+    "Las denuncias resueltas se borran un año después de resolverse y el registro interno a los 3 años. Si eliminás tu cuenta se borran tus bloqueos y los avisos del equipo sobre tu cuenta; las denuncias que hiciste se conservan sin tu identidad hasta que se borren solas.",
   ] },
   { t: "5. Cuánto tiempo los conservamos", p: [
     "Guardamos tus datos mientras tengas tu cuenta. Cuando la eliminás, se borran tu cuenta, tu agenda, tus notificaciones, tus sesiones, tu actividad de seguridad, tus consultas a Soporte y tus reseñas. Si tenías negocios y elegiste eliminarlos, también se borran. Los chats con asistentes están en Mi Asistente y no se borran desde Mi Zona.",

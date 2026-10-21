@@ -136,7 +136,7 @@ export const ARTICULOS = [
     id: "registrar-negocio", cat: "negocio", titulo: "Registrar mi negocio",
     claves: "agregar negocio alta publicar mas",
     cuerpo: [
-      { pasos: ["Iniciá sesión y tocá el botón “+” de la barra de abajo.", "Completá el formulario con los datos, la dirección, el horario y las fotos.", "Tocá “Aceptar” y elegí el plan: 1, 3 o 6 meses.", "Pagá con Mercado Pago. El negocio se publica solo cuando se confirma el pago."] },
+      { pasos: ["Iniciá sesión y tocá el botón “+” de la barra de abajo.", "Completá el formulario con los datos, la dirección, el horario y las fotos.", "Tocá “Aceptar”: tu primer mes es gratis, sin tarjeta.", "Cuando termine, elegí un plan de 1, 3 o 6 meses y pagá con Google Play."] },
       "Si no pagás, el negocio queda guardado pero oculto, y podés terminar el pago cuando quieras. Si ya pagaste Mi Asistente con la misma cuenta de Google, no pagás Mi Zona y se te muestra hasta cuándo queda activo.",
     ],
     relacionados: ["planes", "pague-no-aparece", "fotos-negocio"],
@@ -243,6 +243,28 @@ export const ARTICULOS = [
     relacionados: ["buscador-unico"],
   },
   {
+    id: "denunciar", cat: "privacidad", titulo: "Denunciar o bloquear a alguien",
+    claves: "denunciar denuncia bloquear bloqueo reportar estafa spam acoso ofensivo molesta",
+    cuerpo: [
+      "Si ves algo que incumple las reglas de convivencia, podés denunciarlo. La otra persona no se entera de que fuiste vos.",
+      { pasos: ["Abrí la ficha, la publicación o el perfil y tocá el ícono de la bandera («Denunciar o bloquear»).", "Elegí el motivo y, si querés, agregá un detalle.", "Leé el aviso y tocá «Enviar denuncia». Después podés bloquear a la persona si no querés volver a ver lo que publica."] },
+      "Al bloquear a alguien, ninguno de los dos ve lo que publica el otro ni puede contactarlo. Podés desbloquearla cuando quieras en Ajustes → Usuarios bloqueados.",
+      { nota: "El equipo revisa cada denuncia y te avisa cuando la revisó. Si fue un delito, denunciálo también a la policía." },
+    ],
+    relacionados: ["avisos-equipo"],
+  },
+  {
+    id: "avisos-equipo", cat: "privacidad", titulo: "Me ocultaron algo o suspendieron mi cuenta: qué hago",
+    claves: "suspendida suspensión advertencia oculto oculta apelar apelación aviso equipo moderación motivo reglas",
+    cuerpo: [
+      "Si el equipo de Mi Zona toma una medida sobre tu cuenta o tus publicaciones, te avisamos con el motivo. Podés leerlo siempre en Ajustes → Avisos del equipo.",
+      { pasos: ["Entrá a Ajustes → Avisos del equipo y leé el motivo.", "Si creés que fue un error, tocá «Apelar esta decisión» y contanos por qué (se puede una sola vez, dentro de los 30 días).", "Una persona del equipo lo revisa y te responde ahí mismo. Si aceptan, se deshace la medida."] },
+      "Con la cuenta suspendida no podés publicar, editar, contactar ni escribir reseñas, y lo que publicaste no se muestra. Sí podés entrar, leer el motivo, apelar, descargar tus datos y eliminar tu cuenta.",
+      "Las reglas están en Ajustes → Reglas de convivencia.",
+    ],
+    relacionados: ["denunciar"],
+  },
+  {
     id: "privacidad-fichas", cat: "privacidad", titulo: "Mostrar u ocultar el WhatsApp y las búsquedas de una ficha",
     claves: "privacidad whatsapp ocultar buscar búsquedas ficha dueño negocio oficio interruptor",
     cuerpo: [
@@ -277,7 +299,7 @@ export const ARTICULOS = [
     id: "renovar", cat: "pagos", titulo: "Renovar o agregar meses",
     claves: "extender suscripcion vence",
     cuerpo: [
-      { pasos: ["Andá a Herramientas → Mi suscripción.", "Elegí cuántos meses querés agregar.", "Pagá con Mercado Pago."] },
+      { pasos: ["Andá a Ajustes → Mis fichas y tocá “Agregar tiempo” en la ficha.", "Elegí 1, 3 o 6 meses (o usá tus días de invitación).", "Pagá con Google Play."] },
       "Los meses nuevos se suman a la fecha de vencimiento que ya tenías: no perdés los días que te quedaban.",
     ],
     relacionados: ["que-pasa-si-vence", "planes"],
@@ -294,11 +316,11 @@ export const ARTICULOS = [
   },
   {
     id: "pague-no-aparece", cat: "pagos", titulo: "Pagué y mi negocio no aparece",
-    claves: "pago mercado pago no se publico pendiente acreditado",
+    claves: "pago google play no se publico pendiente acreditado",
     cuerpo: [
-      "El negocio se publica solo cuando Mercado Pago confirma el pago. A veces la confirmación tarda unos minutos.",
-      { pasos: ["Esperá unos minutos y actualizá la página.", "Entrá a Ajustes → Mi cuenta → Mis negocios y mirá el estado: si dice “Esperando el pago”, todavía no recibimos la confirmación.", "Revisá en Mercado Pago que el pago figure como aprobado."] },
-      "Si el pago está aprobado y pasó más de una hora, escribinos desde Soporte con el motivo “Pagos y suscripción” e indicá la fecha y el medio de pago. No hace falta que envíes datos de tu tarjeta.",
+      "La ficha se activa cuando nuestro servidor confirma la compra con Google Play. Suele tardar segundos, pero puede demorar si se cortó la conexión.",
+      { pasos: ["Volvé a abrir Mis fichas y tocá “Agregar tiempo” en esa ficha.", "Si Google ya te cobró, vas a ver “Encontramos una compra sin activar”: tocá “Activar con mi compra”. No pagás de nuevo.", "Revisá en Google Play → Pagos y suscripciones que la compra figure como completada."] },
+      "Si el pago está aprobado y pasó más de una hora, escribinos desde Soporte con el motivo “Pagos y suscripción” e indicá la fecha de la compra. No hace falta que envíes datos de tu tarjeta.",
     ],
     relacionados: ["planes", "registrar-negocio"],
     contactar: "pagos",

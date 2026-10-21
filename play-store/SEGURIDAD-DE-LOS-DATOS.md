@@ -17,9 +17,9 @@ Armado a partir de lo que el código hace hoy. **Verificalo vos**: Google compar
 | Mensajes | Chats con el asistente de un negocio y reseñas | Funciones de la app | Mi Asistente | Sí |
 | Actividad en la app | Visitas, guardados y contactos a un negocio; búsquedas con el asistente | Funciones y estadísticas del negocio | Proveedor de IA (búsquedas) | No |
 | Identificadores | ID de cliente del dispositivo y suscripción a notificaciones | Notificaciones y seguridad | No | Sí |
-| Información financiera | Historial de compras (ID de pago de la suscripción) | Cobro de suscripción | Mercado Pago | Sí (solo dueños) |
+| Información financiera | Historial de compras (ID de producto y comprobante de Google Play, sin datos de pago) | Cobro de planes | Google Play | Sí (solo quien compra) |
 
-La tarjeta y los datos de pago los maneja Mercado Pago: la app **no** los recibe.
+La tarjeta y los datos de pago los maneja Google Play: la app **no** los recibe. Las invitaciones guardan una huella anónima de la red (no la IP) solo para detectar cuentas repetidas.
 
 ## Otras declaraciones
 - Anuncios: **No** tiene.

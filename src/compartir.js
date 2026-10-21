@@ -21,8 +21,9 @@ export function textoCompartirFicha({ tipo, nombre, zona, detalle }) {
 }
 
 // Mensaje del paso que aparece al activar un negocio, oficio o alquiler
-export function textoInvitacion(nombre) {
-  return `Ya estoy en Mi Zona${nombre ? ` con “${corto(nombre, 50)}”` : ""}. Ahí encontrás negocios, oficios y alquileres de nuestra zona. Descargá la app para encontrarme y contactarme.${pieDescarga() ? `\n\n${pieDescarga()}` : ""}`;
+export function textoInvitacion(nombre, codigo) {
+  const cod = codigo ? ` Cuando te registres, escribí mi código de invitación ${codigo}: los dos ganamos días gratis.` : "";
+  return `Ya estoy en Mi Zona${nombre ? ` con “${corto(nombre, 50)}”` : ""}. Ahí encontrás negocios, oficios y alquileres de nuestra zona. Descargá la app para encontrarme y contactarme.${cod}${pieDescarga() ? `\n\n${pieDescarga()}` : ""}`;
 }
 
 // Intenta bajar la imagen (máx. 5 s y 4 MB) para compartirla junto al texto. Si no se puede, se comparte solo el texto.

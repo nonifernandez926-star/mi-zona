@@ -13,10 +13,11 @@ import {
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
+  ShieldAlert, UserX,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
-  traerMisNegocios, traerCobertura, iniciarPago, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, traerMisPedidos, soporteApi,
+  traerMisNegocios, traerCobertura, suscripcionApi, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, traerMisPedidos, soporteApi,
 } from "./api.js";
 import { AgendaScreen, RecordatoriosToast, useRecordatoriosAgenda } from "./agenda.jsx";
 import { SelectorUbicacion } from "./selectorUbicacion.jsx";
@@ -40,10 +41,12 @@ import { oficiosApi, alquileresApi, comunidadApi, eliminarNegocio } from "./api.
 import { ComunidadScreen, DetalleComunidad, FormularioComunidad, PasoPublicado } from "./comunidad.jsx";
 import { uploadImage } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
+import { HojaDenunciar, ReglasScreen, BloqueadosScreen, AvisosEquipoScreen, PantallaSuspension, AvisoDelEquipo } from "./denuncias.jsx";
 import {
   LoginModal, NombreModal, MiCuentaScreen, NotificacionesPushScreen, SeguridadScreen, BotonVolver, BotonAtras,
-  PlanesModal, TarjetaSuscripcion, infoSuscripcion,
+  TarjetaSuscripcion, infoSuscripcion,
 } from "./cuenta.jsx";
+import { ActivarFichaModal } from "./suscripcion.jsx";
 
 
 const CATEGORIES = [
@@ -1494,6 +1497,7 @@ function numeroWhatsapp(t) {
 function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, miUsuario, esDueño, onOpenChat, isFavorite, onToggleFavorite, rank, onTrack, onOpenPuntos, onOpenPerfil }) {
   const c = catInfo(biz.cat);
   const todayIdx = new Date().getDay();
+  const [denunciando, setDenunciando] = useState(false); // hoja de denuncia (Fase 8)
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showEmpleoDetalle, setShowEmpleoDetalle] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -1581,6 +1585,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
 
   return (
     <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
+      {denunciando && <HojaDenunciar tipo="negocio" id={biz.id} nombre={biz.name} onCerrar={() => setDenunciando(false)} onBloqueado={onBack} />}
       <div className="max-w-3xl mx-auto">
         {/* foto principal con botones flotantes */}
         <div style={{ position: "relative" }}>
@@ -1592,6 +1597,11 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
               <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <Share2 size={17} color="#0B1437" />
               </button>
+              {!esDueño && (
+                <button onClick={() => setDenunciando(true)} aria-label="Denunciar o bloquear" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+                  <Flag size={17} color="#0B1437" />
+                </button>
+              )}
               <button onClick={() => onToggleFavorite(biz.id)} aria-label="Favorito" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <Heart size={18} color={isFavorite ? "#E5484D" : "#0B1437"} fill={isFavorite ? "#E5484D" : "none"} />
               </button>
@@ -4013,6 +4023,10 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
     );
   }
 
+  if (sub === "avisos") return <AvisosEquipoScreen onBack={() => setSub(null)} onVerReglas={() => setSub("reglas")} />;
+  if (sub === "bloqueados") return <BloqueadosScreen onBack={() => setSub(null)} />;
+  if (sub === "reglas") return <ReglasScreen onBack={() => setSub(null)} />;
+
   if (sub === "acerca") {
     return <AcercaScreen onBack={() => setSub(null)} onIrSoporte={() => irSoporte(null, "acerca", false)} />;
   }
@@ -4041,6 +4055,8 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
         <Row Icon={ShieldCheck} tono="verde" title="Seguridad" desc="Contraseña, dispositivos y actividad de tu cuenta" onClick={() => setSub("seguridad")} />
         <Row Icon={IconoSolLuna} tono="naranja" title="Apariencia" desc={`Modo ${tema === "oscuro" ? "oscuro" : tema === "claro" ? "claro" : "automático"}`} onClick={() => setSub("apariencia")} />
         <Row Icon={Lock} tono="violeta" title="Privacidad" desc="Tus datos, controles de uso, descarga y eliminación" onClick={() => setSub("privacidad")} />
+        {usuario && <Row Icon={ShieldAlert} tono="naranja" title="Avisos del equipo" desc="Advertencias, contenidos ocultos y cómo apelar" onClick={() => setSub("avisos")} />}
+        {usuario && <Row Icon={UserX} tono="violeta" title="Usuarios bloqueados" desc="Personas que bloqueaste" onClick={() => setSub("bloqueados")} />}
         {usuario && <Row Icon={LogOut} title="Cerrar sesión" desc={`Salir de ${usuario.email}`} danger onClick={onCerrarSesion} />}
       </div>
 
@@ -4048,6 +4064,7 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
       <div className="overflow-hidden mb-4" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
         <Row Icon={BookOpen} tono="azul" title="Acerca de Mi Zona" desc="Versión, términos y privacidad" onClick={() => setSub("acerca")} />
         <Row Icon={MessageCircle} tono="agua" title="Centro de ayuda" desc="Respuestas a las dudas más comunes" onClick={() => setSub("ayuda")} />
+        <Row Icon={BookOpen} tono="verde" title="Reglas de convivencia" desc="Cómo cuidamos Mi Zona entre todos" onClick={() => setSub("reglas")} />
         <Row Icon={Send} tono="violeta" title="Soporte" desc="Escribinos o mirá tus consultas" onClick={() => setSub("soporte")} />
       </div>
     </div>
@@ -4678,7 +4695,6 @@ export default function MiZona() {
   const [nombrePendiente, setNombrePendiente] = useState(null); // { sugerido, despues } mientras se le pide el nombre
   const [misNegocios, setMisNegocios] = useState([]); // negocios de esta cuenta (incluye los que esperan el pago)
   const misNegociosRef = useRef([]);
-  const [confirmandoPago, setConfirmandoPago] = useState(false);
   const [avisoOk, setAvisoOk] = useState(null);
   const ownerBizId = misNegocios[0]?.id || null;
   const misIds = useMemo(() => new Set(misNegocios.map((m) => m.id)), [misNegocios]);
@@ -4719,7 +4735,7 @@ export default function MiZona() {
   const [negocioEditandoId, setNegocioEditandoId] = useState(null); // negocio que se edita desde "Mis fichas" (si no, el primero)
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [borrador, setBorrador] = useState(null); // negocio recién completado, esperando que elija el plan
-  const [planesModal, setPlanesModal] = useState(null); // { modo: "nuevo" | "renovar", gratis, hasta, vencimiento }
+  const [planesModal, setPlanesModal] = useState(null); // { tipo, nombre, fichaId, vencimiento, nuevo, cubierto, hasta } → modal para activar una ficha (mes gratis, Google Play o días de invitación)
   const [addBusinessDone, setAddBusinessDone] = useState(null); // { hasta } cuando se publicó sin pagar (ya pagó Mi Asistente)
 
   const recargarMisNegocios = async () => {
@@ -4794,6 +4810,26 @@ export default function MiZona() {
     if (r.yaExistia && r.desdeRegistro) setAvisoOk("Ya estabas registrado con esa cuenta: te iniciamos sesión.");
     continuarDespues(despues);
   };
+  // Fase 8: cuenta suspendida por el equipo (el servidor ya bloquea las acciones; acá se muestra el motivo y cómo apelar) y avisos sin leer
+  const [suspension, setSuspension] = useState(null);
+  const [suspensionVista, setSuspensionVista] = useState(null); // null | "avisos"
+  const [suspensionDescartada, setSuspensionDescartada] = useState(false); // para ir a Privacidad (descargar datos o eliminar la cuenta)
+  useEffect(() => { setSuspension(usuario?.suspension || null); setSuspensionDescartada(false); setSuspensionVista(null); }, [usuario?.id, usuario?.suspension?.hasta, usuario?.suspension?.permanente]);
+  useEffect(() => {
+    const alSuspender = (ev) => { if (usuario) { setSuspension(ev.detail || {}); setSuspensionDescartada(false); } };
+    window.addEventListener("mizona:suspension", alSuspender);
+    return () => window.removeEventListener("mizona:suspension", alSuspender);
+  }, [usuario?.id]);
+  // al tocar una notificación del equipo la web abre con ?ir=avisos
+  const irAAvisos = useRef(new URLSearchParams(window.location.search).get("ir") === "avisos");
+  useEffect(() => {
+    if (!irAAvisos.current || !usuario) return;
+    irAAvisos.current = false;
+    window.history.replaceState({}, "", window.location.pathname);
+    irATab("ajustes"); setSubAjustes("avisos");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario?.id]);
+
   const cerrarSesion = async () => {
     try { await desactivarPush(); } catch { /* no había push activo */ }
     await seguridadApi.salir(); // la sesión de este dispositivo deja de figurar como abierta en Seguridad → Dispositivos
@@ -4819,34 +4855,55 @@ export default function MiZona() {
     if (requerirSesion("Para registrar tu negocio necesitás una cuenta de Mi Zona. Es rápido y gratis.", "agregar")) setShowAddBusiness(true);
   };
 
-  // Al completar el formulario y tocar "Aceptar": se ve cuánto tiene que pagar (o que no paga, si ya pagó Mi Asistente)
+  // Fase 9: al completar el formulario de un negocio nuevo y tocar "Aceptar", se guarda SIN publicar y se elige cómo activarlo:
+  // mes gratis, plan de Google Play, días de invitación (o directo, si la cuenta ya pagó Mi Asistente)
+  const terminarNegocioNuevo = async (r) => {
+    setPlanesModal(null); setBorrador(null); setShowAddBusiness(false);
+    const antesIds = new Set((misNegociosRef.current || []).map((m) => m.id));
+    const mios = await recargarMisNegocios();
+    setAddBusinessDone({ hasta: r.expiresAt, negocio: (mios || []).find((m) => !antesIds.has(m.id)) || null });
+  };
   const submitPublicBusiness = async (data) => {
     let gratis = false, hasta = null;
     try {
       const c = await traerCobertura();
       gratis = !!c.cubierto && !misNegocios.some((n) => n.suscripcion?.origen === "asistente");
       hasta = c.hasta;
-    } catch { /* si no se puede consultar, se cobra normalmente */ }
+    } catch { /* si no se puede consultar, sigue el flujo normal */ }
     setBorrador(data);
-    setPlanesModal({ modo: "nuevo", gratis, hasta });
+    if (gratis) { setPlanesModal({ tipo: "negocio", nombre: data.name, cubierto: true, hasta, nuevo: true }); return; }
+    try {
+      const r = await suscripcionApi.guardarNegocio(data);
+      if (r.cubiertoPorAsistente) { await terminarNegocioNuevo(r); return; }
+      await recargarMisNegocios();
+      setPlanesModal({ tipo: "negocio", nombre: data.name, fichaId: r.bizId, nuevo: true });
+    } catch (e) { setErrorMsg(e.message || "No se pudo guardar tu negocio. Probá de nuevo."); }
   };
-  const confirmarPlan = async (plan) => {
-    const cuerpo = planesModal.modo === "nuevo" ? { plan, business: borrador } : { plan, bizId: ownerBizId };
-    const r = await iniciarPago(cuerpo);
-    if (r.cubiertoPorAsistente) {
-      setPlanesModal(null); setBorrador(null); setShowAddBusiness(false);
-      const antesIds = new Set((misNegociosRef.current || []).map((m) => m.id));
+  const publicarCubierto = async () => {
+    const r = await suscripcionApi.guardarNegocio(borrador);
+    if (r.cubiertoPorAsistente) { await terminarNegocioNuevo(r); return; }
+    await recargarMisNegocios();
+    setPlanesModal((m) => ({ ...m, cubierto: false, fichaId: r.bizId })); // la cobertura ya no aplica: se elige mes gratis o plan
+  };
+  // La ficha quedó activa (mes gratis, compra o días): se cierra el modal y se sigue con el paso de compartir si era nueva
+  const fichaActivada = async (info) => {
+    const m = planesModal; setPlanesModal(null); setFichasVersion((v) => v + 1);
+    const mensaje = info.origen === "gratis" ? "¡Listo! Tu mes gratis empezó." : info.origen === "invitacion" ? `Sumaste ${info.dias} días a tu ficha.` : "¡Pago confirmado! Tu plan ya está activo.";
+    setAvisoOk(`${mensaje} Vence el ${new Date(`${info.vence}T00:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}.`);
+    if (m.tipo === "negocio") {
       const mios = await recargarMisNegocios();
-      setAddBusinessDone({ hasta: r.expiresAt, negocio: (mios || []).find((m) => !antesIds.has(m.id)) || null });
-      return;
+      if (m.nuevo) { setBorrador(null); setShowAddBusiness(false); const n = (mios || []).find((x) => x.id === m.fichaId); if (n && !n.compartioEn) setPasoNegocio(n); }
+    } else if (m.nuevo && m.ficha) {
+      if (m.tipo === "oficio") setOficioActivado(m.ficha); else setAlquilerActivado(m.ficha);
     }
-    if (r.initPoint) { window.location.href = r.initPoint; return; } // sigue en Mercado Pago
-    throw new Error("No se pudo generar el link de pago.");
   };
   const abrirAgregarMeses = () => {
     const b = businesses.find((x) => x.id === ownerBizId);
-    setPlanesModal({ modo: "renovar", vencimiento: b && !b.pendientePago ? b.expiresAt : null });
+    if (!b) return;
+    setPlanesModal({ tipo: "negocio", nombre: b.name, fichaId: b.id, vencimiento: b.pendientePago ? null : b.expiresAt });
   };
+  // Desde "Mis fichas": activar una ficha sin activar o agregarle tiempo
+  const activarFicha = ({ tipo, id, nombre, vencimiento }) => setPlanesModal({ tipo, nombre, fichaId: id, vencimiento: vencimiento || null });
 
   // pestaña activa de la barra inferior (Inicio | Explorar | Herramientas | Ajustes)
   const [activeTab, setActiveTab] = useState("inicio");
@@ -4977,48 +5034,10 @@ export default function MiZona() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario?.id]);
 
-  // Al volver de Mercado Pago (?pago=exito|pendiente|fallo) esperamos a que el aviso del pago llegue al servidor
+  // Si alguien llega con un enlace viejo de Mercado Pago (?pago=...), se limpia la dirección: ya no se paga por ahí
   useEffect(() => {
-    const resultado = new URLSearchParams(window.location.search).get("pago");
-    if (!resultado) return;
-    window.history.replaceState({}, "", window.location.pathname);
-    setActiveTab("herramientas");
-    if (resultado === "fallo") {
-      setErrorMsg("El pago no se completó. Podés intentarlo de nuevo desde Herramientas → Mi suscripción.");
-      return;
-    }
-    setConfirmandoPago(true);
+    if (new URLSearchParams(window.location.search).get("pago")) window.history.replaceState({}, "", window.location.pathname);
   }, []);
-  useEffect(() => {
-    if (!confirmandoPago || !usuario) return;
-    let cancelado = false;
-    (async () => {
-      const antes = Object.fromEntries((misNegociosRef.current || []).map((m) => [m.id, m]));
-      for (let i = 0; i < 12 && !cancelado; i++) {
-        const mios = await recargarMisNegocios();
-        const confirmado = mios && mios.some((m) => {
-          const previo = antes[m.id];
-          return !m.pendientePago && (!previo || previo.pendientePago || (m.expiresAt || "") > (previo.expiresAt || ""));
-        });
-        if (confirmado) {
-          if (!cancelado) {
-            setAvisoOk("¡Pago confirmado! Tu suscripción ya está activa."); setConfirmandoPago(false);
-            // si es un negocio que recién se activa (no una renovación), se le muestra el paso de compartir
-            const nuevo = mios.find((m) => !m.pendientePago && (!antes[m.id] || antes[m.id].pendientePago));
-            if (nuevo && !nuevo.compartioEn) setPasoNegocio(nuevo);
-          }
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 3000));
-      }
-      if (!cancelado) {
-        setConfirmandoPago(false);
-        setAvisoOk("Todavía no vemos tu pago. Puede tardar unos minutos en acreditarse: apenas llegue, tu negocio se activa solo.");
-      }
-    })();
-    return () => { cancelado = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmandoPago, usuario?.id]);
 
   useEffect(() => {
     (async () => {
@@ -5432,16 +5451,11 @@ export default function MiZona() {
           {avisoOk} <button onClick={() => setAvisoOk(null)} className="underline ml-2">cerrar</button>
         </div>
       )}
-      {confirmandoPago && (
-        <div className="px-4 py-2 text-center text-sm font-medium" style={{ background: "var(--azul-suave)", color: "#0B1437" }}>
-          Confirmando tu pago con Mercado Pago...
-        </div>
-      )}
       {activeTab === "inicio" && (() => {
         // aviso fijo cuando falta pagar, quedan 7 días o menos, o ya venció
         const inf = infoSuscripcion(ownerBiz);
         if (!inf || inf.estado === "activa") return null;
-        const texto = inf.estado === "pendiente" ? "Tu negocio todavía no se muestra: falta pagar la suscripción."
+        const texto = inf.estado === "pendiente" ? "Tu negocio todavía no se muestra: activalo con tu mes gratis o un plan."
           : inf.estado === "vencida" ? "Tu suscripción venció y tu negocio ya no se muestra."
           : inf.dias === 0 ? "Tu suscripción vence hoy." : inf.dias === 1 ? "Tu suscripción vence mañana." : `Tu suscripción vence en ${inf.dias} días.`;
         const urgente = inf.estado === "vencida" || (inf.dias !== null && inf.dias <= 3);
@@ -5449,7 +5463,7 @@ export default function MiZona() {
           <div className="px-4 py-2 flex items-center justify-center gap-3 flex-wrap text-sm font-medium" style={{ background: urgente ? "#FDF1EF" : "#FBEBD1", color: urgente ? "#9A3B34" : "#8A5B12" }}>
             <span>{texto}</span>
             <button onClick={abrirAgregarMeses} className="text-xs font-semibold px-3 py-1" style={{ borderRadius: 20, background: urgente ? "#9A3B34" : "#8A5B12", color: "#fff" }}>
-              {inf.estado === "pendiente" ? "Pagar ahora" : inf.estado === "vencida" ? "Renovar" : "Agregar meses"}
+              {inf.estado === "pendiente" ? "Activar ahora" : inf.estado === "vencida" ? "Renovar" : "Agregar meses"}
             </button>
           </div>
         );
@@ -5517,12 +5531,11 @@ export default function MiZona() {
         />
       )}
       {planesModal && (
-        <PlanesModal
-          nombreNegocio={planesModal.modo === "nuevo" ? borrador?.name : ownerBiz?.name}
-          gratis={!!planesModal.gratis} hastaGratis={planesModal.hasta}
-          vencimientoActual={planesModal.vencimiento}
-          onClose={() => setPlanesModal(null)}
-          onConfirmar={confirmarPlan}
+        <ActivarFichaModal
+          key={`${planesModal.tipo}-${planesModal.fichaId || "nuevo"}-${planesModal.cubierto ? "c" : "n"}`}
+          tipo={planesModal.tipo} nombre={planesModal.nombre} fichaId={planesModal.fichaId}
+          vencimientoActual={planesModal.vencimiento} cubierto={!!planesModal.cubierto} hastaCubierto={planesModal.hasta}
+          onCubierto={publicarCubierto} onClose={() => setPlanesModal(null)} onActivada={fichaActivada}
         />
       )}
 
@@ -5550,7 +5563,7 @@ export default function MiZona() {
             onVerNegocio={(id) => openDetail(id)} onEditarNegocio={(id) => { setNegocioEditandoId(id); setShowEditOwnerBiz(true); }} onEliminarNegocio={eliminarNegocioPropio}
             onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
             onVerAlquiler={(id) => setAlquilerVer({ id })} onEditarAlquiler={(a) => setAlquilerForm({ inicial: a })} onCrearAlquiler={() => setAlquilerForm({ inicial: null })}
-            onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }}
+            onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }} onActivar={activarFicha}
             comunidad={comunidadHabilitada ? { onVer: (id) => setComunidadVer({ id }), onEditar: (p) => setComunidadForm({ inicial: p, tipo: p.tipo }), onPublicar: (t) => abrirPublicarComunidad(t) } : undefined}
           />
         </div>
@@ -5608,7 +5621,7 @@ export default function MiZona() {
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <FormularioOficio
             inicial={oficioForm.inicial} usuario={usuario} onCancelar={() => setOficioForm(null)}
-            onGuardado={(o, nueva) => { setOficioForm(null); setFichasVersion((v) => v + 1); if (nueva) setOficioActivado(o); }}
+            onGuardado={(o, nueva) => { setOficioForm(null); setFichasVersion((v) => v + 1); if (nueva) setPlanesModal({ tipo: "oficio", nombre: o.nombre, fichaId: o.id, nuevo: true, ficha: o }); }}
           />
         </div>
       )}
@@ -5628,7 +5641,7 @@ export default function MiZona() {
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <FormularioAlquiler
             inicial={alquilerForm.inicial} usuario={usuario} onCancelar={() => setAlquilerForm(null)}
-            onGuardado={(a, nueva) => { setAlquilerForm(null); setFichasVersion((v) => v + 1); if (nueva) setAlquilerActivado(a); }}
+            onGuardado={(a, nueva) => { setAlquilerForm(null); setFichasVersion((v) => v + 1); if (nueva) setPlanesModal({ tipo: "alquiler", nombre: a.nombre, fichaId: a.id, nuevo: true, ficha: a }); }}
           />
         </div>
       )}
@@ -5785,6 +5798,20 @@ export default function MiZona() {
           </div>
         </div>
       )}
+
+      {usuario && suspension && !suspensionDescartada && (
+        suspensionVista === "avisos" ? (
+          <div className="fixed inset-0 z-[91] overflow-y-auto" style={{ background: "#F3F5FA" }}>
+            <AvisosEquipoScreen onBack={() => setSuspensionVista(null)} />
+          </div>
+        ) : (
+          <PantallaSuspension suspension={suspension}
+            onVerAvisos={() => setSuspensionVista("avisos")}
+            onPrivacidad={() => { setSuspensionDescartada(true); irATab("ajustes"); setSubAjustes("privacidad"); }}
+            onCerrarSesion={() => { setSuspensionDescartada(true); setConfirmarSalida(true); }} />
+        )
+      )}
+      {usuario && !suspension && <AvisoDelEquipo usuario={usuario} onVerAvisos={() => { irATab("ajustes"); setSubAjustes("avisos"); }} />}
 
       <main className="max-w-6xl mx-auto px-4 py-6" style={{ paddingBottom: "calc(160px + env(safe-area-inset-bottom, 0px))" }}>
         {activeTab === "ajustes" ? (

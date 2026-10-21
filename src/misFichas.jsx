@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Share2, Users, Wrench, Plus, Pencil, Trash2, Power, Check, Store, Eye, Package, ChevronDown } from "lucide-react";
-import { oficiosApi, alquileresApi, compartidoApi } from "./api.js";
+import { Share2, Users, Wrench, Plus, Pencil, Trash2, Power, Check, Store, Eye, Package, ChevronDown, CalendarPlus } from "lucide-react";
+import { oficiosApi, alquileresApi, compartidoApi, suscripcionApi } from "./api.js";
 import { compartirTexto, textoInvitacion, avisoDeCompartir } from "./compartir.js";
 import { ETIQUETA_CATEGORIA, MAX_FICHAS } from "./alquileres.js";
 import { Pagina, Chip, botonPrincipal, botonSecundario } from "./oficios.jsx";
@@ -12,6 +12,7 @@ import { EstadoCarga, EstadoVacio, EstadoError, EstadoExito } from "./componente
 import PasoCompartir from "./componentes/PasoCompartir.jsx";
 import { MisPublicaciones } from "./comunidad.jsx";
 import { infoSuscripcion } from "./cuenta.jsx";
+import { TarjetaInvitaciones, PanelDueno } from "./suscripcion.jsx";
 
 // "Mis fichas": todo lo que la persona ofrece en Mi Zona (negocios, ficha de oficios y fichas de alquiler) y su gestión.
 // Las pantallas de crear/editar/ver las abre App.jsx (para que el botón "atrás" de Android funcione).
@@ -25,9 +26,23 @@ const rubrosTexto = (o, max = 3) => {
 function infoNegocio(n) {
   const i = infoSuscripcion(n);
   if (!i) return { estado: "activa" };
-  if (i.estado === "pendiente") return { estado: "pausada", texto: "Esperando el pago" };
+  if (i.estado === "pendiente") return { estado: "pendiente" };
   if (i.estado === "vencida") return { estado: "vencida" };
   return i.estado === "por_vencer" ? { estado: "activa", texto: `Vence en ${i.dias} ${i.dias === 1 ? "día" : "días"}` } : { estado: "activa" };
+}
+
+const fmtVence = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" }) : "");
+// Línea de plan de una ficha: hasta cuándo está activa, y el botón para activarla o agregarle tiempo (mes gratis, Google Play o días de invitación)
+function BotonPlan({ estado, vence, onClick }) {
+  const pendiente = estado === "pendiente";
+  return (
+    <div className="w-full">
+      <p className="text-sm mb-1.5" style={{ color: "#4A5372", lineHeight: 1.4 }}>
+        {pendiente ? "Todavía no se muestra: activala con tu mes gratis o un plan." : estado === "vencida" ? `Venció el ${fmtVence(vence)}. No se borró nada: al renovar vuelve a mostrarse.` : vence ? `Activa hasta el ${fmtVence(vence)}.` : ""}
+      </p>
+      <button type="button" onClick={onClick} style={{ ...(pendiente || estado === "vencida" ? botonPrincipal : botonSecundario), width: "100%", minHeight: 48 }}><CalendarPlus size={17} aria-hidden="true" /> {pendiente ? "Activar mi ficha" : estado === "vencida" ? "Renovar" : "Agregar tiempo"}</button>
+    </div>
+  );
 }
 
 function FilaFicha({ icono: Icono, tono, titulo, sub, chip, children }) {
@@ -46,7 +61,7 @@ function FilaFicha({ icono: Icono, tono, titulo, sub, chip, children }) {
   );
 }
 
-export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, onVerAlquiler, onEditarAlquiler, onCrearAlquiler, comunidad, refrescar }) {
+export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onCrearOficio, onAgregarNegocio, onActivar, onVerAlquiler, onEditarAlquiler, onCrearAlquiler, comunidad, refrescar }) {
   const [oficio, setOficio] = useState(undefined); // undefined = cargando · null = no tiene
   const [alquileres, setAlquileres] = useState(undefined); // undefined = cargando · [] = no tiene
   const [error, setError] = useState(false);
@@ -56,6 +71,9 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
   const [aviso, setAviso] = useState(null);
   const [marcados, setMarcados] = useState([]); // fichas que se acaban de marcar como "ya compartió" (para ocultar el recordatorio al instante)
   const [avisoCompartir, setAvisoCompartir] = useState("");
+  const [invitaciones, setInvitaciones] = useState(null); // código de invitación, días ganados y días disponibles
+  useEffect(() => { suscripcionApi.estado().then((e) => setInvitaciones(e.invitaciones)).catch(() => {}); }, []);
+  const codigoInvitacion = invitaciones?.codigo || "";
   const cargar = useCallback(() => {
     setError(false);
     oficiosApi.mio().then(setOficio).catch(() => { setError(true); setOficio(null); });
@@ -99,7 +117,7 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
   ].filter((p) => !marcados.includes(`${p.tipo}:${p.id}`));
   const compartirMiZona = async () => {
     setAvisoCompartir("");
-    const r = await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion("") });
+    const r = await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion("", codigoInvitacion) });
     if (r !== "compartido") { setAvisoCompartir(avisoDeCompartir(r) || ""); return; }
     setMarcados((m) => [...m, ...pendientes.map((p) => `${p.tipo}:${p.id}`)]);
     await Promise.allSettled(pendientes.map((p) => compartidoApi.marcar(p.tipo, p.id))); // si alguna falla, el recordatorio vuelve la próxima vez
@@ -108,7 +126,7 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
 
   return (
     <Pagina titulo="Mis fichas" onVolver={onVolver}>
-      <ComoFunciona pasos={["Acá ves todo lo que ofrecés en Mi Zona: tu negocio, tu ficha de oficios y tus fichas de alquiler.", "Tocá una ficha para verla, editarla, pausarla o eliminarla.", "En los alquileres, cambiá el estado de cada artículo con un toque: Disponible, Ocupado o Ya no lo tengo.", "Pausar oculta la ficha sin borrar nada. Eliminar la borra para siempre."]} />
+      <ComoFunciona pasos={["Acá ves todo lo que ofrecés en Mi Zona: tu negocio, tu ficha de oficios y tus fichas de alquiler.", "Tocá una ficha para verla, editarla, pausarla o eliminarla.", "En los alquileres, cambiá el estado de cada artículo con un toque: Disponible, Ocupado o Ya no lo tengo.", "Pausar oculta la ficha sin borrar nada. Eliminar la borra para siempre.", "Cada ficha empieza con un mes gratis. Después podés comprar 1, 3 o 6 meses con Google Play: se suman al tiempo que te queda."]} />
       {aviso?.ok && <p role="status" className="text-sm mt-3 p-3 flex items-center gap-2" style={{ borderRadius: 12, background: "#EBF7F0", color: "#1E6B44", fontWeight: 600 }}><Check size={16} aria-hidden="true" /> {aviso.ok}</p>}
       {aviso?.error && <p role="alert" className="text-sm mt-3 p-3" style={{ borderRadius: 12, background: "#FDF1EF", color: "#9A3B34" }}>{aviso.error}</p>}
       {pendientes.length > 0 && (
@@ -119,6 +137,7 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
           {avisoCompartir && <p role="status" className="text-sm mt-2" style={{ color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}
         </section>
       )}
+      <TarjetaInvitaciones invitaciones={invitaciones} onCambio={() => suscripcionApi.estado().then((e) => setInvitaciones(e.invitaciones)).catch(() => {})} />
       <div className="mt-4" />
 
       {cargando && <EstadoCarga texto="Cargando tus fichas..." filas={2} />}
@@ -128,6 +147,8 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
         const i = infoNegocio(n);
         return (
           <FilaFicha key={n.id} icono={Store} tono="#DCEFE4" titulo={n.name || n.nombre} sub="Negocio" chip={<ChipEstado estado={i.estado} texto={i.texto} compacto />}>
+            <BotonPlan estado={i.estado} vence={n.pendientePago ? null : n.expiresAt} onClick={() => onActivar({ tipo: "negocio", id: n.id, nombre: n.name || n.nombre, vencimiento: n.pendientePago ? null : n.expiresAt })} />
+            {!n.pendientePago && <PanelDueno tipo="negocio" id={n.id} />}
             <button type="button" onClick={() => onVerNegocio(n.id)} style={botonSecundario}><Eye size={16} aria-hidden="true" /> Ver</button>
             <button type="button" onClick={() => onEditarNegocio(n.id)} style={botonSecundario}><Pencil size={16} aria-hidden="true" /> Editar</button>
             <button type="button" onClick={() => setDialogo({ tipo: "eliminarNegocio", dato: { id: n.id, nombre: n.name || n.nombre } })} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>
@@ -145,9 +166,11 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
             </div>
             <p className="text-sm mt-1.5" style={{ color: "#4A5372", lineHeight: 1.4 }}>«Disponible hoy» se apaga solo a medianoche, para no prometer lo que ya no es cierto.</p>
           </div>
+          <BotonPlan estado={oficio.estado} vence={oficio.vencimiento} onClick={() => onActivar({ tipo: "oficio", id: oficio.id, nombre: oficio.nombre, vencimiento: oficio.vencimiento })} />
+          {oficio.estado !== "pendiente" && <PanelDueno tipo="oficio" id={oficio.id} />}
           {oficio.estado === "activa" && <button type="button" onClick={() => onVerOficio(oficio.id)} style={botonSecundario}><Eye size={16} aria-hidden="true" /> Ver</button>}
           <button type="button" onClick={() => onEditarOficio(oficio)} style={botonSecundario}><Pencil size={16} aria-hidden="true" /> Editar</button>
-          {oficio.estado === "pausada"
+          {oficio.estado === "pendiente" ? null : oficio.estado === "pausada"
             ? <button type="button" onClick={() => setDialogo({ tipo: "activar" })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Activar</button>
             : <button type="button" onClick={() => setDialogo({ tipo: "pausar" })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Pausar</button>}
           <button type="button" onClick={() => setDialogo({ tipo: "eliminarOficio" })} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>
@@ -163,9 +186,11 @@ export function MisFichasScreen({ usuario, negocios, onVolver, onVerNegocio, onE
             <button type="button" onClick={() => setAbierta(desplegada ? null : a.id)} aria-expanded={desplegada} style={{ ...botonSecundario, background: desplegada ? "#EDF1FF" : "#fff", borderColor: desplegada ? "#2350F5" : "#CFD6E8" }}>
               <Package size={16} aria-hidden="true" /> Artículos <ChevronDown size={14} aria-hidden="true" style={{ transform: desplegada ? "rotate(180deg)" : "none" }} />
             </button>
+            <BotonPlan estado={a.estado} vence={a.vencimiento} onClick={() => onActivar({ tipo: "alquiler", id: a.id, nombre: a.nombre, vencimiento: a.vencimiento })} />
+            {a.estado !== "pendiente" && <PanelDueno tipo="alquiler" id={a.id} />}
             {a.estado === "activa" && <button type="button" onClick={() => onVerAlquiler(a.id)} style={botonSecundario}><Eye size={16} aria-hidden="true" /> Ver</button>}
             <button type="button" onClick={() => onEditarAlquiler(a)} style={botonSecundario}><Pencil size={16} aria-hidden="true" /> Editar</button>
-            {a.estado === "pausada"
+            {a.estado === "pendiente" ? null : a.estado === "pausada"
               ? <button type="button" onClick={() => setDialogo({ tipo: "activarAlquiler", dato: a })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Activar</button>
               : <button type="button" onClick={() => setDialogo({ tipo: "pausarAlquiler", dato: a })} style={botonSecundario}><Power size={16} aria-hidden="true" /> Pausar</button>}
             <button type="button" onClick={() => setDialogo({ tipo: "eliminarAlquiler", dato: a })} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>

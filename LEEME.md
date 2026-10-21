@@ -1,3 +1,22 @@
+# Mi Zona — Fase 8: Denuncias, bloqueo y moderación (volver a publicar servidor Y web · variable nueva en el SERVIDOR · una configuración única)
+
+- **Dentro de la app:** ícono de bandera («Denunciar o bloquear») en negocios, fichas de oficios y alquiler, publicaciones de Comunidad y perfiles. 7 motivos (spam, estafa, suplantación, acoso, ofensivo/sexual, información falsa, otro con texto), advertencia antes de enviar, confirmación con código y opción de **bloquear** a quien publicó. La misma persona no puede denunciar lo mismo dos veces (ni hasta 30 días después de que se resuelva). Quien denuncia nunca se revela. Ajustes → **Usuarios bloqueados**, **Avisos del equipo** (con apelación) y **Reglas de convivencia**.
+- **Bloqueo:** mutuo e invisible. Ninguno de los dos ve lo que publica el otro (negocios, oficios, alquileres, Comunidad, perfil, buscador, favoritos, búsqueda con IA) ni puede contactarlo; lo decide el servidor. La web nunca conoce la cuenta de quien publicó: manda solo el tipo y el id público.
+- **Panel del equipo (fuera de la app):** `https://TU-SERVIDOR.onrender.com/api/moderacion/panel`. No está enlazado desde la app. Entra con la **clave del equipo (la misma `SOPORTE_ADMIN_KEY`) + un código de 6 cifras de tu app autenticadora**. Los intentos se frenan por IP y en total, un código sirve una sola vez y la sesión dura 30 minutos. Pestañas: Denuncias (agrupadas por lo denunciado), Apelaciones, Cuentas, Registro. Acciones: **ocultar** un contenido, **quitar foto y descripción** de un perfil, **advertir**, **suspender** (1, 3, 7, 15, 30, 90 días o permanente), **descartar**, aceptar o rechazar apelaciones y levantar suspensiones. **Cada acción queda en el Registro** (fecha, IP, a quién, motivo; se conserva 3 años).
+- **Qué le pasa a la persona:** se le explica el motivo (aviso en la app + notificación si la tiene activada). Puede **apelar una vez en 30 días**; si el equipo acepta, se deshace la medida (contenido visible de nuevo, perfil devuelto, suspensión levantada). Con la cuenta **suspendida**: puede entrar, leer el motivo, apelar, descargar sus datos y eliminar su cuenta; no puede publicar, editar, contactar ni reseñar (**lo rechaza el servidor**) y lo que publicó no se muestra. La suspensión temporal termina sola.
+- **Configurar una sola vez:**
+  1. En tu computadora: `cd server && node scripts/generar-totp.mjs`. Imprime una clave.
+  2. En tu app autenticadora (Google Authenticator, Aegis, etc.): «Agregar cuenta» → «Ingresar clave de configuración» → pegá esa clave.
+  3. En Render (servidor) cargá `MODERACION_TOTP_SECRET` con esa clave y reiniciá. Asegurate de tener también `SOPORTE_ADMIN_KEY` y `JWT_SECRET`.
+  4. (Opcional) `SOPORTE_AVISO_URL` ya avisa también de denuncias y apelaciones nuevas (sin datos personales).
+- **Comunidad sigue apagada hasta que vos la enciendas:** ahora `COMUNIDAD_HABILITADA=true` **solo funciona si la moderación está configurada** (si no, Comunidad queda apagada y el servidor avisa en el log). Antes de encenderla, probá el panel con dos cuentas (ver «Qué probar»).
+- **Rutas nuevas:** `POST /api/denuncias`, `GET /api/denuncias/mias`, `GET|POST|DELETE /api/denuncias/bloqueos`, `GET /api/moderacion/medidas`, `POST /api/moderacion/medidas/:id/{visto|apelar}`, `/api/moderacion/admin/*` y `GET /api/moderacion/panel` (equipo).
+- **Archivos nuevos:** servidor: `models/{Denuncia,Bloqueo,Medida,AccionModeracion}.js`, `utils/{moderacion,exclusiones,medidas,objetosDenunciables,adminAuth,totp,panelModeracion}.js`, `routes/{denuncias,moderacion}.js`, `scripts/generar-totp.mjs`. Web: `src/denuncias.jsx`, `src/denuncias.js`.
+- **Datos:** «Descargar mis datos» incluye mis denuncias, bloqueos y avisos del equipo. «Eliminar cuenta» borra mis bloqueos y avisos; mis denuncias quedan sin mi identidad hasta que se borran solas (1 año después de resolverse). Términos, política y ayuda actualizados (`LEGAL_ACTUALIZADO` = 18 de octubre de 2026; corré `npm run legales`, ya corre solo en `npm run build`).
+- **Limitaciones conocidas:** el panel de consultas viejo (`/api/soporte/panel`, con la reseña reportada) sigue entrando solo con la clave, sin código. Una persona suspendida de forma permanente puede borrar su cuenta y registrarse de nuevo con otro correo. Las denuncias de reseñas siguen yendo por Soporte, como antes. La caché de cuentas suspendidas dura 30 segundos.
+
+---
+
 # Mi Zona — Fase 7: Comunidad (volver a publicar servidor Y web · variable nueva en el SERVIDOR)
 
 - **Está APAGADA por defecto** (regla de la Fase 7: no se habilita al público hasta completar la Fase 8). Para PROBARLA: en el servidor (Render) poné `COMUNIDAD_HABILITADA=true` y reiniciá. Con `false` o sin la variable, la web ni muestra la tarjeta, ni el «+» ni nada, y el servidor responde 403.
@@ -149,8 +168,7 @@ no puede guardar ni cargar negocios (es la causa más probable de que no te deje
 (el mismo de Mi Asistente) → **Orígenes autorizados de JavaScript** → agregá la dirección de Mi Zona (la de Netlify,
 y `http://localhost:5173` para probar). Sin esto Google rechaza el botón.
 
-**4. Mercado Pago.** Usá la misma cuenta que en Mi Asistente. En Webhooks poné
-`https://TU-SERVIDOR.onrender.com/api/suscripcion/webhook` y copiá la clave secreta en `MP_WEBHOOK_SECRET`.
+**4. Cobro con Google Play (Fase 9).** Mercado Pago ya no se usa. Seguí los pasos de `play-store/GUIA-PLAY-STORE.md` (9 productos, cuenta de servicio y las variables `PLAY_PACKAGE_NAME` y `PLAY_SERVICE_ACCOUNT_JSON`).
 
 **5. Notificaciones push.** En la carpeta `server` corré `npx web-push generate-vapid-keys` (una sola vez) y pegá las dos
 claves en Render (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`). Los usuarios las activan en Ajustes → Notificaciones.
@@ -309,7 +327,7 @@ npm install
 ## 8. Cómo probar que los negocios se guardan correctamente
 
 1. Con ambos servidores corriendo (paso 6), entrá a `http://localhost:5173`
-2. Iniciá sesión con Google, tocá el botón "+" y cargá un negocio de prueba (al pagar con Mercado Pago se publica)
+2. Iniciá sesión con Google, tocá el botón "+" y cargá un negocio de prueba (al tocar "Empezar mi mes gratis" se publica)
 3. Andá a MongoDB Atlas → tu cluster → **"Browse Collections"** → deberías ver la base `mizona` con una colección `businesses` y tu negocio adentro
 4. Recargá la página de tu navegador (F5) — el negocio tiene que seguir apareciendo (si desaparece, el guardado no está funcionando)
 
@@ -409,3 +427,18 @@ El cliente sigue el estado de sus pedidos (Enviado → Confirmado → En prepara
 - **Aviso al celular:** cuando el dueño cambia el estado, Mi Asistente llama a `POST /api/integracion/pedido-estado` (de este servidor) y se manda un push ("Tu pedido está listo", etc.). Tocar el aviso abre la app en Mis pedidos. Se puede apagar en Ajustes → Notificaciones → "Estado de tus pedidos".
 - **Configuración nueva en el servidor de Mi Asistente:** `MIZONA_API_URL` = dirección del servidor de Mi Zona terminada en `/api` (ej. `https://tu-mizona.onrender.com/api`). La clave `INTEGRACION_KEY` ya existe y es la misma en los dos servidores. Sin `MIZONA_API_URL` todo funciona igual, solo que no se manda el aviso push (la campana de la app igual muestra el cambio al actualizarse).
 - **Cambios en Mi Asistente:** `utils/miZona.js` (nuevo), `routes/pedidos.js` (avisa al cambiar el estado) y `routes/integracion.js` (nuevo endpoint `pedidos-cliente`). Están en `mi-asistente-pedidos.patch`.
+
+---
+
+## Fase 9 — Planes, mes gratis, Google Play Billing e invitaciones
+
+**Qué hace.** Se paga SOLO por tener un negocio, un oficio o un alquiler publicados. Cada tipo tiene **1 mes gratis por cuenta** (sin tarjeta). Después, planes de **1, 3 y 6 meses** (3 meses con 10% menos, 6 meses con 20% menos), pago único que no se renueva solo. Al vencer la ficha se **oculta, no se borra**, y vuelve al renovar. Mercado Pago se eliminó.
+
+**Precios de referencia (ARS):** negocio 3000 / 8100 / 14400 · oficio 1000 / 2700 / 4800 · alquiler 2000 / 5400 / 9600. Los precios reales de cobro se cargan en Play Console.
+
+**Invitaciones:** quien invita gana +5 días y quien se registra con el código gana +5 (tope 60 días ganados por invitar). Se acreditan a las 72 h si la cuenta nueva completó su registro y no está suspendida; se rechazan las que vienen de la misma red o más de 10 en 24 h. Los días se usan desde "Agregar tiempo" en cada ficha. Se ajustan con `INVITACION_DIAS`, `INVITACION_DIAS_INVITADO` e `INVITACION_TOPE_DIAS`.
+
+**Servidor:** `utils/planes.js`, `utils/playBilling.js` (verifica cada compra con Google), `utils/fichas.js`, `utils/invitaciones.js`, `utils/estadisticas.js`, modelos `Compra` e `Invitacion`, y rutas nuevas en `/api/suscripcion` (`planes`, `estado`, `iniciar`, `mes-gratis`, `compra`, `usar-dias`, `panel`).
+**Web/app:** `src/suscripcion.jsx` (modal de activación, tarjeta de invitaciones, panel con estadísticas), `src/playBilling.js`, botón "Activar / Agregar tiempo" en Mis fichas y campo "Código de invitación" en el registro.
+
+**Antes de publicar (ver `play-store/GUIA-PLAY-STORE.md`):** crear los 9 productos en Play Console, configurar `PLAY_PACKAGE_NAME` y `PLAY_SERVICE_ACCOUNT_JSON`, y probar las compras con un tester de licencia. Este código no se pudo ejecutar contra Google Play ni compilar en el entorno donde se escribió: probalo en un dispositivo antes de subirlo.

@@ -9,6 +9,7 @@ import {
 import { Pagina, Hoja, Chip, Campo, Bloque, Fotos, HojaWhatsapp, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import DetalleFicha, { SeccionDetalle, FilaDato } from "./componentes/DetalleFicha.jsx";
+import { HojaDenunciar, accionDenunciar } from "./denuncias.jsx";
 import ChipEstado from "./componentes/ChipEstado.jsx";
 import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 import ComoFunciona from "./componentes/ComoFunciona.jsx";
@@ -230,6 +231,7 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
   const [wa, setWa] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [den, setDen] = useState(false); // hoja de denuncia (Fase 8)
   const [dialogo, setDialogo] = useState(null); // "eliminar"
   const [trabajando, setTrabajando] = useState(false);
   const cargar = useCallback(() => {
@@ -255,7 +257,7 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
 
   return (
     <DetalleFicha titulo={p.titulo} subtitulo={`${TIPO[p.tipo]?.singular} · ${hace(p.creadaEn)}`} icono={I} tono={TONO[p.tipo]} imagen={p.fotos?.[0]} estado={estadoVisible(p)} contexto="Comunidad" onVolver={onVolver}
-      acciones={[{ icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha(textoDeCompartir(p))) || "") }]}
+      acciones={[{ icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha(textoDeCompartir(p))) || "") }, ...(esMia ? [] : [accionDenunciar(() => setDen(true))])]}
       pie={!esMia && activa && p.conContacto ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Contactar por WhatsApp</button> : undefined}>
       {aviso && <p role="status" className="text-sm p-3" style={avisoAmarillo}>{aviso}</p>}
       {p.noVerificado && (
@@ -281,7 +283,10 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
       {d.enlace && (
         <a href={d.enlace} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 text-sm font-bold" style={{ borderRadius: 14, background: "#fff", border: "1px solid #E3E7F1", color: "#1B3FB8", minHeight: 48 }}><ExternalLink size={16} aria-hidden="true" /> Más información (se abre en el navegador)</a>
       )}
-      {/* ENGANCHE Fase 8: acá va el botón «Denunciar» (y ofrecer bloquear a quien publicó). */}
+      {!esMia && (
+        <button type="button" onClick={() => setDen(true)} style={{ ...botonSecundario, width: "100%", marginTop: 4 }}>Denunciar o bloquear</button>
+      )}
+      {den && <HojaDenunciar tipo="publicacion" id={p.id} nombre={p.titulo} onCerrar={() => setDen(false)} onBloqueado={onVolver} />}
 
       {esMia && (
         <div className="mt-2 p-3" style={{ borderRadius: 16, background: "#EDF1FF", border: "1px solid #C9D6FA" }}>

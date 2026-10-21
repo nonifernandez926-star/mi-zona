@@ -36,6 +36,8 @@ async function pedirJSON(ruta, opciones, headers) {
     const e = new Error(datos.error || datos.mensaje || "Algo salió mal. Probá de nuevo.");
     e.status = res.status;
     e.datos = datos;
+    // Fase 8: si el equipo suspendió la cuenta, la app lo muestra enseguida (motivo y cómo apelar)
+    if (datos.codigo === "cuenta_suspendida" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("mizona:suspension", { detail: datos.suspension || {} }));
     throw e;
   }
   return datos;
@@ -184,11 +186,11 @@ export const seguridadApi = {
 export const entrarConUsuario = (identificador, password) => accesoConCorreo("/auth/login", { identificador, password });
 export const usuarioDisponible = (u) => pedirJSON(`/auth/usuario-disponible?u=${encodeURIComponent(u)}`, { method: "GET" }, {});
 // extra: { declaracion: { mayor18: true, terminos: true }, localidad } cuando la cuenta todavía no la hizo (registro nuevo)
-export const completarCuenta = (usuario, password, nombre, extra) =>
+export const completarCuenta = (usuario, password, nombre, extra) => // extra puede llevar también codigoInvitacion (opcional)
   enviarUsuarioJSON("/auth/completar", "PUT", { usuario, password, ...(nombre !== undefined ? { nombre } : {}), ...(extra || {}) }).then((r) => r.usuario);
 // Cuentas que ya existían: confirman que son mayores de 18, aceptan los términos y eligen su localidad
-export const guardarDeclaracion = (localidad) =>
-  enviarUsuarioJSON("/auth/declaracion", "PUT", { declaracion: { mayor18: true, terminos: true }, localidad }).then((r) => r.usuario);
+export const guardarDeclaracion = (localidad, codigoInvitacion) =>
+  enviarUsuarioJSON("/auth/declaracion", "PUT", { declaracion: { mayor18: true, terminos: true }, localidad, ...(codigoInvitacion ? { codigoInvitacion } : {}) }).then((r) => r.usuario);
 const RUTA_FICHA = { negocio: "businesses", oficio: "oficios", alquiler: "alquileres" };
 // Perfil público (ver el de cualquiera, editar el mío) y qué muestra cada negocio sobre su dueño
 export const perfilesApi = {
@@ -240,9 +242,17 @@ export const guardarNombre = (nombre) => enviarUsuarioJSON("/auth/perfil", "PUT"
 /* ---------- negocios propios y suscripción ---------- */
 
 export const traerMisNegocios = () => getUsuarioJSON("/businesses/mios"); // { negocios, cobertura }
-export const traerPlanes = () => pedirJSON("/suscripcion/planes", {}, {});
+export const traerPlanes = () => pedirJSON("/suscripcion/planes", {}, {}); // { planes: { negocio|oficio|alquiler: { "1_mes"|"3_meses"|"6_meses": {...} } }, mesGratisMeses, cobroDisponible }
 export const traerCobertura = () => getUsuarioJSON("/suscripcion/cobertura"); // { consultado, cubierto, hasta }
-export const iniciarPago = (cuerpo) => enviarUsuarioJSON("/suscripcion/iniciar", "POST", cuerpo);
+// Fase 9: se paga SOLO con Google Play Billing; el servidor verifica cada compra con Google antes de sumar tiempo
+export const suscripcionApi = {
+  estado: () => getUsuarioJSON("/suscripcion/estado"), // { mesGratisDisponible: {negocio, oficio, alquiler}, invitaciones: {...}, cobroDisponible }
+  guardarNegocio: (business) => enviarUsuarioJSON("/suscripcion/iniciar", "POST", { business }), // { bizId } | { cubiertoPorAsistente, bizId, expiresAt }
+  mesGratis: (tipo, id) => enviarUsuarioJSON("/suscripcion/mes-gratis", "POST", { tipo, id }),
+  comprar: (tipo, id, productId, purchaseToken) => enviarUsuarioJSON("/suscripcion/compra", "POST", { tipo, id, productId, purchaseToken }),
+  panel: (tipo, id) => getUsuarioJSON(`/suscripcion/panel?tipo=${encodeURIComponent(tipo)}&id=${encodeURIComponent(id)}`), // { visitas, contactos, guardados|null, diasParaVencer, invitaciones... }
+  usarDias: (tipo, id) => enviarUsuarioJSON("/suscripcion/usar-dias", "POST", { tipo, id }),
+};
 
 /* ---------- agenda del dueño ---------- */
 
@@ -418,4 +428,17 @@ export const comunidadApi = {
   estadoEvento: (id, estado) => enviarUsuarioJSON(C(id, "/evento"), "POST", { estado }).then((r) => r.publicacion),
   eliminar: (id) => enviarUsuarioJSON(C(id), "DELETE", {}),
   contacto: (id, mensaje) => enviarUsuarioJSON(C(id, "/contacto"), "POST", { mensaje }).then((r) => r.url),
+};
+
+// Fase 8 · Denuncias, bloqueo y avisos del equipo. Todo se resuelve en el servidor; la web solo manda el tipo y el id público.
+export const denunciasApi = {
+  denunciar: (tipo, id, motivo, detalle) => enviarUsuarioJSON("/denuncias", "POST", { tipo, id, motivo, detalle }), // { ok, codigo, puedeBloquear, yaBloqueado }
+  bloquear: (tipo, id) => enviarUsuarioJSON("/denuncias/bloqueos", "POST", { tipo, id }).then((r) => r.bloqueado),
+  bloqueados: () => getUsuarioJSON("/denuncias/bloqueos").then((r) => r.bloqueados),
+  desbloquear: (id) => enviarUsuarioJSON(`/denuncias/bloqueos/${encodeURIComponent(id)}`, "DELETE", {}),
+};
+export const moderacionApi = {
+  medidas: () => getUsuarioJSON("/moderacion/medidas"), // { medidas, sinVer, suspension }
+  visto: (id) => enviarUsuarioJSON(`/moderacion/medidas/${encodeURIComponent(id)}/visto`, "POST", {}),
+  apelar: (id, texto) => enviarUsuarioJSON(`/moderacion/medidas/${encodeURIComponent(id)}/apelar`, "POST", { texto }).then((r) => r.medida),
 };
