@@ -272,7 +272,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
           activo={prefs.ubicacionBusqueda} onChange={(v) => cambiar("ubicacionBusqueda", v)} disabled={guardando === "ubicacionBusqueda"}
         />
         <Control
-          Icon={MessageCircle} titulo="Usar mis últimos chats" desc="Un resumen corto, solo para recomendarte mejor en la búsqueda."
+          Icon={MessageCircle} titulo="Usar mis últimos chats" desc="Un resumen corto de lo que escribiste a los asistentes de los negocios, solo para recomendarte mejor en la búsqueda. Nunca se usan tus chats con otras personas."
           activo={prefs.chatsBusqueda} onChange={(v) => cambiar("chatsBusqueda", v)} disabled={guardando === "chatsBusqueda"}
         />
         {esDueno && (

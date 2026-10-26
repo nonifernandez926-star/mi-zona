@@ -140,7 +140,7 @@ export function LoginModal({ onClose, onLogged }) {
             <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Iniciar sesión</h2>
             <p className="text-sm mt-1" style={{ color: "#5B6482", lineHeight: 1.45 }}>Entrá para guardar favoritos, dejar reseñas y manejar tu negocio.</p>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "#F1F4FA" }}><X size={17} color="#5B6482" /></button>
+          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: "#F1F4FA" }}><X size={17} color="#5B6482" /></button>
         </div>
         <PanelAcceso onLogged={onLogged} />
       </div>
@@ -166,7 +166,7 @@ export function NombreModal({ sugerido, onGuardado }) {
       <div className="bg-white w-full max-w-sm p-6" style={{ borderRadius: 24 }}>
         <h2 style={{ ...TITULO, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }} className="mb-1.5">¡Bienvenido a Mi Zona!</h2>
         <p className="text-sm mb-4" style={{ color: "#2B3768" }}>¿Cómo te llamás? Después lo podés cambiar en Ajustes → Mi cuenta.</p>
-        <input
+        <input aria-label="Tu nombre"
           autoFocus value={nombre} maxLength={60}
           onChange={(e) => { setNombre(e.target.value); setError(null); }}
           onKeyDown={(e) => e.key === "Enter" && nombre.trim().length >= 2 && !guardando && guardar()}
@@ -377,7 +377,7 @@ function EditorUsuario({ usuario, onGuardado }) {
   return (
     <div className="mb-3">
       <label className="text-xs font-medium block mb-1" style={{ color: "#2B3768" }}>Usuario</label>
-      <input value={valor} maxLength={20} autoCapitalize="none" spellCheck={false}
+      <input aria-label="Elegí tu usuario" value={valor} maxLength={20} autoCapitalize="none" spellCheck={false}
         onChange={(e) => { setValor(e.target.value.replace(/\s/g, "")); setEstado(null); }}
         placeholder="Elegí tu usuario" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 12, borderColor: disp.estado === "ocupado" || disp.estado === "invalido" ? "#C93030" : "#E3E7F1" }} />
       <p className="text-xs mt-1.5 font-medium" style={{ color }}>{disp.msg || "De 5 a 20 caracteres. Empieza con una letra; podés usar números, punto o guion bajo."}</p>
@@ -541,12 +541,12 @@ function EliminarCuenta({ usuario, onEliminada }) {
       {resumen?.oficios?.length > 0 && (
         <p className="text-sm mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>También se elimina <b>tu ficha de oficios</b> ({resumen.oficios.map((o) => o.nombre).join(", ")}): deja de aparecer en las búsquedas.</p>
       )}
-      <p className="text-[13px] mb-3" style={{ color: "#5B6482", lineHeight: 1.5 }}>Tus chats y puntos con los asistentes están en Mi Asistente y no se borran desde acá.</p>
+      <p className="text-[13px] mb-3" style={{ color: "#5B6482", lineHeight: 1.5 }}>Tus chats con los asistentes también se borran (se lo pedimos a Mi Asistente), y tus pedidos y turnos quedan sin tu nombre ni teléfono.</p>
       {esClave && (
-        <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Tu contraseña" autoComplete="current-password" maxLength={100}
+        <input aria-label="Tu contraseña" type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Tu contraseña" autoComplete="current-password" maxLength={100}
           className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E3E7F1" }} />
       )}
-      <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí ELIMINAR para confirmar" autoCapitalize="characters"
+      <input aria-label="Escribí ELIMINAR para confirmar" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí ELIMINAR para confirmar" autoCapitalize="characters"
         className="w-full border px-3.5 py-2.5 text-sm mb-2.5" style={{ borderRadius: 10, borderColor: "#E3E7F1" }} />
       {!esClave && <p className="text-[13px] mb-2.5" style={{ color: "#5B6482" }}>Google te va a pedir elegir tu cuenta otra vez para confirmar que sos vos.</p>}
       {error && <p className="text-sm mb-2.5" style={{ color: "#C1443A" }}>{error}</p>}
@@ -657,9 +657,9 @@ function SegContrasena({ usuario, onBack, onCambio }) {
       <CabeceraSeg titulo="Contraseña" sub="Al cambiarla cerramos tu sesión en todos los demás dispositivos." onBack={onBack} />
       <div className="p-4" style={TARJETA_SEG}>
         <div className="flex flex-col gap-3">
-          <input value={actual} onChange={cambia(setActual)} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-          <input value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
-          <input value={repetir} onChange={cambia(setRepetir)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input aria-label="Contraseña actual" value={actual} onChange={cambia(setActual)} type={ver ? "text" : "password"} autoComplete="current-password" placeholder="Contraseña actual" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input aria-label="Contraseña nueva" value={nueva} onChange={cambia(setNueva)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
+          <input aria-label="Repetí la contraseña nueva" value={repetir} onChange={cambia(setRepetir)} type={ver ? "text" : "password"} autoComplete="new-password" placeholder="Repetí la contraseña nueva" maxLength={100} className="w-full border px-3.5 py-3 text-sm" style={campo} />
           <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {reglasClave.map((r) => (
               <li key={r.texto} className="flex items-center gap-1.5 text-xs" style={{ color: r.ok ? "#1E8A55" : "#8D95B0", fontWeight: r.ok ? 600 : 400 }}>
@@ -968,7 +968,7 @@ function FilaAviso({ Icon, tono, titulo, desc, activo, onChange, disabled, ultim
     </div>
   );
 }
-const TITULO_GRUPO_NT = { margin: "22px 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#8D95B0" };
+const TITULO_GRUPO_NT = { margin: "22px 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7390" };
 
 export function NotificacionesPushScreen({ usuario, onBack, onLogin }) {
   const [estado, setEstado] = useState("cargando"); // cargando | no-soportado | bloqueado | activo | inactivo

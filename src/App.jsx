@@ -13,7 +13,7 @@ import {
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
-  ShieldAlert, UserX,
+  ShieldAlert, UserX, Camera,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
@@ -30,8 +30,11 @@ import { TONOS as TONOS_ICONOS } from "./tonos.js";
 import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } from "./apariencia.js";
 import { PantallaBienvenida, PantallaCrearUsuario, PantallaDeclaracion } from "./bienvenida.jsx";
 import { PerfilPublicoScreen } from "./perfil.jsx";
-import { OficiosScreen, DetalleOficio, FormularioOficio, PasoOficioActivado } from "./oficios.jsx";
-import { AlquileresScreen, DetalleAlquiler, FormularioAlquiler, PasoAlquilerActivado } from "./alquileres.jsx";
+import { DetalleOficio, FormularioOficio, PasoOficioActivado, leerZona, Pagina, Campo, Chip as ChipForm, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
+import { Seccion, Interruptor, Avance, EntradaIcono, useSubidas, SelectorLogo, GaleriaFotos, EditorHorarios } from "./formKit.jsx";
+import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
+import ListaInicio, { SelectorModo, PLACEHOLDER, leerModo, guardarModo } from "./inicio.jsx";
+import { DetalleAlquiler, FormularioAlquiler, PasoAlquilerActivado } from "./alquileres.jsx";
 import { MisFichasScreen, PasoNegocioActivado } from "./misFichas.jsx";
 import BuscadorScreen from "./buscador.jsx";
 import FavoritosPantalla from "./favoritosPantalla.jsx";
@@ -39,7 +42,7 @@ import { compartirFicha, compartirTexto, textoInvitacion, avisoDeCompartir, useP
 import { registrarFavNegocio, borrarFavFichas } from "./favoritos.js";
 import { oficiosApi, alquileresApi, comunidadApi, eliminarNegocio } from "./api.js";
 import { ComunidadScreen, DetalleComunidad, FormularioComunidad, PasoPublicado } from "./comunidad.jsx";
-import { uploadImage } from "./subirFoto.js";
+import { uploadImage, comprimirFoto } from "./subirFoto.js";
 import { AcercaScreen, AyudaScreen, SoporteScreen } from "./ayuda.jsx";
 import { HojaDenunciar, ReglasScreen, BloqueadosScreen, AvisosEquipoScreen, PantallaSuspension, AvisoDelEquipo } from "./denuncias.jsx";
 import {
@@ -47,6 +50,7 @@ import {
   TarjetaSuscripcion, infoSuscripcion,
 } from "./cuenta.jsx";
 import { ActivarFichaModal } from "./suscripcion.jsx";
+import ReportarRespuestaIA from "./componentes/ReportarRespuestaIA.jsx";
 
 
 const CATEGORIES = [
@@ -721,10 +725,10 @@ async function buscarConAsistente(mensaje, historial, contexto = {}) {
   const res = await fetch(`${API_URL}/asistente/buscar`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ mensaje, historial, ubicacion: contexto.ubicacion, chats: contexto.chats }),
+    body: JSON.stringify({ mensaje, historial, ubicacion: contexto.ubicacion, zona: contexto.zona }),
   });
   if (!res.ok) throw new Error("No se pudo consultar al asistente");
-  return res.json(); // { respuesta, negocios: [ids] }
+  return res.json(); // { respuesta, negocios: [ids], resultados: [{ tipo: "negocio"|"oficio"|"alquiler", id, km?, promedio?, cantidad?, ficha? }] }
 }
 
 async function updateBusinessOnServer(id, biz) {
@@ -837,7 +841,7 @@ function StarPicker({ value, onChange }) {
 
 /* ---------- selector de Provincia + Localidad (toda Argentina, vía API oficial) ---------- */
 
-function ZonePicker({ value, onChange, dark = false, compact = false }) {
+function ZonePicker({ value, onChange, dark = false, compact = false, id }) {
   const [provincias, setProvincias] = useState([]);
   const [localidades, setLocalidades] = useState([]);
   const [provinciaId, setProvinciaId] = useState("");
@@ -864,14 +868,15 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
     fetchLocalidades(provinciaId).then((list) => { setLocalidades(list); setLoadingLoc(false); });
   }, [provinciaId]);
 
-  const inputCls = "appearance-none text-sm px-3 py-2.5";
+  const inputCls = "appearance-none px-3";
   const style = dark
-    ? { borderRadius: 8, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30" }
-    : { borderRadius: 8, backgroundColor: "#fff", color: "#0B1437", border: "1px solid #E3E7F1" };
+    ? { borderRadius: 12, backgroundColor: "#ffffff15", color: "#fff", border: "1px solid #ffffff30", minHeight: 48, fontSize: "1rem" }
+    : { borderRadius: 12, backgroundColor: "#fff", color: "#0B1437", border: "1px solid #CFD6E8", minHeight: 48, fontSize: "1rem" };
 
   return (
     <div className={compact ? "flex gap-2" : "flex flex-col gap-2 sm:flex-row"}>
       <select
+        id={id} aria-label="Provincia"
         value={provinciaId}
         onChange={(e) => { setProvinciaId(e.target.value); setLocalidad(""); }}
         className={inputCls} style={{ ...style, flex: 1 }}
@@ -880,6 +885,7 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
         {provincias.map((p) => <option key={p.id} value={p.id} style={{ color: "#0B1437" }}>{p.nombre}</option>)}
       </select>
       <select
+        aria-label="Localidad"
         value={localidad}
         disabled={!provinciaId || loadingLoc}
         onChange={(e) => {
@@ -899,8 +905,8 @@ function ZonePicker({ value, onChange, dark = false, compact = false }) {
 
 /* ---------- chat con el asistente del negocio ---------- */
 
-function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, onUbicacion }) {
-  // La búsqueda usa la ubicación de la persona (el navegador le pide permiso) y un resumen de sus últimos chats con negocios
+function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, onOpenOficio, onOpenAlquiler, userLoc, onUbicacion }) {
+  // La búsqueda usa la ubicación de la persona (el navegador le pide permiso). Los chats con negocios los lee el servidor desde la cuenta, no esta pantalla.
   const obtenerUbicacion = () => new Promise((resolve) => {
     if (userLoc) return resolve(userLoc);
     if (!navigator.geolocation) return resolve(null);
@@ -927,9 +933,13 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
     try {
       const priv = getPrivacidad(); // lo que la persona eligió en Privacidad
       const ubicacion = priv.ubicacionBusqueda ? await obtenerUbicacion() : null;
-      const chats = priv.chatsBusqueda ? contextoDeChats(businesses) : [];
-      const data = await buscarConAsistente(contenido, historialActual, { ubicacion, chats });
-      const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, negocios: data.negocios || [] };
+      // Los chats con negocios NO se mandan desde acá: el servidor los lee de tu cuenta (y solo si lo permitís en Privacidad)
+      const z = leerZona(), l = z?.loc, zona = {};
+      if (l && z.alcance === "localidad") zona.localidadId = l.localidadId;
+      if (l && z.alcance === "departamento") zona.departamentoId = l.departamentoId;
+      if (l && z.alcance === "provincia") zona.provinciaId = l.provinciaId;
+      const data = await buscarConAsistente(contenido, historialActual, { ubicacion, zona });
+      const msgAsistente = { id: uid(), rol: "asistente", texto: data.respuesta, negocios: data.negocios || [], resultados: data.resultados || [] };
       setMessages((prev) => [...prev, msgAsistente]);
     } catch {
       setMessages((prev) => [...prev, { id: uid(), rol: "asistente", texto: "No pude buscar en este momento. Probá de nuevo en un rato.", negocios: [] }]);
@@ -969,25 +979,46 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
             >
               {m.texto}
             </div>
-            {m.negocios?.length > 0 && (
+            {m.rol !== "cliente" && m.id !== messages[0]?.id && <ReportarRespuestaIA texto={m.texto} pregunta={messages[messages.findIndex((x) => x.id === m.id) - 1]?.texto || ""} contexto="Búsqueda con asistente" />}
+            {(m.resultados?.length > 0 || m.negocios?.length > 0) && (
               <div className="flex flex-col gap-2 mt-2" style={{ maxWidth: "85%", width: "100%" }}>
-                {m.negocios.map((id) => {
-                  const biz = businesses.find((b) => b.id === id);
-                  if (!biz) return null;
-                  const c = catInfo(biz.cat);
+                {(m.resultados?.length ? m.resultados : m.negocios.map((id) => ({ tipo: "negocio", id }))).map((r) => {
+                  let titulo = "", detalle = "", icono = Building2, color = "var(--azul)", abrir = null;
+                  if (r.tipo === "negocio") {
+                    const biz = businesses.find((b) => b.id === r.id);
+                    if (!biz) return null;
+                    const c = catInfo(biz.cat);
+                    titulo = biz.name; icono = c?.icon || Building2; color = c?.color || "var(--azul)"; abrir = () => onOpenBusiness(r.id);
+                    detalle = [c?.label, biz.zone, typeof r.km === "number" ? `a ${fmtDistance(r.km)}` : ""].filter(Boolean).join(" · ");
+                  } else if (r.tipo === "oficio" && r.ficha) {
+                    titulo = r.ficha.nombre; icono = Wrench; color = "#E8741A"; abrir = () => onOpenOficio(r.id);
+                    detalle = ["Oficio", (r.ficha.rubros || []).slice(0, 2).map((x) => x.label).join(", "), r.ficha.localidad].filter(Boolean).join(" · ");
+                  } else if (r.tipo === "alquiler" && r.ficha) {
+                    titulo = r.ficha.nombre; icono = Home; color = "#7B4FD6"; abrir = () => onOpenAlquiler(r.id);
+                    detalle = ["Alquiler", (r.ficha.tipos || []).slice(0, 2).map((x) => x.label).join(", "), r.ficha.localidad].filter(Boolean).join(" · ");
+                  } else return null;
+                  const Icono = icono;
                   return (
                     <button
-                      key={id}
-                      onClick={() => onOpenBusiness(id)}
+                      key={`${r.tipo}-${r.id}`}
+                      onClick={abrir}
                       className="flex items-center gap-3 p-3 text-left bg-white"
                       style={{ borderRadius: 12, border: "1px solid #E3E7F1", boxShadow: "0 3px 10px rgba(11,20,55,0.07)" }}
                     >
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: c?.color || "var(--azul)" }}>
-                        {c?.icon ? <c.icon size={18} color="#fff" /> : <Building2 size={18} color="#fff" />}
+                      <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 10, background: color }}>
+                        <Icono size={18} color="#fff" />
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{biz.name}</span>
-                        <span className="block text-xs truncate" style={{ color: "#5B6482" }}>{c?.label} · {biz.zone}</span>
+                        <span className="block text-sm font-semibold truncate" style={{ color: "#0B1437" }}>{titulo}</span>
+                        <span className="block text-xs truncate" style={{ color: "#5B6482" }}>{detalle}</span>
+                        {r.tipo === "negocio" && r.cantidad > 0 && (
+                          <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: "#5B6482" }}>
+                            <Star size={12} color="#F5A623" fill="#F5A623" aria-hidden="true" /> {String(r.promedio).replace(".", ",")} ({r.cantidad} {r.cantidad === 1 ? "reseña" : "reseñas"})
+                          </span>
+                        )}
+                        {r.tipo !== "negocio" && typeof r.ficha?.disponibilidad === "string" && r.ficha.disponibilidad && (
+                          <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{r.ficha.disponibilidad}</span>
+                        )}
                       </span>
                       <ChevronDown size={14} color="var(--azul)" style={{ transform: "rotate(-90deg)" }} />
                     </button>
@@ -1008,7 +1039,7 @@ function BusquedaAsistenteScreen({ onBack, businesses, onOpenBusiness, userLoc, 
 
       <div style={{ backgroundColor: "#fff", borderTop: "1px solid #E3E7F1" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
-          <input
+          <input aria-label="Ej: quiero comer una hamburguesa..."
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Ej: quiero comer una hamburguesa..."
@@ -1149,6 +1180,7 @@ function ChatScreen({ biz, onBack }) {
             >
               {m.texto}
             </div>
+            {m.rol !== "cliente" && m.id !== messages[0]?.id && <ReportarRespuestaIA texto={m.texto} pregunta={messages[messages.findIndex((x) => x.id === m.id) - 1]?.texto || ""} contexto={`Chat con el asistente de un negocio (${biz.name})`} />}
             {m.imagenes && (
               <div className="flex gap-2 mt-1.5 overflow-x-auto" style={{ maxWidth: "78%" }}>
                 {m.imagenes.map((url, i) => (
@@ -1177,7 +1209,7 @@ function ChatScreen({ biz, onBack }) {
 
       <div className="fixed bottom-0 left-0 right-0" style={{ backgroundColor: "#fff", borderTop: "1px solid #E3E7F1" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
-          <input
+          <input aria-label="Escribí tu mensaje..."
             value={text} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
             placeholder="Escribí tu mensaje..."
@@ -1204,33 +1236,13 @@ function adoptarClienteId(id) {
   clienteIdEnMemoria = id;
 }
 
-// Resumen de las últimas charlas con negocios, para que la búsqueda con asistente conozca lo que la persona necesita
-function contextoDeChats(businesses) {
-  return getAllConversationIds()
-    .map((id) => {
-      const biz = businesses.find((b) => b.id === id);
-      const mensajes = getConversation(id);
-      if (!biz || !mensajes.length) return null;
-      return {
-        negocio: biz.name,
-        categoria: catInfo(biz.cat)?.label || "",
-        ultima: new Date(mensajes[mensajes.length - 1].hora).getTime() || 0,
-        mensajes: mensajes.filter((m) => m.rol === "cliente").slice(-3).map((m) => m.texto),
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.ultima - a.ultima)
-    .slice(0, 6)
-    .map(({ ultima, ...resto }) => resto);
-}
-
 // Id anónimo que identifica a este cliente ante Mi Asistente (chat, puntos, canjes, avisos).
 // Ahora es persistente por dispositivo (antes duraba solo la sesión del navegador).
 function sesionClienteId() {
   return getClienteId();
 }
 
-function TagInput({ values, onChange, placeholder }) {
+function TagInput({ values, onChange, placeholder, id }) {
   const [text, setText] = useState("");
   const add = () => {
     const v = text.trim();
@@ -1240,23 +1252,23 @@ function TagInput({ values, onChange, placeholder }) {
   return (
     <div>
       {values.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-1.5">
+        <ul className="flex flex-wrap gap-2 mb-2" aria-label="Agregados">
           {values.map((v) => (
-            <span key={v} className="text-xs px-2 py-1 flex items-center gap-1" style={{ background: "#EEF0F6", borderRadius: 20 }}>
-              {v}
-              <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}><X size={10} /></button>
-            </span>
+            <li key={v} className="flex items-center" style={{ background: "#EDF1FF", color: "#1B3FB8", borderRadius: 999, minHeight: 44, paddingLeft: 14, fontSize: "0.9375rem", fontWeight: 600 }}>
+              <span style={{ wordBreak: "break-word" }}>{v}</span>
+              <button type="button" aria-label={`Quitar ${v}`} onClick={() => onChange(values.filter((x) => x !== v))} style={{ width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={16} aria-hidden="true" /></button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-      <div className="flex gap-1">
+      <div className="flex gap-2">
         <input
-          value={text} onChange={(e) => setText(e.target.value)}
+          id={id} value={text} onChange={(e) => setText(e.target.value)} maxLength={80}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={placeholder}
-          className="border px-2 py-1.5 text-xs flex-1" style={{ borderRadius: 6, borderColor: "#E3E7F1" }}
+          style={{ flex: 1, minWidth: 0, minHeight: 48, border: "1px solid #CFD6E8", borderRadius: 12, padding: "11px 14px", font: "inherit", fontSize: "1rem", background: "#fff", color: "#0B1437" }}
         />
-        <button type="button" onClick={add} className="text-xs px-3 py-1.5 font-medium" style={{ background: "#0B1437", color: "#fff", borderRadius: 6 }}>
+        <button type="button" onClick={add} disabled={!text.trim()} style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1px solid #CFD6E8", background: "#fff", color: "#0B1437", fontWeight: 700, fontSize: "0.9375rem", opacity: text.trim() ? 1 : 0.5 }}>
           Agregar
         </button>
       </div>
@@ -1288,7 +1300,7 @@ function ConfirmModal({ title, message, confirmLabel = "Confirmar", danger, onCo
 function Lightbox({ src, onClose }) {
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "#0A0C12ee" }} onClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 text-white"><X size={26} /></button>
+      <button onClick={onClose} aria-label="Cerrar" className="absolute top-4 right-4 text-white" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={26} aria-hidden="true" /></button>
       <img src={src} alt="" className="max-w-full max-h-full object-contain" style={{ borderRadius: 8 }} onClick={(e) => e.stopPropagation()} />
     </div>
   );
@@ -1300,7 +1312,7 @@ function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
       <div className="bg-white w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>{photos.length} fotos</h2>
-          <button onClick={onClose}><X size={20} /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={20} aria-hidden="true" /></button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((src, i) => (
@@ -1318,7 +1330,7 @@ function CategoryModal({ activeCat, onSelect, onClose }) {
       <div className="bg-white w-full sm:max-w-lg max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
-          <button onClick={onClose}><X size={20} /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={20} aria-hidden="true" /></button>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           <button
@@ -1594,15 +1606,15 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
           <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3" style={{ zIndex: 5 }}>
             <BotonAtras onClick={onBack} tono="foto" />
             <div className="flex items-center gap-2.5">
-              <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+              <button onClick={() => shareBusiness(biz)} aria-label="Compartir" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <Share2 size={17} color="#0B1437" />
               </button>
               {!esDueño && (
-                <button onClick={() => setDenunciando(true)} aria-label="Denunciar o bloquear" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+                <button onClick={() => setDenunciando(true)} aria-label="Denunciar o bloquear" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                   <Flag size={17} color="#0B1437" />
                 </button>
               )}
-              <button onClick={() => onToggleFavorite(biz.id)} aria-label="Favorito" className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
+              <button onClick={() => onToggleFavorite(biz.id)} aria-label="Favorito" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 14, background: "#ffffffee", boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <Heart size={18} color={isFavorite ? "#E5484D" : "#0B1437"} fill={isFavorite ? "#E5484D" : "none"} />
               </button>
             </div>
@@ -1849,7 +1861,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                 <p className="text-sm font-semibold mb-2" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>Dejá tu opinión</p>
                 <StarPicker value={reviewRating} onChange={setReviewRating} />
                 {!reviewRating && <p className="text-xs mt-1.5" style={{ color: "#5B6482" }}>Tocá una estrella para calificar.</p>}
-                <textarea
+                <textarea aria-label="Contá tu experiencia..."
                   value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Contá tu experiencia..."
                   rows={3} className="w-full border px-3 py-2 text-sm mt-3 mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
                 />
@@ -1868,7 +1880,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                         <span className="text-sm font-medium">{r.conUsuario ? `@${r.name}` : r.name}</span>
                         <span className="flex items-center gap-1.5">
                           <span className="text-xs" style={{ color: "#5B6482" }}>{fmtDate(r.date)}</span>
-                          <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 9, background: reportandoId === r.id ? "var(--azul-suave)" : "transparent" }}>
+                          <button onClick={() => setReportandoId(reportandoId === r.id ? null : r.id)} aria-label="Reportar reseña" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 12, background: reportandoId === r.id ? "var(--azul-suave)" : "transparent" }}>
                             <Flag size={14} color="#8D95B0" />
                           </button>
                         </span>
@@ -1902,7 +1914,7 @@ function BusinessDetail({ biz, onBack, onOpenPhoto, onAddReview, onReplyReview, 
                         </div>
                       ) : replyingId === r.id ? (
                         <div className="mt-2">
-                          <textarea
+                          <textarea aria-label="Escribí una respuesta..."
                             value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={2}
                             placeholder="Escribí una respuesta..."
                             className="w-full border px-3 py-2 text-sm mb-2" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
@@ -2020,7 +2032,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
             </span>
           </div>
           {onOpenNotificaciones && (
-            <button onClick={onOpenNotificaciones} aria-label="Notificaciones" className="relative flex items-center justify-center shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "#ffffff1a" }}>
+            <button onClick={onOpenNotificaciones} aria-label="Notificaciones" className="relative flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: "#ffffff1a" }}>
               <Bell size={17} color="#fff" />
               {notifSinLeer > 0 && (
                 <span className="absolute flex items-center justify-center text-[9px] font-bold" style={{ top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#E5484D", color: "#fff", padding: "0 4px", border: "2px solid #0B1437" }}>
@@ -2050,7 +2062,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, onOpenOficios, onOpenAlquileres, onOpenComunidad, onBuscarTodo, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2112,24 +2124,13 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             <Search size={18} color="var(--azul)" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); onBuscarTodo?.(query.trim()); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); e.target.blur(); } }}
               onBlur={() => { if (query.trim()) { addSearchHistory(query); setHistorial(getSearchHistory()); } }}
-              placeholder="Buscá un negocio, producto o servicio..."
+              placeholder={PLACEHOLDER[modo] || PLACEHOLDER.negocios}
               className="w-full outline-none text-sm bg-transparent buscador-portada" style={{ color: "#0B1437", WebkitTextFillColor: "#0B1437" }}
             />
             {query && <button onClick={() => setQuery("")} aria-label="Borrar búsqueda"><X size={15} color="#5B6482" /></button>}
           </div>
-
-          {onBuscarTodo && (
-            <button
-              type="button" onClick={() => onBuscarTodo(query.trim())}
-              className="flex items-center gap-1.5 mt-2.5 text-xs font-semibold px-3 py-2"
-              style={{ borderRadius: 20, background: "#ffffff1a", color: "#fff", border: "1px solid #ffffff26", minHeight: 40, maxWidth: "100%" }}
-            >
-              <Search size={13} aria-hidden="true" />
-              <span className="truncate">{query.trim().length >= 2 ? `Buscar «${query.trim()}» en negocios, oficios y alquileres` : "Buscar en negocios, oficios y alquileres"}</span>
-            </button>
-          )}
 
           {!query && historial.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto">
@@ -2171,7 +2172,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           <div className="bg-white w-full max-w-sm p-5" style={{ borderRadius: 14, boxShadow: "0 12px 40px #00000033" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 500, fontSize: 16, color: "#0B1437" }}>¿Dónde estás?</span>
-              <button onClick={() => setShowZoneModal(false)}><X size={18} color="#5B6482" /></button>
+              <button onClick={() => setShowZoneModal(false)} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="#5B6482" aria-hidden="true" /></button>
             </div>
             <ZonePicker value={pendingZone} onChange={setPendingZone} />
             <button
@@ -2188,6 +2189,9 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
 
       {/* categorías: tarjeta flotante que se superpone a la portada */}
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
+        <SelectorModo modo={modo} onCambiar={onCambiarModo} />
+        {modo === "negocios" && (
+          <div className="mt-3">
         <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>Categorías</span>
@@ -2214,23 +2218,8 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
             })}
           </div>
         </div>
-        {/* Oficios y servicios y Alquileres: dos accesos en una sola fila (no se llena la pantalla de botones) */}
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          <button onClick={onOpenOficios} className="flex items-center gap-2.5 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
-            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#FFE8C2" }}><Wrench size={20} color="#8A5B12" /></span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437" }}>Oficios y servicios</span>
-              <span className="block text-[11px] leading-tight mt-0.5" style={{ color: "#5B6482" }}>Electricistas, plomeros...</span>
-            </span>
-          </button>
-          <button onClick={onOpenAlquileres} className="flex items-center gap-2.5 text-left bg-white" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
-            <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#E3E8FD" }}><Home size={20} color="#2B3E9E" /></span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437" }}>Alquileres</span>
-              <span className="block text-[11px] leading-tight mt-0.5" style={{ color: "#5B6482" }}>Casas, sillas, equipos...</span>
-            </span>
-          </button>
-        </div>
+          </div>
+        )}
         {onOpenComunidad && (
           <button onClick={onOpenComunidad} className="flex items-center gap-2.5 text-left bg-white w-full mt-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
             <span className="flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 13, background: "#DDF3EA" }}><Users size={20} color="#1E6B44" /></span>
@@ -2384,7 +2373,7 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
               >
                 <div className="relative shrink-0">
                   {biz.logo ? (
-                    <img src={biz.logo} alt="" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,20,55,.08)" }} />
+                    <img src={biz.logo} alt="" loading="lazy" decoding="async" className="object-cover" style={{ width: 56, height: 56, borderRadius: "50%", boxShadow: "0 0 0 1px rgba(11,20,55,.08)" }} />
                   ) : (
                     <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: c?.color || "var(--azul)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)" }}>
                       {CatIcon ? <CatIcon size={24} color="#fff" /> : <span className="text-lg font-bold">{biz.name?.[0]?.toUpperCase()}</span>}
@@ -3071,7 +3060,7 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm" style={{ color: "#0B1437", fontWeight: 700, lineHeight: 1.3 }}>{n.titulo}</p>
           <p className="text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4, wordBreak: "break-word" }}>{n.descripcion}</p>
-          <p className="text-[11px] mt-1.5 font-semibold" style={{ color: "#8D95B0" }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+          <p className="text-[11px] mt-1.5 font-semibold" style={{ color: "#6B7390" }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
         {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 10, height: 10, background: "var(--azul)", boxShadow: "0 0 0 4px rgba(var(--azul-rgb), .15)" }} />}
       </div>
@@ -3147,7 +3136,7 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
               {errorAvisos && <span className="block text-xs mt-1" style={{ color: "#FFB4AE" }}>{errorAvisos}</span>}
             </span>
             <button onClick={activarAvisos} disabled={activando} className="shrink-0 text-xs font-bold px-3.5 py-2" style={{ borderRadius: 10, background: "#fff", color: "#0B1437", opacity: activando ? .6 : 1 }}>{activando ? "Activando..." : "Activar"}</button>
-            <button onClick={ocultarBanner} aria-label="Ocultar" className="absolute flex items-center justify-center" style={{ top: -8, right: -6, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "#5B6482", boxShadow: "0 2px 8px rgba(11,20,55,.25)" }}><X size={14} /></button>
+            <button onClick={ocultarBanner} aria-label="Ocultar aviso" className="absolute flex items-center justify-center" style={{ top: -17, right: -15, width: 44, height: 44, background: "transparent", color: "#5B6482" }}><span aria-hidden="true" className="flex items-center justify-center" style={{ width: 26, height: 26, borderRadius: "50%", background: "#fff", boxShadow: "0 2px 8px rgba(11,20,55,.25)" }}><X size={14} /></span></button>
           </div>
         )}
 
@@ -3163,13 +3152,13 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
           <>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-extrabold px-1 pt-4 pb-2" style={{ color: "#8D95B0", letterSpacing: "0.1em" }}>{g.label.toUpperCase()}</p>
+                <p className="text-[11px] font-extrabold px-1 pt-4 pb-2" style={{ color: "#6B7390", letterSpacing: "0.1em" }}>{g.label.toUpperCase()}</p>
                 {g.items.map((n) => (
                   <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
                 ))}
               </div>
             ))}
-            <p className="text-center text-xs mt-5" style={{ color: "#8D95B0" }}>Deslizá un aviso hacia la derecha para borrarlo.</p>
+            <p className="text-center text-xs mt-5" style={{ color: "#6B7390" }}>Deslizá un aviso hacia la derecha para borrarlo.</p>
           </>
         )}
       </div>
@@ -3187,7 +3176,7 @@ function RecompensaCard({ r, onCanjear, canjeando }) {
     <div className="bg-white p-4" style={{ borderRadius: 14, border: "1px solid #E3E7F1", boxShadow: "0 3px 12px rgba(11,20,55,0.06)", opacity: bloqueoTexto ? 0.75 : 1 }}>
       <div className="flex items-start gap-3">
         {r.imagen ? (
-          <img src={r.imagen} alt="" className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 12 }} />
+          <img src={r.imagen} alt="" loading="lazy" decoding="async" className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 12 }} />
         ) : (
           <span className="flex items-center justify-center shrink-0" style={{ width: 56, height: 56, borderRadius: 12, background: "#F3ECFC" }}>
             <Gift size={24} color="#7A4F9E" />
@@ -3248,7 +3237,7 @@ function CanjeModal({ canje, onClose }) {
       <div className="bg-white w-full max-w-sm p-6 text-center" style={{ borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>Tu canje</span>
-          <button onClick={onClose}><X size={18} color="#5B6482" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="#5B6482" aria-hidden="true" /></button>
         </div>
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 mb-3" style={{ borderRadius: 20, background: usado ? "#EEEDE7" : "#E4F3EA", color: usado ? "#5B6482" : "#1E6B44" }}>
           {usado ? <Check size={12} /> : <Ticket size={12} />} {usado ? "Ya utilizado" : "Listo para usar"}
@@ -3343,7 +3332,7 @@ function PuntosScreen({ businesses, initialCodigo, onBack, onOpenBusiness }) {
     const biz = bizDe(cp);
     const src = biz?.logo || logoUrl;
     return src ? (
-      <img src={src} alt="" className="object-cover shrink-0" style={{ width: size, height: size, borderRadius: "50%" }} />
+      <img src={src} alt="" loading="lazy" decoding="async" className="object-cover shrink-0" style={{ width: size, height: size, borderRadius: "50%" }} />
     ) : (
       <span className="flex items-center justify-center shrink-0 font-bold" style={{ width: size, height: size, borderRadius: "50%", background: catInfo(biz?.cat)?.color || "var(--azul)", color: "#fff" }}>
         {(nombre || "?")[0].toUpperCase()}
@@ -4120,85 +4109,53 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
 /* ---------- formulario de negocio (admin y alta pública) ---------- */
 
 function BusinessForm({ initial, onSave, onCancel, abrirMapa, publicMode = false }) {
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState(() => ({
+    ...initial,
+    services: initial.services || [], specialties: initial.specialties || [], paymentMethods: initial.paymentMethods || [],
+    photos: initial.photos || [], extra: initial.extra || {},
+  }));
   const ubicElegida = useRef(null); // dirección elegida en el mapa: sus coordenadas ya son exactas, no hace falta buscarlas de nuevo
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingPortada, setUploadingPortada] = useState(false);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
+  const [subiendoPortada, setSubiendoPortada] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState(null);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-  const setBool = (k) => (e) => setForm({ ...form, [k]: e.target.checked });
+  const [error, setError] = useState(null); // { campo, msg }
+  const [sinMapa, setSinMapa] = useState(null); // coordenadas pendientes si la dirección no se pudo ubicar
+  const refPortada = useRef(null);
+  const esNuevo = publicMode && !initial.name;
 
-  const togglePayment = (method) => {
-    setForm((f) => ({
-      ...f,
-      paymentMethods: f.paymentMethods.includes(method) ? f.paymentMethods.filter((m) => m !== method) : [...f.paymentMethods, method],
-    }));
+  const fallo = (campo, msg) => {
+    setError({ campo, msg });
+    requestAnimationFrame(() => {
+      const el = document.getElementById(campo);
+      el?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      el?.focus?.({ preventScroll: true });
+    });
   };
+  const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); if (error?.campo) setError(null); };
+  const onTexto = (k) => (e) => set(k, e.target.value);
+  const setExtra = (k, v) => setForm((f) => ({ ...f, extra: { ...f.extra, [k]: v } }));
+  const togglePayment = (m) => setForm((f) => ({ ...f, paymentMethods: f.paymentMethods.includes(m) ? f.paymentMethods.filter((x) => x !== m) : [...f.paymentMethods, m] }));
 
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingLogo(true);
-    setUploadError(null);
-    try {
-      const url = await uploadImage(file);
-      setForm((f) => ({ ...f, logo: url }));
-    } catch (err) {
-      console.error(err);
-      setUploadError("No se pudo subir el logo. Revisá la configuración de Cloudinary.");
-    } finally {
-      setUploadingLogo(false);
-      e.target.value = "";
-    }
-  };
+  const { subiendo, subir } = useSubidas({ max: 12, onError: (m) => (m ? fallo("nb-fotos", m) : setError(null)) });
+  const ayudaSubir = { fotos: form.photos, setFotos: (p) => set("photos", p), setLogo: (u) => set("logo", u) };
 
   // Foto de fondo del perfil: una sola, la elige el dueño (no se toma de las fotos de productos)
-  const handlePortadaUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPortada(true);
-    setUploadError(null);
-    try {
-      const url = await uploadImage(file);
-      setForm((f) => ({ ...f, portada: url }));
-      setFormError(null);
-    } catch (err) {
-      console.error(err);
-      setUploadError("No se pudo subir la foto de fondo. Revisá la configuración de Cloudinary.");
-    } finally {
-      setUploadingPortada(false);
-      e.target.value = "";
-    }
+  const subirPortada = async (archivos) => {
+    const a = archivos?.[0]; if (!a) return;
+    if (!/^image\//.test(a.type) || a.size > 15 * 1024 * 1024) { fallo("nb-portada", "Elegí una imagen de hasta 15 MB."); return; }
+    setSubiendoPortada(true); setError(null);
+    try { set("portada", await uploadImage(await comprimirFoto(a))); }
+    catch { fallo("nb-portada", "No pudimos subir la foto. Probá de nuevo en un rato."); }
+    setSubiendoPortada(false);
   };
 
-  const handlePhotosUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    setUploadingPhotos(true);
-    setUploadError(null);
-    try {
-      const urls = await Promise.all(files.map((f) => uploadImage(f)));
-      setForm((f) => ({ ...f, photos: [...(f.photos || []), ...urls] }));
-    } catch (err) {
-      console.error(err);
-      setUploadError("No se pudieron subir una o más fotos. Revisá la configuración de Cloudinary.");
-    } finally {
-      setUploadingPhotos(false);
-      e.target.value = "";
-    }
-  };
-
-  const removePhoto = (url) => setForm((f) => ({ ...f, photos: f.photos.filter((p) => p !== url) }));
+  const terminar = (coords) => onSave({ ...form, lat: coords.lat, lng: coords.lng, status: esNuevo ? "inactive" : form.status });
 
   const submit = async () => {
-    if (!form.name.trim()) { setFormError("Escribí el nombre del negocio."); return; }
-    if (!form.phone.trim()) { setFormError("Escribí el teléfono de contacto."); return; }
-    if (!form.logo) { setFormError("Subí el logo de tu negocio: es obligatorio."); return; }
-    if (!form.portada) { setFormError("Elegí la foto de fondo de tu perfil: es obligatoria."); return; }
-    setFormError(null);
+    if (!form.name.trim()) return fallo("nb-nombre", "Escribí el nombre del negocio.");
+    if (!form.phone.trim()) return fallo("nb-tel", "Escribí el número de contacto.");
+    if (!form.logo) return fallo("nb-logo", "Subí el logo de tu negocio: es obligatorio.");
+    if (!form.portada) return fallo("nb-portada", "Elegí la foto de fondo de tu perfil: es obligatoria.");
+    setError(null);
     setSaving(true);
     let coords = { lat: form.lat ?? null, lng: form.lng ?? null };
     // Si cambió la dirección o todavía no tiene coordenadas, geocodificamos automáticamente
@@ -4209,175 +4166,148 @@ function BusinessForm({ initial, onSave, onCancel, abrirMapa, publicMode = false
     }
     setSaving(false);
     // Si la dirección no se pudo ubicar, el negocio no va a aparecer en el mapa: se le avisa antes de seguir
-    if (form.loc?.trim() && !coords.lat && !window.confirm("No pudimos ubicar esa dirección en el mapa. Si seguís, tu negocio se va a ver en la lista pero no en el mapa. ¿Querés continuar igual? (Podés volver y escribir la dirección con calle y número.)")) return;
-    onSave({ ...form, lat: coords.lat, lng: coords.lng, status: publicMode && !initial.name ? "inactive" : form.status });
+    if (form.loc?.trim() && !coords.lat) { setSinMapa(coords); return; }
+    terminar(coords);
   };
 
+  const preguntas = CATEGORY_QUESTIONS[form.cat] || DEFAULT_QUESTIONS;
+  const rubro = CATEGORIES.find((c) => c.id === form.cat)?.label;
+  const hayHorarios = form.weekHours?.some((d) => d && d[0] !== null && d[0] !== undefined);
+  const pasos = [
+    { ok: !!form.name.trim(), texto: "Nombre del negocio", requerido: true },
+    { ok: !!form.phone.trim(), texto: "Número de contacto", requerido: true },
+    { ok: !!form.logo, texto: "Logo", requerido: true },
+    { ok: !!form.portada, texto: "Foto de fondo", requerido: true },
+    { ok: form.desc.trim().length >= 20, texto: "Descripción" },
+    { ok: !!form.loc?.trim(), texto: "Dirección" },
+    { ok: !!hayHorarios, texto: "Horarios" },
+    { ok: form.photos.length > 0, texto: "Fotos de productos" },
+  ];
+  const malo = (campo) => (error?.campo === campo ? { borderColor: "#C1443A", boxShadow: "0 0 0 2px #F6D5D2" } : null);
+
   return (
-    <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto" style={{ background: "#F3F5FA" }}>
-      <div className="w-full max-w-lg p-5 pb-10">
-        <BotonVolver texto="Volver" onClick={onCancel} />
-        <h2 className="mb-4" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>
-          {initial.name ? "Editar mis datos" : "Registrar mi negocio"}
-        </h2>
-        <div className="bg-white p-5" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}>
-
-        <div className="flex flex-col gap-3">
-          <input placeholder="Nombre del negocio" value={form.name} onChange={set("name")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-
-          <select value={form.cat} onChange={set("cat")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}>
-            {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-          <ZonePicker value={form.zone} onChange={(z) => setForm((f) => ({ ...f, zone: z }))} />
-
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Servicios disponibles</p>
-            <TagInput values={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="Ej: reparación de celulares" />
-          </div>
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Especialidades</p>
-            <TagInput values={form.specialties} onChange={(v) => setForm({ ...form, specialties: v })} placeholder="Ej: pastelería sin gluten" />
-          </div>
-
-          <div className="p-3" style={{ borderRadius: 8, background: "#F3F5FA", border: "1px solid #E3E7F1" }}>
-            <p className="text-xs font-semibold mb-2.5" style={{ color: "#0B1437" }}>
-              Preguntas sobre tu rubro ({CATEGORIES.find((c) => c.id === form.cat)?.label})
-            </p>
-            <div className="flex flex-col gap-2.5">
-              {(CATEGORY_QUESTIONS[form.cat] || DEFAULT_QUESTIONS).map((q) => (
-                <div key={q.key}>
-                  {q.type === "bool" ? (
-                    <label className="flex items-center gap-2 text-sm" style={{ color: "#1F2937" }}>
-                      <input
-                        type="checkbox"
-                        checked={!!form.extra?.[q.key]}
-                        onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.checked } }))}
-                      />
-                      {q.label}
-                    </label>
-                  ) : (
-                    <>
-                      <p className="text-xs mb-1" style={{ color: "#2B3768" }}>{q.label}</p>
-                      <input
-                        placeholder={q.placeholder}
-                        value={form.extra?.[q.key] || ""}
-                        onChange={(e) => setForm((f) => ({ ...f, extra: { ...f.extra, [q.key]: e.target.value } }))}
-                        className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
-                      />
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Métodos de pago</p>
-            <div className="flex flex-wrap gap-2">
-              {PAYMENT_METHODS.map((m) => {
-                const active = form.paymentMethods.includes(m);
-                return (
-                  <button key={m} type="button" onClick={() => togglePayment(m)}
-                    className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                    style={{ borderRadius: 8, border: "1px solid " + (active ? "#0B1437" : "#E3E7F1"), backgroundColor: active ? "#0B1437" : "#fff", color: active ? "#fff" : "#0B1437" }}
-                  >
-                    {active && <Check size={12} />} {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.delivery} onChange={setBool("delivery")} /> Hace envíos</label>
-
-          <input placeholder="Teléfono de contacto (código país, sin +)" value={form.phone} onChange={set("phone")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <input placeholder="Usuario de Instagram (sin @, opcional)" value={form.ig} onChange={set("ig")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <input placeholder="Usuario de TikTok (sin @, opcional)" value={form.tiktok || ""} onChange={set("tiktok")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <input placeholder="Facebook: usuario o link de tu página (opcional)" value={form.facebook || ""} onChange={set("facebook")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Logo (obligatorio)</p>
-            <div className="flex items-center gap-3">
-              {form.logo && <img src={form.logo} alt="" className="w-12 h-12 object-cover" style={{ borderRadius: 8 }} />}
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
-                {uploadingLogo ? "Subiendo..." : form.logo ? "Cambiar" : "Elegir foto"}
-                <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-              </label>
-              {form.logo && !uploadingLogo && (
-                <button type="button" onClick={() => setForm({ ...form, logo: "" })} className="text-xs" style={{ color: "#C1443A" }}>Quitar</button>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Foto de fondo de tu perfil (obligatoria, una sola)</p>
-            {form.portada && <img src={form.portada} alt="" className="w-full object-cover mb-2" style={{ height: 96, borderRadius: 10 }} />}
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-medium px-3 py-2 cursor-pointer" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
-                {uploadingPortada ? "Subiendo..." : form.portada ? "Cambiar" : "Elegir foto"}
-                <input type="file" accept="image/*" className="hidden" onChange={handlePortadaUpload} disabled={uploadingPortada} />
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Fotos de productos</p>
-            {form.photos?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {form.photos.map((url) => (
-                  <div key={url} className="relative">
-                    <img src={url} alt="" className="w-16 h-16 object-cover" style={{ borderRadius: 8 }} />
-                    <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-white" style={{ borderRadius: "50%", border: "1px solid #E3E7F1" }}>
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <label className="text-xs font-medium px-3 py-2 cursor-pointer inline-block" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>
-              {uploadingPhotos ? "Subiendo..." : "Agregar fotos"}
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotosUpload} disabled={uploadingPhotos} />
-            </label>
-            {uploadError && <p className="text-xs mt-1" style={{ color: "#C1443A" }}>{uploadError}</p>}
-          </div>
-
-          <div>
-            <input placeholder="Dirección (calle y número)" value={form.loc} onChange={set("loc")} className="border px-3 py-2 text-sm w-full" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-            {abrirMapa && (
-              <button type="button" className="mt-2 w-full py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
-                style={{ borderRadius: 8, border: "1px solid var(--azul, #1F4FE0)", color: "var(--azul, #1F4FE0)", background: "#fff" }}
-                onClick={() => abrirMapa({
-                  direccion: form.loc || "", zona: form.zone,
-                  // si cambió el texto, el pin arranca en la dirección escrita (no en las coordenadas viejas)
-                  ...((form.loc === initial.loc || ubicElegida.current?.loc === form.loc) && form.lat != null ? { lat: form.lat, lng: form.lng } : { lat: null, lng: null }),
-                  alConfirmar: (r) => {
-                    const loc = r.direccion || "Ubicación marcada en el mapa";
-                    ubicElegida.current = { loc };
-                    setForm((f) => ({ ...f, loc, lat: r.lat, lng: r.lng }));
-                  },
-                })}>
-                <MapPin size={16} /> {form.lat != null ? "Cambiar ubicación en el mapa" : "Elegir en el mapa"}
-              </button>
-            )}
-          </div>
-
-          <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "#2B3768" }}>Horarios de la semana</p>
-            <WeekHoursEditor value={form.weekHours} onChange={(v) => setForm({ ...form, weekHours: v })} />
-          </div>
-
-          {formError && <p className="text-xs font-medium" style={{ color: "#C1443A" }}>{formError}</p>}
-          <div className="flex gap-2 mt-2">
-            <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-medium" style={{ borderRadius: 8, border: "1px solid #E3E7F1" }}>Cancelar</button>
-            <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold" style={{ backgroundColor: "#0B1437", color: "#fff", borderRadius: 8, opacity: saving ? 0.7 : 1 }}>
-              {saving ? "Ubicando dirección..." : publicMode && !initial.name ? "Aceptar" : "Guardar"}
+    <div className="fixed inset-0 z-[75] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+      <Pagina titulo={initial.name ? "Editar mi negocio" : "Registrar mi negocio"} onVolver={onCancel}
+        pie={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {error && <p role="alert" className="text-sm font-bold" style={{ color: "#8E2B22", background: "#FDECEA", borderRadius: 12, padding: "8px 12px", marginBottom: 8, lineHeight: 1.35 }}>{error.msg}</p>}
+            <button type="button" onClick={submit} disabled={saving} style={{ ...botonPrincipal, width: "100%", opacity: saving ? 0.7 : 1 }}>
+              {saving ? "Ubicando dirección…" : esNuevo ? "Continuar" : "Guardar cambios"}
             </button>
           </div>
-        </div>
-        </div>
-      </div>
+        }>
+        <Avance pasos={pasos} titulo="Tu negocio" />
+        {esNuevo && <p className="text-sm mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>Completá lo que está marcado como necesario. En el paso siguiente elegís tu mes gratis o un plan.</p>}
+
+        <Seccion icono={Store} titulo="Presentación" subtitulo="Lo primero que ve quien te busca.">
+          <div id="nb-logo" tabIndex={-1} style={{ outline: "none", ...(error?.campo === "nb-logo" ? { borderRadius: 24, boxShadow: "0 0 0 2px #C1443A", padding: 6 } : null) }}>
+            <SelectorLogo valor={form.logo} subiendo={subiendo === "logo"} etiqueta="Logo (necesario)" onArchivo={(a) => subir(a, "logo", ayudaSubir)} onQuitar={() => set("logo", "")} />
+          </div>
+          <div className="mt-4" />
+          <Campo id="nb-nombre" etiqueta="Nombre del negocio" contador={`${form.name.length}/80`}>
+            <input id="nb-nombre" value={form.name} onChange={onTexto("name")} maxLength={80} autoComplete="organization" aria-invalid={error?.campo === "nb-nombre"} style={{ ...caja, ...malo("nb-nombre") }} />
+          </Campo>
+          <Campo id="nb-rubro" etiqueta="Rubro">
+            <select id="nb-rubro" value={form.cat} onChange={onTexto("cat")} style={caja}>
+              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </Campo>
+          <Campo id="nb-desc" etiqueta="Descripción" contador={`${form.desc.length}/1200`} ayuda="Contá qué ofrecés y qué te hace distinto.">
+            <textarea id="nb-desc" value={form.desc} onChange={onTexto("desc")} rows={4} maxLength={1200} style={{ ...caja, resize: "none", lineHeight: 1.5 }} />
+          </Campo>
+        </Seccion>
+
+        <Seccion icono={Tag} titulo="Qué ofrecés" subtitulo="Ayuda a que te encuentren por lo que hacés." opcional>
+          <Campo id="nb-serv" etiqueta="Servicios o productos"><TagInput id="nb-serv" values={form.services} onChange={(v) => set("services", v)} placeholder="Ej: reparación de celulares" /></Campo>
+          <Campo id="nb-esp" etiqueta="Especialidades"><TagInput id="nb-esp" values={form.specialties} onChange={(v) => set("specialties", v)} placeholder="Ej: pastelería sin gluten" /></Campo>
+          {preguntas.length > 0 && (
+            <div style={{ borderTop: "1px solid #EEF1F8", paddingTop: 14 }}>
+              <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Sobre tu rubro{rubro ? ` (${rubro})` : ""}</p>
+              {preguntas.map((q, i) => q.type === "bool" ? (
+                <Interruptor key={q.key} activo={!!form.extra?.[q.key]} onChange={() => setExtra(q.key, !form.extra?.[q.key])} titulo={q.label} />
+              ) : (
+                <Campo key={q.key} id={`nb-q${i}`} etiqueta={q.label}>
+                  <input id={`nb-q${i}`} value={form.extra?.[q.key] || ""} onChange={(e) => setExtra(q.key, e.target.value)} placeholder={q.placeholder} style={caja} />
+                </Campo>
+              ))}
+            </div>
+          )}
+        </Seccion>
+
+        <Seccion icono={Coins} titulo="Cobros y envíos" subtitulo="Cómo te pagan y si llevás a domicilio." opcional>
+          <p id="nb-pagos" className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Medios de pago</p>
+          <div role="group" aria-labelledby="nb-pagos" className="flex flex-wrap gap-2 mb-3">
+            {PAYMENT_METHODS.map((m) => <ChipForm key={m} activo={form.paymentMethods.includes(m)} onClick={() => togglePayment(m)}>{m}</ChipForm>)}
+          </div>
+          <div style={{ borderTop: "1px solid #EEF1F8", paddingTop: 10 }}>
+            <Interruptor activo={!!form.delivery} onChange={() => set("delivery", !form.delivery)} titulo="Hago envíos" desc="Se muestra en tu ficha." />
+          </div>
+        </Seccion>
+
+        <Seccion icono={MapPin} titulo="Dónde estás" subtitulo="Para que los vecinos te encuentren en el mapa.">
+          <Campo id="nb-prov" etiqueta="Localidad"><ZonePicker id="nb-prov" value={form.zone} onChange={(z) => set("zone", z)} /></Campo>
+          {form.zone && <p className="text-sm mb-4" style={{ color: "#4A5372", marginTop: -8 }}>Elegida: <b style={{ color: "#0B1437" }}>{form.zone}</b></p>}
+          <Campo id="nb-dir" etiqueta="Dirección" ayuda="Calle y número. Es pública: si atendés a domicilio, dejala vacía.">
+            <input id="nb-dir" value={form.loc} onChange={onTexto("loc")} maxLength={150} autoComplete="street-address" style={caja} />
+          </Campo>
+          {abrirMapa && (
+            <button type="button" style={{ ...botonSecundario, width: "100%", color: "#1B3FB8", borderColor: "#2350F5" }}
+              onClick={() => abrirMapa({
+                direccion: form.loc || "", zona: form.zone,
+                // si cambió el texto, el pin arranca en la dirección escrita (no en las coordenadas viejas)
+                ...((form.loc === initial.loc || ubicElegida.current?.loc === form.loc) && form.lat != null ? { lat: form.lat, lng: form.lng } : { lat: null, lng: null }),
+                alConfirmar: (r) => {
+                  const loc = r.direccion || "Ubicación marcada en el mapa";
+                  ubicElegida.current = { loc };
+                  setForm((f) => ({ ...f, loc, lat: r.lat, lng: r.lng }));
+                },
+              })}>
+              <MapPin size={18} aria-hidden="true" /> {form.lat != null ? "Cambiar ubicación en el mapa" : "Marcar en el mapa"}
+            </button>
+          )}
+        </Seccion>
+
+        <Seccion icono={Clock} titulo="Horarios" subtitulo="Elegí los días y las horas en que atendés.">
+          <EditorHorarios value={form.weekHours} onChange={(v) => set("weekHours", v)} />
+        </Seccion>
+
+        <Seccion icono={MessageCircle} titulo="Cómo te contactan" subtitulo="Tu número es necesario. Las redes son opcionales.">
+          <Campo id="nb-tel" etiqueta="WhatsApp o teléfono (necesario)" ayuda="Con código de país, sin el +. Ej: 5493815551234.">
+            <EntradaIcono id="nb-tel" icono={Phone} value={form.phone} onChange={onTexto("phone")} inputMode="tel" autoComplete="tel" maxLength={30} aria-invalid={error?.campo === "nb-tel"} />
+          </Campo>
+          <Campo id="nb-ig" etiqueta="Instagram"><EntradaIcono id="nb-ig" icono={Instagram} value={form.ig || ""} onChange={onTexto("ig")} maxLength={120} placeholder="usuario, sin @" autoCapitalize="none" /></Campo>
+          <Campo id="nb-tt" etiqueta="TikTok"><EntradaIcono id="nb-tt" icono={Music2} value={form.tiktok || ""} onChange={onTexto("tiktok")} maxLength={120} placeholder="usuario, sin @" autoCapitalize="none" /></Campo>
+          <Campo id="nb-fb" etiqueta="Facebook"><EntradaIcono id="nb-fb" icono={Facebook} value={form.facebook || ""} onChange={onTexto("facebook")} maxLength={300} placeholder="usuario o enlace de tu página" autoCapitalize="none" /></Campo>
+        </Seccion>
+
+        <Seccion icono={ImageIcon} titulo="Fotos" subtitulo="Una foto de fondo es necesaria. Las de productos suman consultas.">
+          <div id="nb-portada" tabIndex={-1} style={{ outline: "none" }}>
+            <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Foto de fondo de tu perfil (necesaria)</p>
+            <button type="button" onClick={() => refPortada.current?.click()} disabled={subiendoPortada} aria-label={form.portada ? "Cambiar foto de fondo" : "Subir foto de fondo"}
+              style={{ width: "100%", height: 132, borderRadius: 16, overflow: "hidden", padding: 0, background: "#F3F5FA", border: form.portada ? "1px solid #E3E7F1" : `2px dashed ${error?.campo === "nb-portada" ? "#C1443A" : "#AEB9D6"}`, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4, color: "#4A5372", fontWeight: 700, fontSize: "0.9375rem" }}>
+              {form.portada ? <img src={form.portada} alt="Foto de fondo elegida" width={640} height={264} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : subiendoPortada ? "Subiendo…" : <><Camera size={26} aria-hidden="true" />Elegir foto de fondo</>}
+            </button>
+            <input ref={refPortada} type="file" accept="image/*" hidden onChange={(e) => { subirPortada(e.target.files); e.target.value = ""; }} />
+            {form.portada && !subiendoPortada && (
+              <div className="flex gap-4" style={{ marginTop: 4 }}>
+                <button type="button" onClick={() => refPortada.current?.click()} style={{ color: "#2350F5", fontWeight: 700, fontSize: "0.9375rem", minHeight: 44 }}>Cambiar</button>
+              </div>
+            )}
+          </div>
+          <div id="nb-fotos" tabIndex={-1} style={{ outline: "none", borderTop: "1px solid #EEF1F8", marginTop: 14, paddingTop: 14 }}>
+            <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Fotos de productos <span style={{ fontWeight: 600, color: "#6B7494" }}>Opcional</span></p>
+            <GaleriaFotos fotos={form.photos} max={Math.max(12, form.photos.length)} subiendo={subiendo === "fotos"} onArchivos={(a) => subir(a, "fotos", ayudaSubir)} onQuitar={(u) => set("photos", form.photos.filter((p) => p !== u))} ayuda="Fotos de lo que vendés o hacés." />
+          </div>
+        </Seccion>
+      </Pagina>
+
+      {sinMapa && (
+        <DialogoAdvertencia titulo="No encontramos esa dirección" queHace="No pudimos ubicar la dirección en el mapa."
+          queSucedera="Si seguís, tu negocio se verá en la lista pero no en el mapa. Para que aparezca, volvé y escribí calle y número, o marcala en el mapa."
+          textoAceptar="Seguir igual" textoCancelar="Volver y corregir"
+          onAceptar={() => { const c = sinMapa; setSinMapa(null); terminar(c); }} onCancelar={() => { setSinMapa(null); fallo("nb-dir", "Revisá la dirección: calle y número."); }} />
+      )}
     </div>
   );
 }
@@ -4438,7 +4368,7 @@ function HistoriaViewerModal({ business, historias, onClose }) {
           {business.name?.[0]?.toUpperCase()}
         </div>
         <span className="text-sm font-semibold" style={{ color: "#fff" }}>{business.name}</span>
-        <button onClick={onClose} className="ml-auto"><X size={22} color="#fff" /></button>
+        <button onClick={onClose} aria-label="Cerrar" className="ml-auto" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={22} color="#fff" aria-hidden="true" /></button>
       </div>
 
       <div className="w-full h-full flex items-center justify-center" onClick={tocar}>
@@ -4457,7 +4387,7 @@ function EmpleoDetalleModal({ business, onClose }) {
           <span className="flex items-center gap-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 16, color: "#0B1437" }}>
             <Briefcase size={17} color="var(--azul)" /> Buscan personal
           </span>
-          <button onClick={onClose}><X size={18} color="#5B6482" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="#5B6482" aria-hidden="true" /></button>
         </div>
         <p className="text-xs font-semibold mb-1" style={{ color: "var(--azul)" }}>{e.puesto}</p>
         <p className="text-sm mb-5" style={{ color: "#1F2937", lineHeight: 1.6 }}>{e.descripcion}</p>
@@ -4508,11 +4438,11 @@ function EmpleoFormModal({ business, onSave, onDelete }) {
             </select>
           </div>
           {puesto === "Otro" && (
-            <input value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+            <input aria-label="¿Qué puesto buscás?" value={otro} onChange={(e) => setOtro(e.target.value)} placeholder="¿Qué puesto buscás?" className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
           )}
           <div>
             <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Descripción del trabajo</p>
-            <textarea
+            <textarea aria-label="Contá qué va a hacer la persona, horarios, requisitos..."
               value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3}
               placeholder="Contá qué va a hacer la persona, horarios, requisitos..."
               className="w-full border px-3 py-2.5 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }}
@@ -4587,10 +4517,10 @@ function DiscountForm({ initial, onSave, onCancel }) {
           {initial.title ? "Editar descuento" : "Nuevo descuento"}
         </h2>
         <div className="flex flex-col gap-3">
-          <input placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <input placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <input placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
-          <textarea placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input aria-label="Título (ej: 20% OFF en desayunos)" placeholder="Título (ej: 20% OFF en desayunos)" value={form.title} onChange={set("title")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input aria-label="Producto o servicio incluido" placeholder="Producto o servicio incluido" value={form.item} onChange={set("item")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <input aria-label="Porcentaje o beneficio (ej: 20% o 2x1)" placeholder="Porcentaje o beneficio (ej: 20% o 2x1)" value={form.percent} onChange={set("percent")} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
+          <textarea aria-label="Descripción" placeholder="Descripción" value={form.desc} onChange={set("desc")} rows={2} className="border px-3 py-2 text-sm" style={{ borderRadius: 8, borderColor: "#E3E7F1" }} />
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-xs font-medium mb-1" style={{ color: "#2B3768" }}>Desde</p>
@@ -4721,12 +4651,12 @@ export default function MiZona() {
   // agregar mi local + suscripción
   const [showAddSheet, setShowAddSheet] = useState(false);
   // Oficios y servicios (Fase 4): listado, ficha, formulario, paso final y "Mis fichas"
-  const [oficiosAbierto, setOficiosAbierto] = useState(false);
+  const [modo, setModoInicio] = useState(leerModo);
+  const cambiarModo = (m) => { setModoInicio(m); guardarModo(m); };
   const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
   const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
   const [oficioActivado, setOficioActivado] = useState(null);
   // Alquileres (Fase 5): listado, ficha, formulario y paso final (se ven por encima de "Mis fichas")
-  const [alquileresAbierto, setAlquileresAbierto] = useState(false);
   const [alquilerVer, setAlquilerVer] = useState(null); // { id }
   const [alquilerForm, setAlquilerForm] = useState(null); // { inicial } (null = crear)
   const [alquilerActivado, setAlquilerActivado] = useState(null);
@@ -5236,12 +5166,10 @@ export default function MiZona() {
     [!!chatBiz, () => setChatBiz(null)],
     [!!subHerramientas, () => setSubHerramientas(null)],
     [!!subAjustes, () => setSubAjustes(null)],
-    [oficiosAbierto, () => setOficiosAbierto(false)],
     [misFichasAbierto, () => setMisFichasAbierto(false)],
     [!!oficioVer, () => setOficioVer(null)],
     [!!oficioForm, () => setOficioForm(null)],
     [!!oficioActivado, () => setOficioActivado(null)],
-    [alquileresAbierto, () => setAlquileresAbierto(false)],
     [!!alquilerVer, () => setAlquilerVer(null)],
     [!!alquilerForm, () => setAlquilerForm(null)],
     [!!alquilerActivado, () => setAlquilerActivado(null)],
@@ -5295,6 +5223,8 @@ export default function MiZona() {
           businesses={businesses}
           onBack={() => setShowBusquedaAsistente(false)}
           onOpenBusiness={(id) => { setShowBusquedaAsistente(false); openDetail(id); }}
+          onOpenOficio={(id) => { setShowBusquedaAsistente(false); setOficioVer({ id }); }}
+          onOpenAlquiler={(id) => { setShowBusquedaAsistente(false); setAlquilerVer({ id }); }}
         />
       </div>
     );
@@ -5491,9 +5421,7 @@ export default function MiZona() {
           zone={zone} setZone={setZone} query={query} setQuery={setQuery}
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
-          onOpenOficios={() => setOficiosAbierto(true)}
-          onOpenAlquileres={() => setAlquileresAbierto(true)}
-          onBuscarTodo={(q) => setBuscador({ inicial: q })}
+          modo={modo} onCambiarModo={cambiarModo}
           onOpenComunidad={comunidadHabilitada ? abrirComunidad : undefined}
           onOpenOwner={() => irATab("herramientas")}
           onHerramientas={() => irATab("herramientas")}
@@ -5540,22 +5468,6 @@ export default function MiZona() {
       )}
 
       {/* Oficios y servicios + Mis fichas: pantallas completas encima de la principal (por debajo del formulario de negocio) */}
-      {oficiosAbierto && (
-        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <OficiosScreen
-            usuario={usuario} onVolver={() => setOficiosAbierto(false)} onAbrir={(id, rubro) => setOficioVer({ id, rubro })}
-            onOfrecer={abrirOfrecerOficio} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }}
-          />
-        </div>
-      )}
-      {alquileresAbierto && (
-        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <AlquileresScreen
-            usuario={usuario} onVolver={() => setAlquileresAbierto(false)} onAbrir={(id) => setAlquilerVer({ id })}
-            onOfrecer={abrirOfrecerAlquiler} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }}
-          />
-        </div>
-      )}
       {misFichasAbierto && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <MisFichasScreen
@@ -5673,7 +5585,7 @@ export default function MiZona() {
             <div className="mx-auto mb-3" style={{ width: 42, height: 4, borderRadius: 4, background: "#D5DCF0" }} />
             <div className="flex items-center justify-between mb-1 px-1">
               <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 19, letterSpacing: "-0.02em", color: "#0B1437" }}>Ordenar negocios por</h3>
-              <button onClick={() => setShowOrden(false)} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 11, background: "#F3F5FA" }}><X size={17} color="#2B3768" /></button>
+              <button onClick={() => setShowOrden(false)} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 13, background: "#F3F5FA" }}><X size={17} color="#2B3768" /></button>
             </div>
             <p className="px-1 mb-3 text-[13px]" style={{ color: "#5B6482" }}>Elegí cómo querés ver la lista.</p>
             <div className="flex flex-col gap-2">
@@ -5704,7 +5616,7 @@ export default function MiZona() {
             <div style={{ width: 40, height: 4, borderRadius: 4, background: "#E3E7F1", margin: "0 auto 16px" }} />
             <div className="flex items-center justify-between mb-4">
               <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 17, color: "#0B1437" }}>¿Qué querés hacer?</span>
-              <button onClick={() => setShowAddSheet(false)}><X size={18} color="#5B6482" /></button>
+              <button onClick={() => setShowAddSheet(false)} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="#5B6482" aria-hidden="true" /></button>
             </div>
             <button
               onClick={() => { setShowAddSheet(false); abrirAgregarNegocio(); }}
@@ -5874,6 +5786,13 @@ export default function MiZona() {
               const historiasVigentes = (ownerBiz.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace48h);
               persistOne(ownerBizId, { ...ownerBiz, historias: [...historiasVigentes, { id: uid(), url, subidaEn: new Date().toISOString() }] });
             }}
+          />
+        ) : modo !== "negocios" ? (
+          <ListaInicio
+            modo={modo} zone={zone} query={query}
+            onAbrirAlquiler={(id) => setAlquilerVer({ id })} onAbrirOficio={(id) => setOficioVer({ id })}
+            onOfrecerAlquiler={abrirOfrecerAlquiler} onOfrecerOficio={abrirOfrecerOficio}
+            onBuscarTodo={(q) => setBuscador({ inicial: q })}
           />
         ) : (
         <>

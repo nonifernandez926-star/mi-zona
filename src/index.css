@@ -112,10 +112,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--zona-azul); }
 .fixed.inset-0 { animation: zona-fondo .22s ease-out both; }
 .fixed.inset-0[class*="bg-black"], .fixed.inset-0[style*="rgba(0"], .fixed.inset-0[style*="rgba(11"] { backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1); }
 .fixed.inset-0 > div[style*="background"], .fixed.inset-0 > div.bg-white, .fixed.inset-0 > div > div.bg-white {
-  animation: zona-subir .32s var(--zona-ease) both;
+  animation: zona-subir .32s var(--zona-ease) backwards; /* "backwards" y no "both": al terminar no queda ningún translate/scale, que haría que los botones fijos de adentro (pie de formularios) se fijen al contenido y no a la pantalla */
   box-shadow: var(--zona-sombra-lg);
 }
-main > *, .zona-pantalla > * { animation: zona-aparecer .35s var(--zona-ease) both; }
+main > *, .zona-pantalla > * { animation: zona-aparecer .35s var(--zona-ease) backwards; }
 
 /* ---------- tarjetas y superficies ---------- */
 a.block, button.w-full.text-left, .zona-tarjeta { transition: transform .2s var(--zona-ease), box-shadow .2s var(--zona-ease), border-color .2s var(--zona-ease); }
@@ -226,7 +226,7 @@ button[aria-label="Notificaciones"] > span.absolute { animation: zona-rebote .45
 @keyframes zona-deslizar { from { translate: -100% 0; } to { translate: 0 0; } }
 .fixed.inset-0 > div.absolute.inset-0 { animation: zona-fondo .25s ease-out both !important; box-shadow: none !important; backdrop-filter: blur(3px); }
 .fixed.inset-0 > div.absolute.top-0.left-0.bottom-0 {
-  animation: zona-deslizar .32s var(--zona-ease) both !important;
+  animation: zona-deslizar .32s var(--zona-ease) backwards !important;
   border-radius: 0 24px 24px 0; overflow: hidden;
   box-shadow: 24px 0 60px -12px rgba(5,20,45,.45) !important;
 }

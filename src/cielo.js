@@ -27,40 +27,71 @@ function fbm(x, y, s, oct = 5) {
 
 /* ---------- luna: textura con relieve ---------- */
 const cacheLuna = new Map();
+// Mares lunares reales en coordenadas de la cara visible (vista del hemisferio norte: x a la derecha, y hacia abajo, radio = 1).
+// [cx, cy, rx, ry, giro, oscuridad]
+const MARES = [
+  [-0.30, -0.36, 0.30, 0.25, -0.3, 0.50], // Imbrium
+  [0.08, -0.40, 0.17, 0.15, 0, 0.46], // Serenitatis
+  [0.30, -0.14, 0.22, 0.17, 0.5, 0.44], // Tranquillitatis
+  [0.64, -0.26, 0.10, 0.075, 0.2, 0.52], // Crisium
+  [0.56, 0.16, 0.13, 0.17, 0.3, 0.36], // Fecunditatis
+  [0.40, 0.28, 0.07, 0.07, 0, 0.36], // Nectaris
+  [-0.62, 0.04, 0.22, 0.42, -0.1, 0.40], // Océano de las Tormentas
+  [-0.18, 0.40, 0.17, 0.13, 0, 0.36], // Nubium
+  [-0.50, 0.42, 0.095, 0.085, 0, 0.46], // Humorum
+  [0.0, -0.14, 0.085, 0.07, 0, 0.30], // Vapores
+  [-0.05, -0.82, 0.34, 0.055, 0, 0.30], // Frigoris
+];
+// Cráteres brillantes [x, y, radio, rayos]
+const CRATERES_BRILLANTES = [[-0.12, 0.72, 0.035, 1], [-0.34, -0.06, 0.04, 0.5], [-0.52, -0.12, 0.03, 0.3], [-0.36, 0.1, 0.02, 0.2]];
 // fase: 0 nueva · 0,5 llena. Hemisferio sur: la luna se ve girada 180° (la creciente se ilumina a la izquierda).
-function lunaTextura(fase, T = 176) {
+function lunaTextura(fase, T = 256) {
   const clave = Math.round(fase * 80);
   if (cacheLuna.has(clave)) return cacheLuna.get(clave);
   const c = document.createElement("canvas"); c.width = c.height = T;
   const g = c.getContext("2d"); const img = g.createImageData(T, T); const R = T / 2;
   const rnd = mulberry32(11);
-  const crateres = Array.from({ length: 110 }, () => { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 0.93; return { x: Math.cos(a) * d, y: Math.sin(a) * d, r: 0.014 + Math.pow(rnd(), 2.4) * 0.14 }; });
+  const crateres = Array.from({ length: 150 }, () => { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 0.95; return { x: Math.cos(a) * d, y: Math.sin(a) * d, r: 0.010 + Math.pow(rnd(), 2.6) * 0.11 }; });
   const phi = 2 * Math.PI * (clave / 80);
   const L = [-Math.sin(phi), 0, -Math.cos(phi)];
   for (let y = 0; y < T; y++) {
     for (let x = 0; x < T; x++) {
       const nx = (x + 0.5 - R) / R, ny = (y + 0.5 - R) / R, r2 = nx * nx + ny * ny;
-      if (r2 > 1.03) continue;
-      const borde = lim((1 - Math.sqrt(r2)) * R / 1.4 + 0.5);
+      if (r2 > 1.02) continue;
+      const borde = lim((1 - Math.sqrt(r2)) * R / 1.2 + 0.5);
       const z = Math.sqrt(Math.max(0, 1 - r2));
       const tx = -nx, ty = -ny; // textura girada 180°
-      let alb = 0.8 + (fbm(tx * 7 + 20, ty * 7 + 5, 3, 4) - 0.5) * 0.24;
-      alb -= paso(0.5, 0.63, fbm(tx * 1.7 + 3, ty * 1.7 + 9, 8, 4)) * 0.36; // mares oscuros
-      alb += (fbm(tx * 22 + 4, ty * 22 + 1, 5, 3) - 0.5) * 0.08;
+      // tierras altas claras con grano fino
+      let alb = 0.80 + (fbm(tx * 6 + 20, ty * 6 + 5, 3, 4) - 0.5) * 0.16 + (fbm(tx * 30 + 4, ty * 30 + 1, 5, 3) - 0.5) * 0.07;
+      // mares reales (bordes suaves, con irregularidad)
+      let mar = 0;
+      for (let i = 0; i < MARES.length; i++) {
+        const [cx, cy, rx, ry, gi, osc] = MARES[i];
+        const dx = tx - cx, dy = ty - cy, co = Math.cos(gi), si = Math.sin(gi);
+        const u = (dx * co + dy * si) / rx, v = (-dx * si + dy * co) / ry;
+        const d = Math.sqrt(u * u + v * v) + (fbm(tx * 9 + i * 7, ty * 9, 12 + i, 3) - 0.5) * 0.35;
+        mar = Math.max(mar, (1 - paso(0.72, 1.05, d)) * osc * (0.85 + 0.3 * fbm(tx * 14 + i, ty * 14, 2, 3)));
+      }
+      alb -= mar * 0.9;
       for (let i = 0; i < crateres.length; i++) {
         const cr = crateres[i], dx = tx - cr.x, dy = ty - cr.y, d = Math.sqrt(dx * dx + dy * dy) / cr.r;
         if (d < 1.3) {
-          if (d < 1) alb -= (1 - d * d) * (cr.r > 0.06 ? 0.11 : 0.07);
-          alb += Math.exp(-((d - 1) * (d - 1)) / 0.02) * (cr.r > 0.06 ? 0.15 : 0.1);
+          if (d < 1) alb -= (1 - d * d) * (cr.r > 0.05 ? 0.07 : 0.045);
+          alb += Math.exp(-((d - 1) * (d - 1)) / 0.03) * (cr.r > 0.05 ? 0.10 : 0.06);
         }
       }
+      for (const [cx, cy, cr, rayos] of CRATERES_BRILLANTES) {
+        const dx = tx - cx, dy = ty - cy, d = Math.sqrt(dx * dx + dy * dy);
+        alb += Math.exp(-(d / cr) * (d / cr)) * 0.38;
+        if (rayos > 0 && d > cr && d < 0.55) { const ang = Math.atan2(dy, dx); alb += rayos * 0.16 * Math.exp(-d * 3.6) * Math.pow(Math.max(0, Math.sin(ang * 9 + cx * 40) * 0.5 + 0.5), 5) * (0.5 + fbm(tx * 20, ty * 20, 9, 2)); }
+      }
       const ndl = nx * L[0] + ny * L[1] + z * L[2];
-      const lit = paso(-0.03, 0.2, ndl);
-      const luz = lit * (0.66 + 0.34 * Math.pow(Math.max(ndl, 0), 0.4)) * (0.88 + 0.12 * z) + 0.045 * (1 - lit); // + luz cenicienta del lado oscuro
+      const lit = paso(-0.06, 0.16, ndl);
+      const luz = lit * (0.82 + 0.18 * Math.pow(Math.max(ndl, 0), 0.5)) + 0.03 * (1 - lit); // + luz cenicienta muy tenue
       const b = lim(alb * luz, 0, 1.05) * 255;
       const i4 = (y * T + x) * 4;
-      const frio = (1 - lit) * 14;
-      img.data[i4] = Math.min(255, b * 1.0 + 1); img.data[i4 + 1] = Math.min(255, b * 0.975); img.data[i4 + 2] = Math.min(255, b * 0.9 + frio);
+      const frio = (1 - lit) * 10;
+      img.data[i4] = Math.min(255, b * 1.0 + 3); img.data[i4 + 1] = Math.min(255, b * 0.98); img.data[i4 + 2] = Math.min(255, b * 0.92 + frio);
       img.data[i4 + 3] = Math.round(255 * borde);
     }
   }
@@ -75,31 +106,32 @@ let estrellas = null;
 function listaEstrellas() {
   if (estrellas) return estrellas;
   const r = mulberry32(5);
-  estrellas = Array.from({ length: 280 }, () => {
-    const m = Math.pow(r(), 3.2); // pocas muy brillantes
+  estrellas = Array.from({ length: 650 }, () => {
+    const m = Math.pow(r(), 4.2); // muchas muy débiles, pocas brillantes
     const t = r();
-    return { x: r(), y: Math.pow(r(), 0.8) * 0.8, m, c: t < 0.2 ? [255, 214, 170] : t < 0.7 ? [255, 255, 250] : [196, 218, 255] };
+    return { x: r(), y: Math.pow(r(), 0.85) * 0.84, m, f: r() * 6.28, v: 0.6 + r() * 1.8, c: t < 0.18 ? [255, 226, 190] : t < 0.7 ? [250, 250, 248] : [205, 222, 255] };
   });
   return estrellas;
 }
 let lactea = null;
 function lacteaCanvas(W, H) {
-  const w = Math.max(40, Math.round(W / 4)), h = Math.max(40, Math.round(H / 4));
+  const w = Math.max(40, Math.round(W / 3)), h = Math.max(40, Math.round(H / 3));
   if (lactea && lactea.width === w && lactea.height === h) return lactea;
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const g = c.getContext("2d"); const img = g.createImageData(w, h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const u = x / w, v = y / h;
-      const linea = 0.18 + 0.52 * u; // banda diagonal
-      const d = (v - linea) / 0.2;
+      const linea = 0.12 + 0.62 * u + 0.03 * Math.sin(u * 9); // banda diagonal
+      const d = (v - linea) / 0.14;
       const banda = Math.exp(-d * d);
-      const n = fbm(u * 9, v * 9, 31, 5);
-      const nucleo = Math.exp(-(((u - 0.62) / 0.3) ** 2));
-      const oscuro = paso(0.55, 0.7, fbm(u * 14 + 5, v * 14, 44, 4));
-      const a = lim(banda * (0.25 + 0.95 * n) * (0.5 + 0.7 * nucleo) * (1 - oscuro * 0.65)) * 0.5;
+      const n = fbm(u * 11, v * 11, 31, 5);
+      const nucleo = Math.exp(-(((u - 0.62) / 0.28) ** 2));
+      const oscuro = paso(0.52, 0.68, fbm(u * 16 + 5, v * 16, 44, 5)); // nubes de polvo oscuro
+      const grano = 0.75 + 0.5 * ruido(u * 140, v * 140, 7);
+      const a = lim(banda * (0.2 + 0.9 * n) * (0.5 + 0.7 * nucleo) * (1 - oscuro * 0.7) * grano) * 0.26;
       const i4 = (y * w + x) * 4;
-      img.data[i4] = 214 + 30 * nucleo; img.data[i4 + 1] = 222; img.data[i4 + 2] = 255 - 30 * nucleo; img.data[i4 + 3] = Math.round(a * 255);
+      img.data[i4] = 205 + 40 * nucleo; img.data[i4 + 1] = 212 + 6 * nucleo; img.data[i4 + 2] = 228 - 40 * nucleo; img.data[i4 + 3] = Math.round(a * 255);
     }
   }
   g.putImageData(img, 0, 0);
@@ -135,40 +167,47 @@ export function pintarCielo(ctx, W, H, P) {
     ctx.save(); ctx.globalAlpha = opN * 0.9; ctx.imageSmoothingEnabled = true;
     ctx.drawImage(lacteaCanvas(W, H), 0, 0, W, H); ctx.restore();
     const lunaLlena = l.vis > 0 ? lim(0.5 - 0.5 * Math.cos(2 * Math.PI * l.fase)) : 0;
+    const tt = Date.now() / 1000;
     for (const e of listaEstrellas()) {
       const x = e.x * W, y = e.y * H;
       if (y > P.horizonte - 4) continue;
-      const apagada = 1 - lunaLlena * 0.55 * Math.exp(-(((x - l.x) ** 2 + (y - l.y) ** 2) / (W * 0.45) ** 2)); // la luna apaga las estrellas cercanas
-      const a = opN * (0.28 + 0.72 * e.m) * apagada;
-      const r = 0.45 + e.m * 1.5;
-      ctx.fillStyle = css(e.c, a); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
-      if (e.m > 0.55) {
-        const gl = ctx.createRadialGradient(x, y, 0, x, y, r * 6);
-        gl.addColorStop(0, css(e.c, a * 0.35)); gl.addColorStop(1, css(e.c, 0));
-        ctx.fillStyle = gl; ctx.fillRect(x - r * 6, y - r * 6, r * 12, r * 12);
+      const cerca = Math.exp(-(((x - l.x) ** 2 + (y - l.y) ** 2) / (W * 0.3) ** 2));
+      const apagada = 1 - lunaLlena * 0.8 * cerca - 0.15 * cerca; // la luna apaga las estrellas cercanas
+      const bruma = 1 - 0.55 * lim((y / P.horizonte - 0.55) / 0.45); // cerca del horizonte se ven menos
+      const parpadeo = 1 + (e.m > 0.1 ? 0.18 : 0.1) * Math.sin(tt * e.v + e.f);
+      const a = opN * (0.14 + 0.86 * e.m) * apagada * bruma * parpadeo;
+      if (a < 0.01) continue;
+      const r = 0.35 + e.m * 1.25;
+      ctx.fillStyle = css(e.c, Math.min(1, a)); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+      if (e.m > 0.5) {
+        const gl = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
+        gl.addColorStop(0, css(e.c, a * 0.22)); gl.addColorStop(1, css(e.c, 0));
+        ctx.fillStyle = gl; ctx.fillRect(x - r * 3.2, y - r * 3.2, r * 6.4, r * 6.4);
       }
     }
   }
 
   // luna
   if (l.vis > 0) {
-    const R = P.radioLuna * (1 + 0.18 * (1 - lim(l.elev * 2.2)));
+    const R = P.radioLuna * (1 + 0.12 * (1 - lim(l.elev * 2.2)));
     const ilum = lim(0.5 - 0.5 * Math.cos(2 * Math.PI * l.fase));
-    const vis = lim(P.noche * 2.2 + (1 - velo) * 0.0) * (1 - cob * 0.5 - P.tor * 0.3) + (P.dia > 0.5 ? 0.0 : 0);
-    const visDia = P.dia > 0.5 ? 0.38 : 0; // de día se ve tenue, como en la vida real
+    const vis = lim(P.noche * 2.2) * (1 - cob * 0.5 - P.tor * 0.3);
+    const visDia = P.dia > 0.5 ? 0.3 : 0; // de día se ve tenue, como en la vida real
     const op = lim(Math.max(vis, visDia * (1 - cob * 0.6)));
     if (op > 0.01) {
+      const calido = lim(1 - l.elev * 2.4);
       ctx.save(); ctx.globalAlpha = op;
       ctx.globalCompositeOperation = "lighter";
-      const hg = ctx.createRadialGradient(l.x, l.y, R * 0.8, l.x, l.y, R * 7);
-      hg.addColorStop(0, `rgba(190,208,255,${0.42 * (0.25 + ilum)})`); hg.addColorStop(0.3, `rgba(140,165,235,${0.16 * (0.25 + ilum)})`); hg.addColorStop(1, "rgba(120,150,230,0)");
-      ctx.fillStyle = hg; ctx.fillRect(l.x - R * 7, l.y - R * 7, R * 14, R * 14);
+      const hg = ctx.createRadialGradient(l.x, l.y, R * 0.9, l.x, l.y, R * 3.4);
+      const hc = mezclaN([225, 228, 238], [255, 200, 150], calido * 0.6);
+      hg.addColorStop(0, css(hc, 0.16 * (0.15 + ilum))); hg.addColorStop(0.4, css(hc, 0.05 * (0.15 + ilum))); hg.addColorStop(1, css(hc, 0));
+      ctx.fillStyle = hg; ctx.fillRect(l.x - R * 3.4, l.y - R * 3.4, R * 6.8, R * 6.8);
       ctx.globalCompositeOperation = "source-over";
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(lunaTextura(l.fase), l.x - R, l.y - R, R * 2, R * 2);
-      const calido = lim(1 - l.elev * 2.4);
       if (calido > 0.02) { // cerca del horizonte la luna se ve anaranjada
         ctx.save(); ctx.beginPath(); ctx.arc(l.x, l.y, R, 0, 6.2832); ctx.clip(); ctx.globalCompositeOperation = "multiply";
-        ctx.fillStyle = css(mezclaN([255, 255, 255], [255, 170, 110], calido * 0.85)); ctx.fillRect(l.x - R, l.y - R, R * 2, R * 2); ctx.restore();
+        ctx.fillStyle = css(mezclaN([255, 255, 255], [255, 185, 130], calido * 0.7)); ctx.fillRect(l.x - R, l.y - R, R * 2, R * 2); ctx.restore();
       }
       ctx.restore();
     }

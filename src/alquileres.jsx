@@ -15,6 +15,8 @@ import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 import ComoFunciona from "./componentes/ComoFunciona.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError, EstadoExito } from "./componentes/Estados.jsx";
 import { uploadImage, comprimirFoto, comprimirImagen } from "./subirFoto.js";
+import { TablaHorarios, Seccion, Interruptor, Avance, EntradaIcono, SelectorLogo, GaleriaFotos, EditorHorarios, useSubidas } from "./formKit.jsx";
+import { semanaVacia, hayHorarios } from "./horarios.js";
 import { Pagina, Hoja, Chip, Campo, Bloque, Fotos, HojaZona, HojaWhatsapp, botonPrincipal, botonSecundario, caja, diasDesde, leerZona, guardarZona, SIGUIENTE, urlRed } from "./oficios.jsx";
 
 // Alquileres (Fase 5). Cada ficha es como el perfil de un pequeño negocio de alquiler, con artículos adentro.
@@ -269,6 +271,7 @@ export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestio
         <FilaDato icono={MapPin} etiqueta="Dirección" valor={a.direccion} />
         <FilaDato icono={Info} etiqueta="Condiciones, depósito o requisitos" valor={a.condiciones} />
       </SeccionDetalle>
+      {hayHorarios(a.weekHours) && <SeccionDetalle titulo="Horarios de atención" icono={Clock}><TablaHorarios weekHours={a.weekHours} /></SeccionDetalle>}
       {a.fotos.length > 0 && <SeccionDetalle titulo="Fotos" icono={ImageIcon}><Fotos fotos={a.fotos} alt="Foto de lo que se alquila" /></SeccionDetalle>}
       {(a.ig || a.facebook || a.tiktok) && (
         <SeccionDetalle titulo="Redes">
@@ -397,7 +400,7 @@ export function GestorArticulos({ alquiler, onCambio }) {
 
 // ---------- formulario ----------
 
-const INICIAL = { nombre: "", categoria: "", tipos: [], desc: "", zona: "", direccion: "", whatsapp: "", mostrarWhatsapp: false, ig: "", facebook: "", tiktok: "", logo: "", fotos: [], condiciones: "", vivienda: { dormitorios: "", banos: "", capacidad: "", amoblado: null, mascotas: null } };
+const INICIAL = { nombre: "", categoria: "", tipos: [], desc: "", zona: "", direccion: "", whatsapp: "", mostrarWhatsapp: false, ig: "", facebook: "", tiktok: "", logo: "", fotos: [], weekHours: [], condiciones: "", vivienda: { dormitorios: "", banos: "", capacidad: "", amoblado: null, mascotas: null } };
 const aTexto = (n) => (n === null || n === undefined ? "" : String(n));
 const aNumero = (t) => (String(t).trim() === "" ? null : Number(t));
 const Tri = ({ valor, onChange, etiqueta }) => (
@@ -410,48 +413,42 @@ const Tri = ({ valor, onChange, etiqueta }) => (
 export function FormularioAlquiler({ inicial, usuario, onGuardado, onCancelar }) {
   const editando = !!inicial;
   const [f, setF] = useState(() => (inicial
-    ? { ...INICIAL, ...inicial, tipos: inicial.tipos.map((t) => t.id), vivienda: { dormitorios: aTexto(inicial.vivienda?.dormitorios), banos: aTexto(inicial.vivienda?.banos), capacidad: aTexto(inicial.vivienda?.capacidad), amoblado: inicial.vivienda?.amoblado ?? null, mascotas: inicial.vivienda?.mascotas ?? null } }
-    : { ...INICIAL, nombre: "" }));
+    ? { ...INICIAL, ...inicial, tipos: inicial.tipos.map((t) => t.id), weekHours: hayHorarios(inicial.weekHours) ? inicial.weekHours : semanaVacia(), vivienda: { dormitorios: aTexto(inicial.vivienda?.dormitorios), banos: aTexto(inicial.vivienda?.banos), capacidad: aTexto(inicial.vivienda?.capacidad), amoblado: inicial.vivienda?.amoblado ?? null, mascotas: inicial.vivienda?.mascotas ?? null } }
+    : { ...INICIAL, nombre: "", weekHours: semanaVacia() }));
   const [loc, setLoc] = useState(inicial?.localidadCompleta || usuario?.localidad || null);
   const [articulos, setArticulos] = useState([]); // solo al crear; después se gestionan desde "Mis fichas"
   const [hojaArt, setHojaArt] = useState(null); // { indice } (-1 = nuevo)
   const [dialogo, setDialogo] = useState(null); // "whatsapp" | "direccion" | "activar"
   const [estado, setEstado] = useState(null);
-  const [subiendo, setSubiendo] = useState(null);
-  const archivoLogo = useRef(null), archivoFotos = useRef(null);
   const direccionAceptada = useRef(!!inicial?.direccion);
+  const { subiendo, subir } = useSubidas({ max: MAX_FOTOS, onError: (m) => setEstado(m ? { error: m } : null) });
   const set = (k, v) => { setF((p) => ({ ...p, [k]: v })); setEstado(null); };
   const setViv = (k, v) => { setF((p) => ({ ...p, vivienda: { ...p.vivienda, [k]: v } })); setEstado(null); };
   const cat = CATEGORIAS.find((c) => c.id === f.categoria);
   const elegirCategoria = (id) => setF((p) => (p.categoria === id ? p : { ...p, categoria: id, tipos: [] })); // al cambiar de categoría los tipos ya no valen
   const alternarTipo = (id) => setF((p) => { const t = p.tipos.includes(id); if (!t && p.tipos.length >= 6) return p; return { ...p, tipos: t ? p.tipos.filter((x) => x !== id) : [...p.tipos, id] }; });
+  const conHorarios = hayHorarios(f.weekHours);
+  const ayudaSubir = { fotos: f.fotos, setFotos: (v) => setF((p) => ({ ...p, fotos: v })), setLogo: (v) => set("logo", v) };
 
-  const faltan = [];
-  if (f.nombre.trim().length < 2) faltan.push("el nombre de la ficha");
-  if (!f.categoria) faltan.push("la categoría");
-  else if (f.tipos.length === 0) faltan.push("al menos un tipo");
-  if (f.desc.trim().length < 10) faltan.push("una descripción (mínimo 10 letras)");
-  if (!loc) faltan.push("tu localidad");
-  if (f.mostrarWhatsapp && f.whatsapp.replace(/\D/g, "").length < 8) faltan.push("tu número de WhatsApp");
-  if (!editando && articulos.length === 0) faltan.push("al menos un artículo");
+  const pasos = [
+    { ok: f.nombre.trim().length >= 2, texto: "Nombre de la ficha", requerido: true },
+    { ok: !!f.categoria && f.tipos.length > 0, texto: "Categoría y qué alquilás", requerido: true },
+    { ok: f.desc.trim().length >= 10, texto: "Descripción", requerido: true },
+    { ok: !!loc, texto: "Tu localidad", requerido: true },
+    { ok: !f.mostrarWhatsapp || f.whatsapp.replace(/\D/g, "").length >= 8, texto: "Número de WhatsApp", requerido: true },
+    ...(!editando ? [{ ok: articulos.length > 0, texto: "Al menos un artículo", requerido: true }] : []),
+    { ok: conHorarios, texto: "Horarios de atención" },
+    { ok: !!f.logo, texto: "Logo" },
+    { ok: f.fotos.length > 0, texto: "Fotos" },
+  ];
+  const faltan = pasos.filter((p) => p.requerido && !p.ok).map((p) => p.texto.toLowerCase());
   const listo = faltan.length === 0 && !subiendo && estado !== "guardando";
-
-  const subir = async (archivos, destino) => {
-    const lista = [...archivos]; if (!lista.length) return;
-    if (lista.some((a) => !/^image\//.test(a.type) || a.size > 15 * 1024 * 1024)) { setEstado({ error: "Elegí imágenes de hasta 15 MB cada una." }); return; }
-    setSubiendo(destino); setEstado(null);
-    try {
-      if (destino === "logo") set("logo", await uploadImage(await comprimirImagen(lista[0])));
-      else { const sobra = MAX_FOTOS - f.fotos.length; const urls = []; for (const a of lista.slice(0, sobra)) urls.push(await uploadImage(await comprimirFoto(a))); setF((p) => ({ ...p, fotos: [...p.fotos, ...urls] })); }
-    } catch { setEstado({ error: "No pudimos subir la foto. Probá de nuevo en un rato." }); }
-    setSubiendo(null);
-  };
 
   const guardar = async () => {
     setEstado("guardando"); setDialogo(null);
     const esViv = f.categoria === "viviendas";
     const datos = {
-      ...f, localidad: loc, whatsapp: f.mostrarWhatsapp || f.whatsapp ? f.whatsapp : "",
+      ...f, localidad: loc, whatsapp: f.mostrarWhatsapp || f.whatsapp ? f.whatsapp : "", weekHours: conHorarios ? f.weekHours : [],
       vivienda: esViv ? { dormitorios: aNumero(f.vivienda.dormitorios), banos: aNumero(f.vivienda.banos), capacidad: aNumero(f.vivienda.capacidad), amoblado: f.vivienda.amoblado, mascotas: f.vivienda.mascotas } : undefined,
     };
     try {
@@ -476,19 +473,29 @@ export function FormularioAlquiler({ inicial, usuario, onGuardado, onCancelar })
           <button type="button" onClick={alTocarGuardar} disabled={!listo} style={{ ...botonPrincipal, width: "100%", opacity: listo ? 1 : 0.5 }}>{estado === "guardando" ? "Guardando..." : editando ? "Guardar cambios" : "Activar mi ficha"}</button>
         </div>
       }>
+      <Avance pasos={pasos} titulo="Tu ficha" />
       {!editando && <ComoFunciona pasos={["Elegí qué alquilás y contá cómo trabajás.", "Cargá tus artículos (nombre, precio y foto si querés).", "Activá tu ficha: desde ese momento los vecinos la pueden encontrar.", "Después cambiás el estado de cada artículo con un toque desde Mis fichas."]} />}
       <div className="mt-3" />
 
-      <Bloque titulo="Tu ficha">
+      <Seccion icono={User} titulo="Presentación" subtitulo="El nombre y el logo de tu ficha.">
+        <SelectorLogo valor={f.logo} subiendo={subiendo === "logo"} onArchivo={(a) => subir(a, "logo", ayudaSubir)} onQuitar={() => set("logo", "")} />
+        <div className="mt-4" />
         <Campo id="al-nombre" etiqueta="Nombre de la ficha" ayuda="Por ejemplo: «Alquiler de sillas Lucía» o «Cabañas del Valle». No es tu usuario ni tu perfil.">
           <input id="al-nombre" value={f.nombre} onChange={(e) => set("nombre", e.target.value)} maxLength={60} style={caja} />
         </Campo>
-        <p className="text-sm font-bold mb-1.5" style={{ color: "#0B1437" }}>Categoría</p>
-        <div className="flex flex-wrap gap-2 mb-3">{CATEGORIAS.map((c) => { const I = iconoCategoria(c.id); return <Chip key={c.id} activo={f.categoria === c.id} onClick={() => elegirCategoria(c.id)}><I size={15} aria-hidden="true" /> {c.label}</Chip>; })}</div>
+      </Seccion>
+
+      <Seccion icono={Package} titulo="Qué alquilás" subtitulo="Elegí la categoría y hasta 6 tipos.">
+        <div role="radiogroup" aria-label="Categoría" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 8, marginBottom: 14 }}>
+          {CATEGORIAS.map((c) => { const I = iconoCategoria(c.id); const act = f.categoria === c.id; return (
+            <button key={c.id} type="button" role="radio" aria-checked={act} onClick={() => elegirCategoria(c.id)} style={{ minHeight: 76, borderRadius: 16, border: `2px solid ${act ? "#2350F5" : "#E3E7F1"}`, background: act ? "#EDF1FF" : "#fff", padding: "10px 8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: act ? "#1B3FB8" : "#0B1437" }}>
+              <I size={24} aria-hidden="true" /><span style={{ fontWeight: 700, fontSize: "0.875rem", lineHeight: 1.2, textAlign: "center" }}>{c.label}</span>
+            </button>); })}
+        </div>
         {cat && (
           <>
-            <p className="text-sm font-bold mb-1.5" style={{ color: "#0B1437" }}>Qué alquilás ({f.tipos.length} de 6)</p>
-            <div className="flex flex-wrap gap-2 mb-3">{cat.tipos.map((t) => <Chip key={t.id} activo={f.tipos.includes(t.id)} onClick={() => alternarTipo(t.id)}>{t.label}</Chip>)}</div>
+            <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Tipos ({f.tipos.length} de 6)</p>
+            <div className="flex flex-wrap gap-2 mb-4">{cat.tipos.map((t) => <Chip key={t.id} activo={f.tipos.includes(t.id)} onClick={() => alternarTipo(t.id)}>{t.label}</Chip>)}</div>
           </>
         )}
         <Campo id="al-desc" etiqueta="Descripción breve" contador={`${f.desc.length}/400`}>
@@ -497,85 +504,67 @@ export function FormularioAlquiler({ inicial, usuario, onGuardado, onCancelar })
         <Campo id="al-cond" etiqueta="Condiciones, depósito o requisitos (opcional)" contador={`${f.condiciones.length}/400`} ayuda="Por ejemplo: depósito reembolsable, mínimo de horas, documentación, cómo se retira.">
           <textarea id="al-cond" value={f.condiciones} onChange={(e) => set("condiciones", e.target.value)} rows={3} maxLength={400} style={{ ...caja, resize: "none", lineHeight: 1.5 }} />
         </Campo>
-      </Bloque>
+      </Seccion>
 
       {/* Solo en viviendas y espacios: en los demás alquileres estos datos no existen */}
       {f.categoria === "viviendas" && (
-        <Bloque titulo="La vivienda o el espacio (opcional)">
-          <div className="grid grid-cols-3 gap-2">
+        <Seccion icono={Bed} titulo="La vivienda o el espacio" subtitulo="Datos que se ven en la tarjeta." opcional>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 8 }}>
             <Campo id="al-dorm" etiqueta="Dormitorios"><input id="al-dorm" value={f.vivienda.dormitorios} onChange={(e) => setViv("dormitorios", e.target.value.replace(/\D/g, "").slice(0, 2))} inputMode="numeric" placeholder="0 = mono" style={caja} /></Campo>
             <Campo id="al-banos" etiqueta="Baños"><input id="al-banos" value={f.vivienda.banos} onChange={(e) => setViv("banos", e.target.value.replace(/\D/g, "").slice(0, 2))} inputMode="numeric" style={caja} /></Campo>
             <Campo id="al-cap" etiqueta="Personas"><input id="al-cap" value={f.vivienda.capacidad} onChange={(e) => setViv("capacidad", e.target.value.replace(/\D/g, "").slice(0, 4))} inputMode="numeric" placeholder="Salones" style={caja} /></Campo>
           </div>
           <Tri etiqueta="¿Amoblado?" valor={f.vivienda.amoblado} onChange={(v) => setViv("amoblado", v)} />
           <Tri etiqueta="¿Acepta mascotas?" valor={f.vivienda.mascotas} onChange={(v) => setViv("mascotas", v)} />
-        </Bloque>
+        </Seccion>
       )}
 
       {!editando ? (
-        <Bloque titulo={`Artículos (${articulos.length} de ${MAX_ARTICULOS})`}>
-          <p className="text-sm mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>Cargá lo que alquilás: cada artículo con su nombre, su precio y, si querés, una foto. {f.categoria === "viviendas" ? "Si es una sola vivienda, cargala como un artículo." : ""} Después podés cambiar su estado con un toque.</p>
+        <Seccion icono={Tag} titulo="Artículos" subtitulo={`Lo que alquilás, con precio y foto. ${articulos.length} de ${MAX_ARTICULOS}.`}>
+          {f.categoria === "viviendas" && <p className="text-sm mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>Si es una sola vivienda, cargala como un artículo.</p>}
           <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {articulos.map((x, i) => (
               <li key={i} className="flex items-center gap-3" style={{ border: "1px solid #E3E7F1", borderRadius: 14, padding: 10 }}>
-                {x.foto ? <img src={x.foto} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} /> : <span style={{ width: 44, height: 44, borderRadius: 10, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Package size={18} color="#8D95B0" aria-hidden="true" /></span>}
+                {x.foto ? <img src={x.foto} alt="" loading="lazy" decoding="async" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} /> : <span style={{ width: 44, height: 44, borderRadius: 10, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Package size={18} color="#8D95B0" aria-hidden="true" /></span>}
                 <span className="flex-1 min-w-0"><span className="block" style={{ fontWeight: 700, color: "#0B1437", overflowWrap: "anywhere" }}>{x.nombre}</span><span className="block text-sm" style={{ color: "#4A5372" }}>{textoPrecio(x)}</span></span>
                 <button type="button" aria-label={`Editar ${x.nombre}`} onClick={() => setHojaArt({ indice: i })} style={{ width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Pencil size={17} color="#4A5372" /></button>
                 <button type="button" aria-label={`Quitar ${x.nombre}`} onClick={() => setArticulos((l) => l.filter((_, j) => j !== i))} style={{ width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={17} color="#9A3B34" /></button>
               </li>
             ))}
           </ul>
-          {articulos.length < MAX_ARTICULOS && <button type="button" onClick={() => setHojaArt({ indice: -1 })} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 50 }}><Plus size={17} aria-hidden="true" /> Agregar artículo</button>}
-        </Bloque>
+          {articulos.length < MAX_ARTICULOS && <button type="button" onClick={() => setHojaArt({ indice: -1 })} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 50, borderStyle: "dashed" }}><Plus size={17} aria-hidden="true" /> Agregar artículo</button>}
+        </Seccion>
       ) : (
         <p className="text-sm px-1 mb-3" style={{ color: "#4A5372", lineHeight: 1.5 }}>Los artículos y su estado se cambian desde <b>Mis fichas</b>, sin tener que editar todo el formulario.</p>
       )}
 
-      <Bloque titulo="Dónde está">
+      <Seccion icono={MapPin} titulo="Dónde está" subtitulo="Te encuentran los vecinos de tu zona desde Inicio.">
         <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Localidad</p>
         <SelectorLocalidad valor={loc} onChange={(l) => { setLoc(l); setEstado(null); }} />
         <div className="mt-4" />
-        <Campo id="al-zona" etiqueta="Zona o barrio (opcional)" ayuda="Por ejemplo: «Barrio Centro». Mejor indicar solo la zona."><input id="al-zona" value={f.zona} onChange={(e) => set("zona", e.target.value)} maxLength={80} style={caja} /></Campo>
-        <Campo id="al-dir" etiqueta="Dirección (opcional)" ayuda="Si la completás, será pública. Te recomendamos indicar solo la zona.">
+        <Campo id="al-zona" etiqueta="Zona o barrio" ayuda="Por ejemplo: «Barrio Centro». Mejor indicar solo la zona."><input id="al-zona" value={f.zona} onChange={(e) => set("zona", e.target.value)} maxLength={80} style={caja} /></Campo>
+        <Campo id="al-dir" etiqueta="Dirección" ayuda="Si la completás, será pública. Te recomendamos indicar solo la zona.">
           <input id="al-dir" value={f.direccion} onChange={(e) => set("direccion", e.target.value)} maxLength={120} autoComplete="off" onBlur={() => { if (f.direccion.trim() && !direccionAceptada.current) setDialogo("direccion"); }} style={caja} />
         </Campo>
-      </Bloque>
+      </Seccion>
 
-      <Bloque titulo="Cómo te consultan">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex-1"><span className="block text-sm font-bold" style={{ color: "#0B1437" }}>Mostrar botón de WhatsApp</span><span className="block text-sm" style={{ color: "#4A5372", lineHeight: 1.45 }}>Si lo activás, quien toque el botón verá tu número.</span></span>
-          <button type="button" role="switch" aria-checked={f.mostrarWhatsapp} aria-label="Mostrar botón de WhatsApp" onClick={() => (f.mostrarWhatsapp ? set("mostrarWhatsapp", false) : setDialogo("whatsapp"))}
-            style={{ width: 54, height: 32, borderRadius: 16, background: f.mostrarWhatsapp ? "#2350F5" : "#CBD3E1", position: "relative", flexShrink: 0 }}>
-            <span style={{ position: "absolute", top: 3, left: f.mostrarWhatsapp ? 25 : 3, width: 26, height: 26, borderRadius: 13, background: "#fff", transition: "left .2s" }} />
-          </button>
-        </div>
-        {f.mostrarWhatsapp && <Campo id="al-wa" etiqueta="Tu número de WhatsApp" ayuda="Con código de área, sin 0 ni 15. Ej: 381 555 1234."><input id="al-wa" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} inputMode="tel" autoComplete="tel" maxLength={20} style={caja} /></Campo>}
-        <Campo id="al-ig" etiqueta="Instagram (opcional)"><input id="al-ig" value={f.ig} onChange={(e) => set("ig", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-        <Campo id="al-fb" etiqueta="Facebook (opcional)"><input id="al-fb" value={f.facebook} onChange={(e) => set("facebook", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-        <Campo id="al-tt" etiqueta="TikTok (opcional)"><input id="al-tt" value={f.tiktok} onChange={(e) => set("tiktok", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-      </Bloque>
+      <Seccion icono={Clock} titulo="Horarios de atención" subtitulo="Cuándo pueden ver, consultar o retirar." opcional>
+        <EditorHorarios value={f.weekHours} onChange={(v) => set("weekHours", v)} />
+      </Seccion>
 
-      <Bloque titulo="Logo y fotos (opcional)">
-        <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Logo</p>
-        <div className="flex items-center gap-3 mb-4">
-          {f.logo ? <img src={f.logo} alt="Tu logo" style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover" }} /> : <span style={{ width: 64, height: 64, borderRadius: 16, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><ImageIcon size={26} color="#8D95B0" aria-hidden="true" /></span>}
-          <button type="button" onClick={() => archivoLogo.current?.click()} disabled={!!subiendo} style={botonSecundario}>{subiendo === "logo" ? "Subiendo..." : f.logo ? "Cambiar" : "Subir logo"}</button>
-          {f.logo && !subiendo && <button type="button" onClick={() => set("logo", "")} style={{ ...botonSecundario, border: 0, background: "transparent", color: "#9A3B34" }}>Quitar</button>}
-          <input ref={archivoLogo} type="file" accept="image/*" hidden onChange={(e) => { subir(e.target.files, "logo"); e.target.value = ""; }} />
+      <Seccion icono={MessageCircle} titulo="Cómo te consultan" subtitulo="WhatsApp y redes.">
+        <Interruptor activo={f.mostrarWhatsapp} onChange={() => (f.mostrarWhatsapp ? set("mostrarWhatsapp", false) : setDialogo("whatsapp"))} titulo="Mostrar botón de WhatsApp" desc="Si lo activás, quien toque el botón verá tu número." />
+        {f.mostrarWhatsapp && <div className="mt-3"><Campo id="al-wa" etiqueta="Tu número de WhatsApp" ayuda="Con código de área, sin 0 ni 15. Ej: 381 555 1234."><EntradaIcono id="al-wa" icono={MessageCircle} value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} inputMode="tel" autoComplete="tel" maxLength={20} /></Campo></div>}
+        <div style={{ borderTop: "1px solid #EEF1F8", marginTop: 12, paddingTop: 14 }}>
+          <Campo id="al-ig" etiqueta="Instagram"><EntradaIcono id="al-ig" icono={Instagram} value={f.ig} onChange={(e) => set("ig", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
+          <Campo id="al-fb" etiqueta="Facebook"><EntradaIcono id="al-fb" icono={Facebook} value={f.facebook} onChange={(e) => set("facebook", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
+          <Campo id="al-tt" etiqueta="TikTok"><EntradaIcono id="al-tt" icono={Music2} value={f.tiktok} onChange={(e) => set("tiktok", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
         </div>
-        <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Fotos de la ficha ({f.fotos.length} de {MAX_FOTOS})</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-          {f.fotos.map((u) => (
-            <div key={u} style={{ position: "relative", aspectRatio: "1 / 1" }}>
-              <img src={u} alt="Foto de la ficha" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
-              <button type="button" aria-label="Quitar foto" onClick={() => setF((p) => ({ ...p, fotos: p.fotos.filter((x) => x !== u) }))} style={{ position: "absolute", top: -6, right: -6, width: 30, height: 30, borderRadius: 15, background: "#C1443A", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={15} color="#fff" /></button>
-            </div>
-          ))}
-        </div>
-        {f.fotos.length < MAX_FOTOS && <button type="button" onClick={() => archivoFotos.current?.click()} disabled={!!subiendo} className="mt-3" style={botonSecundario}><Plus size={16} aria-hidden="true" /> {subiendo === "fotos" ? "Subiendo..." : "Agregar fotos"}</button>}
-        <input ref={archivoFotos} type="file" accept="image/*" multiple hidden onChange={(e) => { subir(e.target.files, "fotos"); e.target.value = ""; }} />
-        <p className="text-sm mt-2" style={{ color: "#4A5372", lineHeight: 1.45 }}>Subí solo fotos de lo que alquilás. Evitá fotos donde se vean personas o datos privados.</p>
-      </Bloque>
+      </Seccion>
+
+      <Seccion icono={ImageIcon} titulo="Fotos" subtitulo="Mostrá lo que alquilás: las fichas con fotos reciben más consultas." opcional>
+        <GaleriaFotos fotos={f.fotos} max={MAX_FOTOS} subiendo={subiendo === "fotos"} onArchivos={(a) => subir(a, "fotos", ayudaSubir)} onQuitar={(u) => setF((p) => ({ ...p, fotos: p.fotos.filter((x) => x !== u) }))} ayuda="La primera es la portada. Subí solo fotos de lo que alquilás; evitá personas o datos privados." />
+      </Seccion>
 
       {hojaArt && (
         <HojaArticulo inicial={hojaArt.indice >= 0 ? articulos[hojaArt.indice] : null} onCerrar={() => setHojaArt(null)}

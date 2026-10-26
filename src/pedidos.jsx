@@ -168,7 +168,7 @@ export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, on
               {listos > 0 ? `${listos} ${listos === 1 ? "pedido listo" : "pedidos listos"}` : enCurso.length ? `${enCurso.length} en curso` : "Todo al día"}
             </p>
           </div>
-          <button onClick={onRecargar} aria-label="Actualizar pedidos" className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.18)" }}>
+          <button onClick={onRecargar} aria-label="Actualizar pedidos" className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.18)" }}>
             <RefreshCw size={16} color="#fff" className={cargando ? "animate-spin" : ""} />
           </button>
         </div>

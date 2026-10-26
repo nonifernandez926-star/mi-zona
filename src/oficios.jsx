@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Share2, Heart, ArrowLeft, Wrench, MapPin, MessageCircle, Search, Plus, X, Pencil, Trash2, Power, Check, Clock, Instagram, Facebook, Music2, Store, User, ChevronDown, ChevronRight, Eye, Briefcase, ImageIcon, Info, ShieldCheck } from "lucide-react";
+import { Share2, Heart, ArrowLeft, Wrench, MapPin, MessageCircle, Search, Plus, X, Pencil, Trash2, Power, Check, Clock, Instagram, Facebook, Music2, Store, User, ChevronDown, ChevronRight, Eye, Briefcase, ImageIcon, Info, ShieldCheck, Tag } from "lucide-react";
 import { oficiosApi } from "./api.js";
 import { textoLocalidad } from "./localidades.js";
 import { RUBROS, GRUPOS_RUBROS } from "./rubros.js";
@@ -14,7 +14,8 @@ import { alternarFavFicha, useEsFavFicha, useFavFichas } from "./favoritos.js";
 import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
 import ComoFunciona from "./componentes/ComoFunciona.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError, EstadoExito } from "./componentes/Estados.jsx";
-import { uploadImage, comprimirFoto, comprimirImagen } from "./subirFoto.js";
+import { TablaHorarios, Seccion, Interruptor, Avance, EntradaIcono, SelectorLogo, GaleriaFotos, EditorHorarios, useSubidas } from "./formKit.jsx";
+import { semanaVacia, hayHorarios, semanaDesdeDias, diasDeHorarios, resumenHorarios } from "./horarios.js";
 
 // Oficios y servicios (Fase 4). Una ficha por persona, con varios rubros. Pantallas: listado, ficha, formulario, "Mis fichas" y paso final.
 // La navegación entre ellas la maneja App.jsx (para que el botón "atrás" de Android funcione); acá solo están las pantallas.
@@ -83,7 +84,7 @@ export function Hoja({ titulo, onCerrar, children }) {
 export function Chip({ activo, children, onClick, quitar }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={activo === undefined ? undefined : activo}
-      style={{ minHeight: 40, borderRadius: 999, padding: "0 14px", fontSize: "0.9375rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${activo ? "#2350F5" : "#CFD6E8"}`, background: activo ? "#EDF1FF" : "#fff", color: activo ? "#1B3FB8" : "#0B1437" }}>
+      style={{ minHeight: 44, borderRadius: 999, padding: "0 14px", fontSize: "0.9375rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${activo ? "#2350F5" : "#CFD6E8"}`, background: activo ? "#EDF1FF" : "#fff", color: activo ? "#1B3FB8" : "#0B1437" }}>
       {activo && <Check size={15} aria-hidden="true" />}{children}{quitar && <X size={14} aria-hidden="true" />}
     </button>
   );
@@ -323,10 +324,11 @@ export function DetalleOficio({ id, rubroConsulta = "", onVolver, onAbrirPerfil 
       <SeccionDetalle titulo="Datos">
         <FilaDato icono={MapPin} etiqueta="Dónde trabaja" valor={[lugar, o.zona].filter(Boolean).join(" · ")} />
         <FilaDato icono={MapPin} etiqueta="Dirección" valor={o.direccion} />
-        <FilaDato icono={Clock} etiqueta="Días y horarios" valor={[o.dias.length ? o.dias.map((d) => DIAS.find(([k]) => k === d)?.[1]).join(", ") : "", o.horario].filter(Boolean).join(" · ")} />
+        {!hayHorarios(o.weekHours) && <FilaDato icono={Clock} etiqueta="Días y horarios" valor={[o.dias.length ? o.dias.map((d) => DIAS.find(([k]) => k === d)?.[1]).join(", ") : "", o.horario].filter(Boolean).join(" · ")} />}
         <FilaDato icono={Briefcase} etiqueta="Precio orientativo" valor={o.precio} />
         {o.precio && <p className="text-sm" style={{ color: "#4A5372" }}>Es una referencia: el precio final se acuerda con la persona.</p>}
       </SeccionDetalle>
+      {hayHorarios(o.weekHours) && <SeccionDetalle titulo="Horarios de atención" icono={Clock}><TablaHorarios weekHours={o.weekHours} /></SeccionDetalle>}
       {o.fotos.length > 0 && <SeccionDetalle titulo="Fotos de trabajos" icono={ImageIcon}><Fotos fotos={o.fotos} /></SeccionDetalle>}
       {(o.ig || o.facebook || o.tiktok) && (
         <SeccionDetalle titulo="Redes">
@@ -377,7 +379,7 @@ export function HojaWhatsapp({ id, nombre, rubro, onCerrar, contactar = oficiosA
 
 // ---------- formulario ----------
 
-const INICIAL = { nombre: "", rubros: [], otros: [], desc: "", zona: "", direccion: "", whatsapp: "", mostrarWhatsapp: false, ig: "", facebook: "", tiktok: "", logo: "", fotos: [], dias: [], horario: "", precio: "", etiquetas: [] };
+const INICIAL = { nombre: "", rubros: [], otros: [], desc: "", zona: "", direccion: "", whatsapp: "", mostrarWhatsapp: false, ig: "", facebook: "", tiktok: "", logo: "", fotos: [], dias: [], horario: "", weekHours: [], precio: "", etiquetas: [] };
 
 export function Campo({ id, etiqueta, ayuda, children, contador }) {
   return (
@@ -399,23 +401,34 @@ export const Bloque = ({ titulo, children }) => (
 
 export function FormularioOficio({ inicial, usuario, onGuardado, onCancelar }) {
   const editando = !!inicial;
-  const [f, setF] = useState(() => (inicial ? { ...INICIAL, ...inicial, rubros: inicial.rubros.map((r) => r.id) } : { ...INICIAL, nombre: usuario?.nombre || "" }));
+  const [f, setF] = useState(() => {
+    if (!inicial) return { ...INICIAL, nombre: usuario?.nombre || "", weekHours: semanaVacia() };
+    const wh = hayHorarios(inicial.weekHours) ? inicial.weekHours : semanaDesdeDias(inicial.dias);
+    return { ...INICIAL, ...inicial, rubros: inicial.rubros.map((r) => r.id), weekHours: wh };
+  });
   const [loc, setLoc] = useState(inicial?.localidadCompleta || usuario?.localidad || null);
   const [otro, setOtro] = useState("");
+  const [busca, setBusca] = useState("");
+  const [grupoAbierto, setGrupoAbierto] = useState(null);
   const [dialogo, setDialogo] = useState(null); // "whatsapp" | "direccion" | "activar"
   const [estado, setEstado] = useState(null); // null | "guardando" | { error }
-  const [subiendo, setSubiendo] = useState(null); // "logo" | "fotos"
-  const archivoLogo = useRef(null), archivoFotos = useRef(null);
+  const direccionAceptada = useRef(!!inicial?.direccion);
+  const { subiendo, subir } = useSubidas({ max: MAX_FOTOS, onError: (m) => setEstado(m ? { error: m } : null) });
   const set = (k, v) => { setF((p) => ({ ...p, [k]: v })); setEstado(null); };
   const alternar = (k, v, max) => setF((p) => { const t = p[k].includes(v); if (!t && max && p[k].length >= max) return p; return { ...p, [k]: t ? p[k].filter((x) => x !== v) : [...p[k], v] }; });
-  const direccionAceptada = useRef(!!inicial?.direccion);
 
-  const faltan = [];
-  if (f.nombre.trim().length < 2) faltan.push("tu nombre");
-  if (f.rubros.length + f.otros.length === 0) faltan.push("al menos un rubro");
-  if (f.desc.trim().length < 10) faltan.push("una descripción (mínimo 10 letras)");
-  if (!loc) faltan.push("tu localidad");
-  if (f.mostrarWhatsapp && f.whatsapp.replace(/\D/g, "").length < 8) faltan.push("tu número de WhatsApp");
+  const conHorarios = hayHorarios(f.weekHours);
+  const pasos = [
+    { ok: f.nombre.trim().length >= 2, texto: "Tu nombre", requerido: true },
+    { ok: f.rubros.length + f.otros.length > 0, texto: "Al menos un rubro", requerido: true },
+    { ok: f.desc.trim().length >= 10, texto: "Descripción de tu trabajo", requerido: true },
+    { ok: !!loc, texto: "Tu localidad", requerido: true },
+    { ok: !f.mostrarWhatsapp || f.whatsapp.replace(/\D/g, "").length >= 8, texto: "Número de WhatsApp", requerido: true },
+    { ok: conHorarios, texto: "Horarios de atención" },
+    { ok: !!f.logo, texto: "Logo o foto de perfil" },
+    { ok: f.fotos.length > 0, texto: "Fotos de tus trabajos" },
+  ];
+  const faltan = pasos.filter((p) => p.requerido && !p.ok).map((p) => p.texto.toLowerCase());
   const listo = faltan.length === 0 && !subiendo && estado !== "guardando";
 
   const agregarOtro = () => {
@@ -423,24 +436,13 @@ export function FormularioOficio({ inicial, usuario, onGuardado, onCancelar }) {
     if (t.length < 2 || f.otros.length >= MAX_OTROS || f.otros.some((x) => x.toLowerCase() === t.toLowerCase())) return;
     setF((p) => ({ ...p, otros: [...p.otros, t.slice(0, 40)] })); setOtro("");
   };
-  const subir = async (archivos, destino) => {
-    const lista = [...archivos]; if (!lista.length) return;
-    if (lista.some((a) => !/^image\//.test(a.type) || a.size > 15 * 1024 * 1024)) { setEstado({ error: "Elegí imágenes de hasta 15 MB cada una." }); return; }
-    setSubiendo(destino); setEstado(null);
-    try {
-      if (destino === "logo") set("logo", await uploadImage(await comprimirImagen(lista[0])));
-      else {
-        const sobra = MAX_FOTOS - f.fotos.length; const urls = [];
-        for (const a of lista.slice(0, sobra)) urls.push(await uploadImage(await comprimirFoto(a)));
-        setF((p) => ({ ...p, fotos: [...p.fotos, ...urls] }));
-      }
-    } catch { setEstado({ error: "No pudimos subir la foto. Probá de nuevo en un rato." }); }
-    setSubiendo(null);
-  };
+  const ayudaSubir = { fotos: f.fotos, setFotos: (v) => setF((p) => ({ ...p, fotos: v })), setLogo: (v) => set("logo", v) };
 
   const guardar = async () => {
     setEstado("guardando"); setDialogo(null);
-    const datos = { ...f, localidad: loc, whatsapp: f.mostrarWhatsapp || f.whatsapp ? f.whatsapp : "" };
+    const wh = conHorarios ? f.weekHours : [];
+    // "dias" y "horario" se mantienen en sincronía con los horarios nuevos (así las fichas viejas y las pantallas anteriores siguen mostrando algo correcto)
+    const datos = { ...f, localidad: loc, whatsapp: f.mostrarWhatsapp || f.whatsapp ? f.whatsapp : "", weekHours: wh, dias: conHorarios ? diasDeHorarios(wh) : [], horario: conHorarios ? resumenHorarios(wh).slice(0, 60) : "" };
     try {
       const o = editando ? await oficiosApi.editar(inicial.id, datos) : await oficiosApi.crear(datos);
       onGuardado(o, !editando);
@@ -454,6 +456,9 @@ export function FormularioOficio({ inicial, usuario, onGuardado, onCancelar }) {
     paraQue: "Sirve para que vecinos que buscan tus rubros te encuentren y te contacten.",
     queSucedera: `Tu ficha va a ser pública: cualquier persona podrá verla y contactarte${f.mostrarWhatsapp ? " por WhatsApp (quien toque el botón verá tu número)" : ""}.${f.direccion.trim() ? " Tu dirección también será pública." : ""} La podés editar, pausar o eliminar cuando quieras desde Mis fichas.`,
   };
+  const q = busca.trim().toLowerCase();
+  const rubrosVisibles = (g) => RUBROS.filter((r) => r.grupo === g && (!q || r.label.toLowerCase().includes(q)));
+  const elegidos = [...f.rubros.map((id) => ETIQUETA_RUBRO[id] || id), ...f.otros];
 
   return (
     <Pagina titulo={editando ? "Editar mi ficha" : "Ofrecer mis servicios"} onVolver={onCancelar}
@@ -466,104 +471,95 @@ export function FormularioOficio({ inicial, usuario, onGuardado, onCancelar }) {
           </button>
         </div>
       }>
-      {!editando && <ComoFunciona pasos={["Contá qué hacés y en qué rubros (podés elegir varios).", "Elegí tu localidad y, si querés, cómo te contactan.", "Activá tu ficha: desde ese momento los vecinos la pueden encontrar.", "Podés editarla, pausarla o eliminarla cuando quieras desde Mis fichas."]} />}
+      <Avance pasos={pasos} titulo="Tu ficha" />
+      {!editando && <ComoFunciona pasos={["Contá qué hacés y en qué rubros (podés elegir varios).", "Elegí tu localidad, tus horarios y cómo te contactan.", "Activá tu ficha: desde ese momento los vecinos la pueden encontrar.", "Podés editarla, pausarla o eliminarla cuando quieras desde Mis fichas."]} />}
       <div className="mt-3" />
 
-      <Bloque titulo="Quién sos">
+      <Seccion icono={User} titulo="Presentación" subtitulo="Lo primero que ve quien busca un servicio.">
+        <SelectorLogo valor={f.logo} subiendo={subiendo === "logo"} onArchivo={(a) => subir(a, "logo", ayudaSubir)} onQuitar={() => set("logo", "")} />
+        <div className="mt-4" />
         <Campo id="of-nombre" etiqueta="Nombre con el que aparecés" ayuda="Es el nombre de tu ficha. No es tu usuario ni tu perfil.">
           <input id="of-nombre" value={f.nombre} onChange={(e) => set("nombre", e.target.value)} maxLength={60} autoComplete="name" style={caja} />
         </Campo>
-      </Bloque>
-
-      <Bloque titulo="Rubros">
-        <p className="text-sm mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>Elegí todos los que hacés. Aparecés en la búsqueda de cada uno, con una sola ficha. ({f.rubros.length + f.otros.length} de {MAX_RUBROS + MAX_OTROS})</p>
-        {Object.entries(GRUPOS_RUBROS).map(([g, nombre]) => (
-          <div key={g} className="mb-3">
-            <p className="text-sm font-bold mb-1.5" style={{ color: "#4A5372" }}>{nombre}</p>
-            <div className="flex flex-wrap gap-2">{RUBROS.filter((r) => r.grupo === g).map((r) => <Chip key={r.id} activo={f.rubros.includes(r.id)} onClick={() => alternar("rubros", r.id, MAX_RUBROS)}>{r.label}</Chip>)}</div>
-          </div>
-        ))}
-        <Campo id="of-otro" etiqueta="Otro rubro" ayuda={`Si no está en la lista, escribilo (hasta ${MAX_OTROS}).`}>
-          <div className="flex gap-2">
-            <input id="of-otro" value={otro} onChange={(e) => setOtro(e.target.value)} maxLength={40} placeholder="Ej: afilador de cuchillos" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); agregarOtro(); } }} style={caja} />
-            <button type="button" onClick={agregarOtro} disabled={otro.trim().length < 2 || f.otros.length >= MAX_OTROS} style={{ ...botonSecundario, opacity: otro.trim().length < 2 || f.otros.length >= MAX_OTROS ? 0.5 : 1 }}>Agregar</button>
-          </div>
-          {f.otros.length > 0 && <div className="flex flex-wrap gap-2 mt-2">{f.otros.map((x) => <Chip key={x} quitar onClick={() => setF((p) => ({ ...p, otros: p.otros.filter((y) => y !== x) }))}>{x}</Chip>)}</div>}
-        </Campo>
-      </Bloque>
-
-      <Bloque titulo="Sobre tu trabajo">
         <Campo id="of-desc" etiqueta="Descripción breve" contador={`${f.desc.length}/300`}>
-          <textarea id="of-desc" value={f.desc} onChange={(e) => set("desc", e.target.value)} rows={4} maxLength={300} placeholder="Contá en pocas palabras qué hacés y cómo trabajás" style={{ ...caja, resize: "none", lineHeight: 1.5 }} />
+          <textarea id="of-desc" value={f.desc} onChange={(e) => set("desc", e.target.value)} rows={4} maxLength={300} placeholder="Contá en pocas palabras qué hacés, cuánta experiencia tenés y cómo trabajás" style={{ ...caja, resize: "none", lineHeight: 1.5 }} />
         </Campo>
-        <Campo id="of-precio" etiqueta="Precio orientativo (opcional)" ayuda="Es solo una referencia. No inventes precios que no vas a cumplir.">
-          <input id="of-precio" value={f.precio} onChange={(e) => set("precio", e.target.value)} maxLength={80} placeholder="Ej: Desde $15.000 la visita" style={caja} />
-        </Campo>
-        <p className="text-sm font-bold mb-1.5" style={{ color: "#0B1437" }}>Etiquetas (opcional)</p>
-        <div className="flex flex-wrap gap-2">{ETIQUETAS.map(([k, t]) => <Chip key={k} activo={f.etiquetas.includes(k)} onClick={() => alternar("etiquetas", k)}>{t}</Chip>)}</div>
-      </Bloque>
+      </Seccion>
 
-      <Bloque titulo="Dónde trabajás">
+      <Seccion icono={Wrench} titulo="Rubros" subtitulo={`Elegí todos los que hacés. Aparecés en la búsqueda de cada uno. (${elegidos.length} de ${MAX_RUBROS + MAX_OTROS})`}>
+        {elegidos.length > 0 && <div className="flex flex-wrap gap-2 mb-3" aria-label="Rubros elegidos">{f.rubros.map((id) => <Chip key={id} activo quitar onClick={() => alternar("rubros", id)}>{ETIQUETA_RUBRO[id] || id}</Chip>)}{f.otros.map((x) => <Chip key={x} activo quitar onClick={() => setF((p) => ({ ...p, otros: p.otros.filter((y) => y !== x) }))}>{x}</Chip>)}</div>}
+        <div style={{ position: "relative", marginBottom: 10 }}>
+          <Search size={18} color="#6B7494" aria-hidden="true" style={{ position: "absolute", left: 14, top: 15 }} />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar un rubro (ej: plomero)" aria-label="Buscar un rubro" style={{ ...caja, paddingLeft: 42 }} />
+        </div>
+        {Object.entries(GRUPOS_RUBROS).map(([g, nombre]) => {
+          const lista = rubrosVisibles(g); if (!lista.length) return null;
+          const abierto = !!q || grupoAbierto === g;
+          const cuantos = RUBROS.filter((r) => r.grupo === g && f.rubros.includes(r.id)).length;
+          return (
+            <div key={g} style={{ borderTop: "1px solid #EEF1F8" }}>
+              <button type="button" onClick={() => setGrupoAbierto(abierto && !q ? null : g)} aria-expanded={abierto} style={{ width: "100%", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left" }}>
+                <span style={{ fontWeight: 700, color: "#0B1437", fontSize: "0.9375rem" }}>{nombre}{cuantos > 0 && <span style={{ marginLeft: 8, background: "#2350F5", color: "#fff", borderRadius: 999, fontSize: 12, padding: "1px 8px" }}>{cuantos}</span>}</span>
+                <ChevronDown size={18} color="#4A5372" aria-hidden="true" style={{ transform: abierto ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+              </button>
+              {abierto && <div className="flex flex-wrap gap-2 pb-3">{lista.map((r) => <Chip key={r.id} activo={f.rubros.includes(r.id)} onClick={() => alternar("rubros", r.id, MAX_RUBROS)}>{r.label}</Chip>)}</div>}
+            </div>
+          );
+        })}
+        <div style={{ borderTop: "1px solid #EEF1F8", paddingTop: 12 }}>
+          <Campo id="of-otro" etiqueta="¿No está en la lista?" ayuda={`Escribilo y sumalo como rubro propio (hasta ${MAX_OTROS}).`}>
+            <div className="flex gap-2">
+              <input id="of-otro" value={otro} onChange={(e) => setOtro(e.target.value)} maxLength={40} placeholder="Ej: afilador de cuchillos" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); agregarOtro(); } }} style={caja} />
+              <button type="button" onClick={agregarOtro} disabled={otro.trim().length < 2 || f.otros.length >= MAX_OTROS} style={{ ...botonSecundario, opacity: otro.trim().length < 2 || f.otros.length >= MAX_OTROS ? 0.5 : 1 }}>Sumar</button>
+            </div>
+          </Campo>
+        </div>
+      </Seccion>
+
+      <Seccion icono={MapPin} titulo="Dónde trabajás" subtitulo="Los vecinos de tu zona te encuentran desde Inicio.">
         <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Tu localidad</p>
         <SelectorLocalidad valor={loc} onChange={(l) => { setLoc(l); setEstado(null); }} />
         <div className="mt-4" />
-        <Campo id="of-zona" etiqueta="Zona de trabajo (opcional)" ayuda="Por ejemplo: «Famaillá y alrededores». Mejor indicar solo la zona.">
+        <Campo id="of-zona" etiqueta="Zona de trabajo" ayuda="Por ejemplo: «Famaillá y alrededores». Mejor indicar solo la zona.">
           <input id="of-zona" value={f.zona} onChange={(e) => set("zona", e.target.value)} maxLength={80} style={caja} />
         </Campo>
-        <Campo id="of-dir" etiqueta="Dirección (opcional)" ayuda="Si la completás, será pública. Te recomendamos indicar solo la zona.">
+        <Campo id="of-dir" etiqueta="Dirección" ayuda="Si la completás, será pública. Te recomendamos indicar solo la zona.">
           <input id="of-dir" value={f.direccion} onChange={(e) => set("direccion", e.target.value)} maxLength={120} autoComplete="off"
             onBlur={() => { if (f.direccion.trim() && !direccionAceptada.current) setDialogo("direccion"); }} style={caja} />
         </Campo>
-      </Bloque>
+      </Seccion>
 
-      <Bloque titulo="Cómo te contactan">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex-1">
-            <span className="block text-sm font-bold" style={{ color: "#0B1437" }}>Mostrar botón de WhatsApp</span>
-            <span className="block text-sm" style={{ color: "#4A5372", lineHeight: 1.45 }}>Si lo activás, quien toque el botón verá tu número.</span>
-          </span>
-          <button type="button" role="switch" aria-checked={f.mostrarWhatsapp} aria-label="Mostrar botón de WhatsApp"
-            onClick={() => (f.mostrarWhatsapp ? set("mostrarWhatsapp", false) : setDialogo("whatsapp"))}
-            style={{ width: 54, height: 32, borderRadius: 16, background: f.mostrarWhatsapp ? "#2350F5" : "#CBD3E1", position: "relative", flexShrink: 0 }}>
-            <span style={{ position: "absolute", top: 3, left: f.mostrarWhatsapp ? 25 : 3, width: 26, height: 26, borderRadius: 13, background: "#fff", transition: "left .2s" }} />
-          </button>
+      <Seccion icono={Clock} titulo="Horarios de atención" subtitulo="Elegí los días y las horas en que atendés." opcional>
+        <EditorHorarios value={f.weekHours} onChange={(v) => set("weekHours", v)} />
+        <div style={{ borderTop: "1px solid #EEF1F8", marginTop: 14, paddingTop: 12 }}>
+          <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Etiquetas</p>
+          <div className="flex flex-wrap gap-2">{ETIQUETAS.map(([k, t]) => <Chip key={k} activo={f.etiquetas.includes(k)} onClick={() => alternar("etiquetas", k)}>{t}</Chip>)}</div>
         </div>
+      </Seccion>
+
+      <Seccion icono={Tag} titulo="Precio" subtitulo="Una referencia ayuda a que te escriban con confianza." opcional>
+        <Campo id="of-precio" etiqueta="Precio orientativo" ayuda="Es solo una referencia. No inventes precios que no vas a cumplir.">
+          <EntradaIcono id="of-precio" icono={Tag} value={f.precio} onChange={(e) => set("precio", e.target.value)} maxLength={80} placeholder="Ej: Desde $15.000 la visita" />
+        </Campo>
+      </Seccion>
+
+      <Seccion icono={MessageCircle} titulo="Cómo te contactan" subtitulo="WhatsApp y redes para que te encuentren.">
+        <Interruptor activo={f.mostrarWhatsapp} onChange={() => (f.mostrarWhatsapp ? set("mostrarWhatsapp", false) : setDialogo("whatsapp"))} titulo="Mostrar botón de WhatsApp" desc="Si lo activás, quien toque el botón verá tu número." />
         {f.mostrarWhatsapp && (
-          <Campo id="of-wa" etiqueta="Tu número de WhatsApp" ayuda="Con código de área, sin 0 ni 15. Ej: 381 555 1234.">
-            <input id="of-wa" value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} inputMode="tel" autoComplete="tel" maxLength={20} style={caja} />
-          </Campo>
+          <div className="mt-3"><Campo id="of-wa" etiqueta="Tu número de WhatsApp" ayuda="Con código de área, sin 0 ni 15. Ej: 381 555 1234.">
+            <EntradaIcono id="of-wa" icono={MessageCircle} value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} inputMode="tel" autoComplete="tel" maxLength={20} />
+          </Campo></div>
         )}
-        <Campo id="of-ig" etiqueta="Instagram (opcional)"><input id="of-ig" value={f.ig} onChange={(e) => set("ig", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-        <Campo id="of-fb" etiqueta="Facebook (opcional)"><input id="of-fb" value={f.facebook} onChange={(e) => set("facebook", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-        <Campo id="of-tt" etiqueta="TikTok (opcional)"><input id="of-tt" value={f.tiktok} onChange={(e) => set("tiktok", e.target.value)} maxLength={300} placeholder="usuario o enlace" style={caja} /></Campo>
-      </Bloque>
-
-      <Bloque titulo="Cuándo trabajás (opcional)">
-        <div className="flex flex-wrap gap-2 mb-3">{DIAS.map(([k, t]) => <Chip key={k} activo={f.dias.includes(k)} onClick={() => alternar("dias", k)}>{t}</Chip>)}</div>
-        <Campo id="of-hor" etiqueta="Horarios"><input id="of-hor" value={f.horario} onChange={(e) => set("horario", e.target.value)} maxLength={60} placeholder="Ej: de 8 a 18 hs" style={caja} /></Campo>
-      </Bloque>
-
-      <Bloque titulo="Logo y fotos de trabajos (opcional)">
-        <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Logo</p>
-        <div className="flex items-center gap-3 mb-4">
-          {f.logo ? <img src={f.logo} alt="Tu logo" style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover" }} /> : <span style={{ width: 64, height: 64, borderRadius: 16, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><ImageIcon size={26} color="#8D95B0" aria-hidden="true" /></span>}
-          <button type="button" onClick={() => archivoLogo.current?.click()} disabled={!!subiendo} style={botonSecundario}>{subiendo === "logo" ? "Subiendo..." : f.logo ? "Cambiar" : "Subir logo"}</button>
-          {f.logo && !subiendo && <button type="button" onClick={() => set("logo", "")} style={{ ...botonSecundario, border: 0, background: "transparent", color: "#9A3B34" }}>Quitar</button>}
-          <input ref={archivoLogo} type="file" accept="image/*" hidden onChange={(e) => { subir(e.target.files, "logo"); e.target.value = ""; }} />
+        <div style={{ borderTop: "1px solid #EEF1F8", marginTop: 12, paddingTop: 14 }}>
+          <Campo id="of-ig" etiqueta="Instagram"><EntradaIcono id="of-ig" icono={Instagram} value={f.ig} onChange={(e) => set("ig", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
+          <Campo id="of-fb" etiqueta="Facebook"><EntradaIcono id="of-fb" icono={Facebook} value={f.facebook} onChange={(e) => set("facebook", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
+          <Campo id="of-tt" etiqueta="TikTok"><EntradaIcono id="of-tt" icono={Music2} value={f.tiktok} onChange={(e) => set("tiktok", e.target.value)} maxLength={300} placeholder="usuario o enlace" /></Campo>
         </div>
-        <p className="text-sm font-bold mb-2" style={{ color: "#0B1437" }}>Fotos de trabajos ({f.fotos.length} de {MAX_FOTOS})</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-          {f.fotos.map((u) => (
-            <div key={u} style={{ position: "relative", aspectRatio: "1 / 1" }}>
-              <img src={u} alt="Foto de un trabajo" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
-              <button type="button" aria-label="Quitar foto" onClick={() => setF((p) => ({ ...p, fotos: p.fotos.filter((x) => x !== u) }))} style={{ position: "absolute", top: -6, right: -6, width: 30, height: 30, borderRadius: 15, background: "#C1443A", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={15} color="#fff" /></button>
-            </div>
-          ))}
-        </div>
-        {f.fotos.length < MAX_FOTOS && <button type="button" onClick={() => archivoFotos.current?.click()} disabled={!!subiendo} className="mt-3" style={botonSecundario}><Plus size={16} aria-hidden="true" /> {subiendo === "fotos" ? "Subiendo..." : "Agregar fotos"}</button>}
-        <input ref={archivoFotos} type="file" accept="image/*" multiple hidden onChange={(e) => { subir(e.target.files, "fotos"); e.target.value = ""; }} />
-        <p className="text-sm mt-2" style={{ color: "#4A5372", lineHeight: 1.45 }}>Subí solo fotos de tus trabajos. Evitá fotos donde se vean personas o datos privados.</p>
-      </Bloque>
+      </Seccion>
+
+      <Seccion icono={ImageIcon} titulo="Fotos de tus trabajos" subtitulo="Las fichas con fotos reciben más consultas." opcional>
+        <GaleriaFotos fotos={f.fotos} max={MAX_FOTOS} subiendo={subiendo === "fotos"} onArchivos={(a) => subir(a, "fotos", ayudaSubir)} onQuitar={(u) => setF((p) => ({ ...p, fotos: p.fotos.filter((x) => x !== u) }))} ayuda="La primera es la portada. Subí solo fotos de tus trabajos; evitá personas o datos privados." />
+      </Seccion>
 
       {dialogo === "whatsapp" && (
         <DialogoAdvertencia titulo="¿Mostrar tu WhatsApp?" queHace="Agrega a tu ficha un botón «Contactar por WhatsApp»." paraQue="Sirve para que los vecinos te escriban directo."

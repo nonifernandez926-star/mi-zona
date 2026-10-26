@@ -28,7 +28,9 @@ export function useClima(zona) {
       ultima = Date.now();
       try {
         const [lat, lng] = (await ubicacionPersona()) || coordsDe(zona);
-        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=temperature_2m,relative_humidity_2m,weather_code,cloud_cover,is_day&daily=sunrise,sunset&timezone=auto&forecast_days=1`);
+        // Se redondea a ~5 km antes de enviar: para el clima alcanza, y a Open-Meteo solo le llega una ubicación aproximada (como dice la política de privacidad)
+        const aprox = (n) => (Math.round(n * 20) / 20).toFixed(2);
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${aprox(lat)}&longitude=${aprox(lng)}&current=temperature_2m,relative_humidity_2m,weather_code,cloud_cover,is_day&daily=sunrise,sunset&timezone=auto&forecast_days=1`);
         if (!r.ok) return;
         const j = await r.json();
         const hm = (iso) => { const [h, m] = String(iso).slice(11, 16).split(":").map(Number); return h * 60 + m; };
@@ -53,7 +55,7 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mezcla = (a, b, k) => { const A = hex(a), B = hex(b); return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, "0")).join(""); };
 const lim = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const PAL = {
-  noche: ["#040a22", "#0a1646", "#14285f"], alba: ["#2a3578", "#7a5a9c", "#f08a5c"], salida: ["#3a63b8", "#9fb8e6", "#ffc58a"], manana: ["#2f78d6", "#6fb0f0", "#cfe6fb"],
+  noche: ["#01030a", "#040a1a", "#0c162b"], alba: ["#2a3578", "#7a5a9c", "#f08a5c"], salida: ["#3a63b8", "#9fb8e6", "#ffc58a"], manana: ["#2f78d6", "#6fb0f0", "#cfe6fb"],
   dia: ["#1e6fd6", "#5fa8f0", "#bfe0fb"], tarde: ["#2a6fd0", "#68a6ea", "#f5dcb8"], ocaso: ["#2d3f8c", "#d0687a", "#ffa05a"], crepusculo: ["#121f55", "#4a3f7e", "#c0566a"],
 };
 function cielo(t, sale, pone) {
@@ -156,8 +158,8 @@ export function FondoClima({ zona }) {
     const largoNoche = 1440 - (pone - sale), tn = t >= pone ? t - pone : t + 1440 - pone;
     const pLuna = lim(tn / largoNoche, -0.14, 1.14);
     const elevLuna = Math.sin(Math.PI * pLuna);
-    const luna = { x: W * (0.1 + 0.8 * pLuna), y: horizonte - (horizonte - 0.17 * H) * elevLuna, elev: elevLuna, vis: elevLuna > -0.3 ? 1 : 0, fase: faseLuna(ahora) };
-    const P = { W, H, col, noche, dia, cob: e.cob, tor: e.tor, sol, luna, horizonte, montes, bajo: lim(1 - elevSol * 2.4) * dia, radioSol: lim(W * 0.058, 20, 30), radioLuna: lim(W * 0.07, 26, 36) };
+    const luna = { x: W * (0.5 + 0.42 * pLuna), y: horizonte - (horizonte - 0.2 * H) * elevLuna, elev: elevLuna, vis: elevLuna > -0.3 ? 1 : 0, fase: faseLuna(ahora) };
+    const P = { W, H, col, noche, dia, cob: e.cob, tor: e.tor, sol, luna, horizonte, montes, bajo: lim(1 - elevSol * 2.4) * dia, radioSol: lim(W * 0.058, 20, 30), radioLuna: lim(W * 0.03, 9, 13) };
     pintarCielo(ajustar(cvCielo.current), W, H, P);
     pintarMontes(ajustar(cvMontes.current), W, H, P);
     // nubes: se generan en baja resolución (se ven suaves) y se desplazan despacio con CSS

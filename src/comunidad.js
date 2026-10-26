@@ -7,6 +7,7 @@ export const TIPOS = [
   { id: "regalo", label: "Regalos", singular: "Regalo", ayuda: "Cosas que ya no usás.", fotos: 3, contacto: true },
   { id: "deporte", label: "Deporte y actividades", singular: "Deporte o actividad", ayuda: "Fútbol, caminatas, talleres...", fotos: 1, contacto: true },
   { id: "evento", label: "Eventos y ferias", singular: "Evento o feria", ayuda: "Fecha, lugar y afiche.", fotos: 1, contacto: true },
+  { id: "sorteo", label: "Sorteos y rifas", singular: "Sorteo o rifa", ayuda: "Anunciá tu rifa: premios, fecha y WhatsApp. No se cobra en la app.", fotos: 1, contacto: true },
 ];
 export const TIPO = Object.fromEntries(TIPOS.map((t) => [t.id, t]));
 
@@ -26,10 +27,15 @@ export const AYUDA_DIAS = [[3, "3 días"], [7, "7 días"], [15, "15 días"], [30
 export const REGALO_CATEGORIAS = [["ropa", "Ropa"], ["muebles", "Muebles"], ["utiles", "Útiles escolares"], ["libros", "Libros"], ["uniformes", "Uniformes"], ["juguetes", "Juguetes"], ["otros", "Otros objetos"]];
 export const DEPORTE_ACTIVIDADES = [["futbol", "Fútbol"], ["basquet", "Básquet"], ["voley", "Vóley"], ["caminata", "Caminata"], ["ciclismo", "Ciclismo"], ["taller", "Taller"], ["solidaria", "Actividad solidaria"], ["otra", "Otra actividad"]];
 export const EVENTO_CATEGORIAS = [["feria", "Feria"], ["musical", "Música"], ["cultural", "Cultural"], ["deportivo", "Deportivo"], ["infantil", "Infantil"], ["solidario", "Solidario"], ["gastronomico", "Gastronómico"], ["religioso", "Religioso"], ["otro", "Otro"]];
+export const SORTEO_MOTIVOS = [["beneficio", "A beneficio"], ["otro", "Otro motivo"]];
+export const SORTEO_DEFINICIONES = [["quiniela", "Con la Quiniela"], ["loteria", "Con la Lotería"], ["vivo", "Sorteo en vivo"], ["redes", "Por redes sociales"], ["otra", "De otra forma"]];
+export const MAX_PREMIOS = 6;
+// Aviso que acompaña a todo sorteo (listado, ficha y formulario). Mi Zona solo muestra lo que publica cada persona.
+export const AVISO_SORTEO = "Mi Zona no organiza ni cobra sorteos: solo muestra lo que publica cada persona. Pagá únicamente a quien conocés y no pagues por adelantado si algo no te cierra.";
 export const VISTAS = [["", "Todo"], ["hoy", "Hoy"], ["semana", "Esta semana"], ["finde", "Fin de semana"]];
 
 const mapa = (pares) => Object.fromEntries(pares);
-const ETIQUETAS = { ...mapa(AVISO_SUBTIPOS), ...mapa(SEGURIDAD_SUBTIPOS), ...mapa(PERDIDO_OBJETOS), ...mapa(AYUDA_CATEGORIAS), ...mapa(REGALO_CATEGORIAS), ...mapa(DEPORTE_ACTIVIDADES), ...mapa(EVENTO_CATEGORIAS), ...mapa(ESPECIES), ...mapa(TAMANOS) };
+const ETIQUETAS = { ...mapa(AVISO_SUBTIPOS), ...mapa(SEGURIDAD_SUBTIPOS), ...mapa(PERDIDO_OBJETOS), ...mapa(AYUDA_CATEGORIAS), ...mapa(REGALO_CATEGORIAS), ...mapa(DEPORTE_ACTIVIDADES), ...mapa(EVENTO_CATEGORIAS), ...mapa(ESPECIES), ...mapa(TAMANOS), ...mapa(SORTEO_MOTIVOS), ...mapa(SORTEO_DEFINICIONES) };
 export const etiqueta = (id) => ETIQUETAS[id] || id || "";
 
 // "hace 5 minutos", "hace 3 horas", "hace 2 días"
@@ -56,6 +62,12 @@ export function venceEn(iso) {
 }
 const FMT = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires" });
 export const fechaLinda = (iso) => (iso ? FMT.format(new Date(iso)).replace(",", "") : "");
+// Solo el día (sorteos sin hora): "dom 8 nov"
+const FMT_DIA = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Argentina/Buenos_Aires" });
+export const fechaSolo = (iso) => (iso ? FMT_DIA.format(new Date(iso)).replace(",", "").replace(/\./g, "") : "");
+// Día de hoy en Argentina, "2026-10-25" (para el mínimo del calendario y para saber si ya llegó la fecha de un sorteo)
+export const hoyAR = () => new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
+export const diaAR = (iso) => (iso ? new Date(new Date(iso).getTime() - 3 * 3600 * 1000).toISOString().slice(0, 10) : "");
 // valor para <input type="datetime-local"> (hora de Argentina) a partir de una fecha ISO
 export function paraInputFecha(iso) {
   if (!iso) return "";

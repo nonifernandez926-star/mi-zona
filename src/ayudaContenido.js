@@ -126,7 +126,7 @@ export const ARTICULOS = [
     cuerpo: [
       { pasos: ["Andá a Ajustes → Mi cuenta y tocá “Eliminar mi cuenta”.", "Escribí ELIMINAR y confirmá que sos vos: con tu contraseña o volviendo a elegir tu cuenta de Google.", "Si tenés un negocio, tenés que confirmar que también se elimina."] },
       "Se borran tu cuenta, tu agenda, tus notificaciones, tus consultas a Soporte y las reseñas que escribiste. No se puede deshacer, y la suscripción pagada de un negocio no se reembolsa.",
-      "Tus chats con los asistentes están en Mi Asistente y no se borran desde acá. Si querés una copia de tus datos antes, descargala desde Ajustes → Privacidad.",
+      "Tus chats con los asistentes están en Mi Asistente: al eliminar tu cuenta se los pedimos borrar y tus fotos también se borran. Si querés una copia de tus datos antes, descargala desde Ajustes → Privacidad.",
     ],
     relacionados: ["descargar-datos"],
   },
@@ -175,7 +175,7 @@ export const ARTICULOS = [
     claves: "oficio oficios servicios electricista plomero ficha rubros whatsapp disponible ocupado mis fichas",
     cuerpo: [
       "Si hacés un trabajo (electricista, plomero, jardinero, fletes...), podés tener una ficha de oficios en Mi Zona. Es una sola ficha por persona y podés elegir varios rubros: aparecés en la búsqueda de cada uno.",
-      { pasos: ["Tocá el botón + y elegí «Ofrecer mis servicios» (o entrá desde Oficios y servicios).", "Elegí tus rubros, contá qué hacés y elegí tu localidad. El resto es opcional: dirección, WhatsApp, redes, fotos, horarios y precio orientativo.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
+      { pasos: ["Tocá el botón + y elegí «Ofrecer mis servicios» (o entrá desde la pestaña Oficios del Inicio).", "Elegí tus rubros, contá qué hacés y elegí tu localidad. El resto es opcional: dirección, WhatsApp, redes, fotos, horarios y precio orientativo.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
       "Desde Ajustes → Mi cuenta → Mis fichas podés marcar «Disponible hoy» u «Ocupado» con un toque, editar tu ficha, pausarla (deja de verse sin borrar nada) o eliminarla.",
       { nota: "«Disponible hoy» se apaga solo a medianoche. Mi Zona no verifica ni certifica a quienes publican sus servicios." },
     ],
@@ -185,7 +185,7 @@ export const ARTICULOS = [
     id: "oficios-buscar", cat: "empezar", titulo: "Buscar un oficio o servicio",
     claves: "buscar oficio servicio electricista plomero whatsapp contactar rubro zona",
     cuerpo: [
-      "En el Inicio tocá «Oficios y servicios». Elegí un rubro, escribí lo que necesitás y ajustá la zona (tu localidad, tu departamento, tu provincia o todo el país).",
+      "En el Inicio elegí la pestaña «Oficios». Ves a los profesionales de la zona que tenés elegida arriba (con los recomendados primero); filtrá por rubro o escribí lo que necesitás. Si no hay nadie, tocá «Ver toda la provincia».",
       { pasos: ["Abrí la ficha para ver qué hace, dónde trabaja, horarios y precio orientativo.", "Si tiene botón de WhatsApp, tocalo: se abre el chat con un mensaje que podés cambiar antes de enviarlo.", "Pedí presupuesto y referencias antes de contratar."] },
       { nota: "Mi Zona no envía mensajes por vos: solo abre WhatsApp con el texto para que lo revises." },
     ],
@@ -196,7 +196,7 @@ export const ARTICULOS = [
     claves: "alquiler alquileres alquilar casa departamento salon sillas mesas pelotero herramientas articulos disponible ocupado ya no lo tengo mis fichas",
     cuerpo: [
       "Si alquilás viviendas, salones, sillas, mesas, peloteros, herramientas u otras cosas, armá una ficha de alquiler con tus artículos. Podés tener hasta 5 fichas (por ejemplo, una de eventos y otra de herramientas).",
-      { pasos: ["Tocá el botón + y elegí «Ofrecer en alquiler» (o entrá desde Alquileres en el Inicio).", "Elegí la categoría y qué alquilás, contá cómo trabajás y elegí tu localidad. Dirección, WhatsApp, redes, fotos y condiciones son opcionales.", "Cargá al menos un artículo: nombre, precio (por hora, día, semana, mes o «Consultar precio») y, si querés, una foto.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
+      { pasos: ["Tocá el botón + y elegí «Ofrecer en alquiler» (o entrá desde la pestaña Alquileres del Inicio).", "Elegí la categoría y qué alquilás, contá cómo trabajás y elegí tu localidad. Dirección, WhatsApp, redes, fotos y condiciones son opcionales.", "Cargá al menos un artículo: nombre, precio (por hora, día, semana, mes o «Consultar precio») y, si querés, una foto.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
       "Desde Ajustes → Mi cuenta → Mis fichas → Artículos cambiás el estado de cada uno con un toque: Disponible, Ocupado o Ya no lo tengo (este último lo oculta al público). También podés agregar, editar o quitar artículos sin tocar el resto de la ficha, y pausar o eliminar la ficha entera.",
       { nota: "Si pasan más de 30 días sin confirmar un artículo, se muestra como «Sin confirmar» para no prometer lo que quizá ya no está. Con «Todo sigue igual» lo renovás de un toque. Mi Zona no maneja pagos ni reservas de alquileres." },
     ],
@@ -206,7 +206,7 @@ export const ARTICULOS = [
     id: "alquileres-buscar", cat: "empezar", titulo: "Buscar un alquiler",
     claves: "buscar alquiler alquileres casa departamento habitacion salon quincho sillas mesas pelotero herramientas estafa",
     cuerpo: [
-      "En el Inicio tocá «Alquileres». Elegí una categoría (viviendas y espacios, cumpleaños y eventos, herramientas y equipos u otros), afiná por tipo y ajustá la zona. En viviendas también podés filtrar por dormitorios y amoblado.",
+      "En el Inicio elegí la pestaña «Alquileres». Se muestra la zona que tenés elegida arriba. Elegí una categoría (viviendas y espacios, cumpleaños y eventos, herramientas y equipos u otros), afiná por tipo y ajustá la zona. En viviendas también podés filtrar por dormitorios y amoblado.",
       { pasos: ["Abrí la ficha para ver sus artículos, precios, condiciones y qué está disponible.", "Fijate cuánto hace que se actualizó: lo «Sin confirmar» conviene preguntarlo antes.", "Si tiene botón de WhatsApp, tocalo: se abre el chat con un mensaje que podés cambiar antes de enviarlo."] },
       { nota: "No pagues por adelantado sin ver el lugar o a la persona. Mi Zona no maneja pagos ni reservas: el acuerdo es entre ustedes." },
     ],
@@ -214,11 +214,13 @@ export const ARTICULOS = [
   },
   {
     id: "buscador-unico", cat: "empezar", titulo: "Buscar en todo Mi Zona",
-    claves: "buscar buscador negocios oficios alquileres sugerencias recientes filtros ampliar zona",
+    claves: "buscar buscador negocios oficios alquileres sugerencias recientes filtros ampliar zona ia inteligencia artificial frase lenguaje natural",
     cuerpo: [
       "Con un solo buscador encontrás negocios, oficios y alquileres. Los resultados aparecen separados por tipo.",
-      { pasos: ["En Inicio tocá «Buscar en negocios, oficios y alquileres» o escribí en la barra y apretá buscar.", "Elegí qué ver (Todo, Negocios, Oficios o Alquileres) y, si querés, una categoría y la zona.", "Si no hay resultados, tocá «Ampliar la búsqueda» para sumar localidades cercanas."] },
+      { pasos: ["En Inicio, sin resultados en una pestaña, tocá «Buscar en todo Mi Zona», o usá el botón de la lupa para el asistente.", "Elegí qué ver (Todo, Negocios, Oficios o Alquileres) y, si querés, una categoría y la zona.", "Si no hay resultados, tocá «Ampliar la búsqueda» para sumar localidades cercanas."] },
+      "Si escribís una frase («necesito alguien que me corte el pasto») o la búsqueda común no encuentra nada, la ayuda con IA puede interpretar lo que pedís y buscar por vos. Antes de usarla por primera vez te contamos qué se envía y podés decir que no.",
       { nota: "Las búsquedas recientes quedan solo en tu celular. Podés borrarlas con «Borrar»." },
+      { nota: "A la IA solo viaja el texto que escribiste en el buscador, sin tu nombre ni datos de tu cuenta. No publica nada ni envía mensajes, y lo que ves son siempre fichas reales de Mi Zona. Si preferís no usarla, tocá «Dejar de usar la ayuda con IA»: el buscador común sigue igual." },
     ],
     relacionados: ["favoritos-fichas"],
   },
@@ -233,14 +235,27 @@ export const ARTICULOS = [
   },
   {
     id: "comunidad", cat: "empezar", titulo: "Comunidad: publicar y ver lo de tu zona",
-    claves: "comunidad avisos seguridad perdido encontrado ayuda regalo deporte evento feria publicar gratis vence departamento",
+    claves: "comunidad avisos seguridad perdido encontrado ayuda regalo deporte evento feria sorteo rifa publicar gratis vence departamento",
     cuerpo: [
-      "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes y eventos. Publicar es gratis.",
+      "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes, eventos y sorteos. Publicar es gratis.",
       { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», o entrá a Comunidad desde Inicio.", "Elegí el tipo, completá el formulario corto y leé el aviso antes de publicar.", "Tu publicación la ven las personas de tu departamento y vence sola: los avisos duran pocas horas."] },
       { nota: "Los avisos de seguridad se muestran como «No verificado». Si fue un delito, denunciálo a la policía. No subas fotos de personas ni nombres." },
       "Podés editar, marcar como resuelta o eliminar lo que publicaste desde Mis fichas.",
     ],
     relacionados: ["buscador-unico"],
+  },
+  {
+    id: "sorteos-rifas", cat: "empezar", titulo: "Sorteos y rifas: cómo publicar uno y cómo participar",
+    claves: "sorteo rifa números premios quiniela lotería beneficio organizar participar pagar whatsapp resultado cancelar",
+    cuerpo: [
+      "Un sorteo o una rifa es una publicación más de Comunidad. Mi Zona solo muestra la ficha: no vende números, no cobra, no reserva y no organiza el sorteo.",
+      { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», y después «Sorteo o rifa».", "Completá quién organiza, el motivo, los premios, la fecha (la hora es opcional) y cómo se define el ganador.", "Dejá tu WhatsApp: las personas interesadas te escriben por ahí y arreglan todo con vos por privado."] },
+      "Si querés participar, abrí la ficha y tocá «Escribirle por WhatsApp». Lo que acuerden con el organizador, incluido el pago, pasa fuera de Mi Zona.",
+      { nota: "Mi Zona no organiza ni cobra sorteos: solo muestra lo que publica cada persona. Pagá únicamente a quien conocés y no pagues por adelantado si algo no te cierra." },
+      "No se aceptan premios en dinero y la ficha no puede llevar precios ni datos de cuentas. Si ves algo raro, tocá «Denunciar o bloquear».",
+      "Cuando llega el día, quien organiza puede escribir los números ganadores en la ficha. También puede editar, cancelar o eliminar su sorteo. La ficha se oculta sola unos días después de la fecha.",
+    ],
+    relacionados: ["comunidad"],
   },
   {
     id: "denunciar", cat: "privacidad", titulo: "Denunciar o bloquear a alguien",

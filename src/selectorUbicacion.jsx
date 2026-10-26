@@ -63,7 +63,7 @@ function ubicacionActual() {
 }
 
 const CtrlBtn = ({ onClick, children, label }) => (
-  <button type="button" onClick={onClick} aria-label={label} className="flex items-center justify-center" style={{ width: 40, height: 40, background: "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}>
+  <button type="button" onClick={onClick} aria-label={label} className="flex items-center justify-center" style={{ width: 44, height: 44, background: "#fff", boxShadow: "0 3px 12px rgba(11,20,55,0.22)" }}>
     {children}
   </button>
 );

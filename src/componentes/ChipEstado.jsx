@@ -13,6 +13,8 @@ const ESTADOS = {
   cancelado: { texto: "Cancelado", fg: "#9A3B34", bg: "#FDF1EF", punto: "#C1443A" },
   reprogramado: { texto: "Reprogramado", fg: "#8A5B12", bg: "#FFF3D6", punto: "#E08A12" },
   resuelta: { texto: "Resuelta", fg: "#1B3FB8", bg: "#EDF1FF", punto: "#2350F5" },
+  sorteado: { texto: "Ya se sorteó", fg: "#4A5372", bg: "#EEF1F8", punto: "#8D95B0" },
+  conResultado: { texto: "Resultado publicado", fg: "#1E6B44", bg: "#E4F3EA", punto: "#2C9A5F" },
   noVerificado: { texto: "No verificado", fg: "#8A5B12", bg: "#FFF3D6", punto: "#E08A12" },
 };
 

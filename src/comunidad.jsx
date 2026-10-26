@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Megaphone, ShieldAlert, PawPrint, HeartHandshake, Gift, Dumbbell, CalendarDays, MapPin, MessageCircle, Plus, Pencil, Trash2, Check, X, ChevronDown, Share2, Users, Clock, Info, RotateCcw, ExternalLink, History } from "lucide-react";
+import { Megaphone, ShieldAlert, PawPrint, HeartHandshake, Gift, Dumbbell, CalendarDays, MapPin, MessageCircle, Plus, Pencil, Trash2, Check, X, ChevronDown, Share2, Users, Clock, Info, RotateCcw, ExternalLink, History, Ticket, Trophy } from "lucide-react";
 import { comunidadApi } from "./api.js";
 import { localidadesDeProvincia, textoLocalidad } from "./localidades.js";
 import {
   TIPOS, TIPO, AVISO_SUBTIPOS, GRAVEDADES, AVISO_HORAS, SEGURIDAD_SUBTIPOS, SEGURIDAD_DIAS, PERDIDO_MODOS, PERDIDO_OBJETOS, ESPECIES, TAMANOS, DIAS_15,
-  AYUDA_MODOS, AYUDA_CATEGORIAS, AYUDA_DIAS, REGALO_CATEGORIAS, DEPORTE_ACTIVIDADES, EVENTO_CATEGORIAS, VISTAS, etiqueta, hace, venceEn, fechaLinda, paraInputFecha,
+  AYUDA_MODOS, AYUDA_CATEGORIAS, AYUDA_DIAS, REGALO_CATEGORIAS, DEPORTE_ACTIVIDADES, EVENTO_CATEGORIAS, VISTAS, SORTEO_MOTIVOS, SORTEO_DEFINICIONES, MAX_PREMIOS, AVISO_SORTEO, etiqueta, hace, venceEn, fechaLinda, fechaSolo, hoyAR, diaAR, paraInputFecha,
 } from "./comunidad.js";
 import { Pagina, Hoja, Chip, Campo, Bloque, Fotos, HojaWhatsapp, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
@@ -20,8 +20,8 @@ import { uploadImage, comprimirFoto } from "./subirFoto.js";
 // Comunidad (Fase 7): fichas breves de los vecinos. Publicar es GRATIS. Cada publicación la ven las personas del mismo departamento
 // (con filtro por localidad). Todas vencen. La sección se muestra solo si el servidor la tiene habilitada (hasta completar la Fase 8).
 
-const ICONO = { aviso: Megaphone, seguridad: ShieldAlert, perdido: PawPrint, ayuda: HeartHandshake, regalo: Gift, deporte: Dumbbell, evento: CalendarDays };
-const TONO = { aviso: "naranja", seguridad: "rojo", perdido: "agua", ayuda: "verde", regalo: "violeta", deporte: "azul", evento: "rojo" };
+const ICONO = { aviso: Megaphone, seguridad: ShieldAlert, perdido: PawPrint, ayuda: HeartHandshake, regalo: Gift, deporte: Dumbbell, evento: CalendarDays, sorteo: Ticket };
+const TONO = { aviso: "naranja", seguridad: "rojo", perdido: "agua", ayuda: "verde", regalo: "violeta", deporte: "azul", evento: "rojo", sorteo: "violeta" };
 const CACHE_KEY = "miZonaComunidadCache";
 const leerCache = (k) => { try { return (JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"))[k] || null; } catch { return null; } };
 const guardarCache = (k, v) => { try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"); const ks = Object.keys(c); if (ks.length >= 8 && !c[k]) delete c[ks[0]]; c[k] = v; localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* sin almacenamiento */ } };
@@ -33,8 +33,14 @@ export function estadoVisible(p) {
   if (p.estado === "resuelta") return "resuelta";
   if (p.estadoEvento === "cancelado") return "cancelado";
   if (p.estadoEvento === "reprogramado") return "reprogramado";
+  if (p.tipo === "sorteo") { if (p.datos?.resultado) return "conResultado"; if (diaAR(p.inicio) < hoyAR()) return "sorteado"; }
   if (p.noVerificado) return "noVerificado";
   return undefined;
+}
+const fechaSorteo = (p) => (p.datos?.conHora ? fechaLinda(p.inicio) : fechaSolo(p.inicio));
+// Aviso fijo de los sorteos: Mi Zona solo muestra lo que publica cada persona
+function AvisoSorteo() {
+  return <p className="text-sm p-3 flex gap-2" style={{ ...avisoAmarillo, border: "1px solid #F2D79A" }}><Info size={18} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /><span>{AVISO_SORTEO}</span></p>;
 }
 // Lo más útil de un vistazo, según el tipo
 export function datoClave(p) {
@@ -46,6 +52,7 @@ export function datoClave(p) {
   if (p.tipo === "regalo") return etiqueta(d.categoria);
   if (p.tipo === "deporte") return `${etiqueta(d.actividad)} · ${fechaLinda(p.inicio)}`;
   if (p.tipo === "evento") return `${etiqueta(d.categoria)} · ${fechaLinda(p.inicio)}`;
+  if (p.tipo === "sorteo") return `${fechaSorteo(p)} · ${(d.premios || []).length} ${(d.premios || []).length === 1 ? "premio" : "premios"}`;
   return "";
 }
 const lugarCorto = (p) => [p.datos?.lugar || p.zona, p.localidad?.localidad].filter(Boolean).join(", ");
@@ -129,7 +136,7 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
 
   return (
     <Pagina titulo="Comunidad" onVolver={onVolver}>
-      <ComoFunciona pasos={["Acá los vecinos de tu departamento publican avisos, cosas perdidas, regalos, ayuda, deportes y eventos.", "Publicar es gratis. Cada publicación vence sola: los avisos duran pocas horas.", "Tocá una publicación para ver el detalle. Mantenela apretada para compartirla."]} />
+      <ComoFunciona pasos={["Acá los vecinos de tu departamento publican avisos, cosas perdidas, regalos, ayuda, deportes, eventos y sorteos.", "Publicar es gratis. Cada publicación vence sola: los avisos duran pocas horas.", "Tocá una publicación para ver el detalle. Mantenela apretada para compartirla."]} />
 
       <div className="flex gap-2 mt-3 overflow-x-auto" role="group" aria-label="Tipo de publicación" style={{ paddingBottom: 2 }}>
         <span style={{ flexShrink: 0 }}><Chip activo={tipo === ""} onClick={() => setTipo("")}>Todo</Chip></span>
@@ -146,6 +153,7 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
           {VISTAS.map(([id, texto]) => <span key={id} style={{ flexShrink: 0 }}><Chip activo={vista === id} onClick={() => setVista(id)}>{texto}</Chip></span>)}
         </div>
       )}
+      {tipo === "sorteo" && <div className="mt-3"><AvisoSorteo /></div>}
       {estado === "ok" && departamento && <p className="text-xs mt-2" style={{ color: "#6B7390", lineHeight: 1.4 }}>Lo que publican los vecinos de {departamento}.</p>}
       {sinConexion && <p role="status" className="text-sm mt-3 p-3" style={avisoAmarillo}>Sin conexión: te mostramos lo último que cargaste. Puede estar desactualizado.</p>}
 
@@ -253,18 +261,19 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
   const I = ICONO[p.tipo] || Megaphone;
   const activa = p.estado === "activa";
   const correr = async (accion) => { setTrabajando(true); setAviso(""); try { setP(await accion()); onCambio?.(); } catch (e) { setAviso(e.message || "No se pudo completar. Probá de nuevo."); } setTrabajando(false); };
-  const textoResolver = p.tipo === "regalo" ? "Ya lo regalé" : p.tipo === "perdido" ? "Ya apareció / resuelto" : p.tipo === "aviso" ? "Ya terminó" : "Marcar como resuelta";
+  const textoResolver = p.tipo === "sorteo" ? "Ya terminó (ocultar)" : p.tipo === "regalo" ? "Ya lo regalé" : p.tipo === "perdido" ? "Ya apareció / resuelto" : p.tipo === "aviso" ? "Ya terminó" : "Marcar como resuelta";
 
   return (
     <DetalleFicha titulo={p.titulo} subtitulo={`${TIPO[p.tipo]?.singular} · ${hace(p.creadaEn)}`} icono={I} tono={TONO[p.tipo]} imagen={p.fotos?.[0]} estado={estadoVisible(p)} contexto="Comunidad" onVolver={onVolver}
       acciones={[{ icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha(textoDeCompartir(p))) || "") }, ...(esMia ? [] : [accionDenunciar(() => setDen(true))])]}
-      pie={!esMia && activa && p.conContacto ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Contactar por WhatsApp</button> : undefined}>
+      pie={!esMia && activa && p.conContacto && p.estadoEvento !== "cancelado" ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> {p.tipo === "sorteo" ? "Escribirle por WhatsApp" : "Contactar por WhatsApp"}</button> : undefined}>
       {aviso && <p role="status" className="text-sm p-3" style={avisoAmarillo}>{aviso}</p>}
       {p.noVerificado && (
         <p className="text-sm p-3 flex gap-2" style={{ ...avisoAmarillo, border: "1px solid #F2D79A" }}><ShieldAlert size={18} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /><span><b>No verificado.</b> Lo cuenta un vecino y Mi Zona no lo comprobó. Si fue un delito, denunciálo a la policía.</span></p>
       )}
       {!activa && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#EEF1F8", color: "#2B3768" }}>{p.estado === "resuelta" ? "Esta publicación está resuelta." : "Esta publicación ya venció."}</p>}
-      {p.estadoEvento === "cancelado" && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FDF1EF", color: "#9A3B34", fontWeight: 600 }}>Este evento fue cancelado.</p>}
+      {p.estadoEvento === "cancelado" && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FDF1EF", color: "#9A3B34", fontWeight: 600 }}>{p.tipo === "sorteo" ? "Este sorteo fue cancelado." : "Este evento fue cancelado."}</p>}
+      {p.tipo === "sorteo" && <AvisoSorteo />}
       {p.estadoEvento === "reprogramado" && <p role="status" className="text-sm p-3" style={avisoAmarillo}>Este evento fue reprogramado: fijate la fecha nueva.</p>}
 
       <SeccionDetalle titulo="Detalles" icono={Info}>
@@ -276,8 +285,33 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
         {p.tipo === "regalo" && <FilaDato icono={Gift} etiqueta="Qué regala" valor={etiqueta(d.categoria)} />}
         {p.tipo === "deporte" && <><FilaDato icono={Dumbbell} etiqueta="Actividad" valor={etiqueta(d.actividad)} /><FilaDato icono={CalendarDays} etiqueta="Cuándo" valor={fechaLinda(p.inicio)} /></>}
         {p.tipo === "evento" && <><FilaDato icono={CalendarDays} etiqueta="Empieza" valor={fechaLinda(p.inicio)} /><FilaDato icono={CalendarDays} etiqueta="Termina" valor={fechaLinda(p.vence)} /><FilaDato icono={Info} etiqueta="Categoría" valor={etiqueta(d.categoria)} />{d.organizador && <FilaDato icono={Users} etiqueta="Organiza" valor={d.organizador} />}<FilaDato icono={Info} etiqueta="Entrada" valor={d.gratis ? "Gratis" : d.precio} /></>}
+        {p.tipo === "sorteo" && <>
+          <FilaDato icono={Users} etiqueta="Organiza" valor={d.organizador} />
+          <FilaDato icono={CalendarDays} etiqueta="Fecha" valor={fechaSorteo(p)} />
+          <FilaDato icono={Info} etiqueta="Motivo" valor={d.motivo === "beneficio" ? `A beneficio${d.motivoDetalle ? `: ${d.motivoDetalle}` : ""}` : d.motivoDetalle || "Otro motivo"} />
+          <FilaDato icono={Info} etiqueta="Cómo se define" valor={`${etiqueta(d.definicion)}${d.definicionDetalle ? ` · ${d.definicionDetalle}` : ""}`} />
+          {d.numeros && <FilaDato icono={Ticket} etiqueta="Cantidad de números" valor={String(d.numeros)} />}
+        </>}
         {activa && <FilaDato icono={Clock} etiqueta="Vencimiento" valor={venceEn(p.vence)} />}
       </SeccionDetalle>
+      {p.tipo === "sorteo" && (
+        <SeccionDetalle titulo={(d.premios || []).length === 1 ? "Premio" : "Premios"} icono={Gift}>
+          <ol style={{ paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            {(d.premios || []).map((t, i) => (
+              <li key={i} className="flex gap-3 items-start">
+                <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: 14, background: "#F3EEFD", color: "#5B34B0", fontWeight: 800, fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ overflowWrap: "anywhere", lineHeight: 1.45, paddingTop: 3 }}>{t}</span>
+              </li>
+            ))}
+          </ol>
+        </SeccionDetalle>
+      )}
+      {p.tipo === "sorteo" && d.resultado && (
+        <SeccionDetalle titulo="Resultado" icono={Trophy}>
+          <p style={{ whiteSpace: "pre-line", lineHeight: 1.55, overflowWrap: "anywhere" }}>{d.resultado}</p>
+          <p className="text-xs mt-2" style={{ color: "#4A5372" }}>Lo escribió quien organiza. Mi Zona no sortea ni verifica resultados.</p>
+        </SeccionDetalle>
+      )}
       <SeccionDetalle titulo="Descripción" icono={Info}><p style={{ whiteSpace: "pre-line", lineHeight: 1.55 }}>{p.desc}</p></SeccionDetalle>
       {p.fotos?.length > 0 && <SeccionDetalle titulo={p.fotos.length === 1 ? "Foto" : "Fotos"} icono={Info}><Fotos fotos={p.fotos} alt="Foto de la publicación" /></SeccionDetalle>}
       {d.enlace && (
@@ -298,6 +332,7 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
               : activa && <button type="button" disabled={trabajando} onClick={() => correr(() => comunidadApi.resuelta(p.id, true))} style={botonSecundario}><Check size={16} aria-hidden="true" /> {textoResolver}</button>}
             <button type="button" onClick={() => setDialogo("eliminar")} style={{ ...botonSecundario, color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar</button>
           </div>
+          {p.tipo === "sorteo" && <PanelSorteo p={p} trabajando={trabajando} correr={correr} />}
           {p.tipo === "evento" && (
             <div className="mt-3">
               <p className="text-sm font-bold mb-1.5" style={{ color: "#0B1437" }}>Estado del evento</p>
@@ -319,6 +354,31 @@ export function DetalleComunidad({ id, onVolver, onEditar, onCambio }) {
   );
 }
 
+// Lo que puede hacer quien organiza: publicar los números ganadores (solo texto) cuando llega la fecha, y cancelar o reactivar su sorteo
+function PanelSorteo({ p, trabajando, correr }) {
+  const [texto, setTexto] = useState(p.datos?.resultado || "");
+  const cancelado = p.estadoEvento === "cancelado";
+  const llego = diaAR(p.inicio) <= hoyAR();
+  return (
+    <div className="mt-3">
+      {cancelado
+        ? <button type="button" disabled={trabajando} onClick={() => correr(() => comunidadApi.sorteo(p.id, "reactivar"))} style={botonSecundario}><RotateCcw size={16} aria-hidden="true" /> Reactivar el sorteo</button>
+        : (
+          <>
+            <Campo id="s-res" etiqueta="Resultado (números ganadores)" contador={`${texto.length}/300`}
+              ayuda={llego ? "Escribilo vos, con tus palabras. Por ejemplo: «Salió el 047 en la Quiniela nocturna»." : "Vas a poder publicarlo desde el día del sorteo."}>
+              <textarea id="s-res" rows={3} maxLength={300} value={texto} disabled={!llego || trabajando} onChange={(e) => setTexto(e.target.value)} style={{ ...caja, resize: "none", lineHeight: 1.5, opacity: llego ? 1 : 0.6 }} />
+            </Campo>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!llego || trabajando || texto.trim() === (p.datos?.resultado || "")} onClick={() => correr(() => comunidadApi.sorteo(p.id, "resultado", texto))} style={{ ...botonPrincipal, flex: "0 1 auto", padding: "0 18px" }}><Trophy size={16} aria-hidden="true" /> {p.datos?.resultado && !texto.trim() ? "Borrar resultado" : "Publicar resultado"}</button>
+              <button type="button" disabled={trabajando} onClick={() => correr(() => comunidadApi.sorteo(p.id, "cancelar"))} style={{ ...botonSecundario, color: "#9A3B34" }}><X size={16} aria-hidden="true" /> Cancelar sorteo</button>
+            </div>
+          </>
+        )}
+    </div>
+  );
+}
+
 // ---------- formulario ----------
 
 function Opciones({ valor, onChange, opciones, etiquetaGrupo }) {
@@ -337,6 +397,7 @@ const INICIAL = {
   titulo: "", desc: "", zona: "", fotos: [], whatsapp: "", mostrarWhatsapp: false,
   subtipo: "", gravedad: "informativo", horas: 6, dias: 7, modo: "", objeto: "", especie: "", tamano: "", color: "", senas: "", categoria: "", actividad: "",
   inicio: "", fin: "", lugar: "", organizador: "", gratis: true, precio: "", enlace: "",
+  motivo: "", motivoDetalle: "", definicion: "", definicionDetalle: "", premios: [""], numeros: "", fecha: "", hora: "",
 };
 // Cuánto dura lo que se va a publicar (para la advertencia)
 function textoDuracion(tipo, f) {
@@ -344,6 +405,7 @@ function textoDuracion(tipo, f) {
   if (tipo === "seguridad") return `${f.dias} ${f.dias === 1 ? "día" : "días"}`;
   if (tipo === "deporte") return "hasta unas horas después de la actividad";
   if (tipo === "evento") return "hasta que termine el evento";
+  if (tipo === "sorteo") return "hasta unos días después de la fecha del sorteo";
   return `${f.dias} días`;
 }
 
@@ -351,9 +413,11 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
   const editando = !!inicial;
   const [tipo, setTipo] = useState(inicial?.tipo || tipoInicial || null);
   const [f, setF] = useState(() => {
-    if (!inicial) return { ...INICIAL, titulo: tituloInicial.slice(0, 80), modo: tipoInicial === "ayuda" && tituloInicial ? "necesito" : "", dias: tipoInicial === "ayuda" ? 7 : 15 };
+    if (!inicial) return { ...INICIAL, mostrarWhatsapp: tipoInicial === "sorteo", titulo: tituloInicial.slice(0, 80), modo: tipoInicial === "ayuda" && tituloInicial ? "necesito" : "", dias: tipoInicial === "ayuda" ? 7 : 15 };
     const d = inicial.datos || {};
-    return { ...INICIAL, ...d, titulo: inicial.titulo, desc: inicial.desc, zona: inicial.zona || "", fotos: inicial.fotos || [], whatsapp: inicial.whatsapp || "", mostrarWhatsapp: !!inicial.mostrarWhatsapp, inicio: paraInputFecha(inicial.inicio), fin: inicial.tipo === "evento" ? paraInputFecha(inicial.vence) : "", gratis: d.gratis !== false };
+    const sorteo = inicial.tipo === "sorteo";
+    return { ...INICIAL, ...d, titulo: inicial.titulo, desc: inicial.desc, zona: inicial.zona || "", fotos: inicial.fotos || [], whatsapp: inicial.whatsapp || "", mostrarWhatsapp: !!inicial.mostrarWhatsapp, inicio: paraInputFecha(inicial.inicio), fin: inicial.tipo === "evento" ? paraInputFecha(inicial.vence) : "", gratis: d.gratis !== false,
+      ...(sorteo ? { premios: d.premios?.length ? d.premios : [""], numeros: d.numeros ? String(d.numeros) : "", fecha: paraInputFecha(inicial.inicio).slice(0, 10), hora: d.conHora ? paraInputFecha(inicial.inicio).slice(11, 16) : "", mostrarWhatsapp: true } : {}) };
   });
   const [loc, setLoc] = useState(() => inicial?.localidadCompleta || usuario?.localidad || null);
   const [hojaLoc, setHojaLoc] = useState(false);
@@ -379,7 +443,10 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
     setSubiendo(false);
   };
 
-  const datos = () => ({ ...f, tipo, localidad: loc, whatsapp: cfg.contacto && (f.mostrarWhatsapp || f.whatsapp) ? f.whatsapp : "", renovar: editando && renovar });
+  const datos = () => ({
+    ...f, tipo, localidad: loc, whatsapp: cfg.contacto && (f.mostrarWhatsapp || f.whatsapp) ? f.whatsapp : "", renovar: editando && renovar,
+    ...(tipo === "sorteo" ? { mostrarWhatsapp: true, premios: f.premios.map((x) => x.trim()).filter(Boolean), numeros: String(f.numeros).trim() === "" ? undefined : Number(f.numeros) } : {}),
+  });
   const guardar = async () => {
     setEstado("guardando"); setDialogo(false);
     try {
@@ -391,6 +458,14 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
     if (!f.titulo.trim() || f.titulo.trim().length < 4) return setEstado({ error: "Escribí un título de al menos 4 letras." });
     if (f.desc.trim().length < 10) return setEstado({ error: "Contá los detalles en al menos 10 letras." });
     if (!loc) return setEstado({ error: "Elegí tu localidad en tu perfil." });
+    if (tipo === "sorteo") {
+      if (f.organizador.trim().length < 2) return setEstado({ error: "Escribí quién organiza el sorteo." });
+      if (!f.premios.some((x) => x.trim())) return setEstado({ error: "Escribí al menos un premio." });
+      if (!f.motivo) return setEstado({ error: "Elegí si es a beneficio de algo o por otro motivo." });
+      if (!f.fecha) return setEstado({ error: "Elegí la fecha del sorteo." });
+      if (!f.definicion) return setEstado({ error: "Elegí cómo se define el ganador." });
+      if (!f.whatsapp.trim()) return setEstado({ error: "Escribí tu WhatsApp: así te escriben las personas interesadas." });
+    }
     setEstado("listo");
     if (editando) guardar(); else setDialogo(true);
   };
@@ -420,7 +495,7 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
     titulo: "¿Publicar en Comunidad?",
     queHace: `Publica «${f.titulo.trim() || "tu publicación"}» en Comunidad.`,
     paraQue: "Sirve para que tus vecinos lo vean y puedan ayudarte, ir o contactarte.",
-    queSucedera: `Lo van a ver las personas del departamento ${loc?.departamento || "de tu zona"}, durante ${textoDuracion(tipo, f)}; después vence solo. ${cfg.fotos && f.fotos.length ? "Tus fotos serán públicas para ellos. " : ""}${cfg.contacto && f.mostrarWhatsapp ? "Quien toque el botón de WhatsApp verá tu número. " : ""}No se muestra tu correo. Publicar es gratis y podés editarla o eliminarla cuando quieras.`,
+    queSucedera: `${tipo === "sorteo" ? "Mi Zona no cobra ni administra tu sorteo: solo muestra la ficha. Lo que arreglen con cada persona, incluido el pago, pasa fuera de la app. " : ""}Lo van a ver las personas del departamento ${loc?.departamento || "de tu zona"}, durante ${textoDuracion(tipo, f)}; después vence solo. ${cfg.fotos && f.fotos.length ? "Tus fotos serán públicas para ellos. " : ""}${cfg.contacto && f.mostrarWhatsapp ? "Quien toque el botón de WhatsApp verá tu número. " : ""}No se muestra tu correo. Publicar es gratis y podés editarla o eliminarla cuando quieras.`,
   };
   return (
     <Pagina titulo={editando ? "Editar publicación" : TIPO[tipo].singular} onVolver={onCancelar}
@@ -429,9 +504,15 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
       {tipo === "seguridad" && (
         <p className="text-sm p-3 mb-3 flex gap-2" style={{ ...avisoAmarillo, border: "1px solid #F2D79A" }}><ShieldAlert size={18} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /><span>Se muestra como <b>«No verificado»</b>. No nombres ni acuses a nadie, no escribas teléfonos y no subas fotos de personas. <b>Si fue un delito, denunciálo a la policía.</b></span></p>
       )}
+      {tipo === "sorteo" && (
+        <div className="mb-3">
+          <AvisoSorteo />
+          <p className="text-sm mt-2" style={{ color: "#4A5372", lineHeight: 1.45 }}>Acá solo anunciás tu sorteo. <b>No se aceptan premios en dinero</b> y no pongas precios ni cuentas: quien se interese te escribe por WhatsApp y lo arreglan por privado.</p>
+        </div>
+      )}
       {tipo === "aviso" && <p className="text-sm p-3 mb-3" style={{ ...avisoAmarillo, border: "1px solid #F2D79A" }}>Usá palabras neutras, por ejemplo «Operativo de tránsito o control en la zona». Los avisos duran pocas horas.</p>}
 
-      <Bloque titulo="¿Qué publicás?">
+      <Bloque titulo={tipo === "sorteo" ? "Tu sorteo o rifa" : "¿Qué publicás?"}>
         {tipo === "aviso" && (<>
           <Campo id="c-sub" etiqueta="Tipo de aviso"><Lista id="c-sub" valor={f.subtipo} onChange={(v) => set("subtipo", v)} opciones={AVISO_SUBTIPOS} /></Campo>
           <Campo id="c-grav" etiqueta="Importancia" ayuda="Usá «urgente» solo si hace falta."><Opciones valor={f.gravedad} onChange={(v) => set("gravedad", v)} opciones={GRAVEDADES} etiquetaGrupo="Importancia" /></Campo>
@@ -467,14 +548,45 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
           {!f.gratis && <Campo id="c-pre" etiqueta="Precio"><input id="c-pre" value={f.precio} maxLength={40} onChange={(e) => set("precio", e.target.value)} placeholder="$3000" style={caja} /></Campo>}
           <Campo id="c-enl" etiqueta="Enlace con más información (opcional)" ayuda="Tiene que empezar con https://"><input id="c-enl" type="url" value={f.enlace} maxLength={300} onChange={(e) => set("enlace", e.target.value)} style={caja} /></Campo>
         </>)}
-        <Campo id="c-tit" etiqueta="Título" contador={`${f.titulo.length}/80`}><input id="c-tit" value={f.titulo} maxLength={80} onChange={(e) => set("titulo", e.target.value)} style={caja} /></Campo>
+        <Campo id="c-tit" etiqueta="Título" contador={`${f.titulo.length}/80`}><input id="c-tit" value={f.titulo} maxLength={80} placeholder={tipo === "sorteo" ? "Ej: Rifa a beneficio del club" : undefined} onChange={(e) => set("titulo", e.target.value)} style={caja} /></Campo>
         <Campo id="c-desc" etiqueta="Detalles" contador={`${f.desc.length}/500`}><textarea id="c-desc" value={f.desc} maxLength={500} rows={5} onChange={(e) => set("desc", e.target.value)} style={{ ...caja, resize: "none", lineHeight: 1.5 }} /></Campo>
       </Bloque>
+
+      {tipo === "sorteo" && (<>
+        <Bloque titulo="Quién organiza y por qué">
+          <Campo id="s-org" etiqueta="Quién organiza" contador={`${f.organizador.length}/60`}><input id="s-org" value={f.organizador} maxLength={60} placeholder="Tu nombre o el de un club" onChange={(e) => set("organizador", e.target.value)} style={caja} /></Campo>
+          <Campo id="s-mot" etiqueta="Motivo"><Opciones valor={f.motivo} onChange={(v) => set("motivo", v)} opciones={SORTEO_MOTIVOS} etiquetaGrupo="Motivo del sorteo" /></Campo>
+          {f.motivo && <Campo id="s-motd" etiqueta={f.motivo === "beneficio" ? "¿A beneficio de quién o de qué? (opcional)" : "Contá el motivo (opcional)"} contador={`${f.motivoDetalle.length}/80`}><input id="s-motd" value={f.motivoDetalle} maxLength={80} onChange={(e) => set("motivoDetalle", e.target.value)} style={caja} /></Campo>}
+        </Bloque>
+
+        <Bloque titulo="Premios">
+          <p className="text-sm mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>Un premio por renglón. <b>Nada de dinero</b>: objetos, servicios o experiencias.</p>
+          {f.premios.map((t, i) => (
+            <div key={i} className="flex items-center gap-2 mb-2">
+              <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: 14, background: "#F3EEFD", color: "#5B34B0", fontWeight: 800, fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+              <input aria-label={`Premio ${i + 1}`} value={t} maxLength={80} placeholder={i === 0 ? "Ej: Una bicicleta rodado 26" : "Otro premio"} onChange={(e) => set("premios", f.premios.map((x, k) => (k === i ? e.target.value : x)))} style={{ ...caja, flex: 1, minWidth: 0 }} />
+              {f.premios.length > 1 && <button type="button" aria-label={`Quitar el premio ${i + 1}`} onClick={() => set("premios", f.premios.filter((_, k) => k !== i))} style={{ ...botonSecundario, width: 48, minHeight: 48, padding: 0, flexShrink: 0 }}><X size={18} aria-hidden="true" /></button>}
+            </div>
+          ))}
+          {f.premios.length < MAX_PREMIOS && <button type="button" onClick={() => set("premios", [...f.premios, ""])} style={botonSecundario}><Plus size={16} aria-hidden="true" /> Agregar otro premio</button>}
+          <div className="mt-4">
+            <Campo id="s-num" etiqueta="Cantidad de números (opcional)" ayuda="Solo informativo, por ejemplo «rifa de 100 números». Mi Zona no vende ni reserva números."><input id="s-num" inputMode="numeric" value={f.numeros} maxLength={5} onChange={(e) => set("numeros", e.target.value.replace(/\D/g, ""))} style={caja} /></Campo>
+          </div>
+        </Bloque>
+
+        <Bloque titulo="Fecha y cómo se define">
+          <Campo id="s-fec" etiqueta="Fecha del sorteo"><input id="s-fec" type="date" value={f.fecha} min={hoyAR()} onChange={(e) => set("fecha", e.target.value)} style={caja} /></Campo>
+          <Campo id="s-hor" etiqueta="Hora (opcional)"><input id="s-hor" type="time" value={f.hora} onChange={(e) => set("hora", e.target.value)} style={caja} /></Campo>
+          <Campo id="s-def" etiqueta="¿Cómo se define el ganador?"><Opciones valor={f.definicion} onChange={(v) => set("definicion", v)} opciones={SORTEO_DEFINICIONES} etiquetaGrupo="Cómo se define" /></Campo>
+          {f.definicion && <Campo id="s-defd" etiqueta="Detalle (opcional)" ayuda="Por ejemplo «Quiniela nocturna de Tucumán» o «en vivo por Instagram»." contador={`${f.definicionDetalle.length}/80`}><input id="s-defd" value={f.definicionDetalle} maxLength={80} onChange={(e) => set("definicionDetalle", e.target.value)} style={caja} /></Campo>}
+          <Campo id="s-lug" etiqueta="Lugar (opcional)" ayuda="Si se sortea o se entrega en algún lado. No hace falta la dirección exacta."><input id="s-lug" value={f.lugar} maxLength={80} onChange={(e) => set("lugar", e.target.value)} style={caja} /></Campo>
+        </Bloque>
+      </>)}
 
       <Bloque titulo="¿Dónde?">
         <p className="text-sm" style={{ color: "#4A5372", lineHeight: 1.45 }}>Se muestra a los vecinos de <b>{loc?.departamento || "tu departamento"}</b>. Localidad: <b>{loc?.localidad || "—"}</b>.</p>
         {(localidades || []).length > 1 && <button type="button" onClick={() => setHojaLoc(true)} className="mt-2" style={botonSecundario}><MapPin size={16} aria-hidden="true" /> Cambiar de localidad</button>}
-        {tipo !== "deporte" && tipo !== "evento" && <Campo id="c-zona" etiqueta="Zona o barrio (opcional)" ayuda="No escribas tu dirección exacta."><input id="c-zona" value={f.zona} maxLength={80} onChange={(e) => set("zona", e.target.value)} style={caja} /></Campo>}
+        {tipo !== "deporte" && tipo !== "evento" && tipo !== "sorteo" && <Campo id="c-zona" etiqueta="Zona o barrio (opcional)" ayuda="No escribas tu dirección exacta."><input id="c-zona" value={f.zona} maxLength={80} onChange={(e) => set("zona", e.target.value)} style={caja} /></Campo>}
       </Bloque>
 
       {cfg.fotos > 0 && (
@@ -483,7 +595,7 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
             {f.fotos.map((u) => (
               <div key={u} style={{ position: "relative" }}>
                 <img src={u} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 14 }} />
-                <button type="button" aria-label="Quitar foto" onClick={() => set("fotos", f.fotos.filter((x) => x !== u))} style={{ position: "absolute", top: -6, right: -6, width: 30, height: 30, borderRadius: 15, background: "#C1443A", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={15} color="#fff" /></button>
+                <button type="button" aria-label="Quitar foto" onClick={() => set("fotos", f.fotos.filter((x) => x !== u))} style={{ position: "absolute", top: -13, right: -13, width: 44, height: 44, background: "transparent", border: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: 15, background: "#C1443A", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={15} color="#fff" /></span></button>
               </div>
             ))}
           </div>
@@ -494,13 +606,13 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
       )}
 
       {cfg.contacto && (
-        <Bloque titulo="Contacto por WhatsApp (opcional)">
-          <Campo id="c-wa" etiqueta="Tu número" ayuda="Con código de país y de área, por ejemplo 5493815551234. Nunca aparece en la lista: solo lo ve quien toque el botón."><input id="c-wa" inputMode="numeric" value={f.whatsapp} maxLength={20} onChange={(e) => set("whatsapp", e.target.value)} style={caja} /></Campo>
-          <Chip activo={f.mostrarWhatsapp} onClick={() => set("mostrarWhatsapp", !f.mostrarWhatsapp)}>Mostrar el botón «Contactar por WhatsApp»</Chip>
+        <Bloque titulo={tipo === "sorteo" ? "Tu WhatsApp" : "Contacto por WhatsApp (opcional)"}>
+          <Campo id="c-wa" etiqueta="Tu número" ayuda={`Con código de país y de área, por ejemplo 5493815551234. Nunca aparece en la lista: solo lo ve quien toque el botón.${tipo === "sorteo" ? " Es obligatorio: así te escriben las personas interesadas." : ""}`}><input id="c-wa" inputMode="numeric" value={f.whatsapp} maxLength={20} onChange={(e) => set("whatsapp", e.target.value)} style={caja} /></Campo>
+          {tipo !== "sorteo" && <Chip activo={f.mostrarWhatsapp} onClick={() => set("mostrarWhatsapp", !f.mostrarWhatsapp)}>Mostrar el botón «Contactar por WhatsApp»</Chip>}
         </Bloque>
       )}
 
-      {!editando && tipo !== "deporte" && tipo !== "evento" && (
+      {!editando && tipo !== "deporte" && tipo !== "evento" && tipo !== "sorteo" && (
         <Bloque titulo="¿Cuánto dura?">
           {tipo === "aviso" && <Opciones valor={f.horas} onChange={(v) => set("horas", v)} opciones={AVISO_HORAS} etiquetaGrupo="Duración" />}
           {tipo === "seguridad" && <Opciones valor={f.dias} onChange={(v) => set("dias", v)} opciones={SEGURIDAD_DIAS} etiquetaGrupo="Duración" />}
@@ -510,7 +622,7 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
           <p className="text-sm mt-2" style={{ color: "#4A5372" }}>Después vence sola y deja de verse.</p>
         </Bloque>
       )}
-      {editando && tipo !== "deporte" && tipo !== "evento" && (
+      {editando && tipo !== "deporte" && tipo !== "evento" && tipo !== "sorteo" && (
         <Bloque titulo="Vencimiento">
           <p className="text-sm" style={{ color: "#4A5372", lineHeight: 1.45 }}>{venceEn(inicial.vence)}.</p>
           <Chip activo={renovar} onClick={() => setRenovar((v) => !v)}><Clock size={15} aria-hidden="true" /> Renovar desde hoy</Chip>
@@ -525,6 +637,7 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
         </Bloque>
       )}
 
+      {tipo === "sorteo" && <p className="text-sm px-1 mb-3" style={{ color: "#4A5372", lineHeight: 1.45 }}><Clock size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "-2px" }} /> La ficha se muestra hasta unos días después de la fecha del sorteo y después se oculta sola.</p>}
       {dialogo && <DialogoAdvertencia {...textosPublicar} textoAceptar="Sí, publicar" cargando={estado === "guardando"} onAceptar={guardar} onCancelar={() => setDialogo(false)} />}
       {hojaLoc && (
         <Hoja titulo="Localidad" onCerrar={() => setHojaLoc(false)}>

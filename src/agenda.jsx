@@ -107,7 +107,7 @@ function Sheet({ titulo, onClose, children, ancho = 480 }) {
         <span className="sm:hidden block mx-auto mt-2.5 shrink-0" style={{ width: 40, height: 4, borderRadius: 2, background: "#D3DAEA" }} />
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
           <h2 style={{ ...TITULO, fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em" }}>{titulo}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 12, background: "#F1F5F9" }}><X size={16} color="#475569" /></button>
+          <button onClick={onClose} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 12, background: "#F1F5F9" }}><X size={16} color="#475569" /></button>
         </div>
         <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>{children}</div>
       </div>
@@ -187,33 +187,33 @@ function FormularioItem({ inicial, perfil, onClose, onGuardado, alDevolver }) {
         ))}
       </div>
       <Etiqueta>Título</Etiqueta>
-      <input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={140} placeholder="Ej: Reunión con proveedor" className={inputCls} style={inputStyle} autoFocus />
+      <input aria-label="Ej: Reunión con proveedor" value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={140} placeholder="Ej: Reunión con proveedor" className={inputCls} style={inputStyle} autoFocus />
       <div className="grid grid-cols-2 gap-2.5">
-        <div><Etiqueta>Fecha{tipo === "tarea" ? " (opcional)" : ""}</Etiqueta><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls} style={inputStyle} /></div>
-        <div><Etiqueta>Hora (opcional)</Etiqueta><input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={inputCls} style={inputStyle} /></div>
+        <div><Etiqueta>Fecha{tipo === "tarea" ? " (opcional)" : ""}</Etiqueta><input aria-label="Fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls} style={inputStyle} /></div>
+        <div><Etiqueta>Hora (opcional)</Etiqueta><input aria-label="Hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={inputCls} style={inputStyle} /></div>
       </div>
       {tipo === "evento" && (
         <div className="grid grid-cols-2 gap-2.5">
           <div>
             <Etiqueta>Duración</Etiqueta>
-            <select value={dur} onChange={(e) => setDur(Number(e.target.value))} className={inputCls} style={inputStyle}>
+            <select aria-label="Duración" value={dur} onChange={(e) => setDur(Number(e.target.value))} className={inputCls} style={inputStyle}>
               {duraciones.map((m) => <option key={m} value={m}>{m < 60 ? `${m} min` : `${m / 60} h`}</option>)}
             </select>
           </div>
           <div>
             <Etiqueta>Tipo</Etiqueta>
-            <select value={cat} onChange={(e) => setCat(e.target.value)} className={inputCls} style={inputStyle}>
+            <select aria-label="Tipo de evento" value={cat} onChange={(e) => setCat(e.target.value)} className={inputCls} style={inputStyle}>
               {categorias.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
           </div>
         </div>
       )}
       <Etiqueta>Persona relacionada (opcional)</Etiqueta>
-      <input value={persona} onChange={(e) => setPersona(e.target.value)} maxLength={80} placeholder="Cliente, proveedor, empleado..." className={inputCls} style={inputStyle} />
+      <input aria-label="Cliente, proveedor, empleado..." value={persona} onChange={(e) => setPersona(e.target.value)} maxLength={80} placeholder="Cliente, proveedor, empleado..." className={inputCls} style={inputStyle} />
       <Etiqueta>Notas (opcional)</Etiqueta>
-      <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} maxLength={600} placeholder="Tema, qué llevar, qué revisar..." className={inputCls} style={inputStyle} />
+      <textarea aria-label="Tema, qué llevar, qué revisar..." value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} maxLength={600} placeholder="Tema, qué llevar, qué revisar..." className={inputCls} style={inputStyle} />
       <Etiqueta>Recordatorio</Etiqueta>
-      <select value={rec} onChange={(e) => setRec(e.target.value)} className={inputCls} style={inputStyle}>
+      <select aria-label="Recordatorio" value={rec} onChange={(e) => setRec(e.target.value)} className={inputCls} style={inputStyle}>
         {RECORDATORIOS.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
       </select>
       {error && <p className="text-xs mt-3" style={{ color: "#C1443A" }}>{error}</p>}
@@ -342,7 +342,7 @@ function MensajeModal({ onClose, onResultado }) {
   return (
     <Sheet titulo="Agregar desde un mensaje" onClose={onClose}>
       <p className="text-xs mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>Escribí como hablás y la IA arma el evento o la tarea. Siempre vas a poder revisarlo antes de guardar.</p>
-      <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={4} maxLength={2500} autoFocus className={inputCls} style={inputStyle}
+      <textarea aria-label="Ej: El jueves a las 16 tengo que reunirme con Martín para hablar del nuevo pedido." value={texto} onChange={(e) => setTexto(e.target.value)} rows={4} maxLength={2500} autoFocus className={inputCls} style={inputStyle}
         placeholder="Ej: El jueves a las 16 tengo que reunirme con Martín para hablar del nuevo pedido." />
       {error && <p className="text-xs mt-2" style={{ color: "#C1443A" }}>{error}</p>}
       <button onClick={enviar} disabled={cargando} className="w-full py-3 mt-4 text-sm font-semibold" style={{ borderRadius: 14, background: "linear-gradient(135deg,#7A4F9E,#5B3FD1)", color: "#fff", opacity: cargando ? 0.6 : 1 }}>
@@ -549,12 +549,12 @@ export function AgendaScreen({ negocioNombre, onBack }) {
             {aiOk ? <Sparkles size={16} /> : <Lock size={15} />} Organizar mi día
           </button>
           <div className="flex items-center gap-2 mt-2.5 bg-white pl-3.5 pr-1 py-1" style={{ borderRadius: 14, border: "1.5px solid #E4E6F5" }}>
-            <input
+            <input aria-label="¿Qué tengo pendiente esta semana?"
               value={pregunta} onChange={(e) => setPregunta(e.target.value)} maxLength={300}
               onKeyDown={(e) => e.key === "Enter" && (aiOk ? preguntar() : null)}
               placeholder="¿Qué tengo pendiente esta semana?" className="flex-1 min-w-0 outline-none text-sm py-2 bg-transparent" disabled={!aiOk}
             />
-            <button onClick={preguntar} disabled={!aiOk} aria-label="Preguntar" className="flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 11, background: "#7A4F9E", opacity: aiOk ? 1 : 0.4 }}><Send size={15} color="#fff" /></button>
+            <button onClick={preguntar} disabled={!aiOk} aria-label="Preguntar" className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 11, background: "#7A4F9E", opacity: aiOk ? 1 : 0.4 }}><Send size={15} color="#fff" /></button>
           </div>
           {!aiOk && perfil && <p className="text-[11px] mt-2" style={{ color: "#7A6FA8" }}>Las funciones con IA se habilitan cuando tu negocio tiene la suscripción activa.</p>}
           {ia && (
@@ -615,7 +615,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
           <div key={d.fecha} className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <p className="flex items-center gap-2 text-sm font-semibold">{fechaLinda(d.fecha)} {d.fecha === hoyISO() && <Chip color="var(--azul-g2)" bg="#DBEAFE">Hoy</Chip>}</p>
-              <button onClick={() => setFormulario({ tipo: "evento", fecha: d.fecha })} aria-label="Agregar evento este día" className="flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: 10, background: "var(--azul-suave)" }}><Plus size={15} color="var(--azul)" /></button>
+              <button onClick={() => setFormulario({ tipo: "evento", fecha: d.fecha })} aria-label="Agregar evento este día" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 10, background: "var(--azul-suave)" }}><Plus size={15} color="var(--azul)" /></button>
             </div>
             {d.eventos.length ? (
               <div className="flex flex-col gap-2.5">{d.eventos.map((e) => <TarjetaEvento key={e._id} e={e} onClick={() => setFormulario(e)} />)}</div>

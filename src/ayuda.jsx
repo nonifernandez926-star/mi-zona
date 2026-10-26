@@ -83,7 +83,7 @@ function Acordeon({ icono, color, titulo, sub, abierto, children, delay = 0 }) {
         {icono && <IconoCaja Icon={icono} color={color} />}
         <span className="flex-1 min-w-0 flex flex-col">
           <strong className="text-[15px]" style={{ color: "#0B1437", lineHeight: 1.3 }}>{titulo}</strong>
-          {sub && <small className="text-xs mt-0.5" style={{ color: "#8D95B0", fontWeight: 600 }}>{sub}</small>}
+          {sub && <small className="text-xs mt-0.5" style={{ color: "#6B7390", fontWeight: 600 }}>{sub}</small>}
         </span>
         <ChevronRight size={16} color="#8D95B0" className="shrink-0 zn-chevron" />
       </summary>
@@ -179,6 +179,7 @@ const MOTIVOS = [
   { id: "resenas", titulo: "Reseñas" },
   { id: "error", titulo: "Algo no funciona" },
   { id: "sugerencia", titulo: "Sugerencia" },
+  { id: "ia", titulo: "Respuesta de la IA" },
   { id: "otro", titulo: "Otra cosa" },
 ];
 
@@ -202,7 +203,7 @@ function datosTecnicos() {
 
 const CAMPO = { width: "100%", borderRadius: 12, border: "1px solid #E3E7F1", background: "#fff", color: "#0B1437", padding: "12px 14px", fontSize: 16 };
 const ETIQUETA = { display: "block", fontSize: 13, fontWeight: 700, color: "#2B3768", margin: "14px 0 6px" };
-const TITULO_GRUPO = { margin: "0 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#8D95B0" };
+const TITULO_GRUPO = { margin: "0 4px 9px", fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7390" };
 
 export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBack, onLogin, onIrAyuda }) {
   const [motivo, setMotivo] = useState(temaInicial || "otro");
@@ -311,14 +312,14 @@ export function SoporteScreen({ usuario, temaInicial, directo, textoVolver, onBa
         )}
         {usuario && lista && lista.map((c) => (
           <div key={c.id} className="p-3.5 mb-2.5" style={{ ...TARJ, borderRadius: 16, ...(c.estado === "respondida" ? { borderColor: "var(--azul)", boxShadow: "0 0 0 3px rgba(var(--azul-rgb),.12)" } : null) }}>
-            <div className="flex items-center justify-between mb-2"><Pastilla estado={c.estado} /><small className="text-xs" style={{ color: "#8D95B0" }}>{hace(c.creadaEn)}</small></div>
+            <div className="flex items-center justify-between mb-2"><Pastilla estado={c.estado} /><small className="text-xs" style={{ color: "#6B7390" }}>{hace(c.creadaEn)}</small></div>
             <p className="text-sm" style={{ color: "#0B1437", lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.mensaje}</p>
             {c.respuesta ? (
               <div className="mt-3 p-3" style={{ background: "var(--azul-suave)", borderRadius: 12 }}>
                 <strong className="flex items-center gap-1.5 text-xs mb-1" style={{ color: "var(--azul)" }}><Sparkles size={14} /> Respuesta del equipo</strong>
                 <p className="text-sm" style={{ color: "#0B1437", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.respuesta}</p>
               </div>
-            ) : c.estado !== "cerrada" && <small className="block mt-2 text-xs" style={{ color: "#8D95B0" }}>Te avisamos acá y en tus notificaciones cuando respondamos.</small>}
+            ) : c.estado !== "cerrada" && <small className="block mt-2 text-xs" style={{ color: "#6B7390" }}>Te avisamos acá y en tus notificaciones cuando respondamos.</small>}
           </div>
         ))}
       </div>

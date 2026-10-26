@@ -42,19 +42,35 @@ ${secciones.map((s) => `<section><h2>${esc(s.t)}</h2>${(s.p || []).map((x) => `<
 `;
 // Página pública para pedir la eliminación de la cuenta y de los datos (Google Play pide un enlace web en la ficha de la app)
 const ELIMINAR = [
-  { t: "Cómo eliminar tu cuenta y tus datos", p: [
-    "Podés eliminar tu cuenta cuando quieras desde la aplicación: Ajustes → Privacidad → Eliminar cuenta. Vas a tener que escribir ELIMINAR y confirmar con tu contraseña (o con tu cuenta de Google).",
-  ], l: [
-    "Se borran tu cuenta, tu agenda, tus notificaciones, tus sesiones, tu actividad de seguridad, tus consultas a Soporte y las reseñas que escribiste.",
-    "Si tenés negocios publicados, la aplicación te pide confirmar si también querés eliminarlos. En ese caso se borran sus datos y sus estadísticas.",
-    "Antes de eliminar podés descargar una copia de tus datos desde Ajustes → Privacidad.",
-    "Las suscripciones ya pagadas no se reembolsan al eliminar la cuenta (ver Términos y condiciones).",
+  { t: "Aplicación: Mi Zona", p: [
+    "Esta página explica cómo pedir que se elimine tu cuenta de Mi Zona y los datos asociados, desde la aplicación o sin entrar a ella.",
   ] },
-  { t: "Si no podés entrar a la aplicación", p: [
+  { t: "Opción 1: desde la aplicación", p: [
+    "Abrí Mi Zona y andá a Ajustes → Privacidad → Eliminar cuenta. Escribí ELIMINAR y confirmá con tu contraseña (o con tu cuenta de Google). Si tenés negocios publicados, la aplicación te pide confirmar si también querés eliminarlos. Antes de eliminar podés descargar una copia de tus datos desde Ajustes → Privacidad.",
+  ] },
+  { t: "Opción 2: si no podés entrar a la aplicación", p: [
     CONTACTO
-      ? `Escribinos a ${CONTACTO} desde el correo con el que te registraste, indicando tu nombre de usuario, y eliminamos tu cuenta y tus datos.`
-      : "Escribinos desde la sección Soporte de la aplicación, indicando el correo con el que te registraste, y eliminamos tu cuenta y tus datos.",
-    "Respondemos y completamos el pedido en un plazo máximo de 30 días.",
+      ? `Escribinos a ${CONTACTO} desde el correo con el que te registraste, con el asunto «Eliminar mi cuenta de Mi Zona» e indicando tu nombre de usuario. Eliminamos tu cuenta y tus datos y te avisamos por el mismo correo.`
+      : "Escribinos desde la sección Soporte de la aplicación (o desde el correo de contacto que figura al pie de esta página), con el asunto «Eliminar mi cuenta de Mi Zona» e indicando el correo con el que te registraste.",
+    "Completamos el pedido en un plazo máximo de 30 días.",
+  ] },
+  { t: "Qué datos se borran", p: [], l: [
+    "Tu cuenta y tu perfil (correo, nombre, usuario, foto y descripción) y tus sesiones.",
+    "Tu agenda, tus notificaciones y tu actividad de seguridad.",
+    "Tus consultas a Soporte, las reseñas que escribiste y tus bloqueos.",
+    "Tu ficha de oficios, tus fichas de alquiler, tus publicaciones de Comunidad y tus invitaciones.",
+    "Los negocios que tengas publicados, con sus estadísticas, si elegís eliminarlos.",
+    "Los avisos y medidas del equipo sobre tu cuenta.",
+  ] },
+  { t: "Qué datos se conservan y por cuánto tiempo", p: [
+    "Algunos datos se conservan por motivos legales, de seguridad o de contabilidad, siempre sin tu identidad:",
+  ], l: [
+    "Comprobantes de tus compras en Google Play (producto, fecha y vencimiento, sin datos de pago): se conservan sin tu identidad, para reclamos, reembolsos y contabilidad.",
+    "Denuncias que hiciste: se conservan sin tu identidad hasta que se borran solas, un año después de resolverse.",
+    "Registro interno de acciones del equipo de moderación: 3 años.",
+    "Fotos que subiste: quedan sin ningún enlace desde Mi Zona; el archivo puede tardar en borrarse del servicio de alojamiento de imágenes (si querés que lo borremos ya, escribinos).",
+    "Chats con los asistentes de los negocios: se guardan en Mi Asistente, un servicio aparte; para pedir que se borren, escribinos.",
+    "Las suscripciones ya pagadas no se reembolsan al eliminar la cuenta (ver Términos y condiciones).",
   ] },
 ];
 

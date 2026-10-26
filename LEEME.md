@@ -1,3 +1,69 @@
+# Mi Zona — Fase 14: revisión y pulido (volver a publicar SOLO la web · el servidor no cambió)
+
+- **Qué es:** una revisión de accesibilidad y diseño hecha con cuidado de no cambiar cómo funciona nada. No hay cambios de datos, de servidor ni de la API.
+- **Formulario de negocios** (`BusinessForm` en `App.jsx`): ahora está dividido en secciones, con barra de avance y un solo botón principal fijo abajo. Usa las mismas piezas que oficios y alquileres (`formKit.jsx`, `Pagina`, `Hoja`).
+- **Editor de horarios en negocios:** ya no acepta horas inválidas (por ejemplo, cierre antes de la apertura).
+- **Botón fijo de abajo en los formularios:** una animación de `index.css` lo dejaba al final de la pantalla en vez de pegado abajo. Se corrigió en el CSS (`backwards` en lugar de `both`). Todos los formularios usan el mismo componente (`Pagina`), así que el arreglo les llega a todos, pero solo lo vi funcionando en el de negocios: probalo también en oficios, alquileres y Comunidad.
+- **Botones de 44 px o más** en las «X» y los botones redondos de cuenta, agenda, pedidos, selector de localidad, selector de ubicación y quitar foto (Comunidad y formularios). Se ve igual, pero se toca mejor con el dedo.
+- **Etiquetas para lectores de pantalla** en 22 campos que solo tenían texto de ejemplo, y en fecha, hora, duración, tipo y recordatorio de la agenda.
+- **Contraste:** los textos chicos en gris claro (`#8D95B0`, 3:1) pasaron a un gris un poco más oscuro (`#6B7390`, 4,7:1) en avisos, ayuda y ajustes.
+- **Fotos de listas** (logos en Chats, imágenes de pedidos y de alquileres): se cargan cuando se acercan a la pantalla (`loading="lazy"`), sin cambiar tamaño ni aspecto.
+- **No se tocó:** servidor, modelos, rutas, nombres de campos, ids de categorías y rubros.
+- **No pude compilar la web con Vite** (sin internet para `npm install`): revisé la sintaxis de todos los `.jsx` con esbuild y las pruebas del servidor siguen pasando (`npm run probar:todo`). Corré `npm install && npm run build` y probá en un celular real antes de publicar.
+
+---
+
+# Mi Zona — Fase 13: los sorteos pasan a ser una ficha más de Comunidad (volver a publicar servidor Y web)
+
+- **Qué cambió:** los sorteos y rifas ya **no son una sección aparte**. Son un tipo más de publicación de **Comunidad** («Sorteo o rifa»), con su filtro y su ficha. La persona anuncia su sorteo (a beneficio o por otro motivo) y quien se interese le escribe por WhatsApp. Lo que arreglen, incluido el pago, pasa **fuera de la app**.
+- **Inicio:** el selector vuelve a tener Negocios · Alquileres · Oficios. Quien tenía «Sorteos» guardado vuelve a Negocios solo.
+- **La ficha lleva:** título, descripción, quién organiza, motivo, premios (hasta 6), cantidad de números (opcional, solo como dato), fecha (hora opcional), cómo se define (Quiniela, Lotería, en vivo, redes u otra), lugar (opcional), foto (opcional), localidad y botón «Escribirle por WhatsApp» (el número no viaja en los listados: se entrega al tocar el botón). Siempre muestra el aviso «Mi Zona no organiza ni cobra sorteos…».
+- **Se eliminó:** la grilla de números, reservar, marcar pagado, «ventas cerradas», precio por número, forma de pago, recaudado, la barra de progreso, la declaración de autorización, `server/routes/sorteos.js`, `server/models/Sorteo.js`, `server/utils/sorteos.js`, `src/sorteos.jsx` y las pruebas viejas.
+- **Reglas en el servidor** (`server/utils/comunidad.js`): sin premios en dinero, sin precios ni formas de pago ni números largos (teléfonos, cuentas), WhatsApp obligatorio, máximo 5 sorteos abiertos por persona, fecha hasta 120 días adelante, la ficha se oculta 3 días después de la fecha.
+- **El organizador puede:** publicar los números ganadores (solo texto, desde el día del sorteo), editar, cancelar, reactivar y eliminar (`POST /api/comunidad/:id/sorteo`). Se denuncia con `HojaDenunciar` (tipo `publicacion`), se puede bloquear, se borra al eliminar la cuenta.
+- **Datos viejos:** si en la base ya existía la colección `sorteos` de la versión anterior, queda sin usar; podés borrarla desde MongoDB Atlas. No se migra nada (la versión anterior no se había publicado).
+- **Textos:** `SORTEOS-ARGENTINA.md` reescrito, artículo nuevo «Sorteos y rifas» en el Centro de ayuda, términos actualizados (`LEGAL_ACTUALIZADO` = 25 de octubre de 2026; se regeneran solos en `npm run build`).
+- **Pruebas sin internet ni base de datos:** en `server/`, `npm run probar:sorteos` (16 pruebas del tipo Sorteo) y `npm run probar:todo`.
+- **Google Play:** ver `INFORME-REVISION.md`, sección «Sorteos y la política de Google Play». Hay una duda que no puedo resolver yo.
+- **No pude compilar la web con Vite** (sin internet para `npm install`): revisé la sintaxis de todos los `.jsx` con esbuild y saqué capturas a 360×740 y 390×844 con Chromium. Corré `npm install && npm run build` y probalo en un celular real.
+
+---
+
+# Mi Zona — Fase 11: Publicación en Google Play (volver a publicar servidor Y web · empezar por `play-store/LISTA-DE-VERIFICACION.md`)
+
+Esta fase prepara la publicación. Los requisitos de Google se verificaron el 21/10/2026 en su documentación oficial y están explicados en `play-store/GUIA-PLAY-STORE.md` (nivel de API 36, Play Billing Library 8, prueba cerrada de 12 testers × 14 días, eliminación de cuenta, contenido de usuarios, IA generativa, verificación de desarrolladores). **No pude compilar la web ni generar el `.aab`**: hay que correr `npm install && npm run build` y probar en celulares reales.
+
+- **Documentos nuevos o reescritos (`play-store/`):** `GUIA-PLAY-STORE.md`, `LISTA-DE-VERIFICACION.md` (cuenta, pruebas en celulares, declaraciones, prueba cerrada, riesgos), `SEGURIDAD-DE-LOS-DATOS.md` (según el código real y las definiciones de Google), `FICHA-TIENDA.md`, `twa-manifest.json.plantilla` (ahora con Play Billing y ubicación). `INFORME-REVISION.md` es el informe final.
+- **Reportar respuesta de la IA** (`src/componentes/ReportarRespuestaIA.jsx`): botón dentro de la app en el buscador con IA, en la búsqueda con asistente y en el chat de cada negocio. Envía a Soporte (motivo nuevo «Respuesta de la IA») solo lo que la persona ve en el aviso. Requiere sesión.
+- **Registro de errores de la web** (`src/errores.js`, `server/routes/errores.js`, `server/utils/errores.js`, `server/models/ErrorApp.js`): la app envía los errores a `POST /api/errores` sin datos de personas (se les quitan correos, teléfonos, claves y parámetros de enlaces); se agrupan por huella y se borran a los 30 días. El equipo los ve en `GET /api/errores/admin` con el encabezado `x-soporte-key`. Solo funciona en la versión publicada.
+- **Textos legales** (`src/legal.js`, actualizados al 21 de octubre de 2026) y **página de eliminación de cuenta** (`scripts-generar-legales.mjs`): ahora dicen todo lo que la app guarda, qué se borra, qué se conserva y por cuánto tiempo, el contenido prohibido, la IA, los menores y los avisos técnicos. Las páginas `public/*.html` se regeneran solas en `npm run build` (con tu correo si cargaste `VITE_SOPORTE_EMAIL`).
+- **Clima:** la ubicación que se envía a Open-Meteo se redondea a ~5 km (antes ~100 m; la política decía «aproximada»).
+- **Build:** si falta `VITE_API_URL`, `vite build` se frena con un aviso (antes publicaba una app que llamaba a localhost). La versión de `package.json` (1.2.0) viaja con cada aviso de error.
+- **Cuentas suspendidas:** pueden usar la búsqueda con IA y «resolver favoritos» (pedidos de solo lectura que estaban bloqueados).
+- **Servidor:** la bandera `mercadoPago` del diagnóstico se cambió por `playBilling`.
+- **Pruebas sin internet ni base de datos:** en `server/`, `npm run probar:todo` (33 pruebas: búsqueda con IA, errores y permisos de cuentas suspendidas).
+- **Pendiente:** ver `INFORME-REVISION.md`, sección 3 (chats de Mi Asistente y fotos de Cloudinary no se borran al eliminar la cuenta; Comunidad apagada por defecto).
+
+---
+
+# Mi Zona — Fase 10: Búsqueda con IA (volver a publicar servidor Y web · 2 variables nuevas OPCIONALES en el servidor)
+
+- **Cuándo entra la IA:** el buscador común va siempre primero. La IA solo se ofrece cuando (a) la persona escribió una frase («necesito alguien que me corte el pasto»: 4 palabras o más, una pregunta o un pedido) o (b) la búsqueda común no encontró nada. Con una categoría elegida a mano no entra. La primera vez se muestra un aviso (qué hace, para qué sirve, qué sucederá) con «Usar IA» y «Ahora no». Lo aceptado queda solo en el celular y se retira con «Dejar de usar la ayuda con IA» (debajo de los resultados de IA).
+- **Qué hace la IA:** solo **interpreta** el texto y devuelve filtros: tipo (negocios, oficios o alquileres), rubros, tipos y categorías de alquiler, categorías de negocio, hasta 4 palabras y una localidad si la persona la escribió. El servidor revisa todo contra las listas reales (`server/utils/busquedaIA.js`): un id inventado o un texto raro se descarta. Los **resultados salen siempre de la base de datos** (`POST /api/buscar/ia`, en `routes/buscar.js`) con las mismas reglas que la búsqueda común: fichas activas, no ocultas por el equipo, con «Aparecer en búsquedas» encendido y sin personas bloqueadas ni suspendidas. La IA no inventa resultados, precios ni disponibilidad, y no publica, no envía mensajes ni modifica datos (no tiene herramientas).
+- **Qué se envía a la IA:** solo el texto de la búsqueda (máximo 200 caracteres), y antes se le sacan correos, teléfonos y enlaces. Sin nombre, sin cuenta, sin ubicación, sin chats y sin la lista de negocios. La clave de Anthropic vive solo en el servidor (`ANTHROPIC_API_KEY`, la misma de siempre).
+- **Pregunta breve:** si la búsqueda es tan vaga que no se puede armar ningún filtro («algo para mi casa»), la IA hace **una** pregunta corta; la respuesta se suma al texto y se busca de nuevo (una sola vez).
+- **Localidad:** si la persona la escribió («en Famaillá») manda sobre la zona elegida; si ahí no hay nada, se busca en la zona elegida y se avisa. Los negocios siguen siendo los de la zona elegida en Inicio.
+- **Costo controlado:** caché de 12 horas de la interpretación (la misma consulta no vuelve a gastar), pedidos iguales a la vez comparten una sola llamada, tope por persona (20 por hora y 60 por día), tope total por día (3000) y la lista fija de rubros va marcada para el caché de prompts de Anthropic. Los resultados nunca se guardan en caché. Si la IA falla, no está configurada o se llegó a un tope, la web muestra un aviso corto y el buscador común sigue funcionando igual.
+- **Variables nuevas (opcionales):** `BUSQUEDA_IA_MODELO` (por defecto el mismo modelo del buscador con asistente, `claude-sonnet-4-5`; es una tarea corta, podés probar uno más chico y comparar) y `BUSQUEDA_IA_TOPE_DIARIO` (por defecto 3000). Están en `server/.env.example`.
+- **Corregido de paso:** (1) el buscador común no mandaba la sesión al servidor, así que no ocultaba lo de personas bloqueadas (Fase 8): ahora sí (`src/api.js`). (2) Una cuenta suspendida puede usar la búsqueda con IA, porque solo lee (`utils/moderacion.js`); sin eso habría recibido el cartel de suspensión.
+- **Textos:** política de privacidad (`src/legal.js`, actualizada al 20 de octubre de 2026; se regenera sola en `npm run build`) y el artículo «Buscar en todo Mi Zona» del Centro de ayuda.
+- **No se tocó:** la «búsqueda con asistente» de Inicio (`BusquedaAsistenteScreen` y `/api/asistente/buscar`). Esa sí envía a la IA la lista de negocios, las distancias y, si la persona lo permite, un resumen de sus chats (lo pedido en su momento). Queda pendiente decidir si se alinea con la regla de esta fase.
+- **Pendiente / no incluido:** ayuda opcional para redactar la descripción de una ficha; «fecha» en la interpretación (hoy negocios, oficios y alquileres no tienen fecha: tendría sentido cuando Comunidad entre al buscador); resultados de Comunidad en la búsqueda con IA.
+- **Archivos:** servidor: `utils/busquedaIA.js` (nuevo), `routes/buscar.js`, `utils/moderacion.js`, `.env.example`, `package.json`, `scripts/probar-busqueda-ia.mjs`, `scripts/probar-ruta-busqueda-ia.mjs` y `scripts/arnes-modelos-falsos.mjs` (nuevos). Web: `src/buscador.jsx`, `src/api.js`, `src/legal.js`, `src/ayudaContenido.js`.
+- **Pruebas sin internet ni base de datos:** en `server/`, `npm run probar:busqueda-ia` (24 pruebas: limpieza del texto, validación de lo que contesta la IA, caché, topes, la ruta completa con modelos falsos).
+
+---
+
 # Mi Zona — Fase 8: Denuncias, bloqueo y moderación (volver a publicar servidor Y web · variable nueva en el SERVIDOR · una configuración única)
 
 - **Dentro de la app:** ícono de bandera («Denunciar o bloquear») en negocios, fichas de oficios y alquiler, publicaciones de Comunidad y perfiles. 7 motivos (spam, estafa, suplantación, acoso, ofensivo/sexual, información falsa, otro con texto), advertencia antes de enviar, confirmación con código y opción de **bloquear** a quien publicó. La misma persona no puede denunciar lo mismo dos veces (ni hasta 30 días después de que se resuelva). Quien denuncia nunca se revela. Ajustes → **Usuarios bloqueados**, **Avisos del equipo** (con apelación) y **Reglas de convivencia**.
@@ -442,3 +508,12 @@ El cliente sigue el estado de sus pedidos (Enviado → Confirmado → En prepara
 **Web/app:** `src/suscripcion.jsx` (modal de activación, tarjeta de invitaciones, panel con estadísticas), `src/playBilling.js`, botón "Activar / Agregar tiempo" en Mis fichas y campo "Código de invitación" en el registro.
 
 **Antes de publicar (ver `play-store/GUIA-PLAY-STORE.md`):** crear los 9 productos en Play Console, configurar `PLAY_PACKAGE_NAME` y `PLAY_SERVICE_ACCOUNT_JSON`, y probar las compras con un tester de licencia. Este código no se pudo ejecutar contra Google Play ni compilar en el entorno donde se escribió: probalo en un dispositivo antes de subirlo.
+
+
+## Novedades: Inicio unificado y formularios (los sorteos de esta versión se reemplazaron en la Fase 13: ver arriba)
+
+- **Inicio**: un selector (Negocios · Alquileres · Oficios) muestra lo elegido en la zona de Inicio. Ya no hay segundo buscador ni subpantallas de Oficios/Alquileres. Código: `src/inicio.jsx` (+ cambios en `App.jsx`).
+
+- **Formularios** de oficios y alquileres rediseñados con `src/formKit.jsx` y horarios semanales (`src/horarios.js`, campo `weekHours` en servidor).
+
+- **Servidor**: `?localidad=&provincia=` (por nombre) en `/oficios` y `/alquileres`; `orden=recomendados|recientes` en oficios.

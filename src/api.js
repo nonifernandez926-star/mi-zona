@@ -403,8 +403,12 @@ export const soporteApi = {
 
 // Fase 6 · buscador único, favoritos de fichas y "ya compartió". Todo lo decide el servidor; la web solo muestra.
 // Buscar: { oficios, alquileres, totalOficios, totalAlquileres } (hasta 10 de cada tipo). Los negocios se buscan en la lista que la web ya trae.
+// Se manda la sesión (si hay) para que el servidor oculte lo de personas bloqueadas o suspendidas también acá.
 export const buscarApi = {
-  buscar: (filtros) => pedirJSON(`/buscar?${consulta(filtros)}`, { method: "GET" }, {}),
+  buscar: (filtros) => pedirJSON(`/buscar?${consulta(filtros)}`, { method: "GET" }, userHeaders()),
+  // Búsqueda con IA (Fase 10). A la IA solo viaja el texto de la búsqueda (el servidor le quita correos, teléfonos y enlaces); el resto son filtros de zona.
+  // Devuelve { ia: false, motivo } si no se pudo usar la IA (la web sigue con el buscador común) o { ia: true, pregunta, entendido, oficios, alquileres, negociosIds, totales }.
+  buscarIA: (cuerpo) => pedirJSON("/buscar/ia", { method: "POST", body: JSON.stringify(cuerpo) }, userHeaders({ "Content-Type": "application/json" })),
 };
 // Favoritos de oficios y alquileres: se guardan en el dispositivo; el servidor devuelve cuáles siguen visibles (y cuáles ya no existen).
 export const favoritosApi = {
@@ -428,6 +432,8 @@ export const comunidadApi = {
   estadoEvento: (id, estado) => enviarUsuarioJSON(C(id, "/evento"), "POST", { estado }).then((r) => r.publicacion),
   eliminar: (id) => enviarUsuarioJSON(C(id), "DELETE", {}),
   contacto: (id, mensaje) => enviarUsuarioJSON(C(id, "/contacto"), "POST", { mensaje }).then((r) => r.url),
+  // Sorteos (publicación de Comunidad): el organizador publica el resultado (solo texto), cancela o reactiva su sorteo
+  sorteo: (id, accion, texto) => enviarUsuarioJSON(C(id, "/sorteo"), "POST", { accion, texto }).then((r) => r.publicacion),
 };
 
 // Fase 8 · Denuncias, bloqueo y avisos del equipo. Todo se resuelve en el servidor; la web solo manda el tipo y el id público.

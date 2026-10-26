@@ -1,52 +1,81 @@
-# Mi Zona — Informe de revisión para Google Play (9 de octubre de 2026)
+# Mi Zona — Informe de revisión final para Google Play (21 de octubre de 2026 · Fase 11)
+
+Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y de funciones que hoy cambiaron).
 
 ## Cómo leer esto
-- ✅ Corregido en este paquete · ⚠️ Decisión o trámite tuyo (bloquea la publicación) · 📌 Recomendado, no hecho
-- **Importante:** en este entorno no pude instalar paquetes ni ejecutar la app, así que no la vi funcionando ni compilé el `.aab`. Todo lo que cambié pasó verificación de sintaxis (servidor con `node --check`, web con esbuild), pero **hay que correr `npm install && npm run build` y probar en un celular antes de publicar**.
+✅ Hecho y verificado · ⚠️ Trámite o decisión tuya (bloquea publicar) · 📌 Recomendado, no hecho.
+**Qué verifiqué y qué no:** corrí 33 pruebas sin internet ni base de datos (`npm run probar:todo` en `server/`) y revisé la sintaxis y los nombres de todo el código nuevo de la web. **No pude** instalar paquetes, compilar con Vite, generar el `.aab`, ni probar con MongoDB, Anthropic o Google Play: hay que correr `npm install && npm run build` y probar en celulares (lista en `play-store/LISTA-DE-VERIFICACION.md`, sección C).
 
-## 1. Requisitos de Google Play
-
+## 1. Requisitos de Google Play (verificados el 21/10/2026 en la documentación oficial)
 | Requisito | Estado |
 |---|---|
-| Apuntar a Android 16 (API 36) en apps nuevas desde el 31/08/2026 | ⚠️ Se resuelve al empaquetar con la versión actual de Bubblewrap/PWABuilder (ver `play-store/GUIA-PLAY-STORE.md`) |
-| **Pagos digitales con Google Play Billing** | ⚠️ **Riesgo alto.** La suscripción de negocios se cobra con Mercado Pago dentro de la app. Hay que elegir: Play Billing, o que la versión de Play no venda nada. Es decisión de negocio |
-| Cuenta personal nueva: prueba cerrada con 12 testers × 14 días | ⚠️ Aplica si tu cuenta es personal y posterior al 13/11/2023 |
-| Política de privacidad pública y completa | ✅ Estaba incompleta (ver errores). ⚠️ Falta tu correo y el titular: cargá `VITE_SOPORTE_EMAIL` y `LEGAL_TITULAR` |
-| Enlace web para eliminar cuenta | ✅ Nuevo: `/eliminar-cuenta.html` |
-| Eliminar cuenta dentro de la app | ✅ Ya existía y funciona completa |
-| Acceso para revisores (la app exige cuenta) | ⚠️ Crear usuario/contraseña de prueba y cargarlo en "Acceso a la app" |
-| Seguridad de los datos | ✅ Borrador listo en `play-store/SEGURIDAD-DE-LOS-DATOS.md` (verificalo) |
-| Contenido de usuarios: reportar | ✅ Reseñas tienen "Reportar" |
-| Contenido generado por IA: poder reportar respuestas | 📌 El chat/búsqueda con IA no tiene "Reportar respuesta". Google lo pide para apps con IA generativa. Puedo agregarlo |
-| Ficha: ícono 512, gráfico 1024×500, capturas, textos | ✅ Ícono y gráfico (`play-store-grafico-1024x500.png`) y textos listos. ⚠️ Capturas: las sacás vos |
-| Verificación de enlaces de la app (assetlinks) | ⚠️ Plantilla lista; falta la huella SHA-256 de Play App Signing |
+| Apuntar a Android 16 (API 36) en apps nuevas y actualizaciones (desde el 31/08/2026) | ⚠️ Se cumple al empaquetar con la última versión de Bubblewrap/PWABuilder; Play Console avisa si no |
+| Play Billing Library 8 o superior (desde el 31/08/2026) | ⚠️ Idem: Bubblewrap trae la biblioteca; usar la versión más nueva |
+| Pagos digitales con Google Play Billing (TWA: Digital Goods API, Chrome 101+) | ✅ Resuelto en la Fase 9. ⚠️ Falta la configuración en Play Console y el `assetlinks.json` |
+| Cuenta personal nueva: prueba cerrada con 12 testers × 14 días | ⚠️ Aplica si la cuenta es personal y posterior al 13/11/2023 |
+| Verificación de desarrollador (nueva en 2026; Argentina entra más adelante) | ⚠️ Revisar el estado de la app en Play Console → Inicio |
+| Política de privacidad pública y completa | ✅ Reescrita a lo que la app hace hoy. ⚠️ Cargar `VITE_SOPORTE_EMAIL` y `LEGAL_TITULAR` |
+| Eliminar cuenta: dentro de la app y con enlace web | ✅ Ambos. La página web ahora dice qué se borra y qué se conserva |
+| Contenido de usuarios: términos, denunciar, bloquear, moderación | ✅ Cumple (Fases 7 y 8). Los términos ahora definen el contenido prohibido |
+| IA generativa: reportar respuestas sin salir de la app | ✅ **Nuevo:** «Reportar respuesta» en el buscador con IA y en los dos chats de asistente |
+| Seguridad de los datos | ✅ Reescrita (`SEGURIDAD-DE-LOS-DATOS.md`). ⚠️ La completás y verificás vos |
+| Acceso para revisores | ⚠️ Crear usuario y contraseña de prueba con datos de ejemplo |
+| Ficha: ícono, gráfico, textos, capturas | ✅ Textos y gráficos. ⚠️ Capturas: las sacás vos |
+| Incentivos: prohibido premiar calificaciones o reseñas | ✅ Los días son por invitar, no por calificar; la ficha lo aclara |
 
-## 2. Errores encontrados y corregidos
-1. **La política de privacidad pública salía sin las listas** (qué datos guardás y con quién los compartís): el generador solo copiaba los párrafos. Corregido, y se agregaron los servicios que la app usa y no estaban (Open-Meteo, Nominatim, Georef, Google Fonts, alojamiento) y una sección de ubicación.
-2. **Los códigos QR se generaban en un sitio externo** (`api.qrserver.com`): el código de canje y el enlace de tu negocio viajaban a un tercero, y si ese sitio caía el QR desaparecía. Ahora se generan dentro de la app (`qrcode`, nueva dependencia → `npm install`).
-3. **El botón "atrás" de Android cerraba la app** desde cualquier pantalla. Ahora cierra la pantalla o ventana de más arriba (`src/atras.js`; cubre 20 pantallas y ventanas).
-4. **Una pantalla que fallaba dejaba todo en blanco.** Ahora hay un aviso con "Reintentar" (`src/main.jsx`).
-5. **Sin conexión no pasaba nada.** Ahora hay una pantalla "Sin conexión" y la app guarda su estructura (`public/sw.js`, `public/offline.html`). El service worker ahora se registra al abrir la app, no solo al activar notificaciones.
-6. **Fuga de datos técnicos**: el login con Google devolvía el id de cliente en los errores, y 4 rutas devolvían el mensaje interno de error. Ahora responden genérico (el detalle queda en los logs; `DEBUG_AUTH=1` lo muestra al depurar).
-7. **Límite de pedidos de `/api/eventos` falsificable** con el encabezado `x-forwarded-for`. Ahora usa la IP real.
-8. **Cada visita a la lista de negocios escribía en la base** (barrido de vencidos). Ahora corre como máximo una vez por minuto.
-9. Servidor: ruta `/healthz` (para monitores), respuesta JSON 404 en `/api` y registro de errores no atrapados.
-10. Manifest: ícono *maskable* separado (el "any maskable" juntos se recorta mal), `id`, idioma, orientación y categorías. `index.html`: descripción, `color-scheme`, `noscript`.
-11. `package.json`: el build ahora regenera las páginas legales; versión 1.1.0. Se agregó `netlify.toml` (cabeceras de seguridad y caché) y `.env.example` de la web. Si falta `VITE_API_URL`, la app publicada llama a `localhost` y no carga: está documentado como obligatoria.
+## 2. Errores encontrados y corregidos en esta fase
+1. **El clima enviaba tu ubicación con precisión de ~100 m** (3 decimales) a Open-Meteo, aunque la política decía «aproximada». Ahora se redondea a ~5 km antes de enviarla (`src/clima.jsx`).
+2. **La política de privacidad y los términos estaban desactualizados:** no decían nada de invitaciones, historial de compras, errores técnicos, menores de edad, plazos de conservación ni qué se conserva al eliminar la cuenta, y los términos no definían el contenido prohibido (Google lo exige) ni hablaban de oficios, alquileres, Comunidad ni IA. Todo agregado.
+3. **La página «Eliminar cuenta» no listaba lo que se borra de las Fases 3 a 9** y mandaba a «Soporte de la aplicación» a quien no podía entrar a la app. Reescrita, con la opción por correo.
+4. **No había forma de reportar una respuesta de la IA** (requisito de Google). Agregado, y llega a Soporte con el motivo «Respuesta de la IA».
+5. **No había registro de errores de la web.** Una TWA corre la web dentro de Chrome, así que Crashlytics no ve sus errores. Ahora la app avisa los errores a `/api/errores` (sin datos de personas, agrupados, se borran a los 30 días) y el equipo los mira en `/api/errores/admin`.
+6. **El armado de la web publicaba una app rota si faltaba `VITE_API_URL`** (llamaba a localhost). Ahora se frena con un aviso claro.
+7. **Una bandera sobrante de Mercado Pago** en el diagnóstico del servidor se cambió por la de Play Billing.
+8. **La plantilla de la TWA no activaba Play Billing** (la guía lo pedía pero la plantilla no lo tenía): corregida, con ubicación delegada.
+9. **Una cuenta suspendida no podía abrir sus favoritos de oficios y alquileres** (un pedido de solo lectura que estaba bloqueado por error) y recibía el cartel de suspensión. Ahora puede.
+10. **La ficha de la tienda y la guía describían solo negocios**: reescritas con oficios, alquileres, buscador con IA y aclaraciones.
 
 ## 3. Lo que sigue pendiente
-- ⚠️ Pagos con Play Billing (arriba). Es lo más importante.
-- 📌 **Modo oscuro**: hoy invierte los colores de toda la pantalla con un filtro CSS. Funciona pero es pesado en celulares modestos y no es un tema real. Rehacerlo con variables de color exige tocar `App.jsx` entero.
-- 📌 **`App.jsx` tiene 5.610 líneas** (310 KB) y `cuenta.jsx` 1.215. Dividirlo en archivos baja el riesgo de errores y acelera cargas. No lo toqué a ciegas.
-- 📌 No hay pruebas automáticas, ni monitoreo de errores (Sentry o similar), ni copias de seguridad programadas de MongoDB.
-- 📌 Webhook de Mercado Pago: sin `MP_WEBHOOK_SECRET` no valida la firma. No permite falsificar pagos (se vuelve a consultar el pago a Mercado Pago), pero configurala igual.
-- 📌 Tras pagar en Mercado Pago, el regreso a la app puede abrir una pestaña de Chrome en vez de la app (limitación de las TWA). Probalo.
-- 📌 Fuentes de Google Fonts: autoalojarlas mejora velocidad, privacidad y modo sin conexión.
-- 📌 Diseño: solo toqué lo seguro (íconos, gráfico, pantallas de error y sin conexión). No pude ver la app renderizada, así que no rediseñé pantallas a ciegas. Si me pasás capturas, lo hago con criterio.
-- 📌 `LEEME.md` es un registro de cambios de 32 KB: conviene separarlo del manual.
+- ⚠️ **Eliminar la cuenta no borra los chats de Mi Asistente** (viven en otro servicio) **ni los archivos de fotos de Cloudinary** (las fotos se suben desde la web sin clave, así que el servidor no puede borrarlas). Está dicho con transparencia en la política y en la página de eliminación, pero Google podría pedir más. Solución: que Mi Asistente ofrezca un pedido de borrado que Mi Zona llame al eliminar la cuenta, y pasar la subida de fotos a firmada desde el servidor. Lo hago si lo pedís (la primera parte requiere tocar el otro proyecto).
+- ⚠️ **Comunidad está apagada por defecto** (`COMUNIDAD_HABILITADA=false`). Decidí si sale encendida: cambia la ficha y la declaración de datos (ver la lista, sección D).
+- 📌 **Mapas:** OpenStreetMap limita el uso intensivo de sus teselas y Esri tiene condiciones propias; si el uso crece conviene un proveedor con contrato.
+- 📌 **Modo oscuro** con un filtro CSS (pesado en celulares modestos) y **`App.jsx` de más de 5.700 líneas**: dividirlo baja el riesgo de errores. No lo toqué a ciegas.
+- 📌 **Dos chats con la IA siguen enviando más que el texto de la búsqueda:** la «búsqueda con asistente» de Inicio manda a la IA la lista de negocios, distancias y, si la persona lo permite, un resumen de chats. Está declarado en la política y se puede apagar en Ajustes → Privacidad; falta decidir si se alinea con la regla de la Fase 10.
+- 📌 No hay monitoreo de caídas del servidor ni copias de seguridad programadas de MongoDB (configurarlas en tu proveedor).
+- 📌 Fuentes de Google Fonts: autoalojarlas mejora velocidad, privacidad y el modo sin conexión.
 
 ## 4. Antes de publicar (en orden)
-1. `npm install` (web y `server/`), `npm run build`, probar en el celular.
-2. Resolver pagos y tipo de cuenta.
-3. Cargar variables (`.env.example`), regenerar páginas legales, revisión legal.
-4. Empaquetar, assetlinks, prueba interna → cerrada → producción (`play-store/GUIA-PLAY-STORE.md`).
+1. `npm install` (web y `server/`), `npm run build`, `npm run probar:todo` (en `server/`), probar en celulares.
+2. Resolver cuenta y pagos (guía, punto 0). Cargar las variables de `.env.example` (web y servidor).
+3. Revisión legal de `src/legal.js`.
+4. Empaquetar, `assetlinks.json`, prueba interna → cerrada → producción (`play-store/GUIA-PLAY-STORE.md`).
+
+
+---
+
+## Sorteos y la política de Google Play (Fase 13 · revisado el 25/10/2026)
+
+**Lo que dicen las políticas hoy (páginas oficiales de Google Play):**
+- *Juegos de azar con dinero real, juegos y concursos* (`support.google.com/googleplay/android-developer/answer/9877032`): en general Google Play prohíbe que las apps faciliten apuestas y juegos con dinero real; hace una excepción para las que tienen licencia y están aprobadas por Google, y exige un trámite de aprobación. Entre los ejemplos no permitidos figuran los juegos que aceptan dinero a cambio de la oportunidad de ganar un premio físico o en dinero, y las apps con botones o menús que invitan a apostar o participar con dinero real. También dice que el contenido de la app no debe promover ni dirigir a las personas a juegos de azar, loterías o torneos con dinero real (esa frase está en la parte de anuncios, pero marca el criterio).
+- *Contenido generado por usuarios* (`.../answer/9876937`): hay que pedir que se acepten los términos antes de publicar, moderar de forma razonable según el tipo de contenido, y ofrecer dentro de la app funciones para denunciar contenido y personas y para bloquear usuarios.
+
+**Cómo queda esta versión simple:**
+- ✅ La app **no vende números, no cobra, no reserva, no procesa pagos y no tiene botones de «apostar» o «participar con dinero»**. No hay premios en dinero y la ficha no puede llevar precios ni cuentas (lo controla el servidor).
+- ✅ **Contenido de usuarios:** términos aceptados al registrarse, denunciar y bloquear dentro de la app, panel de moderación del equipo, ocultar contenido, suspender cuentas y apelar (Fases 7 y 8). La ficha de sorteo usa todo eso. Los términos ahora aclaran que Mi Zona no organiza ni cobra sorteos.
+- ⚠️ **Duda que queda:** la ficha anuncia una rifa y un botón lleva a la persona a hablar con el organizador para participar, y esa participación se paga **fuera** de la app. Google podría interpretar que la app «dirige» a las personas a una rifa con dinero real, aunque Mi Zona no toque el dinero. **Yo no puedo asegurar cómo lo va a interpretar el equipo de revisión**, y no encontré en la documentación un texto que diga que un anuncio informativo de una rifa entre vecinos esté permitido o prohibido. Tampoco puedo decir si una rifa con entrada paga sin licencia cae en la definición de «juego de azar» en cada país.
+- ⚠️ **Declaraciones en Play Console:** respondé con exactitud el cuestionario de clasificación de contenido (contenido generado por usuarios) y la declaración de juegos de azar: la app **no** ofrece apuestas con dinero real. Si dudás, consultalo con el soporte de Google Play antes de publicar.
+- 📌 **Opción de cero riesgo:** dejar el tipo «Sorteo o rifa» apagado en la versión de Play Store (instrucciones en `SORTEOS-ARGENTINA.md`) y habilitarlo después de ver cómo responde la revisión, o permitir solo sorteos sin cobro (por ejemplo, en redes).
+- 📌 **Reglas por provincia:** las rifas con venta de números suelen requerir autorización provincial. Mi Zona no verifica nada; quien organiza es el responsable. Conviene que un abogado revise la redacción de los términos.
+
+
+---
+
+## Revisión de la Fase 14 (25/10/2026): pendientes ordenados por importancia
+
+1. **Probar de verdad** (`npm install && npm run build` y un celular): sobre todo el botón fijo de abajo en oficios, alquileres y Comunidad, y el formulario de negocios a 360 px.
+2. **Rediseño pendiente, sin tocar a propósito:** detalle de negocio (`BusinessDetail`), Herramientas (`HerramientasScreen`), Ajustes (`AjustesScreen`) y chats. No pude ver cómo quedan los estilos de Tailwind sin compilar, y rediseñarlas a ciegas podía romper lo que hoy funciona. Conviene hacerlo con la web compilada y una pantalla por vez.
+3. **Listas largas sin paginar** (negocios, chats, notificaciones): hoy cargan todo. Es un cambio de comportamiento, por eso no se hizo.
+4. **Dividir `App.jsx`** (casi 6.000 líneas): baja el riesgo de errores a futuro.
+5. **Modo oscuro** con un filtro CSS pesado en celulares modestos.
+6. **Fuente Manrope:** cargarla desde la propia app en vez de Google Fonts (más rápido y más privado).
+7. **Datos duplicados entre web y servidor** (categorías, rubros, planes): hoy coinciden; conviene una prueba que avise si dejan de coincidir.

@@ -99,7 +99,7 @@ export default function SelectorLocalidad({ valor, onChange }) {
                 aria-labelledby={`${id}l`} aria-controls={`${id}lista`} autoComplete="off"
                 style={{ flex: 1, minWidth: 0, minHeight: 46, border: 0, outline: "none", font: "inherit", fontSize: ".95rem", background: "transparent", color: "#0B1437" }}
               />
-              {busqueda && <button type="button" onClick={() => setBusqueda("")} aria-label="Borrar búsqueda" style={{ width: 40, height: 40, border: 0, background: "transparent" }}><X size={16} color="#4A5372" /></button>}
+              {busqueda && <button type="button" onClick={() => setBusqueda("")} aria-label="Borrar búsqueda" style={{ width: 44, height: 44, border: 0, background: "transparent" }}><X size={16} color="#4A5372" /></button>}
             </div>
             {locs && (
               <>

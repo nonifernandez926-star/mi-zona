@@ -1,9 +1,9 @@
 // Textos legales de Mi Zona. Si cambia algo de lo que la app hace con los datos, hay que actualizar también estas fechas y textos.
-export const LEGAL_ACTUALIZADO = "18 de octubre de 2026";
+export const LEGAL_ACTUALIZADO = "25 de octubre de 2026";
 
 export const TERMINOS = [
   { t: "1. Qué es Mi Zona", p: [
-    "Mi Zona es una aplicación que reúne los negocios de una localidad y permite a las personas encontrarlos, ver su información, dejar reseñas y contactarlos. También permite a los dueños publicar y administrar su negocio.",
+    "Mi Zona es una aplicación de comunidad local: reúne los negocios, los oficios y servicios y los alquileres de una localidad, y las publicaciones de los vecinos (Comunidad), para que las personas los encuentren, vean su información, dejen reseñas y los contacten. También permite a los dueños publicar y administrar sus fichas.",
     "Al usar Mi Zona aceptás estos términos. Si no estás de acuerdo, no uses la aplicación.",
   ] },
   { t: "2. Tu cuenta", p: [
@@ -12,10 +12,17 @@ export const TERMINOS = [
     "Mi Zona es para personas de 18 años o más. Al registrarte declarás que tenés 18 años o más y aceptás estos términos y la Política de privacidad: guardamos esa declaración y la fecha en que la hiciste, no tu edad ni tu fecha de nacimiento. Si comprobamos que una cuenta pertenece a una persona menor de 18, podemos cerrarla.",
     "Podés eliminar tu cuenta cuando quieras desde Ajustes → Mi cuenta.",
   ] },
-  { t: "3. Negocios y contenido publicado", p: [
-    "Quien registra un negocio es responsable de que los datos, las fotos y las promociones que publica sean verdaderos, actuales y que tenga derecho a usarlos. Los datos de un negocio (nombre, descripción, dirección, teléfono, redes, fotos y reseñas) son públicos.",
-    "Mi Zona no es parte de la relación entre clientes y negocios. No garantizamos la calidad, el precio ni la disponibilidad de lo que ofrece cada negocio, ni respondemos por los acuerdos que hagan entre ellos.",
+  { t: "3. Negocios, oficios, alquileres y contenido publicado", p: [
+    "Quien publica un negocio, una ficha de oficios o una ficha de alquiler es responsable de que los datos, las fotos, los precios y las promociones que publica sean verdaderos, actuales y de que tenga derecho a usarlos. Lo que cargues en una ficha (nombre, descripción, rubros, localidad, fotos, reseñas y, si lo completás, dirección, WhatsApp o redes) es público mientras la ficha esté activa.",
+    "Mi Zona no es parte de la relación entre las personas y quienes ofrecen un negocio, un oficio o un alquiler. No verificamos la identidad, los títulos ni la experiencia de nadie, y no presentamos a nadie como «verificado» o «certificado». No garantizamos la calidad, el precio ni la disponibilidad de lo que se ofrece, ni procesamos pagos, señas ni reservas entre personas, ni respondemos por los acuerdos que hagan entre ellas.",
+    "Cuidate: no pagues por adelantado sin ver el lugar o a la persona, y desconfiá de quien te pida dinero antes de mostrarte lo que ofrece. Si algo te parece una estafa, denunciálo desde la propia ficha.",
     "Podemos ocultar o eliminar contenido o negocios que incumplan estos términos o la ley, o que sean denunciados con motivo razonable.",
+  ] },
+  { t: "3 bis. Comunidad", p: [
+    "Comunidad es un espacio gratuito donde los vecinos publican avisos de la zona, alertas de seguridad, perdidos y encontrados, pedidos y ofrecimientos de ayuda, regalos, actividades deportivas, eventos y sorteos o rifas. Lo publicado lo ven las personas del mismo departamento mientras esté vigente; después vence y deja de mostrarse.",
+    "Las publicaciones de seguridad son avisos entre vecinos, no verificados por Mi Zona: no se pueden nombrar ni acusar personas, ni publicar fotos de personas. Si fue un delito, denunciálo a la policía. Mi Zona no reemplaza a los servicios de emergencia.",
+    "Los sorteos y rifas son fichas informativas: Mi Zona no organiza ni cobra sorteos, no vende ni reserva números, no administra pagos y no verifica a quien organiza ni los resultados. Solo muestra lo que publica cada persona. Quien organiza es el único responsable de su sorteo y de cumplir las normas de su provincia; no se aceptan premios en dinero ni precios o datos de cobro en la ficha. Cualquier arreglo entre personas, incluido el pago, ocurre fuera de la aplicación: pagá únicamente a quien conocés y no pagues por adelantado si algo no te cierra.",
+    "Cada persona puede publicar una cantidad limitada por día. Quien publica puede editar, marcar como resuelta o eliminar su publicación cuando quiera.",
   ] },
   { t: "4. Reseñas", p: [
     "Las reseñas deben reflejar una experiencia real. No se permiten reseñas falsas, ofensivas, discriminatorias ni que publiquen datos personales de terceros. Las reseñas se muestran con el nombre que escribas al enviarlas, y podés borrarlas desde Ajustes → Privacidad.",
@@ -23,16 +30,30 @@ export const TERMINOS = [
   { t: "5. Suscripciones y pagos", p: [
     "Un negocio, una ficha de oficios o una ficha de alquiler se muestran mientras su plan esté activo. Cada tipo de ficha tiene un mes gratis (uno por cuenta y por tipo), sin tarjeta. Después hay planes de 1, 3 y 6 meses; el de 3 meses tiene 10% de descuento y el de 6 meses, 20%. El precio se muestra antes de pagar. Son pagos únicos: no se renuevan solos. Cuando el plan termina, la ficha se oculta (no se borra) y vuelve a mostrarse al renovar. Los pagos se hacen únicamente con Google Play: Mi Zona no recibe ni guarda los datos de tu tarjeta ni de tu método de pago. Si invitás a otras personas con tu código, podés ganar días gratis (con un tope), siempre que la cuenta nueva sea real y cumpla las reglas; Mi Zona puede rechazar invitaciones sospechosas de abuso.",
     "Al renovar, los meses nuevos se suman al vencimiento actual. Cuando la suscripción vence, el negocio deja de mostrarse hasta que se renueve; no se borra.",
-    "Si eliminás tu cuenta, no se reembolsa el período ya pagado de una suscripción. Si tenés un problema con un pago, escribinos desde Soporte.",
+    "Si eliminás tu cuenta, no se reembolsa el período ya pagado de una suscripción. Los reembolsos de compras hechas en Google Play se rigen también por las reglas de Google Play. Si tenés un problema con un pago, escribinos desde Soporte.",
   ] },
-  { t: "6. Uso aceptable", p: [
+  { t: "6. Uso aceptable y contenido prohibido", p: [
     "No podés usar Mi Zona para actividades ilegales, para engañar a otras personas, para enviar mensajes masivos no solicitados, para intentar acceder a cuentas o datos ajenos, ni para dañar o sobrecargar el servicio.",
+    "No se permite publicar, en ninguna parte de la aplicación (perfiles, fichas, reseñas, publicaciones de Comunidad, fotos o mensajes):",
+  ], l: [
+    "Contenido sexual explícito o que sexualice a cualquier persona, y cualquier contenido que ponga en riesgo a menores de edad.",
+    "Violencia, amenazas, acoso, intimidación, discriminación o discursos de odio.",
+    "Estafas, fraude, publicidad engañosa, suplantación de identidad o información falsa a propósito.",
+    "Datos personales de otras personas sin su permiso (domicilio, teléfono, documentos, fotos) y acusaciones a personas con nombre y apellido.",
+    "La venta u oferta de armas, drogas ilegales, documentos falsos u otros productos o servicios prohibidos por la ley.",
+    "Publicaciones repetidas, spam, cuentas falsas o duplicadas para conseguir ventajas (por ejemplo, días gratis por invitaciones).",
+  ], p2: [
+    "Quien incumpla estas reglas puede recibir una advertencia, perder contenido o ser suspendido (ver el artículo siguiente). Las reglas de convivencia completas están en Ajustes → Reglas de convivencia.",
   ] },
   { t: "6 bis. Denuncias, bloqueos y medidas del equipo", p: [
     "Cualquier persona con cuenta puede denunciar un perfil, un negocio, una ficha o una publicación, y bloquear a otra persona. Quien denuncia no es revelado a la persona denunciada.",
     "El equipo de Mi Zona revisa las denuncias y puede ocultar un contenido, enviar una advertencia o suspender una cuenta de forma temporal o permanente. Siempre se explica el motivo a la persona afectada.",
     "Mientras una cuenta está suspendida no puede publicar, editar, contactar ni escribir reseñas, y lo que publicó deja de mostrarse. Puede entrar, leer el motivo, descargar sus datos y eliminar su cuenta.",
     "Podés apelar cualquier medida una vez, dentro de los 30 días, desde Ajustes → Avisos del equipo. Una persona del equipo revisa la apelación y responde. Las reglas de convivencia están en Ajustes → Reglas de convivencia.",
+  ] },
+  { t: "6 ter. Inteligencia artificial", p: [
+    "Algunas funciones usan inteligencia artificial: la búsqueda con asistente, la ayuda con IA del buscador y los chats con el asistente de un negocio. Pueden equivocarse o dar información incompleta: revisá siempre los datos importantes (precios, horarios, disponibilidad) con el negocio o la persona. No son consejo profesional.",
+    "Si una respuesta de la IA te parece ofensiva, engañosa o equivocada, podés reportarla desde la propia respuesta con «Reportar respuesta» y el equipo la revisa.",
   ] },
   { t: "7. Disponibilidad y responsabilidad", p: [
     "Hacemos lo posible para que Mi Zona funcione siempre, pero puede haber interrupciones por mantenimiento o causas ajenas a nosotros. La información de la aplicación se ofrece tal como está y puede contener errores.",
@@ -52,23 +73,29 @@ export const PRIVACIDAD_TEXTO = [
   ], l: [
     "Tu correo, tu nombre, tu nombre de usuario y tu contraseña (esta última siempre cifrada: nunca se guarda en texto).",
     "Los dispositivos con sesión abierta y un registro de actividad de seguridad (inicios de sesión y cambios), por un máximo de 90 días.",
+    "Tu código de invitación y, si te registraste con el de otra persona, quién te invitó; los días gratis que ganaste o usaste; y una huella anónima de tu red al registrarte (no es tu IP) que sirve solo para detectar cuentas repetidas.",
+    "El historial de tus compras de planes en Google Play (producto, fecha, vencimiento y comprobante), sin ningún dato de pago: eso lo maneja solo Google Play.",
     "Tu localidad (la provincia y la localidad que elegís; el departamento lo completamos solos con la lista oficial), para mostrarte lo de tu zona, y la declaración de que tenés 18 años o más con la fecha en que aceptaste los términos (no pedimos tu edad ni tu fecha de nacimiento).",
     "Si querés, tu foto y una descripción corta. Tu perfil público muestra tu nombre, foto, localidad y descripción mientras lo tengas visible, y podés ocultarlo en Ajustes → Privacidad. Nunca mostramos tu correo ni tu teléfono.",
     "Las reseñas que escribís y las consultas que le mandás a Soporte.",
     "Si tenés un negocio: los datos que cargás de él (públicos) y tu agenda (privada).",
     "Si ofrecés tus servicios con una ficha de oficios: los datos que cargues en ella (nombre de la ficha, rubros, descripción, localidad y, si querés, dirección, WhatsApp, redes, fotos, horarios y precio orientativo). Esa ficha es pública mientras esté activa; tu número de WhatsApp solo se entrega a quien toca el botón de contacto, y solo si decidís mostrarlo.",
     "Si ofrecés algo en alquiler con una ficha de alquiler (hasta 5): los datos de la ficha (nombre, categoría, descripción, condiciones, localidad y, si querés, dirección, WhatsApp, redes, fotos, y en viviendas dormitorios, baños, capacidad, si es amoblado o acepta mascotas) y sus artículos (nombre, foto opcional, precio y estado). Es pública mientras esté activa; el número de WhatsApp solo se entrega a quien toca el botón, y solo si decidís mostrarlo. Mi Zona no procesa pagos ni reservas de alquileres.",
-    "Lo que publicás en Comunidad (título, detalles, fotos, lugar general, fechas y, si lo elegís, tu WhatsApp). Lo ven solo las personas del mismo departamento mientras esté vigente; después vence y se borra de nuestra base unos meses más tarde. Nunca mostramos tu correo.",
+    "Lo que publicás en Comunidad (título, detalles, fotos, lugar general, fechas y, si lo elegís, tu WhatsApp). Lo ven solo las personas del mismo departamento mientras esté vigente; después vence y se borra de nuestra base 90 días más tarde. Nunca mostramos tu correo.",
     "Si compartís Mi Zona al activar una ficha, guardamos solo la fecha en que completaste el menú de compartir (para no volver a recordártelo). No guardamos con quién ni por dónde compartiste, y no podemos saber si el mensaje llegó.",
     "Los dispositivos en los que activaste las notificaciones, para poder enviarlas.",
     "Las fotos que subís para tu negocio (visibles para todos) y las acciones sobre un negocio (ver, guardar, contactar) para armar sus estadísticas.",
     "Tus preferencias de privacidad (ubicación, chats, IA en la agenda).",
+    "Si la aplicación falla, un aviso técnico con el mensaje del error, la pantalla, la versión de la app y el tipo de celular (sin tu nombre, tu correo ni tu cuenta). Se agrupan los errores repetidos y se borran a los 30 días.",
+  ] },
+  { t: "1 ter. Menores de edad", p: [
+    "Mi Zona es solo para personas de 18 años o más y no está dirigida a menores. No pedimos tu edad ni tu fecha de nacimiento: guardamos únicamente la declaración de que tenés 18 años o más. Si nos enteramos de que una cuenta es de una persona menor, la cerramos y borramos sus datos.",
   ] },
   { t: "1 bis. Ubicación", p: [
     "Si lo permitís, usamos la ubicación de tu dispositivo (solo mientras usás la aplicación) para ordenar los negocios por cercanía y mostrarte el clima. Cuando buscás con el asistente, la ubicación se envía a nuestro servidor solo para calcular distancias en ese momento: no la guardamos ni la usamos en segundo plano. Podés negarte o retirar el permiso desde los ajustes de tu celular y desde Ajustes → Privacidad.",
   ] },
   { t: "2. Lo que queda en tu dispositivo", p: [
-    "Tus favoritos (de negocios, oficios y alquileres), los chats guardados, los negocios vistos, las búsquedas recientes y tus preferencias (como el modo oscuro) se guardan en tu dispositivo, no en nuestro servidor. Podés borrarlos desde Ajustes → Privacidad.",
+    "Tus favoritos (de negocios, oficios y alquileres), los chats guardados, los negocios vistos, las búsquedas recientes, tu elección de usar o no la ayuda con IA del buscador y tus preferencias (como el modo oscuro) se guardan en tu dispositivo, no en nuestro servidor. Podés borrarlos desde Ajustes → Privacidad.",
   ] },
   { t: "3. Para qué los usamos", p: [
     "Para que puedas entrar a tu cuenta y mantenerla segura, mostrar tu negocio y tus reseñas, procesar suscripciones, enviarte avisos que pediste (vencimientos, recordatorios de agenda, alertas de acceso), responder tus consultas y mejorar el funcionamiento de la aplicación. No vendemos tus datos.",
@@ -80,8 +107,8 @@ export const PRIVACIDAD_TEXTO = [
     "Servicio de correo: entrega el código de 6 números que te mandamos cuando entrás con tu correo.",
     "OpenStreetMap y Esri: dibujan el mapa y buscan direcciones; reciben la dirección o el punto que buscás o elegís en el mapa.",
     "Mi Asistente: recibe tus mensajes, pedidos y puntos para atenderte cuando chateás con un negocio.",
-    "Inteligencia artificial: procesa tu búsqueda con asistente y, si lo permitís, tu agenda. Podés apagarlo en Ajustes → Privacidad. Las fotos de agenda se analizan y se descartan.",
-    "Google Play: cobra los planes de pago. Nunca vemos los datos de tu tarjeta.",
+    "Inteligencia artificial (Anthropic): procesa tu búsqueda con asistente (lo que escribís, datos públicos de negocios, oficios y alquileres y, si lo permitís en Ajustes → Privacidad, un resumen corto de lo que le escribiste a los asistentes de los negocios; nunca tus chats con otras personas), el texto que escribís en el buscador si elegís usar la ayuda con IA (solo ese texto: sin tu nombre ni datos de tu cuenta, y sacamos correos, teléfonos y enlaces) y, si lo permitís, tu agenda. La ayuda con IA del buscador se apaga desde el mismo buscador y el resto en Ajustes → Privacidad. Las fotos de agenda se analizan y se descartan.",
+    "Google Play: cobra los planes de pago y nos confirma cada compra. Nunca vemos los datos de tu tarjeta.",
     "Cloudinary: aloja las fotos que sube un negocio y tu foto de perfil, que son visibles para todos.",
     "Proveedores de mapas (OpenStreetMap y Esri): reciben la dirección IP de tu dispositivo para mostrarte el mapa.",
     "Open-Meteo: si permitís el uso de tu ubicación, recibe una ubicación aproximada para mostrarte el clima de tu zona.",
@@ -98,7 +125,10 @@ export const PRIVACIDAD_TEXTO = [
     "Las denuncias resueltas se borran un año después de resolverse y el registro interno a los 3 años. Si eliminás tu cuenta se borran tus bloqueos y los avisos del equipo sobre tu cuenta; las denuncias que hiciste se conservan sin tu identidad hasta que se borren solas.",
   ] },
   { t: "5. Cuánto tiempo los conservamos", p: [
-    "Guardamos tus datos mientras tengas tu cuenta. Cuando la eliminás, se borran tu cuenta, tu agenda, tus notificaciones, tus sesiones, tu actividad de seguridad, tus consultas a Soporte y tus reseñas. Si tenías negocios y elegiste eliminarlos, también se borran. Los chats con asistentes están en Mi Asistente y no se borran desde Mi Zona.",
+    "Guardamos tus datos mientras tengas tu cuenta. Cuando la eliminás, se borran tu cuenta, tu perfil, tu agenda, tus notificaciones, tus sesiones, tu actividad de seguridad, tus consultas a Soporte, tus reseñas, tu ficha de oficios, tus fichas de alquiler, tus publicaciones de Comunidad, tus invitaciones y los avisos del equipo sobre tu cuenta. Si tenías negocios y elegiste eliminarlos, también se borran junto con sus estadísticas.",
+    "Qué se conserva después de eliminar tu cuenta: (a) los comprobantes de tus compras en Google Play, sin tu identidad, porque sirven ante un reclamo o un reembolso y para la contabilidad; (b) las denuncias que hiciste, sin tu identidad, hasta que se borran solas (un año después de resolverse); (c) el registro interno de acciones del equipo, 3 años. Las fotos que subiste se borran del servicio de alojamiento de imágenes al eliminar tu cuenta; si en ese momento el servicio no responde, el borrado se reintenta solo hasta que se completa.",
+    "Otros plazos: las estadísticas de visitas, guardados y contactos de un negocio se borran solas a los 400 días; la actividad de seguridad, a los 90 días; las publicaciones de Comunidad, 90 días después de vencer; los avisos técnicos de errores, a los 30 días.",
+    "Los chats con los asistentes de los negocios se guardan en Mi Asistente, un servicio aparte. Al eliminar tu cuenta de Mi Zona, le pedimos a Mi Asistente que los borre junto con tu memoria de cliente y tus avisos; los pedidos, turnos y reseñas que un negocio necesita para su gestión quedan sin tu nombre, teléfono ni dirección, y se borran tus comprobantes de transferencia. Si Mi Asistente no responde en ese momento, el borrado se reintenta solo hasta que se completa.",
   ] },
   { t: "6. Tus derechos", p: [
     "Podés acceder a tus datos, corregirlos y pedir que se eliminen. La mayoría de estas acciones las hacés vos mismo: ver lo que guardamos y descargar una copia en Ajustes → Privacidad, cambiar tu nombre en Ajustes → Mi cuenta y eliminar tu cuenta desde ahí. Si necesitás algo más, escribinos desde Soporte.",

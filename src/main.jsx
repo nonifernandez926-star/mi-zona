@@ -2,6 +2,9 @@ import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
+import { iniciarRegistroDeErrores, reportarError } from "./errores.js";
+
+iniciarRegistroDeErrores();
 
 // Galería de componentes: solo existe con "npm run dev" y abriendo /?galeria. No entra en la versión publicada.
 const Galeria = import.meta.env.DEV ? lazy(() => import("./componentes/Galeria.jsx")) : null;
@@ -11,7 +14,7 @@ const verGaleria = import.meta.env.DEV && new URLSearchParams(window.location.se
 class AvisoDeError extends React.Component {
   constructor(props) { super(props); this.state = { fallo: false }; }
   static getDerivedStateFromError() { return { fallo: true }; }
-  componentDidCatch(error) { console.error("Error de pantalla:", error); }
+  componentDidCatch(error) { console.error("Error de pantalla:", error); reportarError(error, "pantalla"); }
   render() {
     if (!this.state.fallo) return this.props.children;
     return (
