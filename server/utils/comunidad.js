@@ -19,6 +19,9 @@ export const TIPOS = {
   regalo:    { label: "Regalo",                fotos: 3, contacto: true },
   deporte:   { label: "Deporte o actividad",   fotos: 1, contacto: true },
   evento:    { label: "Evento o feria",        fotos: 1, contacto: true },
+  // Sorteo o rifa: SOLO una ficha informativa. Mi Zona no vende números, no cobra, no reserva ni muestra pagos: quien se interesa le escribe
+  // por WhatsApp al organizador y lo que arreglen (incluido el pago) pasa fuera de la app.
+  sorteo:    { label: "Sorteo o rifa",         fotos: 1, contacto: true },
 };
 export const TIPO_IDS = Object.keys(TIPOS);
 
@@ -41,8 +44,11 @@ export const REGALO_DIAS = [7, 15, 30];
 export const DEPORTE_ACTIVIDADES = [["futbol", "Fútbol"], ["basquet", "Básquet"], ["voley", "Vóley"], ["caminata", "Caminata"], ["ciclismo", "Ciclismo"], ["taller", "Taller"], ["solidaria", "Actividad solidaria"], ["otra", "Otra actividad"]];
 export const EVENTO_CATEGORIAS = [["feria", "Feria"], ["musical", "Música"], ["cultural", "Cultural"], ["deportivo", "Deportivo"], ["infantil", "Infantil"], ["solidario", "Solidario"], ["gastronomico", "Gastronómico"], ["religioso", "Religioso"], ["otro", "Otro"]];
 export const ESTADOS_EVENTO = ["normal", "cancelado", "reprogramado"];
+export const SORTEO_MOTIVOS = [["beneficio", "A beneficio"], ["otro", "Otro motivo"]];
+export const SORTEO_DEFINICIONES = [["quiniela", "Con la Quiniela"], ["loteria", "Con la Lotería"], ["vivo", "Sorteo en vivo"], ["redes", "Por redes sociales"], ["otra", "De otra forma"]];
+export const SORTEO_DIAS_VISIBLE = 3; // después de la fecha del sorteo sigue visible unos días (para publicar el resultado) y se oculta solo
 
-export const LIMITES = { titulo: [4, 80], desc: [10, 500], zona: 80, lugar: 80, organizador: 60, precio: 40, color: 40, senas: 120, enlace: 300, porDia: 5, esperaSeg: 60, activas: 15, diasAdelante: 120, duracionEventoMax: 14 * DIA };
+export const LIMITES = { titulo: [4, 80], desc: [10, 500], zona: 80, lugar: 80, organizador: 60, precio: 40, color: 40, senas: 120, enlace: 300, porDia: 5, esperaSeg: 60, activas: 15, diasAdelante: 120, sorteosActivos: 5, premios: 6, premio: 80, detalle: 80, resultado: 300, numerosMax: 10000, duracionEventoMax: 14 * DIA };
 
 // "2026-10-20T18:00" (hora de Argentina, UTC-3 todo el año) o un ISO con zona → Date, o null
 export function fechaAR(v) {
@@ -56,6 +62,12 @@ export function fechaAR(v) {
 
 // Ni teléfonos ni documentos dentro del texto de avisos y de seguridad (no se arman denuncias ni se señala a nadie)
 const TIENE_NUMERO_LARGO = (t) => /\d[\d\s.-]{6,}\d/.test(t);
+
+// Sorteos: Mi Zona no maneja plata. Ni premios en dinero, ni precios, ni datos de cobro dentro de la ficha (eso se habla por privado).
+const PARECE_DINERO = /\$|\d\s?(mil|lucas|palos)\b|\bpesos?\b|\bd[oó]lar(es)?\b|\busd\b|\befectivo\b|\bdinero\b|(?<!\bde\s)\bplata\b|\bbilletes?\b/i;
+const PARECE_COBRO = /\$|\bpesos?\b|\bd[oó]lar(es)?\b|\busd\b|\bprecio\b|\bvalor\s+(del\s+)?n[uú]mero\b|\bcada\s+n[uú]mero\b|\bpor\s+n[uú]mero\b|\bcbu\b|\bcvu\b|\balias\b|mercado\s?pago|\btransferencia\b|\befectivo\b|\bcobr(o|amos|a|ar)\b/i;
+export const parecePrecioOPago = (t) => PARECE_COBRO.test(String(t || ""));
+export const pareceDinero = (t) => PARECE_DINERO.test(String(t || ""));
 
 const urlHttps = (v) => { const t = limpiar(v); if (!t) return ""; return /^https:\/\/[^\s<>"']{4,300}$/i.test(t) ? t : null; };
 
@@ -71,6 +83,7 @@ export function sanearPublicacion(b, tipo, ahora = new Date()) {
   const desc = limpiar(x.desc);
   if (!largo(desc, LIMITES.desc)) return { error: `Contá los detalles en ${LIMITES.desc[0]} a ${LIMITES.desc[1]} letras.` };
   if ((tipo === "seguridad" || tipo === "aviso") && (TIENE_NUMERO_LARGO(titulo) || TIENE_NUMERO_LARGO(desc))) return { error: "No escribas teléfonos ni números de documento en este tipo de aviso." };
+  if (tipo === "sorteo" && (TIENE_NUMERO_LARGO(titulo) || TIENE_NUMERO_LARGO(desc))) return { error: "No escribas teléfonos, cuentas ni números largos en la ficha: para eso está el botón de WhatsApp." };
 
   const localidad = sanearLocalidad(x.localidad);
   if (!localidad) return { error: "Elegí la localidad de la lista." };
@@ -153,16 +166,61 @@ export function sanearPublicacion(b, tipo, ahora = new Date()) {
     const enlace = urlHttps(x.enlace);
     if (enlace === null) return { error: "El enlace tiene que empezar con https://" };
     extra = { categoria, lugar, organizador, gratis, precio, enlace }; inicio = ini; vence = fin;
+  } else if (tipo === "sorteo") {
+    const organizador = limpiar(x.organizador);
+    if (organizador.length < 2 || organizador.length > LIMITES.organizador) return { error: "Escribí quién organiza el sorteo (entre 2 y 60 letras)." };
+    const motivo = entre(x.motivo, ids(SORTEO_MOTIVOS)); if (!motivo) return { error: "Elegí si es a beneficio de algo o por otro motivo." };
+    const motivoDetalle = limpiar(x.motivoDetalle);
+    if (motivoDetalle.length > LIMITES.detalle) return { error: `El detalle del motivo puede tener hasta ${LIMITES.detalle} letras.` };
+    const definicion = entre(x.definicion, ids(SORTEO_DEFINICIONES)); if (!definicion) return { error: "Elegí cómo se define el ganador." };
+    const definicionDetalle = limpiar(x.definicionDetalle);
+    if (definicionDetalle.length > LIMITES.detalle) return { error: `El detalle de cómo se define puede tener hasta ${LIMITES.detalle} letras.` };
+    const crudos = (Array.isArray(x.premios) ? x.premios : []).map(limpiar).filter(Boolean);
+    if (!crudos.length) return { error: "Escribí al menos un premio." };
+    if (crudos.length > LIMITES.premios) return { error: `Podés cargar hasta ${LIMITES.premios} premios.` };
+    if (crudos.some((t) => t.length < 2 || t.length > LIMITES.premio)) return { error: `Cada premio tiene que tener entre 2 y ${LIMITES.premio} letras.` };
+    if (crudos.some(pareceDinero)) return { error: "Mi Zona no acepta sorteos con premios en dinero. Poné un premio que sea un objeto, un servicio o una experiencia." };
+    if ([titulo, desc, organizador, motivoDetalle, definicionDetalle, ...crudos].some(parecePrecioOPago)) return { error: "No escribas precios ni formas de pago: si el organizador cobra algo, lo habla por privado con cada persona." };
+    const premios = [...new Set(crudos)];
+    let numeros = null;
+    if (x.numeros !== undefined && x.numeros !== null && x.numeros !== "") {
+      numeros = Number(x.numeros);
+      if (!Number.isInteger(numeros) || numeros < 2 || numeros > LIMITES.numerosMax) return { error: `La cantidad de números tiene que estar entre 2 y ${LIMITES.numerosMax}.` };
+    }
+    const fecha = typeof x.fecha === "string" ? x.fecha.trim() : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { error: "Elegí la fecha del sorteo." };
+    const hora = typeof x.hora === "string" ? x.hora.trim() : "";
+    if (hora && !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return { error: "La hora no es válida." };
+    const ini = fechaAR(`${fecha}T${hora || "12:00"}`), finDia = fechaAR(`${fecha}T23:59`);
+    if (!ini || !finDia) return { error: "La fecha del sorteo no es válida." };
+    if (finDia.getTime() < ahora.getTime() || (hora && ini.getTime() < ahora.getTime() - HORA)) return { error: "La fecha del sorteo ya pasó." };
+    if (ini.getTime() > ahora.getTime() + LIMITES.diasAdelante * DIA) return { error: `Solo se puede publicar hasta ${LIMITES.diasAdelante} días antes.` };
+    const lugar = limpiar(x.lugar);
+    if (lugar.length > LIMITES.lugar) return { error: `El lugar puede tener hasta ${LIMITES.lugar} letras.` };
+    extra = { organizador, motivo, motivoDetalle, definicion, definicionDetalle, premios, numeros, conHora: !!hora, lugar };
+    inicio = ini; vence = new Date(finDia.getTime() + SORTEO_DIAS_VISIBLE * DIA);
+    // el contacto es el sentido de la ficha: sin WhatsApp no hay forma de participar
+    if (!whatsapp || !mostrarWhatsapp) return { error: "Para publicar un sorteo tenés que escribir tu WhatsApp y dejar el botón activado: así te escriben las personas interesadas." };
   }
 
   return { datos: { titulo, desc, localidad, zona, fotos: [...new Set(fotos)], whatsapp, mostrarWhatsapp }, extra, vence, inicio };
+}
+
+// Resultado de un sorteo: solo texto que escribe el organizador. Sin enlaces ni precios; vacío = borrarlo.
+export function limpiarTextoSorteo(v) {
+  const t = limpiar(v);
+  if (!t) return { valor: "" };
+  if (t.length < 4 || t.length > LIMITES.resultado) return { error: `El resultado tiene que tener entre 4 y ${LIMITES.resultado} letras.` };
+  if (/https?:\/\/|www\./i.test(t)) return { error: "No pongas enlaces en el resultado." };
+  if (parecePrecioOPago(t)) return { error: "No escribas precios ni formas de pago." };
+  return { valor: t };
 }
 
 export const prioridadAviso = (extra) => (extra?.gravedad === "urgente" ? 2 : extra?.gravedad === "importante" ? 1 : 0);
 
 // Texto para buscar (sin tildes ni mayúsculas)
 export const normalizar = (t) => String(t || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
-export const textoBusqueda = (d, extra) => normalizar([d.titulo, d.desc, d.zona, d.localidad?.localidad, extra?.lugar, extra?.especie, extra?.color].join(" "));
+export const textoBusqueda = (d, extra) => normalizar([d.titulo, d.desc, d.zona, d.localidad?.localidad, extra?.lugar, extra?.especie, extra?.color, extra?.organizador, ...(extra?.premios || [])].join(" "));
 
 // Estado: activa, resuelta o vencida
 export function estadoPublicacion(p, ahora = new Date()) {
@@ -177,7 +235,7 @@ export function publicacionPublica(p, ahora = new Date()) {
     id: p.id, tipo: p.tipo, titulo: p.titulo, desc: p.desc,
     localidad: p.localidad?.localidadId ? { localidad: p.localidad.localidad, departamento: p.localidad.departamento, provincia: p.localidad.provincia } : null,
     zona: p.zona || "", fotos: p.fotos || [], datos: p.datos || {},
-    estado: estadoPublicacion(p, ahora), estadoEvento: p.tipo === "evento" ? p.estadoEvento || "normal" : undefined,
+    estado: estadoPublicacion(p, ahora), estadoEvento: p.tipo === "evento" || p.tipo === "sorteo" ? p.estadoEvento || "normal" : undefined, // en sorteos: normal | cancelado
     inicio: p.inicioAt || null, vence: p.expiresAt || null, creadaEn: p.createdAt || null, actualizadaEn: p.updatedAt || null,
     conContacto: TIPOS[p.tipo]?.contacto === true && !!p.whatsapp && p.mostrarWhatsapp === true,
     noVerificado: p.tipo === "seguridad",

@@ -9,10 +9,10 @@ import { huellaAutor } from "../utils/negocios.js";
 const router = express.Router();
 router.use(identificar);
 
-const MOTIVOS = ["cuenta", "negocio", "pagos", "asistente", "resenas", "error", "sugerencia", "otro"];
+const MOTIVOS = ["cuenta", "negocio", "pagos", "asistente", "resenas", "error", "sugerencia", "ia", "otro"];
 const NOMBRE_MOTIVO = {
   cuenta: "Mi cuenta y acceso", negocio: "Mi negocio", pagos: "Pagos y suscripción", asistente: "Mi Asistente y chats",
-  resenas: "Reseñas", error: "Algo no funciona", sugerencia: "Sugerencia", otro: "Otro tema",
+  resenas: "Reseñas", error: "Algo no funciona", sugerencia: "Sugerencia", ia: "Respuesta de la IA reportada", otro: "Otro tema",
 };
 const limpiar = (v, max) => String(v ?? "").replace(/\s+\n/g, "\n").trim().slice(0, max);
 const emailValido = (v) => /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(v);

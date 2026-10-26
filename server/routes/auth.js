@@ -268,7 +268,7 @@ router.get("/estado", (req, res) => {
     jwtSecret: Boolean(process.env.JWT_SECRET),
     mongodb: Boolean(process.env.MONGODB_URI),
     anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
-    mercadoPago: Boolean(process.env.MP_ACCESS_TOKEN),
+    playBilling: Boolean(process.env.PLAY_SERVICE_ACCOUNT_JSON && process.env.PLAY_PACKAGE_NAME), // cobro con Google Play (Fase 9)
     push: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
     integracionAsistente: Boolean(process.env.INTEGRACION_KEY),
   });

@@ -12,12 +12,15 @@ import {
   CATEGORIAS, CATEGORIA_IDS, ETIQUETA_TIPO, ESTADOS_ARTICULO, LIMITES, CAMPOS_FORMULARIO,
   sanearAlquiler, sanearArticulo, nuevoArticulo, textoBusqueda, normalizar, estadoFicha, alquilerPublico, alquilerDelDueno, enlaceWhatsapp,
 } from "../utils/alquileres.js";
+import { condicionesZona } from "../utils/oficios.js";
 
 const router = express.Router();
 router.use(identificar);
 
 const POR_PAGINA = 20;
 const hoy = () => ahoraArgentina().fecha;
+// El precio más bajo entre los artículos disponibles con precio (para "Desde $X por día" en la tarjeta). null si no hay.
+const precioDesde = (arts = []) => { const c = arts.filter((x) => x.estado !== "ocupado" && x.precioUnidad !== "consultar" && x.precioValor > 0).sort((p, q) => p.precioValor - q.precioValor)[0]; return c ? { valor: c.precioValor, unidad: c.precioUnidad } : null; };
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function filtroVisible(h) {
@@ -85,6 +88,7 @@ router.get("/", limitar("alquileres-lista", 240, 10 * 60 * 1000), async (req, re
     if (provinciaId !== undefined && provinciaId !== "") { if (!/^\d{2}$/.test(String(provinciaId))) return res.status(400).json({ error: "Provincia inválida." }); y.push({ "localidad.provinciaId": String(provinciaId) }); }
     if (departamentoId !== undefined && departamentoId !== "") { if (!/^\d{5}$/.test(String(departamentoId))) return res.status(400).json({ error: "Departamento inválido." }); y.push({ "localidad.departamentoId": String(departamentoId) }); }
     if (localidadId !== undefined && localidadId !== "") { if (!/^\d{5,12}$/.test(String(localidadId))) return res.status(400).json({ error: "Localidad inválida." }); y.push({ "localidad.localidadId": String(localidadId) }); }
+    y.push(...condicionesZona(req.query)); // zona elegida en Inicio, por nombre
     // Fase 8: no se muestran cuentas suspendidas ni personas bloqueadas (en ningún sentido)
     const filtro = { ...filtroVisible(h), ownerId: { $nin: await ownersExcluidos(req) } };
     const match = y.length ? { $and: [filtro, ...y] } : filtro;
@@ -96,7 +100,7 @@ router.get("/", limitar("alquileres-lista", 240, 10 * 60 * 1000), async (req, re
     const duenos = await usuariosDeFichas(filas);
     const ahora = new Date();
     res.json({
-      alquileres: filas.map((a) => { const p = alquilerPublico(a, a.duenoEnFicha ? duenos.get(a.ownerId) || null : null, ahora); delete p.articulos; return p; }), // el listado no lleva los artículos: se ven al abrir la ficha
+      alquileres: filas.map((a) => { const p = alquilerPublico(a, a.duenoEnFicha ? duenos.get(a.ownerId) || null : null, ahora); p.desde = precioDesde(p.articulos); delete p.articulos; return p; }), // el listado no lleva los artículos: se ven al abrir la ficha
       total, pagina, hayMas: pagina * POR_PAGINA < total,
     });
   } catch (e) {

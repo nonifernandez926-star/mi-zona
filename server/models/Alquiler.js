@@ -36,6 +36,7 @@ const alquilerSchema = new mongoose.Schema(
     ig: { type: String, default: "" }, facebook: { type: String, default: "" }, tiktok: { type: String, default: "" },
     logo: { type: String, default: "" },
     fotos: { type: [String], default: [] },
+    weekHours: { type: mongoose.Schema.Types.Mixed, default: [] }, // 7 entradas (0 = domingo): [abre, cierra] o [] si no atiende
     condiciones: { type: String, default: "" }, // condiciones, depósito o requisitos (opcional)
     // Solo para la categoría "viviendas" (el servidor ignora estos datos en las demás)
     vivienda: {

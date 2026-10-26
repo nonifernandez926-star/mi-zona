@@ -25,6 +25,7 @@ const oficioSchema = new mongoose.Schema(
     fotos: { type: [String], default: [] },
     dias: { type: [String], default: [] },
     horario: { type: String, default: "" },
+    weekHours: { type: mongoose.Schema.Types.Mixed, default: [] }, // 7 entradas (0 = domingo): [abre, cierra] o [] si no atiende
     precio: { type: String, default: "" },
     etiquetas: { type: [String], default: [] },
     // Estado: "active" | "paused". "Vencida" se calcula con expiresAt (vacío mientras no se cobre: se conecta en la Fase 9)

@@ -6,7 +6,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "probar:busqueda-ia": "node scripts/probar-busqueda-ia.mjs && node scripts/probar-ruta-busqueda-ia.mjs",
+    "probar:errores": "node scripts/probar-errores.mjs",
+    "probar:sorteos": "node scripts/probar-comunidad-sorteos.mjs",
+    "probar:todo": "npm run probar:sorteos && npm run probar:busqueda-ia && npm run probar:privacidad-ia && npm run probar:borrado-cuenta && npm run probar:errores && npm run probar:suspension",
+    "probar:suspension": "node scripts/probar-suspension.mjs",
+    "probar:privacidad-ia": "node scripts/probar-privacidad-ia.mjs",
+    "probar:borrado-cuenta": "node scripts/probar-borrado-cuenta.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

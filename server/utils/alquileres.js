@@ -3,7 +3,7 @@
 import crypto from "crypto";
 import { ocultaInfo } from "./moderacion.js";
 import { sanearLocalidad, sanearFoto } from "./perfil.js";
-import { sanearWhatsapp, sanearRed, normalizar, estadoOficio, enlaceWhatsapp } from "./oficios.js";
+import { sanearWhatsapp, sanearRed, normalizar, estadoOficio, enlaceWhatsapp, sanearHorarios } from "./oficios.js";
 
 export { normalizar, enlaceWhatsapp, sanearWhatsapp };
 export const estadoFicha = estadoOficio; // mismas reglas: pausada | vencida | activa
@@ -36,7 +36,7 @@ export const UNIDADES = ["hora", "dia", "semana", "mes", "consultar"];
 export const ESTADOS_ARTICULO = ["disponible", "ocupado", "retirado"];
 export const LIMITES = { nombre: [2, 60], desc: [10, 400], tipos: 6, zona: 80, direccion: 120, condiciones: 400, fotos: 6, articulos: 40, fichas: 5, articuloNombre: [2, 60], precioMax: 99999999, dormitorios: 20, banos: 20, capacidad: 5000 };
 export const VIGENCIA_DIAS = 30; // pasado este tiempo sin confirmar, un artículo "Disponible" se muestra como "Sin confirmar"
-export const CAMPOS_FORMULARIO = ["nombre", "categoria", "tipos", "desc", "localidad", "zona", "direccion", "whatsapp", "mostrarWhatsapp", "ig", "facebook", "tiktok", "logo", "fotos", "condiciones", "vivienda"];
+export const CAMPOS_FORMULARIO = ["nombre", "categoria", "tipos", "desc", "localidad", "zona", "direccion", "whatsapp", "mostrarWhatsapp", "ig", "facebook", "tiktok", "logo", "fotos", "weekHours", "condiciones", "vivienda"];
 
 const limpiar = (s) => String(s ?? "").replace(/[\u0000-\u001F\u007F<>]/g, " ").replace(/\s+/g, " ").trim();
 const largo = (t, [min, max]) => t.length >= min && t.length <= max;
@@ -97,6 +97,9 @@ export function sanearAlquiler(b) {
   const fotos = enviadas.map(sanearFoto);
   if (fotos.some((f) => !f)) return { error: "Una de las fotos no es válida. Probá subirla de nuevo." };
 
+  const weekHours = sanearHorarios(x.weekHours);
+  if (weekHours === null) return { error: "Los horarios no son válidos. Elegí de nuevo los días y las horas." };
+
   // Datos de vivienda: solo existen en esa categoría. En las demás se descartan aunque la web los mande.
   let vivienda = { dormitorios: null, banos: null, amoblado: null, mascotas: null, capacidad: null };
   if (categoria === "viviendas") {
@@ -107,7 +110,7 @@ export function sanearAlquiler(b) {
     if (capacidad === undefined) return { error: "La capacidad tiene que ser un número de personas." };
     vivienda = { dormitorios, banos, amoblado: triestado(v.amoblado), mascotas: triestado(v.mascotas), capacidad };
   }
-  return { datos: { nombre, categoria, tipos, desc, localidad, zona, direccion, whatsapp, mostrarWhatsapp, ig, facebook, tiktok, logo, fotos: unicos(fotos), condiciones, vivienda } };
+  return { datos: { nombre, categoria, tipos, desc, localidad, zona, direccion, whatsapp, mostrarWhatsapp, ig, facebook, tiktok, logo, fotos: unicos(fotos), weekHours, condiciones, vivienda } };
 }
 
 export function textoBusqueda(d) {
@@ -143,7 +146,7 @@ export function alquilerPublico(a, dueno = null, ahora = new Date()) {
     desc: a.desc, localidad: nombreLocalidad(a.localidad), zona: a.zona || "", direccion: a.direccion || "",
     conWhatsapp: !!a.whatsapp && a.mostrarWhatsapp === true,
     ig: a.ig || "", facebook: a.facebook || "", tiktok: a.tiktok || "",
-    logo: a.logo || "", fotos: a.fotos || [], condiciones: a.condiciones || "",
+    logo: a.logo || "", fotos: a.fotos || [], weekHours: a.weekHours || [], condiciones: a.condiciones || "",
     vivienda: a.categoria === "viviendas" ? { dormitorios: a.vivienda?.dormitorios ?? null, banos: a.vivienda?.banos ?? null, amoblado: a.vivienda?.amoblado ?? null, mascotas: a.vivienda?.mascotas ?? null, capacidad: a.vivienda?.capacidad ?? null } : null,
     articulos: arts.map((x) => articuloVista(x, ahora)),
     cantidadArticulos: arts.length,

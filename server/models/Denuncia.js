@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 const denunciaSchema = new mongoose.Schema(
   {
     denuncianteId: { type: String, required: true, index: true },
-    objetoTipo: { type: String, required: true, enum: ["publicacion", "negocio", "oficio", "alquiler", "perfil"] },
+    objetoTipo: { type: String, required: true, enum: ["publicacion", "negocio", "oficio", "alquiler", "sorteo", "perfil"] /* "sorteo" quedó solo por denuncias viejas: los sorteos ahora son publicaciones de Comunidad */ },
     objetoId: { type: String, required: true }, // id de la ficha o publicación; para un perfil, el nombre de usuario
     duenoId: { type: String, default: "", index: true }, // cuenta de quien publicó lo denunciado ("" si es un negocio viejo sin dueño)
     motivo: { type: String, required: true, enum: ["spam", "estafa", "suplantacion", "acoso", "ofensivo", "falso", "otro"] },

@@ -58,7 +58,8 @@ export function suspensionVigente(u, ahora = new Date()) {
 export const filtroSuspendidos = (ahora = new Date()) => ({ "suspension.activa": true, $or: [{ "suspension.permanente": true }, { "suspension.hasta": { $gt: ahora } }] });
 
 // Rutas que una cuenta suspendida SÍ puede usar aunque escriba datos: ver el motivo y apelar, soporte, descargar datos / eliminar la cuenta, cerrar sesión.
-const PERMITIDAS_SUSPENDIDO = [/^\/api\/auth(\/|$)/, /^\/api\/privacidad(\/|$)/, /^\/api\/soporte(\/|$)/, /^\/api\/moderacion\/(medidas|estado)(\/|$)/, /^\/api\/push(\/|$)/, /^\/api\/bloqueos(\/|$)/];
+// La búsqueda con IA (POST /api/buscar/ia) y «resolver favoritos» (POST /api/favoritos/resolver) son POST pero solo leen: no cambian nada.
+const PERMITIDAS_SUSPENDIDO = [/^\/api\/auth(\/|$)/, /^\/api\/privacidad(\/|$)/, /^\/api\/soporte(\/|$)/, /^\/api\/moderacion\/(medidas|estado)(\/|$)/, /^\/api\/push(\/|$)/, /^\/api\/bloqueos(\/|$)/, /^\/api\/buscar\/ia$/, /^\/api\/favoritos\/resolver$/];
 export function rutaPermitidaSuspendido(metodo, ruta) {
   if (["GET", "HEAD", "OPTIONS"].includes(String(metodo).toUpperCase())) return true; // mirar se puede; lo que publicó está oculto
   const r = String(ruta || "").split("?")[0];

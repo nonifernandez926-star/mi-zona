@@ -9,7 +9,7 @@ import { ahoraArgentina } from "../utils/fechas.js";
 import { declaracionPendiente } from "../utils/perfil.js";
 import { RUBROS, GRUPOS_RUBROS, RUBRO_IDS } from "../utils/rubros.js";
 import { anotarEvento } from "../utils/estadisticas.js";
-import { sanearOficio, textoBusqueda, normalizar, oficioPublico, oficioDelDueno, estadoOficio, enlaceWhatsapp, CAMPOS_FORMULARIO } from "../utils/oficios.js";
+import { sanearOficio, textoBusqueda, normalizar, oficioPublico, oficioDelDueno, estadoOficio, enlaceWhatsapp, condicionesZona, puntajeFicha, CAMPOS_FORMULARIO } from "../utils/oficios.js";
 
 const router = express.Router();
 router.use(identificar);
@@ -76,7 +76,9 @@ router.get("/", limitar("oficios-lista", 240, 10 * 60 * 1000), async (req, res) 
     if (provinciaId !== undefined && provinciaId !== "") { if (!/^\d{2}$/.test(String(provinciaId))) return res.status(400).json({ error: "Provincia inválida." }); y.push({ "localidad.provinciaId": String(provinciaId) }); }
     if (departamentoId !== undefined && departamentoId !== "") { if (!/^\d{5}$/.test(String(departamentoId))) return res.status(400).json({ error: "Departamento inválido." }); y.push({ "localidad.departamentoId": String(departamentoId) }); }
     if (localidadId !== undefined && localidadId !== "") { if (!/^\d{5,12}$/.test(String(localidadId))) return res.status(400).json({ error: "Localidad inválida." }); y.push({ "localidad.localidadId": String(localidadId) }); }
+    y.push(...condicionesZona(req.query)); // zona elegida en Inicio, por nombre
     const match = y.length ? { $and: [filtro, ...y] } : filtro;
+    const orden = req.query.orden === "recientes" ? "recientes" : "recomendados";
     const pagina = Math.min(50, Math.max(1, parseInt(req.query.pagina, 10) || 1));
 
     const [total, filas] = await Promise.all([
@@ -84,13 +86,18 @@ router.get("/", limitar("oficios-lista", 240, 10 * 60 * 1000), async (req, res) 
       Oficio.aggregate([
         { $match: match },
         { $addFields: { _disp: { $cond: [{ $and: [{ $eq: ["$disponible", true] }, { $eq: ["$disponibleEl", h] }] }, 1, 0] } } }, // los que marcaron "Disponible hoy" van primero
-        { $sort: { _disp: -1, updatedAt: -1, _id: 1 } },
+        { $addFields: { _pts: { $add: [
+          { $multiply: ["$_disp", 3] }, { $cond: [{ $gt: [{ $strLenCP: { $ifNull: ["$logo", ""] } }, 0] }, 2, 0] },
+          { $min: [3, { $size: { $ifNull: ["$fotos", []] } }] }, { $cond: [{ $eq: [{ $size: { $ifNull: ["$weekHours", []] } }, 7] }, 1, 0] },
+          { $cond: [{ $gte: [{ $strLenCP: { $ifNull: ["$desc", ""] } }, 80] }, 1, 0] }, { $cond: [{ $and: [{ $gt: [{ $strLenCP: { $ifNull: ["$whatsapp", ""] } }, 0] }, { $eq: ["$mostrarWhatsapp", true] }] }, 1, 0] },
+        ] } } },
+        { $sort: orden === "recientes" ? { _disp: -1, updatedAt: -1, _id: 1 } : { _pts: -1, updatedAt: -1, _id: 1 } },
         { $skip: (pagina - 1) * POR_PAGINA }, { $limit: POR_PAGINA },
       ]),
     ]);
     const duenos = await usuariosDeFichas(filas);
     res.json({
-      oficios: filas.map((o) => oficioPublico(o, h, o.duenoEnFicha ? duenos.get(o.ownerId) || null : null)),
+      oficios: filas.map((o) => ({ ...oficioPublico(o, h, o.duenoEnFicha ? duenos.get(o.ownerId) || null : null), recomendado: puntajeFicha(o, h) >= 6 })),
       total, pagina, hayMas: pagina * POR_PAGINA < total,
     });
   } catch (e) {

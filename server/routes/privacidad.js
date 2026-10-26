@@ -1,3 +1,4 @@
+import { fotosDeLaCuenta, borrarDatosExternos } from "../utils/borradoDatos.js";
 import express from "express";
 import Usuario from "../models/Usuario.js";
 import Business from "../models/Business.js";
@@ -204,6 +205,9 @@ router.delete("/cuenta", async (req, res) => {
       return res.status(409).json({ error: "negocios_pendientes", mensaje: "Tu cuenta tiene negocios. Confirmá que también querés eliminarlos.", negocios: negocios.map((n) => n.name) });
     }
 
+    // Lo que vive afuera (fotos en Cloudinary y chats en Mi Asistente) se junta ahora y se borra al final
+    const fotos = await fotosDeLaCuenta(id, u);
+    const sesionClienteId = u.sesionClienteId || "";
     const huella = huellaAutor(id);
     await Business.updateMany({ "reviews.autorUid": huella }, { $pull: { reviews: { autorUid: huella } } });
     if (negocios.length) {
@@ -232,7 +236,9 @@ router.delete("/cuenta", async (req, res) => {
     // Los comprobantes de compra de Google Play se conservan sin su identidad (sirven ante un reclamo o reembolso y para la contabilidad)
     await Compra.updateMany({ usuarioId: id }, { $set: { usuarioId: `eliminado-${crypto.randomBytes(6).toString("hex")}` } });
     await Usuario.deleteOne({ _id: u._id });
-    res.json({ ok: true });
+    // Si Mi Asistente o Cloudinary no responden, queda un pendiente sin datos personales que se reintenta solo
+    const externos = await borrarDatosExternos({ sesionClienteId, urls: fotos });
+    res.json({ ok: true, pendienteExterno: externos.pendiente });
   } catch (e) {
     console.error("Error al eliminar la cuenta:", e);
     res.status(500).json({ error: "No se pudo eliminar la cuenta. Probá de nuevo." });

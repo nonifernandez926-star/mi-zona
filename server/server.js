@@ -20,9 +20,11 @@ import favoritosRoutes from "./routes/favoritos.js";
 import comunidadRoutes from "./routes/comunidad.js";
 import denunciasRoutes from "./routes/denuncias.js";
 import moderacionRoutes from "./routes/moderacion.js";
+import erroresRoutes from "./routes/errores.js";
 import { moderacionLista } from "./utils/adminAuth.js";
 import { programarRevisionDeVencimientos } from "./utils/vencimientos.js";
 import { programarRecordatoriosDeAgenda } from "./utils/recordatorios.js";
+import { programarBorradosPendientes } from "./utils/borradoDatos.js";
 
 dotenv.config();
 
@@ -70,6 +72,7 @@ app.use("/api/favoritos", favoritosRoutes);
 app.use("/api/comunidad", comunidadRoutes);
 app.use("/api/denuncias", denunciasRoutes);
 app.use("/api/moderacion", moderacionRoutes);
+app.use("/api/errores", erroresRoutes);
 
 // Salud para monitores externos (UptimeRobot, cron-job.org) que además evitan que Render gratis se duerma
 app.get("/healthz", (req, res) => res.json({ ok: true }));
@@ -97,3 +100,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en el puerto ${PORT}`));
 programarRevisionDeVencimientos();
 programarRecordatoriosDeAgenda();
+programarBorradosPendientes();

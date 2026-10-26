@@ -8,7 +8,7 @@ export const LIMITES = { nombre: [2, 60], desc: [10, 300], rubros: 6, otros: 3, 
 export const DIAS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
 export const ETIQUETAS = ["urgencias", "finesDeSemana", "presupuestoSinCargo", "aDomicilio"];
 // Todo lo que el dueño puede escribir en el formulario (el resto —dueño, estado, vencimiento— lo pone el servidor)
-export const CAMPOS_FORMULARIO = ["nombre", "rubros", "otros", "desc", "localidad", "zona", "direccion", "whatsapp", "mostrarWhatsapp", "ig", "facebook", "tiktok", "logo", "fotos", "dias", "horario", "precio", "etiquetas"];
+export const CAMPOS_FORMULARIO = ["nombre", "rubros", "otros", "desc", "localidad", "zona", "direccion", "whatsapp", "mostrarWhatsapp", "ig", "facebook", "tiktok", "logo", "fotos", "dias", "horario", "weekHours", "precio", "etiquetas"];
 
 const limpiar = (s) => String(s ?? "").replace(/[\u0000-\u001F\u007F<>]/g, " ").replace(/\s+/g, " ").trim();
 export const normalizar = (t) => String(t || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
@@ -35,6 +35,38 @@ export function sanearRed(v, max = 100) {
 }
 
 const unicos = (arr) => [...new Set(arr)];
+
+// Regex que ignora mayúsculas y tildes ("tucuman" encuentra "Tucumán"), para filtrar por el NOMBRE de la zona elegida en Inicio.
+const ACENTOS = { a: "aáàäâ", e: "eéèëê", i: "iíìïî", o: "oóòöô", u: "uúùüû", n: "nñ" };
+export function regexNombre(texto) {
+  const t = normalizar(texto).slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!t) return null;
+  return new RegExp(`^${t.replace(/[aeioun]/g, (c) => `[${ACENTOS[c]}]`).replace(/ /g, "\\s+")}$`, "i");
+}
+// Condiciones de zona a partir de ?localidad=&provincia= (nombres tal como los muestra Inicio). Sin localidad, filtra solo por provincia ("ampliar").
+export function condicionesZona(query) {
+  const y = [];
+  const prov = regexNombre(query?.provincia), loc = regexNombre(query?.localidad);
+  if (prov) y.push({ "localidad.provincia": prov });
+  if (loc) y.push({ "localidad.localidad": loc });
+  return y;
+}
+
+// Horarios por día, igual que en negocios: 7 entradas indexadas por getDay() (0 = domingo). Cada una es [abre, cierra] con horas enteras 0–24, o [null] si ese día no atiende.
+// Devuelve [] si no cargó horarios, null si el formato no es válido.
+export function sanearHorarios(v) {
+  if (v === undefined || v === null || (Array.isArray(v) && v.length === 0)) return [];
+  if (!Array.isArray(v) || v.length !== 7) return null;
+  const out = [];
+  for (const d of v) {
+    if (!Array.isArray(d) || d.length < 1 || d.length > 2) return null;
+    if (d.length === 1 || d[0] === null) { if (d[0] !== null && d[0] !== undefined) return null; out.push([null]); continue; }
+    const [a, c] = d;
+    if (!Number.isInteger(a) || !Number.isInteger(c) || a < 0 || a > 24 || c < 0 || c > 24 || a === c) return null;
+    out.push([a, c]);
+  }
+  return out.every((d) => d[0] === null) ? [] : out;
+}
 
 // Revisa el formulario completo. Devuelve { datos } si está bien o { error } con un mensaje claro para la persona.
 export function sanearOficio(b) {
@@ -79,10 +111,15 @@ export function sanearOficio(b) {
   if (fotos.some((f) => !f)) return { error: "Una de las fotos no es válida. Probá subirla de nuevo." };
 
   const dias = DIAS.filter((d) => Array.isArray(x.dias) && x.dias.includes(d));
+  const weekHours = sanearHorarios(x.weekHours);
+  if (weekHours === null) return { error: "Los horarios no son válidos. Elegí de nuevo los días y las horas." };
   const etiquetas = ETIQUETAS.filter((e) => Array.isArray(x.etiquetas) && x.etiquetas.includes(e));
 
-  return { datos: { nombre, rubros, otros, desc, localidad, zona, direccion, whatsapp, mostrarWhatsapp, ig, facebook, tiktok, logo, fotos: unicos(fotos), dias, horario, precio, etiquetas } };
+  return { datos: { nombre, rubros, otros, desc, localidad, zona, direccion, whatsapp, mostrarWhatsapp, ig, facebook, tiktok, logo, fotos: unicos(fotos), dias, horario, weekHours, precio, etiquetas } };
 }
+
+// Puntaje para ordenar "Recomendados": una ficha completa y cuidada sube. Mismo cálculo en el listado (Mongo) y acá, para marcar la insignia.
+export const puntajeFicha = (o, hoy) => (disponibilidadVigente(o, hoy) === "disponibleHoy" ? 3 : 0) + (o.logo ? 2 : 0) + Math.min(3, (o.fotos || []).length) + ((o.weekHours || []).length === 7 ? 1 : 0) + ((o.desc || "").length >= 80 ? 1 : 0) + (o.whatsapp && o.mostrarWhatsapp ? 1 : 0);
 
 // Texto para buscar (sin tildes ni mayúsculas): el nombre de cada rubro, los propios, la descripción y la zona
 export function textoBusqueda(d) {
@@ -116,7 +153,7 @@ export function oficioPublico(o, hoy, dueno = null) {
     desc: o.desc, localidad: nombreLocalidad(o.localidad), zona: o.zona || "", direccion: o.direccion || "",
     conWhatsapp: !!o.whatsapp && o.mostrarWhatsapp === true,
     ig: o.ig || "", facebook: o.facebook || "", tiktok: o.tiktok || "",
-    logo: o.logo || "", fotos: o.fotos || [], dias: o.dias || [], horario: o.horario || "", precio: o.precio || "", etiquetas: o.etiquetas || [],
+    logo: o.logo || "", fotos: o.fotos || [], dias: o.dias || [], horario: o.horario || "", weekHours: o.weekHours || [], precio: o.precio || "", etiquetas: o.etiquetas || [],
     disponibilidad: disponibilidadVigente(o, hoy), dueno, actualizadoEn: o.updatedAt || null,
   };
 }
