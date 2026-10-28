@@ -22,6 +22,7 @@ import { huellaAutor } from "../utils/negocios.js";
 import { permitir } from "../utils/limitador.js";
 import Compra from "../models/Compra.js";
 import Invitacion from "../models/Invitacion.js";
+import Reclamo from "../models/Reclamo.js";
 
 const router = express.Router();
 router.use(identificar, requiereUsuario);
@@ -98,7 +99,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
   try {
     const u = req.actor.usuario;
     const id = uid(req);
-    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas, publicaciones, misDenuncias, misBloqueos, misMedidas] = await Promise.all([
+    const [negocios, oficioPropio, alquileresPropios, agenda, push, consultas, publicaciones, misDenuncias, misBloqueos, misMedidas, misReclamos] = await Promise.all([
       Business.find({ ownerId: id }),
       Oficio.findOne({ ownerId: id }).lean(),
       Alquiler.find({ ownerId: id }).lean(),
@@ -109,6 +110,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       Denuncia.find({ denuncianteId: id }).select("objetoTipo motivo detalle estado createdAt -_id").lean(),
       Bloqueo.find({ bloqueadorId: id }).select("usuario nombre createdAt -_id").lean(),
       Medida.find({ usuarioId: id }).select("tipo motivo desde hasta permanente estado apelacion -_id").lean(),
+      Reclamo.find({ usuarioId: id }).select("negocio tipo motivo producto pedidoRef monto descripcion fotos estado respuesta createdAt -_id").lean(),
     ]);
     const huella = huellaAutor(id);
     const misResenas = await Business.aggregate([
@@ -145,6 +147,7 @@ router.get("/exportar", limitar("exportar", 5, 3600 * 1000), async (req, res) =>
       denunciasQueHice: misDenuncias,
       personasQueBloqueé: misBloqueos,
       avisosDelEquipoSobreMiCuenta: misMedidas,
+      reclamosQueHice: misReclamos,
     });
   } catch (e) {
     console.error(e);
@@ -229,6 +232,7 @@ router.delete("/cuenta", async (req, res) => {
       Consulta.deleteMany({ usuarioId: id }),
       Bloqueo.deleteMany({ $or: [{ bloqueadorId: id }, { bloqueadoId: id }] }),
       Medida.deleteMany({ usuarioId: id }),
+      Reclamo.deleteMany({ usuarioId: id }),
       Denuncia.deleteMany({ duenoId: id }), // denuncias sobre esta cuenta: ya no hay nada que moderar
     ]);
     // las denuncias que ella hizo se conservan sin su identidad (el equipo puede estar revisándolas)

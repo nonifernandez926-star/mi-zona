@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import Usuario from "../models/Usuario.js";
 import { enviarPushAUsuario } from "../utils/push.js";
+import { aplicarDecision } from "../utils/reclamos.js";
 
 // Rutas PRIVADAS para que Mi Asistente le avise cosas a Mi Zona. Se protegen con la clave compartida (INTEGRACION_KEY).
 const router = express.Router();
@@ -38,6 +39,22 @@ router.post("/pedido-estado", async (req, res) => {
   } catch (e) {
     console.error("Error al avisar el estado de un pedido:", e.message);
     res.status(500).json({ error: "No se pudo avisar" });
+  }
+});
+
+// POST /api/integracion/reclamo-decidido   { evento, refExterna, estado, solucion, mensaje, fecha }
+// Mi Asistente lo llama (MIZONA_WEBHOOK_URL) apenas el dueño responde un reclamo: se guarda la respuesta y se avisa a la persona.
+// Si este aviso no llega, la persona igual ve la respuesta al abrir "Mis reclamos" (la app la consulta sola).
+router.post("/reclamo-decidido", async (req, res) => {
+  if (!claveIntegracionOk(req)) return res.status(401).json({ error: "Clave de integración inválida" });
+  try {
+    const b = req.body || {};
+    if (!b.refExterna || typeof b.refExterna !== "string") return res.status(400).json({ error: "Falta refExterna" });
+    const r = await aplicarDecision(b.refExterna, { estado: b.estado, mensaje: b.mensaje, solucion: b.solucion, fecha: b.fecha });
+    res.json({ ok: true, aplicado: !!r }); // aplicado:false = ya estaba respondido o no es de Mi Zona: no es un error
+  } catch (e) {
+    console.error("Error al recibir la respuesta de un reclamo:", e.message);
+    res.status(500).json({ error: "No se pudo guardar la respuesta" });
   }
 });
 

@@ -151,7 +151,7 @@ export function alquilerPublico(a, dueno = null, ahora = new Date()) {
     articulos: arts.map((x) => articuloVista(x, ahora)),
     cantidadArticulos: arts.length,
     disponibilidad: disponibilidadFicha(a.articulos, ahora),
-    dueno, actualizadoEn: a.actualizadoEn || a.updatedAt || null,
+    dueno, actualizadoEn: a.actualizadoEn || a.updatedAt || null, creadaEn: a.createdAt || null,
   };
 }
 

@@ -154,7 +154,7 @@ export function oficioPublico(o, hoy, dueno = null) {
     conWhatsapp: !!o.whatsapp && o.mostrarWhatsapp === true,
     ig: o.ig || "", facebook: o.facebook || "", tiktok: o.tiktok || "",
     logo: o.logo || "", fotos: o.fotos || [], dias: o.dias || [], horario: o.horario || "", weekHours: o.weekHours || [], precio: o.precio || "", etiquetas: o.etiquetas || [],
-    disponibilidad: disponibilidadVigente(o, hoy), dueno, actualizadoEn: o.updatedAt || null,
+    disponibilidad: disponibilidadVigente(o, hoy), dueno, actualizadoEn: o.updatedAt || null, creadaEn: o.createdAt || null,
   };
 }
 

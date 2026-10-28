@@ -5,6 +5,7 @@ import Business from "../models/Business.js";
 import Oficio from "../models/Oficio.js";
 import Alquiler from "../models/Alquiler.js";
 import Publicacion from "../models/Publicacion.js";
+import Reclamo from "../models/Reclamo.js";
 import Usuario from "../models/Usuario.js";
 import BorradoPendiente from "../models/BorradoPendiente.js";
 import { borrarFotos, publicIdDe } from "./cloudinary.js";
@@ -16,11 +17,12 @@ const urlsDe = (...cosas) => cosas.flat(Infinity).map((x) => (typeof x === "stri
 // Todas las fotos de la cuenta (perfil, negocios, oficios, alquileres y publicaciones de Comunidad). Se juntan ANTES de borrar las fichas.
 export async function fotosDeLaCuenta(usuarioId, usuario) {
   const id = String(usuarioId);
-  const [negocios, oficios, alquileres, publicaciones] = await Promise.all([
+  const [negocios, oficios, alquileres, publicaciones, reclamos] = await Promise.all([
     Business.find({ ownerId: id }).select("logo portada photos historias").lean(),
     Oficio.find({ ownerId: id }).select("logo fotos").lean(),
     Alquiler.find({ ownerId: id }).select("logo fotos foto articulos").lean(),
     Publicacion.find({ ownerId: id }).select("fotos").lean(),
+    Reclamo.find({ usuarioId: id }).select("fotos").lean(),
   ]);
   return [...new Set(urlsDe(
     usuario?.foto,
@@ -28,6 +30,7 @@ export async function fotosDeLaCuenta(usuarioId, usuario) {
     oficios.map((o) => [o.logo, o.fotos]),
     alquileres.map((a) => [a.logo, a.fotos, a.foto, (a.articulos || []).map((x) => [x?.foto, x?.fotos])]),
     publicaciones.map((p) => p.fotos),
+    reclamos.map((r) => r.fotos),
   ))];
 }
 
