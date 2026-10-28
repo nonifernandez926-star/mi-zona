@@ -36,7 +36,7 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 10. **La ficha de la tienda y la guía describían solo negocios**: reescritas con oficios, alquileres, buscador con IA y aclaraciones.
 
 ## 3. Lo que sigue pendiente
-- ⚠️ **Eliminar la cuenta no borra los chats de Mi Asistente** (viven en otro servicio) **ni los archivos de fotos de Cloudinary** (las fotos se suben desde la web sin clave, así que el servidor no puede borrarlas). Está dicho con transparencia en la política y en la página de eliminación, pero Google podría pedir más. Solución: que Mi Asistente ofrezca un pedido de borrado que Mi Zona llame al eliminar la cuenta, y pasar la subida de fotos a firmada desde el servidor. Lo hago si lo pedís (la primera parte requiere tocar el otro proyecto).
+- ✅ **Eliminar la cuenta** ya llama a `/integracion/borrar-cliente` de Mi Asistente y borra las fotos de Cloudinary (Fase 12; si algo no responde, queda pendiente y se reintenta solo). ⚠️ Falta probarlo de punta a punta con los dos servidores encendidos y las claves de Cloudinary cargadas. Este punto estaba desactualizado en versiones anteriores del informe.
 - ⚠️ **Comunidad está apagada por defecto** (`COMUNIDAD_HABILITADA=false`). Decidí si sale encendida: cambia la ficha y la declaración de datos (ver la lista, sección D).
 - 📌 **Mapas:** OpenStreetMap limita el uso intensivo de sus teselas y Esri tiene condiciones propias; si el uso crece conviene un proveedor con contrato.
 - 📌 **Modo oscuro** con un filtro CSS (pesado en celulares modestos) y **`App.jsx` de más de 5.700 líneas**: dividirlo baja el riesgo de errores. No lo toqué a ciegas.
@@ -79,3 +79,19 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 5. **Modo oscuro** con un filtro CSS pesado en celulares modestos.
 6. **Fuente Manrope:** cargarla desde la propia app en vez de Google Fonts (más rápido y más privado).
 7. **Datos duplicados entre web y servidor** (categorías, rubros, planes): hoy coinciden; conviene una prueba que avise si dejan de coincidir.
+
+---
+
+## Fase 17 (26/10/2026): reclamos, devoluciones y cambios
+
+**Lo que se agregó.** Mi Asistente ya tenía listo su lado (ver `INTEGRACION-RECLAMOS.md` de ese proyecto), pero Mi Zona no enviaba nada ni mostraba la respuesta del dueño. Ahora sí:
+- **Pantalla «Mis reclamos»** (`src/reclamos.jsx`) y formulario (tipo, motivo, producto, descripción y hasta 4 fotos). Se abre desde **Mis pedidos** (botón «¿Hubo un problema? Hacer un reclamo» en cada pedido ya confirmado, y acceso «Mis reclamos y devoluciones»).
+- **Servidor:** `routes/reclamos.js` (crear y listar), `utils/reclamos.js`, `models/Reclamo.js`. El reclamo se envía a Mi Asistente con la clave compartida; si Mi Asistente está dormido o caído, se guarda y se reenvía solo cuando la persona abre «Mis reclamos» (hasta 10 intentos).
+- **Respuesta del dueño:** llega por aviso inmediato (`POST /api/integracion/reclamo-decidido`, lo llama Mi Asistente con `MIZONA_WEBHOOK_URL`) y, si ese aviso falla, la app la consulta sola al abrir la pantalla. La persona recibe una notificación (se apaga junto con «Pedidos» en Ajustes → Notificaciones).
+- **Reglas:** el negocio ve solo el usuario público, el texto y las fotos (nunca correo ni teléfono); las fotos deben estar en Cloudinary; máximo 5 reclamos por hora y 10 sin respuesta; no se puede repetir el mismo reclamo de un pedido mientras esté abierto; en comida/bebida solo corresponde devolución del dinero (lo decide la categoría del negocio); una cuenta suspendida puede leer sus reclamos pero no crear nuevos.
+- **Privacidad:** los reclamos entran en la descarga de datos, se borran (con sus fotos) al eliminar la cuenta, y la política y la declaración de datos de Play los mencionan. La política dice que se le pide a Mi Asistente que quite la identidad de la persona: **Mi Asistente todavía tiene que hacerlo** (ver `PEDIDO-PARA-MI-ASISTENTE.md`, punto 3) antes de publicar.
+
+**No pude verificar:** en este entorno no hay internet, así que no corrí `npm install`, `npm run build` ni las pruebas. Los archivos del servidor pasan `node --check` (sintaxis) y revisé a mano que las llaves de los archivos de la web estén balanceadas, pero **nada se compiló ni se probó con datos reales**. Probalo en un celular antes de publicar.
+
+**Sigue pendiente (no lo toqué a propósito):** rediseño de detalle de negocio, Herramientas, Ajustes y chats (hay que verlo compilado); paginar listas largas; dividir `App.jsx`; alojar la fuente Manrope en la propia app; la prueba que compara datos duplicados entre web y servidor.
+

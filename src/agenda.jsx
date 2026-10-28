@@ -10,7 +10,7 @@ import { BotonAtras } from "./cuenta.jsx";
 import { agendaApi, estadoPush, activarPush, pushSoportado, PLAY_STORE_URL } from "./api.js";
 
 const TITULO = { fontFamily: "var(--fuente-titulo)", fontWeight: 600, color: "#0B1437" };
-const CARD = { borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)", background: "#fff" };
+const CARD = { borderRadius: 16, border: "1px solid #EDF0F8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", background: "#fff" };
 
 const RECORDATORIOS = [
   { valor: "", texto: "Sin aviso" },
@@ -393,17 +393,17 @@ function TarjetaTarea({ t, onToggle, onClick }) {
 }
 
 const Vacio = ({ Icon = CalendarDays, titulo, texto }) => (
-  <div className="flex flex-col items-center text-center gap-1 py-8 px-4" style={{ borderRadius: 20, border: "1.5px dashed #C9D2E6", background: "linear-gradient(180deg,#FAFBFE,#F3F5FA)" }}>
-    <span className="flex items-center justify-center mb-2" style={{ width: 52, height: 52, borderRadius: 17, background: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06), inset 0 0 0 1px #E3E7F1" }}><Icon size={24} color="#8D95B0" /></span>
-    <p className="text-sm font-semibold" style={{ color: "#0B1437" }}>{titulo}</p>
-    {texto && <p className="text-xs" style={{ color: "#5B6482" }}>{texto}</p>}
+  <div className="flex flex-col items-center text-center gap-1 px-4" style={{ borderRadius: 20, border: "1px dashed #D7DCEE", background: "#fff", padding: "26px 18px" }}>
+    <Icon size={26} color="#B7C0E0" className="mb-1.5" />
+    <p className="text-[0.95rem] font-bold" style={{ color: "#0B1437" }}>{titulo}</p>
+    {texto && <p className="text-[0.8rem]" style={{ color: "#5B6482" }}>{texto}</p>}
   </div>
 );
 
 const SeccionTitulo = ({ children, contador }) => (
-  <p className="flex items-center gap-2 mt-6 mb-2.5 px-0.5" style={{ ...TITULO, fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#5B6482" }}>
+  <p className="flex items-center gap-2 px-0.5" style={{ ...TITULO, fontSize: "0.95rem", fontWeight: 800, margin: "18px 2px 10px", color: "#0B1437" }}>
     {children}
-    {contador ? <span className="text-[11px] font-bold px-2 py-0.5" style={{ borderRadius: 20, background: "var(--azul)", color: "#fff" }}>{contador}</span> : null}
+    {contador ? <span className="text-[0.68rem] font-bold" style={{ borderRadius: 999, background: "var(--azul)", color: "#fff", padding: "2px 8px" }}>{contador}</span> : null}
   </p>
 );
 
@@ -488,39 +488,39 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   const proximo = hoy ? hoy.eventos.find((e) => e.hora && minutosDe(e.hora) >= ahoraMin) : null;
 
   const acciones = [
-    { Icon: CalendarDays, t: "Evento", color: "var(--azul)", bg: "var(--azul-suave)", f: () => setFormulario({ tipo: "evento", fecha: hoyISO() }) },
-    { Icon: ListChecks, t: "Tarea", color: "#16A34A", bg: "#DCFCE7", f: () => setFormulario({ tipo: "tarea" }) },
-    { Icon: Camera, t: "Desde foto", color: "#EA580C", bg: "#FFEDD5", f: () => (aiOk ? setFotoPrevia(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
-    { Icon: MessageSquare, t: "Desde mensaje", color: "#7A4F9E", bg: "#EDE3F8", f: () => (aiOk ? setMensajeAbierto(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
+    { Icon: CalendarDays, t: "Evento", color: "var(--azul)", bg: "linear-gradient(145deg, var(--azul-suave), color-mix(in srgb, var(--azul) 16%, white))", f: () => setFormulario({ tipo: "evento", fecha: hoyISO() }) },
+    { Icon: ListChecks, t: "Tarea", color: "#1F9D5C", bg: "linear-gradient(145deg, #E8F7EF, #D4EFE0)", f: () => setFormulario({ tipo: "tarea" }) },
+    { Icon: Camera, t: "Desde foto", color: "#E0731E", bg: "linear-gradient(145deg, #FFF3E2, #FFE5C4)", f: () => (aiOk ? setFotoPrevia(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
+    { Icon: MessageSquare, t: "Desde mensaje", color: "#7A4FD0", bg: "linear-gradient(145deg, #F3EDFD, #E6DBFA)", f: () => (aiOk ? setMensajeAbierto(true) : window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")) },
   ];
 
   return (
     <div style={{ minHeight: "100vh", background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-      {/* portada */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", padding: "16px 16px 26px" }}>
-        <div style={{ position: "absolute", top: -60, right: -50, width: 190, height: 190, borderRadius: "50%", background: "#ffffff0d" }} />
-        <div className="relative max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <BotonAtras onClick={onBack} size={38} />
-            <p className="flex-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>Mi agenda</p>
-          </div>
-          <p className="text-xs" style={{ color: "var(--azul-palido)" }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>
-          <div className="flex items-end justify-between gap-3 mt-1">
-            <div className="min-w-0">
-              <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 23, color: "#fff", lineHeight: 1.15 }}>{fechaLinda(hoyISO())}</p>
-              <p className="text-sm mt-1" style={{ color: "#DCE7FB" }}>
-                {hoy ? (hoy.eventos.length || hoy.tareas.length ? `${hoy.eventos.length} ${hoy.eventos.length === 1 ? "evento" : "eventos"} y ${hoy.tareas.length} ${hoy.tareas.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "Tu día está libre") : "Cargando tu día..."}
-              </p>
-            </div>
-            <span className="flex flex-col items-center justify-center shrink-0" style={{ width: 62, height: 62, borderRadius: 20, background: "#ffffff1f", border: "1px solid #ffffff33" }}>
-              <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 24, color: "#fff", lineHeight: 1 }}>{hoy ? hoy.eventos.length : "·"}</span>
-              <span className="text-[9px] uppercase mt-0.5" style={{ color: "var(--azul-palido)", letterSpacing: 0.6 }}>hoy</span>
-            </span>
-          </div>
+      {/* barra de arriba */}
+      <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
+        <div className="max-w-3xl mx-auto px-4 pb-2.5 flex items-center gap-3" style={{ paddingTop: "calc(8px + env(safe-area-inset-top, 0px))" }}>
+          <BotonAtras onClick={onBack} size={36} />
+          <p className="flex-1" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 17, color: "#fff" }}>Mi agenda</p>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4" style={{ marginTop: -14, paddingBottom: 40 }}>
+      <div className="max-w-3xl mx-auto px-4 pt-4" style={{ paddingBottom: 40 }}>
+        {/* tarjeta del día */}
+        <div data-conservar-color className="relative overflow-hidden flex items-center justify-between gap-3.5 mb-3.5" style={{ background: "linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 65%, var(--azul-claro) 130%)", color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 16px 34px rgba(var(--azul-rgb), .3)" }}>
+          <span aria-hidden="true" style={{ position: "absolute", right: -36, top: -46, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,.09)" }} />
+          <div className="relative min-w-0" style={{ zIndex: 1 }}>
+            <p className="text-[0.8rem] font-semibold" style={{ opacity: 0.85, marginBottom: 3 }}>{saludo}{negocioNombre ? `, ${negocioNombre}` : ""}</p>
+            <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: "1.35rem", letterSpacing: "-0.4px", lineHeight: 1.15 }}>{fechaLinda(hoyISO())}</p>
+            <p className="text-[0.82rem]" style={{ marginTop: 6, opacity: 0.9 }}>
+              {hoy ? (hoy.eventos.length || hoy.tareas.length ? `${hoy.eventos.length} ${hoy.eventos.length === 1 ? "evento" : "eventos"} y ${hoy.tareas.length} ${hoy.tareas.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "Tu día está libre") : "Cargando tu día..."}
+            </p>
+          </div>
+          <span className="relative flex flex-col items-center justify-center shrink-0" style={{ zIndex: 1, width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.2)" }}>
+            <strong style={{ fontSize: "1.5rem", lineHeight: 1 }}>{hoy ? hoy.eventos.length : "·"}</strong>
+            <span className="text-[0.62rem] uppercase" style={{ letterSpacing: 0.5, opacity: 0.85, marginTop: 2 }}>hoy</span>
+          </span>
+        </div>
+
         {pushEstado === "inactivo" && (
           <div className="flex items-center justify-between gap-3 px-3.5 py-3 mb-3" style={{ borderRadius: 16, background: "var(--azul-suave)", border: "1px solid #CFE0FB" }}>
             <span className="flex items-center gap-2 text-xs font-semibold" style={{ color: "#1D3FB5", lineHeight: 1.4 }}><Bell size={15} className="shrink-0" /> Activá las notificaciones para que te avisemos de tus eventos, incluso con la app cerrada.</span>
@@ -531,16 +531,16 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         {/* acciones rápidas */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           {acciones.map(({ Icon, t, color, bg, f }) => (
-            <button key={t} onClick={f} className="zona-tarjeta flex flex-col items-center gap-1.5 py-3.5" style={CARD}>
-              <span className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 13, background: bg, boxShadow: "inset 0 0 0 1px rgba(11,20,55,.06)" }}><Icon size={19} color={color} /></span>
-              <span className="text-[11px] font-semibold" style={{ color: "#0B1437" }}>{t}</span>
+            <button key={t} onClick={f} className="flex flex-col items-center gap-[7px]" style={{ ...CARD, borderRadius: 18, padding: "12px 4px" }}>
+              <span className="flex items-center justify-center" style={{ width: 38, height: 38, borderRadius: 13, background: bg }}><Icon size={19} color={color} /></span>
+              <span className="text-[0.7rem] font-bold" style={{ color: "#0B1437" }}>{t}</span>
             </button>
           ))}
         </div>
         <input ref={inputFotoRef} type="file" accept="image/*" className="hidden" onChange={importarFoto} />
 
         {/* IA: organizar el día y preguntar */}
-        <div className="p-3 mb-4" style={{ borderRadius: 20, background: "linear-gradient(135deg,#F5F3FF,#EEF2FF)", border: "1px solid #E0E0FF" }}>
+        <div className="mb-4" style={{ borderRadius: 20, padding: 12, background: "linear-gradient(135deg,#F5F3FF,#EEF2FF)", border: "1px solid #E0E0FF" }}>
           <button
             onClick={aiOk ? organizar : () => window.alert("Esta función con IA se habilita cuando tu negocio tiene la suscripción activa.")}
             className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3"
@@ -573,10 +573,10 @@ export function AgendaScreen({ negocioNombre, onBack }) {
         </div>
 
         {/* pestañas */}
-        <div className="flex p-1 mb-4" style={{ borderRadius: 16, background: "#E3E9F5" }}>
+        <div className="flex gap-1 p-1 mb-3.5" style={{ borderRadius: 16, background: "#E9EDF8" }}>
           {[{ id: "hoy", t: "Hoy" }, { id: "semana", t: "Semana" }, { id: "tareas", t: "Tareas" }].map((o) => (
-            <button key={o.id} onClick={() => setVista(o.id)} className="flex-1 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "var(--azul)" : "#5B6482", boxShadow: vista === o.id ? "0 1px 2px rgba(11,20,55,.10), 0 4px 10px -2px rgba(11,20,55,.14)" : "none" }}>
+            <button key={o.id} onClick={() => setVista(o.id)} className="flex-1 text-[0.84rem] font-bold"
+              style={{ padding: "9px 4px", borderRadius: 12, background: vista === o.id ? "#fff" : "transparent", color: vista === o.id ? "var(--azul)" : "#5B6482", boxShadow: vista === o.id ? "0 3px 10px rgba(15,22,55,.1)" : "none" }}>
               {o.t}
             </button>
           ))}

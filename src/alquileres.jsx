@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Share2, Heart, MapPin, MessageCircle, Search, Plus, X, Pencil, Trash2, Check, Clock, Instagram, Facebook, Music2, User, ChevronDown, ChevronRight, ImageIcon, Info, ShieldAlert, Home, PartyPopper, Hammer, Package, Bed, Bath, Users, PawPrint, Tag, RefreshCw } from "lucide-react";
+import { Share2, Heart, MapPin, MessageCircle, Navigation, Search, Plus, X, Pencil, Trash2, Check, Clock, Instagram, Facebook, Music2, User, ChevronDown, ChevronRight, ImageIcon, Info, ShieldAlert, Home, PartyPopper, Hammer, Package, Bed, Bath, Users, PawPrint, Tag, RefreshCw } from "lucide-react";
 import { alquileresApi } from "./api.js";
 import { textoLocalidad } from "./localidades.js";
 import { CATEGORIAS, ETIQUETA_CATEGORIA, ETIQUETA_TIPO, UNIDADES, MAX_ARTICULOS, MAX_FOTOS, VIGENCIA_DIAS, textoPrecio, resumenVivienda } from "./alquileres.js";
 import SelectorLocalidad from "./selectorLocalidad.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
-import DetalleFicha, { SeccionDetalle, FilaDato } from "./componentes/DetalleFicha.jsx";
+import { FilaDato } from "./componentes/DetalleFicha.jsx";
+import PerfilFicha, { TarjetaInfo } from "./componentes/PerfilFicha.jsx";
 import { HojaDenunciar, accionDenunciar } from "./denuncias.jsx";
 import PasoCompartir from "./componentes/PasoCompartir.jsx";
 import { compartirFicha, avisoDeCompartir } from "./compartir.js";
@@ -179,7 +180,10 @@ export function AlquileresScreen({ usuario, onVolver, onAbrir, onOfrecer, onMisF
 // ---------- ficha pública ----------
 
 const SI_NO = (v) => (v === true ? "Sí" : v === false ? "No" : "");
+const COLOR_CATEGORIA = { viviendas: "#2350F5", eventos: "#7A4FD6", herramientas: "#E08A12", otros: "#13897F" };
+const enlaceMapa = (a) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([a.direccion, a.zona, textoLocalidad(a.localidad)].filter(Boolean).join(", "))}`;
 
+// Perfil de una ficha de alquiler: misma estructura que el perfil de un negocio (portada, tarjeta de identidad, números, contacto, pestañas).
 export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestionar }) {
   const [a, setA] = useState(null);
   const [estado, setEstado] = useState("cargando"); // cargando | ok | noExiste | error
@@ -206,94 +210,121 @@ export function DetalleAlquiler({ id, usuario, onVolver, onAbrirPerfil, onGestio
     );
   }
   const I = iconoCategoria(a.categoria);
+  const color = COLOR_CATEGORIA[a.categoria] || "#2350F5";
   const dias = diasPasados(a.actualizadoEn);
   const actualizado = diasDesde(a.actualizadoEn);
   const vieja = dias !== null && dias > VIGENCIA_DIAS;
   const v = a.vivienda;
-  return (
-    <DetalleFicha titulo={a.nombre} subtitulo={`${ETIQUETA_CATEGORIA[a.categoria]} · ${nombresTipos(a, 3)}`} imagen={a.logo || a.fotos?.[0]} icono={I} tono={TONO_CATEGORIA[a.categoria]}
-      estado={a.disponibilidad || undefined} contexto="Alquiler" onVolver={onVolver}
-      acciones={[
-        { icono: Share2, etiqueta: "Compartir", onClick: async () => setAviso(avisoDeCompartir(await compartirFicha({ tipo: "alquiler", nombre: a.nombre, zona: textoLocalidad(a.localidad), detalle: a.desc, imagen: a.logo || a.fotos?.[0] })) || "") },
-        { icono: Heart, etiqueta: esFav ? "Quitar de favoritos" : "Guardar en favoritos", activo: esFav, onClick: () => alternarFavFicha("alquiler", id) },
-        ...(esMia ? [] : [accionDenunciar(() => setDen(true))]),
-      ]}
-      pie={a.conWhatsapp ? <button type="button" onClick={() => setWa(true)} style={{ ...botonPrincipal, flex: 1 }}><MessageCircle size={20} aria-hidden="true" /> Consultar por WhatsApp</button> : undefined}>
-      {aviso && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{aviso}</p>}
-      {esMia && (
-        <div className="flex items-center gap-3 p-3" style={{ borderRadius: 16, background: "#EDF1FF", border: "1px solid #C9D6FA" }}>
-          <Info size={18} color="#1B3FB8" aria-hidden="true" />
-          <p className="flex-1 text-sm" style={{ color: "#1B3FB8", lineHeight: 1.4 }}>Es tu ficha. Podés cambiar el estado de tus artículos sin editar todo el formulario.</p>
-          {onGestionar && <button type="button" onClick={onGestionar} style={{ ...botonSecundario, minHeight: 44 }}>Gestionar</button>}
-        </div>
-      )}
-      {/* Aviso antiestafa: siempre visible; en viviendas, destacado */}
-      <div className="flex items-start gap-3 p-3.5" style={{ borderRadius: 16, background: "#FFF3D6", border: "1px solid #F0D79B" }} role="note">
-        <ShieldAlert size={20} color="#8A5B12" aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />
-        <p className="text-sm" style={{ color: "#6B4510", lineHeight: 1.5 }}><b>No pagues por adelantado sin ver el lugar o a la persona.</b> {a.categoria === "viviendas" ? "Visitá la vivienda antes de entregar dinero y pedí un comprobante." : "Retirá o recibí lo que alquilás en persona y pedí un comprobante."} Mi Zona no maneja pagos ni reservas: el acuerdo es entre ustedes.</p>
-      </div>
+  const disponibles = a.articulos.filter((x) => x.estado === "disponible").length;
+  const tieneVivienda = v && (v.dormitorios != null || v.banos != null || v.capacidad != null || v.amoblado != null || v.mascotas != null);
+  const compartir = async () => setAviso(avisoDeCompartir(await compartirFicha({ tipo: "alquiler", nombre: a.nombre, zona: textoLocalidad(a.localidad), detalle: a.desc, imagen: a.logo || a.fotos?.[0] })) || "");
+  const botonWhatsapp = a.conWhatsapp ? { icono: MessageCircle, label: "WhatsApp", color: "#25A06A", onClick: () => setWa(true) } : null;
+  const comoLlegar = (a.direccion || a.localidad) ? { icono: Navigation, label: "Cómo llegar", color: "#2350F5", href: enlaceMapa(a) } : null;
+  const redes = [
+    a.ig && { icono: Instagram, label: "Instagram", color: "#C13584", href: urlRed(a.ig, "https://instagram.com/") },
+    a.tiktok && { icono: Music2, label: "TikTok", color: "#111827", href: urlRed(a.tiktok, "https://www.tiktok.com/@") },
+    a.facebook && { icono: Facebook, label: "Facebook", color: "#1877F2", href: urlRed(a.facebook, "https://facebook.com/") },
+  ].filter(Boolean);
 
-      <SeccionDetalle titulo="Qué alquila" icono={Tag}>
-        <div className="flex flex-wrap gap-2">{a.tipos.map((t) => <span key={t.id} style={{ borderRadius: 999, padding: "4px 12px", background: "#EEF1F8", color: "#0B1437", fontSize: "0.9375rem", fontWeight: 600 }}>{t.label}</span>)}</div>
-        <p className="mt-3" style={{ whiteSpace: "pre-line" }}>{a.desc}</p>
-      </SeccionDetalle>
-
-      {v && (v.dormitorios != null || v.banos != null || v.capacidad != null || v.amoblado != null || v.mascotas != null) && (
-        <SeccionDetalle titulo="La vivienda o el espacio" icono={Home}>
+  const tabInfo = (
+    <>
+      <TarjetaInfo titulo="Qué alquila" icono={Tag}>
+        <div className="flex flex-wrap gap-1.5 mb-3">{a.tipos.map((t) => <span key={t.id} className="text-xs px-2.5 py-1" style={{ background: "var(--azul-suave)", color: "#0B1437", borderRadius: 20 }}>{t.label}</span>)}</div>
+        <p style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{a.desc}</p>
+      </TarjetaInfo>
+      {tieneVivienda && (
+        <TarjetaInfo titulo="La vivienda o el espacio" icono={Home}>
           <FilaDato icono={Bed} etiqueta="Dormitorios" valor={v.dormitorios == null ? "" : v.dormitorios === 0 ? "Monoambiente" : String(v.dormitorios)} />
           <FilaDato icono={Bath} etiqueta="Baños" valor={v.banos == null ? "" : String(v.banos)} />
           <FilaDato icono={Users} etiqueta="Capacidad" valor={v.capacidad == null ? "" : `${v.capacidad} personas`} />
           <FilaDato icono={Home} etiqueta="Amoblado" valor={SI_NO(v.amoblado)} />
           <FilaDato icono={PawPrint} etiqueta="Acepta mascotas" valor={SI_NO(v.mascotas)} />
-        </SeccionDetalle>
+        </TarjetaInfo>
       )}
-
-      <SeccionDetalle titulo={`Artículos (${a.articulos.length})`} icono={Package}>
-        {a.articulos.length === 0 ? <p>Todavía no hay artículos publicados.</p> : (
-          <ul style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {a.articulos.map((x) => (
-              <li key={x.id} className="flex items-center gap-3" style={{ borderTop: "1px solid #EEF1F8", paddingTop: 10 }}>
-                {x.foto ? <img src={x.foto} alt="" loading="lazy" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} /> : <span style={{ width: 56, height: 56, borderRadius: 12, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Package size={22} color="#8D95B0" aria-hidden="true" /></span>}
-                <span className="flex-1 min-w-0">
-                  <span className="block" style={{ fontWeight: 700, color: "#0B1437", overflowWrap: "anywhere" }}>{x.nombre}</span>
-                  <span className="block text-sm" style={{ color: "#4A5372" }}>{textoPrecio(x)}</span>
-                </span>
-                <ChipEstado estado={x.estado} compacto />
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="text-sm mt-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>«Sin confirmar» significa que hace más de {VIGENCIA_DIAS} días que el dueño no confirma si lo tiene libre: consultale antes de contar con eso. Los precios son una referencia.</p>
-      </SeccionDetalle>
-
-      <SeccionDetalle titulo="Datos">
-        <FilaDato icono={MapPin} etiqueta="Dónde está" valor={[textoLocalidad(a.localidad), a.zona].filter(Boolean).join(" · ")} />
-        <FilaDato icono={MapPin} etiqueta="Dirección" valor={a.direccion} />
-        <FilaDato icono={Info} etiqueta="Condiciones, depósito o requisitos" valor={a.condiciones} />
-      </SeccionDetalle>
-      {hayHorarios(a.weekHours) && <SeccionDetalle titulo="Horarios de atención" icono={Clock}><TablaHorarios weekHours={a.weekHours} /></SeccionDetalle>}
-      {a.fotos.length > 0 && <SeccionDetalle titulo="Fotos" icono={ImageIcon}><Fotos fotos={a.fotos} alt="Foto de lo que se alquila" /></SeccionDetalle>}
-      {(a.ig || a.facebook || a.tiktok) && (
-        <SeccionDetalle titulo="Redes">
-          <div className="flex flex-wrap gap-2">
-            {a.ig && <a href={urlRed(a.ig, "https://instagram.com/")} target="_blank" rel="noopener noreferrer" style={botonSecundario}><Instagram size={17} aria-hidden="true" /> Instagram</a>}
-            {a.facebook && <a href={urlRed(a.facebook, "https://facebook.com/")} target="_blank" rel="noopener noreferrer" style={botonSecundario}><Facebook size={17} aria-hidden="true" /> Facebook</a>}
-            {a.tiktok && <a href={urlRed(a.tiktok, "https://www.tiktok.com/@")} target="_blank" rel="noopener noreferrer" style={botonSecundario}><Music2 size={17} aria-hidden="true" /> TikTok</a>}
-          </div>
-        </SeccionDetalle>
-      )}
-      {a.dueno && (
-        <button type="button" onClick={() => onAbrirPerfil && onAbrirPerfil(a.dueno)} className="w-full text-left flex items-center gap-3 bg-white" style={{ border: "1px solid #E3E7F1", borderRadius: 20, padding: 14, minHeight: 56 }}>
-          <User size={20} color="#4A5372" aria-hidden="true" /><span className="flex-1" style={{ fontWeight: 600, color: "#0B1437" }}>Dueño: @{a.dueno}</span><ChevronRight size={18} color="#8D95B0" aria-hidden="true" />
-        </button>
-      )}
+      {a.condiciones && <TarjetaInfo titulo="Condiciones, depósito o requisitos" icono={Info}><p style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{a.condiciones}</p></TarjetaInfo>}
+      <a href={enlaceMapa(a)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm mb-5 w-fit hover:underline" style={{ color: "#0B1437", minHeight: 44 }}>
+        <MapPin size={15} aria-hidden="true" /> {a.direccion || [a.zona, textoLocalidad(a.localidad)].filter(Boolean).join(" · ")} <span style={{ color: "#5B6482" }}>· ver en el mapa</span>
+      </a>
+      {hayHorarios(a.weekHours) && <TarjetaInfo titulo="Horarios de atención" icono={Clock}><TablaHorarios weekHours={a.weekHours} /></TarjetaInfo>}
       <p className="text-sm px-1" style={{ color: vieja ? "#8A5B12" : "#4A5372", lineHeight: 1.5, fontWeight: vieja ? 600 : 400 }}>
         <Clock size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "-2px" }} aria-hidden="true" />
         {actualizado ? `Ficha actualizada ${actualizado}.` : ""}{vieja ? " Hace tiempo que no se actualiza: confirmá la disponibilidad antes de ir." : ""}
       </p>
+    </>
+  );
+  const tabArticulos = (
+    <>
+      {a.articulos.length === 0 ? <p className="text-sm" style={{ color: "#5B6482" }}>Todavía no hay artículos publicados.</p> : (
+        <div className="flex flex-col gap-3">
+          {a.articulos.map((x) => (
+            <div key={x.id} className="bg-white flex items-center gap-3 p-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
+              {x.foto ? <img src={x.foto} alt="" loading="lazy" style={{ width: 64, height: 64, borderRadius: 14, objectFit: "cover", flexShrink: 0 }} /> : <span style={{ width: 64, height: 64, borderRadius: 14, background: "#EEF1F8", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Package size={24} color="#8D95B0" aria-hidden="true" /></span>}
+              <span className="flex-1 min-w-0">
+                <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437", overflowWrap: "anywhere" }}>{x.nombre}</span>
+                <span className="block text-sm mt-0.5" style={{ color: "#4A5372" }}>{textoPrecio(x)}</span>
+              </span>
+              <ChipEstado estado={x.estado} compacto />
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-xs mt-4 px-1" style={{ color: "#5B6482", lineHeight: 1.45 }}>«Sin confirmar» significa que hace más de {VIGENCIA_DIAS} días que el dueño no confirma si lo tiene libre: consultale antes de contar con eso. Los precios son una referencia.</p>
+    </>
+  );
+  const tabFotos = a.fotos.length > 0
+    ? <Fotos fotos={a.fotos} alt="Foto de lo que se alquila" />
+    : <p className="flex items-center gap-1.5 text-sm" style={{ color: "#5B6482" }}><ImageIcon size={15} aria-hidden="true" /> Esta ficha todavía no cargó fotos</p>;
+
+  return (
+    <>
+      <PerfilFicha
+        portada={a.fotos?.[0]} logo={a.logo} icono={I} color={color} nombre={a.nombre}
+        linea={`${ETIQUETA_CATEGORIA[a.categoria]} · ${[a.zona, textoLocalidad(a.localidad)].filter(Boolean)[0] || nombresTipos(a, 2)}`}
+        chipEstado={a.disponibilidad ? <ChipEstado estado={a.disponibilidad} compacto /> : undefined}
+        dueno={a.dueno} onAbrirDueno={onAbrirPerfil} onVolver={onVolver}
+        flotantes={[
+          { icono: Share2, etiqueta: "Compartir", onClick: compartir },
+          ...(esMia ? [] : [accionDenunciar(() => setDen(true))]),
+          { icono: Heart, etiqueta: esFav ? "Quitar de favoritos" : "Guardar en favoritos", activo: esFav, onClick: () => alternarFavFicha("alquiler", id) },
+        ]}
+        stats={[
+          { icono: Package, color: "#2350F5", valor: a.articulos.length, etiqueta: a.articulos.length === 1 ? "artículo" : "artículos" },
+          { icono: Check, color: "#2C9A5F", valor: disponibles, etiqueta: disponibles === 1 ? "disponible" : "disponibles" },
+          { icono: Clock, color: "#E08A12", valor: dias === null ? "—" : dias < 1 ? "Hoy" : `${dias} d`, etiqueta: "actualizada" },
+        ]}
+        acciones={[botonWhatsapp, comoLlegar].filter(Boolean)}
+        redes={redes}
+        avisos={(
+          <>
+            {aviso && <p role="status" className="text-sm p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>{aviso}</p>}
+            {esMia && (
+              <div className="flex items-center gap-3 p-3" style={{ borderRadius: 16, background: "#EDF1FF", border: "1px solid #C9D6FA" }}>
+                <Info size={18} color="#1B3FB8" aria-hidden="true" />
+                <p className="flex-1 text-sm" style={{ color: "#1B3FB8", lineHeight: 1.4 }}>Es tu ficha. Podés cambiar el estado de tus artículos sin editar todo el formulario.</p>
+                {onGestionar && <button type="button" onClick={onGestionar} style={{ ...botonSecundario, minHeight: 44 }}>Gestionar</button>}
+              </div>
+            )}
+            {/* Aviso antiestafa: siempre visible; en viviendas, destacado */}
+            <div className="flex items-start gap-3 p-3.5" style={{ borderRadius: 16, background: "#FFF3D6", border: "1px solid #F0D79B" }} role="note">
+              <ShieldAlert size={20} color="#8A5B12" aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />
+              <p className="text-sm" style={{ color: "#6B4510", lineHeight: 1.5 }}><b>No pagues por adelantado sin ver el lugar o a la persona.</b> {a.categoria === "viviendas" ? "Visitá la vivienda antes de entregar dinero y pedí un comprobante." : "Retirá o recibí lo que alquilás en persona y pedí un comprobante."} Mi Zona no maneja pagos ni reservas: el acuerdo es entre ustedes.</p>
+            </div>
+          </>
+        )}
+        tabs={[
+          { id: "info", label: "Información", contenido: tabInfo },
+          { id: "articulos", label: `Artículos${a.articulos.length ? ` (${a.articulos.length})` : ""}`, contenido: tabArticulos },
+          { id: "fotos", label: "Fotos", contenido: tabFotos },
+        ]}
+        cta={a.conWhatsapp ? (
+          <button type="button" onClick={() => setWa(true)} className="flex items-center justify-center gap-2 text-sm font-semibold py-3.5 w-full" style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14, boxShadow: "0 8px 20px rgba(var(--azul-rgb),.35)", minHeight: 50 }}>
+            <MessageCircle size={17} aria-hidden="true" /> Consultar por WhatsApp
+          </button>
+        ) : undefined}
+      />
       {wa && <HojaWhatsapp id={a.id} nombre={a.nombre} rubro="" contactar={alquileresApi.contacto} mensajeInicial={`Hola, te encontré en Mi Zona. Quería consultar por tu alquiler «${a.nombre}»: ¿está disponible?`} onCerrar={() => setWa(false)} />}
       {den && <HojaDenunciar tipo="alquiler" id={a.id} nombre={a.nombre} onCerrar={() => setDen(false)} onBloqueado={onVolver} />}
-    </DetalleFicha>
+    </>
   );
 }
 
@@ -535,7 +566,7 @@ export function FormularioAlquiler({ inicial, usuario, onGuardado, onCancelar })
           {articulos.length < MAX_ARTICULOS && <button type="button" onClick={() => setHojaArt({ indice: -1 })} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 50, borderStyle: "dashed" }}><Plus size={17} aria-hidden="true" /> Agregar artículo</button>}
         </Seccion>
       ) : (
-        <p className="text-sm px-1 mb-3" style={{ color: "#4A5372", lineHeight: 1.5 }}>Los artículos y su estado se cambian desde <b>Mis fichas</b>, sin tener que editar todo el formulario.</p>
+        <p className="text-sm px-1 mb-3" style={{ color: "#4A5372", lineHeight: 1.5 }}>Los artículos y su estado se cambian desde <b>Negocio</b>, sin tener que editar todo el formulario.</p>
       )}
 
       <Seccion icono={MapPin} titulo="Dónde está" subtitulo="Te encuentran los vecinos de tu zona desde Inicio.">

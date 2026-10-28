@@ -9,7 +9,7 @@ import { useCodigoInvitacion } from "../invitaciones.js";
 // Lo único que la app puede saber es que el menú de compartir se abrió y se completó; NO puede saber si el mensaje llegó a alguien.
 // Si la persona elige "Ahora no", en Mis fichas le queda un recordatorio hasta que comparta.
 // tipo: "negocio" | "oficio" | "alquiler" · ficha: { id, nombre, imagen? } · onSalir: sigue el flujo (p. ej. ir a Mis fichas) · textoSalir: texto del botón de salida
-export default function PasoCompartir({ tipo, ficha, onSalir, textoSalir = "Ir a Mis fichas" }) {
+export default function PasoCompartir({ tipo, ficha, onSalir, textoSalir = "Ir a Negocio" }) {
   const [estado, setEstado] = useState("inicial"); // inicial | compartido
   const [aviso, setAviso] = useState("");
   const [abriendo, setAbriendo] = useState(false);
@@ -55,7 +55,7 @@ export default function PasoCompartir({ tipo, ficha, onSalir, textoSalir = "Ir a
       ) : (
         <button type="button" onClick={onSalir} className="w-full mt-2" style={{ minHeight: 48, border: 0, background: "transparent", color: "#4A5372", fontWeight: 600, fontSize: "0.9375rem", textDecoration: "underline" }}>Ahora no</button>
       )}
-      {!hecho && <p className="mt-1 text-center text-xs" style={{ color: "#6B7390", lineHeight: 1.4 }}>Si ahora no, te lo vamos a recordar en Mis fichas.</p>}
+      {!hecho && <p className="mt-1 text-center text-xs" style={{ color: "#6B7390", lineHeight: 1.4 }}>Si ahora no, te lo vamos a recordar en Negocio.</p>}
     </section>
   );
 }

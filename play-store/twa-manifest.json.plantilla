@@ -12,8 +12,23 @@
   "iconUrl": "https://TU-DOMINIO.com/icono-512.png",
   "maskableIconUrl": "https://TU-DOMINIO.com/icono-maskable-512.png",
   "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
   "fallbackType": "customtabs",
-  "appVersion": "1.0.0",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    },
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": true
+  },
+  "appVersion": "1.2.0",
   "appVersionCode": 1,
-  "signingKey": { "path": "./mizona-upload.keystore", "alias": "mizona" }
+  "signingKey": {
+    "path": "./mizona-upload.keystore",
+    "alias": "mizona"
+  }
 }

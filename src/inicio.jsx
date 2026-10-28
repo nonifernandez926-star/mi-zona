@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Store, Home, Wrench, MapPin, Heart, SlidersHorizontal, Check, X, Search, Plus, Star, Clock, Sparkles, Bed, Users, ChevronRight, Globe, Package, PartyPopper, Hammer, Trophy, Phone } from "lucide-react";
-import { alquileresApi, oficiosApi } from "./api.js";
-import { CATEGORIAS, ETIQUETA_TIPO, textoPrecio, resumenVivienda } from "./alquileres.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Store, Home, Wrench, MapPin, Heart, Search, Star, Clock, Sparkles, ChevronRight, ChevronDown, Package, PartyPopper, Hammer, Grid3x3, X, Zap, Droplets, Flame, HardHat, Paintbrush, Car, Truck, KeyRound, Check } from "lucide-react";
+import { alquileresApi, oficiosApi, getPrivacidad } from "./api.js";
+import { CATEGORIAS, textoPrecio, resumenVivienda } from "./alquileres.js";
 import { RUBROS } from "./rubros.js";
-import { Hoja, Chip, botonPrincipal, botonSecundario, diasDesde } from "./oficios.jsx";
+import { Hoja, Chip, botonSecundario, diasDesde } from "./oficios.jsx";
 import { alternarFavFicha, useEsFavFicha } from "./favoritos.js";
 import { abiertoAhora, resumenHorarios } from "./horarios.js";
 import { EstadoError } from "./componentes/Estados.jsx";
 
 // Inicio unificado: un solo selector (Negocios · Alquileres · Oficios) y, debajo, el listado de lo que se eligió, siempre en la zona
-// que la persona tiene elegida en Inicio. Los negocios los sigue dibujando App.jsx; acá están los otros tres.
+// que la persona tiene elegida en Inicio. Los tres se ven igual: tarjeta de categorías, fila de filtros y listado.
+// Los negocios los sigue dibujando App.jsx; acá están los otros dos y las piezas que comparten los tres.
 
 const TINTA = "#0B1437", SUAVE = "#5B6482", LINEA = "#E3E7F1";
 export const MODOS = [
@@ -28,17 +29,17 @@ export function partesZona(zone) {
   return i < 0 ? { localidad: t.trim(), provincia: "" } : { localidad: t.slice(0, i).trim(), provincia: t.slice(i + 1).trim() };
 }
 
-// ---------- selector ----------
+// ---------- selector (compacto) ----------
 export function SelectorModo({ modo, onCambiar }) {
   return (
-    <div role="tablist" aria-label="Qué querés ver" className="bg-white" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 4, padding: 6, borderRadius: 20, border: `1px solid ${LINEA}`, boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
+    <div role="tablist" aria-label="Qué querés ver" className="bg-white" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 3, padding: 4, borderRadius: 16, border: `1px solid ${LINEA}`, boxShadow: "0 8px 22px rgba(11,20,55,0.10)" }}>
       {MODOS.map((m) => {
         const Icono = m.icono, act = modo === m.id;
         return (
           <button key={m.id} type="button" role="tab" aria-selected={act} onClick={() => onCambiar(m.id)}
-            style={{ minHeight: 62, borderRadius: 15, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "6px 2px", background: act ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "transparent", color: act ? "#fff" : "#2B3768", boxShadow: act ? "0 8px 18px rgba(var(--azul-rgb),0.33)" : "none", transition: "all .2s", minWidth: 0 }}>
-            <Icono size={21} aria-hidden="true" />
-            <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>{m.label}</span>
+            style={{ minHeight: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 4px", background: act ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "transparent", color: act ? "#fff" : "#2B3768", boxShadow: act ? "0 6px 14px rgba(var(--azul-rgb),0.30)" : "none", transition: "all .2s", minWidth: 0 }}>
+            <Icono size={16} aria-hidden="true" />
+            <span style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>{m.label}</span>
           </button>
         );
       })}
@@ -46,36 +47,94 @@ export function SelectorModo({ modo, onCambiar }) {
   );
 }
 
-// ---------- piezas comunes ----------
-const filaDeslizable = { display: "flex", alignItems: "center", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", WebkitOverflowScrolling: "touch", WebkitMaskImage: "linear-gradient(to right, #000 90%, transparent)", maskImage: "linear-gradient(to right, #000 90%, transparent)", paddingRight: 24 };
-// Cada píldora NO se achica ni parte el texto: así nunca se cortan las letras ni se montan unas sobre otras
-function Pildora({ activo, onClick, children, icono: Icono, cuenta }) {
+// ---------- barra de filtros: la misma para Negocios, Alquileres y Oficios ----------
+// Un desplegable de orden que se abre ahí mismo, hacia abajo (sin hojas ni pantallas aparte), y al lado las píldoras de filtro.
+// orden: { opciones: [{ id, titulo, Icon, color, fondo }], valor, onChange }
+// pildoras: [{ id, texto, activo, onClick, icono, verde, peligro, cerrar }]
+export function BarraFiltros({ orden, pildoras }) {
+  const [abierto, setAbierto] = useState(false);
+  const op = orden.opciones.find((o) => o.id === orden.valor) || orden.opciones[0];
   return (
-    <button type="button" onClick={onClick} aria-pressed={activo}
-      style={{ flex: "0 0 auto", whiteSpace: "nowrap", minHeight: 40, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, border: `1px solid ${activo ? "var(--azul)" : LINEA}`, background: activo ? "var(--azul-suave)" : "#fff", color: activo ? "var(--azul)" : "#2B3768" }}>
-      {Icono && <Icono size={15} aria-hidden="true" />}{children}{cuenta > 0 && <span style={{ background: "var(--azul)", color: "#fff", borderRadius: 999, fontSize: 11, padding: "1px 7px" }}>{cuenta}</span>}
-    </button>
-  );
-}
-const Encabezado = ({ n, singular, plural, zona, extra }) => (
-  <div className="flex items-center justify-between gap-3 mb-2.5">
-    <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: TINTA }}>{n} {n === 1 ? singular : plural} <span style={{ fontWeight: 500, color: SUAVE }}>en {zona}</span></p>
-    {extra}
-  </div>
-);
-function Vacio({ titulo, texto, ampliado, onAmpliar, onBuscarTodo, onOfrecer, textoOfrecer }) {
-  return (
-    <div className="text-center" style={{ padding: "36px 18px", background: "#fff", borderRadius: 22, border: `1px solid ${LINEA}` }}>
-      <p style={{ fontFamily: "var(--fuente-titulo)", fontSize: 18, color: TINTA, fontWeight: 700 }}>{titulo}</p>
-      <p className="text-sm mt-1.5" style={{ color: SUAVE, lineHeight: 1.5 }}>{texto}</p>
-      <div className="flex flex-col gap-2 mt-4 items-center">
-        {!ampliado && onAmpliar && <button type="button" onClick={onAmpliar} style={{ ...botonSecundario, width: "100%", maxWidth: 300 }}><Globe size={16} aria-hidden="true" /> Ver toda la provincia</button>}
-        {onBuscarTodo && <button type="button" onClick={onBuscarTodo} style={{ ...botonSecundario, width: "100%", maxWidth: 300 }}><Search size={16} aria-hidden="true" /> Buscar en todo Mi Zona</button>}
-        {onOfrecer && <button type="button" onClick={onOfrecer} style={{ ...botonPrincipal, width: "100%", maxWidth: 300 }}><Plus size={17} aria-hidden="true" /> {textoOfrecer}</button>}
+    <div className="mb-4">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0" style={{ scrollbarWidth: "none" }}>
+        <button type="button" onClick={() => setAbierto((v) => !v)} aria-expanded={abierto} aria-label={`Ordenar por: ${op.titulo}`}
+          className="flex items-center gap-2 font-semibold pl-2 pr-3 py-1.5"
+          style={{ fontSize: 13, borderRadius: 20, border: `1px solid ${abierto ? "var(--azul)" : "#D5DCF0"}`, color: TINTA, backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06)" }}>
+          <span className="flex items-center justify-center" style={{ width: 24, height: 24, borderRadius: 8, background: op.fondo }}><op.Icon size={14} color={op.color} strokeWidth={2.3} /></span>
+          {op.titulo}
+          <ChevronDown size={14} color={SUAVE} style={{ transform: abierto ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+        </button>
+        {pildoras.map((c) => (
+          <button key={c.id} type="button" onClick={c.onClick} aria-pressed={!!c.activo}
+            className="flex items-center gap-1.5 font-medium px-3.5 py-2"
+            style={{
+              fontSize: 13, borderRadius: 20,
+              backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : c.peligro ? "#FDF1EF" : "var(--azul-suave)") : "#fff",
+              color: c.activo ? (c.verde ? "#1E6B44" : c.peligro ? "#9A3B34" : "var(--azul)") : "#2B3768",
+              border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : c.peligro ? "#C1443A" : "var(--azul)") : LINEA),
+            }}>
+            {c.icono}{c.texto}{c.cerrar && <X size={14} aria-hidden="true" />}
+          </button>
+        ))}
       </div>
+      {abierto && (
+        <div className="flex flex-wrap gap-2 mt-2" role="listbox" aria-label="Ordenar por" style={{ animation: "zona-subir .2s var(--zona-ease) backwards" }}>
+          {orden.opciones.map((o) => {
+            const act = o.id === orden.valor;
+            return (
+              <button key={o.id} type="button" role="option" aria-selected={act} onClick={() => { orden.onChange(o.id); setAbierto(false); }}
+                className="flex items-center gap-1.5 font-medium px-3 py-1.5"
+                style={{ fontSize: 12.5, borderRadius: 20, border: `1px solid ${act ? "var(--azul)" : LINEA}`, background: act ? "var(--azul-suave)" : "#fff", color: act ? "var(--azul)" : "#2B3768" }}>
+                <o.Icon size={13} color={act ? "var(--azul)" : o.color} strokeWidth={2.3} aria-hidden="true" />
+                {o.titulo}
+                {act && <Check size={13} strokeWidth={3} aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+
+// Subfiltro chico (tipo de alquiler) con el mismo estilo de píldora
+function FilaTipos({ tipos, valor, onElegir }) {
+  if (!tipos?.length) return null;
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4 [&>*]:shrink-0" style={{ scrollbarWidth: "none", marginTop: -8 }}>
+      {tipos.map((t) => {
+        const act = valor === t.id;
+        return <button key={t.id} type="button" onClick={() => onElegir(act ? "" : t.id)} aria-pressed={act} className="font-medium px-3 py-1.5" style={{ fontSize: 12.5, borderRadius: 20, border: `1px solid ${act ? "var(--azul)" : LINEA}`, background: act ? "var(--azul-suave)" : "#fff", color: act ? "var(--azul)" : "#2B3768" }}>{t.label}</button>;
+      })}
+    </div>
+  );
+}
+
+// ---------- vistos y nuevos (en este dispositivo) ----------
+const VISTOS_KEY = "miZonaVistosFichas";
+export const leerVistos = (tipo) => { try { const v = JSON.parse(localStorage.getItem(VISTOS_KEY) || "{}"); return Array.isArray(v[tipo]) ? v[tipo] : []; } catch { return []; } };
+const marcarVisto = (tipo, id) => {
+  if (!getPrivacidad().guardarVistos) return; // lo apagó en Privacidad
+  try { const v = JSON.parse(localStorage.getItem(VISTOS_KEY) || "{}"); v[tipo] = [id, ...(Array.isArray(v[tipo]) ? v[tipo] : []).filter((x) => x !== id)].slice(0, 12); localStorage.setItem(VISTOS_KEY, JSON.stringify(v)); } catch { /* sin almacenamiento */ }
+};
+export const borrarVistosFichas = () => { try { localStorage.removeItem(VISTOS_KEY); } catch { /* nada */ } };
+const NUEVO_DIAS = 30; // igual que en los negocios
+const esNueva = (x) => { const t = new Date(x.creadaEn).getTime(); return !isNaN(t) && Date.now() - t <= NUEVO_DIAS * 24 * 60 * 60 * 1000; };
+
+// ---------- piezas comunes ----------
+const Encabezado = ({ n, singular, plural, zona }) => (
+  <div className="flex items-center justify-between gap-3 mb-2.5">
+    <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: TINTA }}>{n} {n === 1 ? singular : plural} <span style={{ fontWeight: 500, color: SUAVE }}>en {zona}</span></p>
+  </div>
+);
+// Sin botones: igual que cuando no hay negocios. Para publicar está el «+» de abajo.
+const Vacio = ({ titulo, texto }) => (
+  <div className="text-center py-16" style={{ color: SUAVE }}>
+    <p className="mb-1" style={{ fontFamily: "var(--fuente-titulo)", fontSize: 19, color: TINTA }}>{titulo}</p>
+    <p className="text-sm">{texto}</p>
+  </div>
+);
+
 const Esqueleto = () => (
   <div role="status" aria-busy="true" aria-label="Cargando" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {[0, 1].map((i) => <div key={i} style={{ height: 300, borderRadius: 22, background: "linear-gradient(90deg,#EEF1F8,#F7F8FC,#EEF1F8)", backgroundSize: "200% 100%", animation: "zona-brillo 1.4s linear infinite" }} />)}
@@ -118,11 +177,9 @@ const Insignia = ({ children, fondo = "#F1F4FA", color = SUAVE, icono: Icono }) 
   <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: fondo, color, whiteSpace: "nowrap" }}>{Icono && <Icono size={11} aria-hidden="true" />}{children}</span>
 );
 
-// ---------- ALQUILERES ----------
+// ---------- tarjetas ----------
 const ICONO_CAT = { viviendas: Home, eventos: PartyPopper, herramientas: Hammer, otros: Package };
 const COLOR_CAT = { viviendas: "#2350F5", eventos: "#7A4FD6", herramientas: "#E08A12", otros: "#13897F" };
-const DORMS = [["", "Cualquiera"], ["1", "1 o más"], ["2", "2 o más"], ["3", "3 o más"]];
-
 function TarjetaAlquiler({ a, onAbrir }) {
   const [falla, setFalla] = useState(false);
   const cat = CATEGORIAS.find((c) => c.id === a.categoria), Icono = ICONO_CAT[a.categoria] || Package, color = COLOR_CAT[a.categoria] || "#2350F5";
@@ -165,69 +222,97 @@ function TarjetaAlquiler({ a, onAbrir }) {
   );
 }
 
-function HojaFiltrosAlquiler({ f, onAplicar, onCerrar }) {
-  const [t, setT] = useState(f);
-  const cat = CATEGORIAS.find((c) => c.id === t.categoria);
+
+// ---------- tarjeta de categorías (la misma de Negocios, para Alquileres y Oficios) ----------
+const POPULARES = ["electricista", "plomero", "gasista", "albanil", "pintor", "mecanico", "limpieza", "fletes", "carpintero", "cerrajero"];
+const ICONO_RUBRO = { electricista: Zap, plomero: Droplets, gasista: Flame, albanil: HardHat, pintor: Paintbrush, mecanico: Car, limpieza: Sparkles, fletes: Truck, carpintero: Hammer, cerrajero: KeyRound };
+const PALETA_RUBRO = ["#E08A12", "#2350F5", "#C1443A", "#7A4FD6", "#13897F", "#2C9A5F"];
+const nombreRubro = (id) => RUBROS.find((r) => r.id === id)?.label || id;
+
+export function CategoriasInicio({ modo, cat, onCambiar }) {
+  const [hoja, setHoja] = useState(false);
+  const esAlq = modo === "alquileres";
+  const items = esAlq
+    ? CATEGORIAS.map((c) => ({ id: c.id, label: c.corto || c.label, Icono: ICONO_CAT[c.id] || Package, color: COLOR_CAT[c.id] || "#2350F5" }))
+    : [...(cat && !POPULARES.includes(cat) ? [cat] : []), ...POPULARES].map((id, i) => ({ id, label: nombreRubro(id).split(" ")[0], Icono: ICONO_RUBRO[id] || Wrench, color: PALETA_RUBRO[i % PALETA_RUBRO.length] }));
   return (
-    <Hoja titulo="Filtros de alquileres" onCerrar={onCerrar}>
-      <p className="text-sm font-bold mb-2" style={{ color: TINTA }}>Categoría</p>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Chip activo={!t.categoria} onClick={() => setT({ ...t, categoria: "", tipo: "", dormitorios: "", amoblado: false })}>Todas</Chip>
-        {CATEGORIAS.map((c) => <Chip key={c.id} activo={t.categoria === c.id} onClick={() => setT({ ...t, categoria: c.id, tipo: "" })}>{c.label}</Chip>)}
+    <div className="mt-3">
+      <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: TINTA }}>Categorías</span>
+          {!esAlq && <button type="button" onClick={() => setHoja(true)} className="text-xs font-semibold px-2.5 py-1" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20 }}>Ver todas</button>}
+        </div>
+        <div className="flex gap-3.5 overflow-x-auto pb-1">
+          <button type="button" onClick={() => onCambiar("")} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+            <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: !cat ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "#EEF3FB", boxShadow: !cat ? "0 8px 18px rgba(var(--azul-rgb),0.33)" : "none", transition: "all .2s" }}>
+              <Grid3x3 size={21} color={!cat ? "#fff" : "var(--azul)"} />
+            </span>
+            <span className="text-[11px] text-center font-medium" style={{ color: !cat ? TINTA : "#2B3768" }}>Todos</span>
+          </button>
+          {items.map((c) => {
+            const act = cat === c.id, Icono = c.Icono;
+            return (
+              <button key={c.id} type="button" onClick={() => onCambiar(act ? "" : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+                <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: act ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: act ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
+                  <Icono size={21} color={act ? "#fff" : c.color} />
+                </span>
+                <span className="text-[11px] text-center leading-tight font-medium" style={{ color: act ? TINTA : "#2B3768" }}>{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      {cat && (<>
-        <p className="text-sm font-bold mb-2" style={{ color: TINTA }}>Qué buscás</p>
-        <div className="flex flex-wrap gap-2 mb-4"><Chip activo={!t.tipo} onClick={() => setT({ ...t, tipo: "" })}>Cualquiera</Chip>{cat.tipos.map((x) => <Chip key={x.id} activo={t.tipo === x.id} onClick={() => setT({ ...t, tipo: x.id })}>{x.label}</Chip>)}</div>
-      </>)}
-      {t.categoria === "viviendas" && (<>
-        <p className="text-sm font-bold mb-2" style={{ color: TINTA }}>Dormitorios</p>
-        <div className="flex flex-wrap gap-2 mb-4">{DORMS.map(([v, l]) => <Chip key={v} activo={t.dormitorios === v} onClick={() => setT({ ...t, dormitorios: v })}>{l}</Chip>)}</div>
-        <p className="text-sm font-bold mb-2" style={{ color: TINTA }}>Amoblado</p>
-        <div className="flex gap-2 mb-4"><Chip activo={!t.amoblado} onClick={() => setT({ ...t, amoblado: false })}>Indistinto</Chip><Chip activo={t.amoblado} onClick={() => setT({ ...t, amoblado: true })}>Solo amoblados</Chip></div>
-      </>)}
-      <p className="text-sm font-bold mb-2" style={{ color: TINTA }}>Disponibilidad</p>
-      <div className="flex gap-2 mb-5"><Chip activo={!t.soloDisponibles} onClick={() => setT({ ...t, soloDisponibles: false })}>Todos</Chip><Chip activo={t.soloDisponibles} onClick={() => setT({ ...t, soloDisponibles: true })}>Solo disponibles</Chip></div>
-      <div className="flex gap-2">
-        <button type="button" onClick={() => onAplicar({ categoria: "", tipo: "", dormitorios: "", amoblado: false, soloDisponibles: false })} style={{ ...botonSecundario, flex: 1 }}>Limpiar</button>
-        <button type="button" onClick={() => onAplicar(t)} style={{ ...botonPrincipal, flex: 2 }}>Ver resultados</button>
-      </div>
-    </Hoja>
+      {hoja && <HojaRubros rubro={cat} onCerrar={() => setHoja(false)} onElegir={(id) => { onCambiar(id); setHoja(false); }} />}
+    </div>
   );
 }
 
-const F0_ALQ = { categoria: "", tipo: "", dormitorios: "", amoblado: false, soloDisponibles: false };
-function ListaAlquileres({ zone, q, onAbrir, onOfrecer, onBuscarTodo }) {
-  const [f, setF] = useState(F0_ALQ);
-  const [ampliado, setAmpliado] = useState(false);
-  const [hoja, setHoja] = useState(false);
+// ---------- ALQUILERES: listado ----------
+const ORDEN_ALQ = [
+  { id: "destacados", titulo: "Destacados", Icon: Star, color: "#E08A1E", fondo: "#FFF4E0" },
+  { id: "recientes", titulo: "Más recientes", Icon: Clock, color: "#2A58FF", fondo: "#E8EEFF" },
+];
+function ListaAlquileres({ zone, q, cat, onAbrir }) {
+  const [tipo, setTipo] = useState("");
+  const [orden, setOrden] = useState("destacados");
+  const [soloAbiertos, setSoloAbiertos] = useState(false);
+  const [soloVistos, setSoloVistos] = useState(false);
+  const [soloNuevos, setSoloNuevos] = useState(false);
+  const [soloDisp, setSoloDisp] = useState(false);
+  const [vistos, setVistos] = useState(() => leerVistos("alquiler"));
+  useEffect(() => setTipo(""), [cat]);
   const z = partesZona(zone);
-  const params = useMemo(() => ({ ...(ampliado ? { provincia: z.provincia } : z), q: q.length >= 2 ? q : "", categoria: f.categoria, tipo: f.tipo, dormitorios: f.categoria === "viviendas" ? f.dormitorios : "", amoblado: f.categoria === "viviendas" && f.amoblado ? "true" : "" }), [zone, ampliado, q, f]); // eslint-disable-line react-hooks/exhaustive-deps
+  const params = useMemo(() => ({ ...z, q: q.length >= 2 ? q : "", categoria: cat, tipo }), [zone, q, cat, tipo]); // eslint-disable-line react-hooks/exhaustive-deps
   const L = useListado((pagina) => alquileresApi.listar({ ...params, pagina }).then((r) => ({ items: r.alquileres, total: r.total, hayMas: r.hayMas })), JSON.stringify(params));
-  useEffect(() => setAmpliado(false), [zone]);
-  const lista = f.soloDisponibles ? L.items.filter((a) => a.disponibilidad === "disponible") : L.items;
-  const nFiltros = (f.tipo ? 1 : 0) + (f.dormitorios ? 1 : 0) + (f.amoblado ? 1 : 0) + (f.soloDisponibles ? 1 : 0);
+  let lista = L.items;
+  if (soloAbiertos) lista = lista.filter((a) => abiertoAhora(a.weekHours) === true);
+  if (soloDisp) lista = lista.filter((a) => a.disponibilidad === "disponible");
+  if (soloNuevos) lista = lista.filter(esNueva);
+  if (soloVistos) lista = lista.filter((a) => vistos.includes(a.id));
+  if (orden === "recientes") lista = [...lista].sort((a, b) => new Date(b.creadaEn || 0) - new Date(a.creadaEn || 0));
+  const abrir = (id) => { marcarVisto("alquiler", id); setVistos(leerVistos("alquiler")); onAbrir(id); };
+  const conFiltros = soloAbiertos || soloDisp || soloNuevos || soloVistos || cat || tipo || q;
   return (
     <>
-      <div className="mb-3" style={filaDeslizable}>
-        <Pildora icono={SlidersHorizontal} cuenta={nFiltros} onClick={() => setHoja(true)}>Filtros</Pildora>
-        <Pildora activo={!f.categoria} onClick={() => setF({ ...f, categoria: "", tipo: "" })}>Todos</Pildora>
-        {CATEGORIAS.map((c) => <Pildora key={c.id} icono={ICONO_CAT[c.id]} activo={f.categoria === c.id} onClick={() => setF({ ...F0_ALQ, categoria: f.categoria === c.id ? "" : c.id })}>{c.corto || c.label}</Pildora>)}
-      </div>
-      <Encabezado n={L.total} singular="alquiler" plural="alquileres" zona={ampliado ? z.provincia : z.localidad} extra={<button type="button" onClick={onOfrecer} className="text-xs font-semibold px-3 py-2 shrink-0" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20, minHeight: 36 }}>+ Ofrecer</button>} />
+      <Encabezado n={lista.length} singular="alquiler" plural="alquileres" zona={z.localidad} />
+      <BarraFiltros orden={{ opciones: ORDEN_ALQ, valor: orden, onChange: setOrden }} pildoras={[
+        { id: "abiertos", texto: "Abiertos", activo: soloAbiertos, onClick: () => setSoloAbiertos((v) => !v), verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: soloAbiertos ? "#2C9A5F" : "#B9BCC5" }} /> },
+        { id: "vistos", texto: "Vistos", activo: soloVistos, onClick: () => setSoloVistos((v) => !v), icono: <Clock size={14} /> },
+        { id: "nuevos", texto: "Nuevos", activo: soloNuevos, onClick: () => setSoloNuevos((v) => !v), verde: true, icono: <Sparkles size={14} /> },
+        { id: "disp", texto: "Disponibles", activo: soloDisp, onClick: () => setSoloDisp((v) => !v), verde: true, icono: <Check size={14} /> },
+      ]} />
+      <FilaTipos tipos={CATEGORIAS.find((c) => c.id === cat)?.tipos} valor={tipo} onElegir={setTipo} />
       {L.estado === "cargando" ? <Esqueleto /> : L.estado === "error" ? <EstadoError titulo="No pudimos cargar los alquileres" mensaje="Revisá tu conexión e intentá de nuevo." onReintentar={L.reintentar} /> : lista.length === 0 ? (
-        <Vacio titulo={`No hay alquileres en ${ampliado ? z.provincia : z.localidad}`} texto={nFiltros || f.categoria || q ? "Probá con otros filtros o buscá en una zona más amplia." : "Todavía nadie publicó alquileres acá. ¡Podés ser el primero!"} ampliado={ampliado} onAmpliar={() => setAmpliado(true)} onBuscarTodo={onBuscarTodo} onOfrecer={onOfrecer} textoOfrecer="Ofrecer en alquiler" />
+        <Vacio titulo={`No hay alquileres en ${z.localidad}`} texto={conFiltros ? "Probá con otra categoría, otro filtro, o cambiá de zona." : "Todavía nadie publicó alquileres acá. Podés ser el primero con el botón +."} />
       ) : (<>
-        {ampliado && <p className="text-xs mb-2" style={{ color: SUAVE }}>Mostrando toda la provincia de {z.provincia}. <button type="button" onClick={() => setAmpliado(false)} style={{ color: "var(--azul)", fontWeight: 700 }}>Volver a mi zona</button></p>}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{lista.map((a) => <TarjetaAlquiler key={a.id} a={a} onAbrir={onAbrir} />)}</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{lista.map((a) => <TarjetaAlquiler key={a.id} a={a} onAbrir={abrir} />)}</div>
         <VerMas hayMas={L.hayMas} cargando={L.masCargando} onClick={L.cargarMas} />
       </>)}
-      {hoja && <HojaFiltrosAlquiler f={f} onCerrar={() => setHoja(false)} onAplicar={(n) => { setF(n); setHoja(false); }} />}
     </>
   );
 }
 
 // ---------- OFICIOS ----------
-const POPULARES = ["electricista", "plomero", "gasista", "albanil", "pintor", "mecanico", "limpieza", "fletes", "carpintero", "cerrajero"];
 const iniciales = (n) => String(n || "?").split(/\s+/).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
 
 function AvatarPersona({ o, lado = 60 }) {
@@ -271,19 +356,6 @@ function FavMini({ id }) {
   const fav = useEsFavFicha("oficio", id);
   return <button type="button" aria-label={fav ? "Quitar de favoritos" : "Guardar en favoritos"} aria-pressed={fav} onClick={(e) => { e.stopPropagation(); alternarFavFicha("oficio", id); }} style={{ position: "absolute", top: 8, right: 8, width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Heart size={20} color={fav ? "#E5484D" : "#64748B"} fill={fav ? "#E5484D" : "none"} /></button>;
 }
-function TarjetaRecomendado({ o, onAbrir }) {
-  return (
-    <button type="button" onClick={() => onAbrir(o.id)} className="text-left bg-white" style={{ flex: "0 0 232px", borderRadius: 20, border: `1px solid ${LINEA}`, padding: 14, boxShadow: "0 4px 14px rgba(11,20,55,0.06)", scrollSnapAlign: "start" }}>
-      <div className="flex items-center gap-3">
-        <AvatarPersona o={o} lado={48} />
-        <span className="min-w-0 flex-1"><span className="block truncate" style={{ fontWeight: 700, color: TINTA, fontSize: 15 }}>{o.nombre}</span><span className="block truncate text-xs" style={{ color: "#2350F5", fontWeight: 600 }}>{rubrosDe(o, 1)}</span></span>
-      </div>
-      <p className="text-xs mt-2.5" style={{ color: SUAVE, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{o.desc}</p>
-      <p className="flex items-center gap-1 text-[11px] mt-2" style={{ color: "#8A5B12", fontWeight: 700 }}><Star size={11} fill="#C98A14" color="#C98A14" aria-hidden="true" /> Recomendado · {o.localidad?.localidad}</p>
-    </button>
-  );
-}
-
 function HojaRubros({ rubro, onElegir, onCerrar }) {
   const [b, setB] = useState("");
   const lista = RUBROS.filter((r) => !b.trim() || r.label.toLowerCase().includes(b.trim().toLowerCase()));
@@ -301,57 +373,52 @@ function HojaRubros({ rubro, onElegir, onCerrar }) {
   );
 }
 
-function ListaOficios({ zone, q, onAbrir, onOfrecer, onBuscarTodo }) {
-  const [rubro, setRubro] = useState("");
+const ORDEN_OFI = [
+  { id: "recomendados", titulo: "Destacados", Icon: Star, color: "#E08A1E", fondo: "#FFF4E0" },
+  { id: "recientes", titulo: "Más recientes", Icon: Clock, color: "#2A58FF", fondo: "#E8EEFF" },
+];
+function ListaOficios({ zone, q, cat: rubro, onAbrir }) {
   const [orden, setOrden] = useState("recomendados");
+  const [soloAbiertos, setSoloAbiertos] = useState(false);
+  const [soloVistos, setSoloVistos] = useState(false);
+  const [soloNuevos, setSoloNuevos] = useState(false);
   const [soloHoy, setSoloHoy] = useState(false);
-  const [ampliado, setAmpliado] = useState(false);
-  const [hoja, setHoja] = useState(false);
+  const [vistos, setVistos] = useState(() => leerVistos("oficio"));
   const z = partesZona(zone);
-  const params = useMemo(() => ({ ...(ampliado ? { provincia: z.provincia } : z), q: q.length >= 2 ? q : "", rubro, orden }), [zone, ampliado, q, rubro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
+  const params = useMemo(() => ({ ...z, q: q.length >= 2 ? q : "", rubro, orden }), [zone, q, rubro, orden]); // eslint-disable-line react-hooks/exhaustive-deps
   const L = useListado((pagina) => oficiosApi.listar({ ...params, pagina }).then((r) => ({ items: r.oficios, total: r.total, hayMas: r.hayMas })), JSON.stringify(params));
-  useEffect(() => setAmpliado(false), [zone]);
-  const lista = soloHoy ? L.items.filter((o) => o.disponibilidad === "disponibleHoy") : L.items;
-  const destacados = orden === "recomendados" && !q && !soloHoy ? lista.filter((o) => o.recomendado).slice(0, 8) : [];
-  const resto = destacados.length ? lista.filter((o) => !destacados.includes(o)) : lista;
-  const nombreRubro = RUBROS.find((r) => r.id === rubro)?.label;
+  let lista = L.items;
+  if (soloAbiertos) lista = lista.filter((o) => abiertoAhora(o.weekHours) === true);
+  if (soloHoy) lista = lista.filter((o) => o.disponibilidad === "disponibleHoy");
+  if (soloNuevos) lista = lista.filter(esNueva);
+  if (soloVistos) lista = lista.filter((o) => vistos.includes(o.id));
+  const abrir = (id) => { marcarVisto("oficio", id); setVistos(leerVistos("oficio")); onAbrir(id); };
+  const nombre = rubro ? nombreRubro(rubro) : "";
+  const conFiltros = soloAbiertos || soloHoy || soloNuevos || soloVistos || rubro || q;
   return (
     <>
-      <div className="mb-3" style={filaDeslizable}>
-        <Pildora icono={SlidersHorizontal} cuenta={rubro && !POPULARES.includes(rubro) ? 1 : 0} onClick={() => setHoja(true)}>Todos los oficios</Pildora>
-        <Pildora activo={!rubro} onClick={() => setRubro("")}>Todos</Pildora>
-        {rubro && !POPULARES.includes(rubro) && <Pildora activo onClick={() => setRubro("")}>{nombreRubro} ✕</Pildora>}
-        {POPULARES.map((id) => <Pildora key={id} activo={rubro === id} onClick={() => setRubro(rubro === id ? "" : id)}>{RUBROS.find((r) => r.id === id)?.label}</Pildora>)}
-      </div>
-      <div className="mb-3" style={filaDeslizable}>
-        <Pildora icono={Sparkles} activo={soloHoy} onClick={() => setSoloHoy(!soloHoy)}>Disponibles hoy</Pildora>
-        <Pildora icono={Star} activo={orden === "recomendados"} onClick={() => setOrden("recomendados")}>Recomendados</Pildora>
-        <Pildora icono={Clock} activo={orden === "recientes"} onClick={() => setOrden("recientes")}>Más recientes</Pildora>
-      </div>
-      <Encabezado n={L.total} singular={nombreRubro ? nombreRubro.toLowerCase() : "profesional"} plural={nombreRubro ? `${nombreRubro.toLowerCase()}s` : "profesionales"} zona={ampliado ? z.provincia : z.localidad} extra={<button type="button" onClick={onOfrecer} className="text-xs font-semibold px-3 py-2 shrink-0" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20, minHeight: 36 }}>+ Ofrecer</button>} />
+      <Encabezado n={lista.length} singular={nombre ? nombre.toLowerCase() : "profesional"} plural={nombre ? `${nombre.toLowerCase()}s` : "profesionales"} zona={z.localidad} />
+      <BarraFiltros orden={{ opciones: ORDEN_OFI, valor: orden, onChange: setOrden }} pildoras={[
+        { id: "abiertos", texto: "Abiertos", activo: soloAbiertos, onClick: () => setSoloAbiertos((v) => !v), verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: soloAbiertos ? "#2C9A5F" : "#B9BCC5" }} /> },
+        { id: "vistos", texto: "Vistos", activo: soloVistos, onClick: () => setSoloVistos((v) => !v), icono: <Clock size={14} /> },
+        { id: "nuevos", texto: "Nuevos", activo: soloNuevos, onClick: () => setSoloNuevos((v) => !v), verde: true, icono: <Sparkles size={14} /> },
+        { id: "hoy", texto: "Disponibles hoy", activo: soloHoy, onClick: () => setSoloHoy((v) => !v), verde: true, icono: <Zap size={14} /> },
+      ]} />
       {L.estado === "cargando" ? <Esqueleto /> : L.estado === "error" ? <EstadoError titulo="No pudimos cargar los oficios" mensaje="Revisá tu conexión e intentá de nuevo." onReintentar={L.reintentar} /> : lista.length === 0 ? (
-        <Vacio titulo={`No hay ${nombreRubro ? nombreRubro.toLowerCase() + "s" : "profesionales"} en ${ampliado ? z.provincia : z.localidad}`} texto="Probá con otro oficio o ampliá la búsqueda. Si vos hacés este trabajo, publicá tu perfil." ampliado={ampliado} onAmpliar={() => setAmpliado(true)} onBuscarTodo={onBuscarTodo} onOfrecer={onOfrecer} textoOfrecer="Ofrecer mis servicios" />
+        <Vacio titulo={`No hay ${nombre ? nombre.toLowerCase() + "s" : "profesionales"} en ${z.localidad}`} texto={conFiltros ? "Probá con otro oficio, otro filtro, o cambiá de zona." : "Todavía nadie publicó su perfil acá. Si hacés este trabajo, publicá el tuyo con el botón +."} />
       ) : (<>
-        {ampliado && <p className="text-xs mb-2" style={{ color: SUAVE }}>Mostrando toda la provincia de {z.provincia}. <button type="button" onClick={() => setAmpliado(false)} style={{ color: "var(--azul)", fontWeight: 700 }}>Volver a mi zona</button></p>}
-        {destacados.length > 0 && (<>
-          <p className="flex items-center gap-1.5 mb-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15, color: TINTA }}><Star size={15} fill="#C98A14" color="#C98A14" aria-hidden="true" /> Recomendados en tu zona</p>
-          <div className="mb-4" style={{ ...filaDeslizable, scrollSnapType: "x mandatory", alignItems: "stretch" }}>{destacados.map((o) => <TarjetaRecomendado key={o.id} o={o} onAbrir={onAbrir} />)}</div>
-          {resto.length > 0 && <p className="mb-2" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15, color: TINTA }}>Todos los profesionales</p>}
-        </>)}
-        <div className="grid gap-3 sm:grid-cols-2">{resto.map((o) => <TarjetaPersona key={o.id} o={o} onAbrir={onAbrir} />)}</div>
+        <div className="grid gap-3 sm:grid-cols-2">{lista.map((o) => <TarjetaPersona key={o.id} o={o} onAbrir={abrir} />)}</div>
         <VerMas hayMas={L.hayMas} cargando={L.masCargando} onClick={L.cargarMas} />
       </>)}
-      {hoja && <HojaRubros rubro={rubro} onCerrar={() => setHoja(false)} onElegir={(id) => { setRubro(id); setHoja(false); }} />}
     </>
   );
 }
 
 // ---------- entrada ----------
-export default function ListaInicio({ modo, zone, query, onAbrirAlquiler, onAbrirOficio, onOfrecerAlquiler, onOfrecerOficio, onBuscarTodo }) {
+export default function ListaInicio({ modo, zone, query, cat, onAbrirAlquiler, onAbrirOficio }) {
   const [q, setQ] = useState("");
   useEffect(() => { const t = setTimeout(() => setQ(query.trim()), 350); return () => clearTimeout(t); }, [query]);
-  const buscarTodo = onBuscarTodo ? () => onBuscarTodo(query.trim()) : undefined;
-  if (modo === "alquileres") return <ListaAlquileres zone={zone} q={q} onAbrir={onAbrirAlquiler} onOfrecer={onOfrecerAlquiler} onBuscarTodo={buscarTodo} />;
-  if (modo === "oficios") return <ListaOficios zone={zone} q={q} onAbrir={onAbrirOficio} onOfrecer={onOfrecerOficio} onBuscarTodo={buscarTodo} />;
+  if (modo === "alquileres") return <ListaAlquileres zone={zone} q={q} cat={cat} onAbrir={onAbrirAlquiler} />;
+  if (modo === "oficios") return <ListaOficios zone={zone} q={q} cat={cat} onAbrir={onAbrirOficio} />;
   return null;
 }

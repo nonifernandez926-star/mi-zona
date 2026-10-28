@@ -454,7 +454,7 @@ export function MiCuentaScreen({ usuario, local, negocios: todosNegocios, onAbri
             <FilaMenu Icon={CalendarDays} color="var(--azul)" titulo="Miembro desde" valor={resumen ? fmtFechaCorta(resumen.cuenta.creadaEn) : null} onClick={() => setVista("desde")} />
             <FilaMenu Icon={Star} color="#E08A1E" titulo="Mis reseñas" valor={resumen ? String(resumen.resenas) : null} onClick={() => setVista("resenas")} />
             <FilaMenu Icon={Heart} color="#C1443A" titulo="Mis favoritos" valor={String(local?.favoritos ?? 0)} onClick={() => (onAbrirFavoritos ? onAbrirFavoritos() : setVista("favoritos"))} />
-            <FilaMenu Icon={Store} color="#0B1437" titulo={onAbrirMisFichas ? "Mis fichas" : "Mis negocios"} valor={resumen ? String(negocios.length + (onAbrirMisFichas ? (resumen.oficios?.length || 0) + (resumen.alquileres?.length || 0) : 0)) : null} onClick={() => (onAbrirMisFichas ? onAbrirMisFichas() : setVista("negocios"))} ultimo />
+            <FilaMenu Icon={Store} color="#0B1437" titulo={onAbrirMisFichas ? "Negocio" : "Mis negocios"} valor={resumen ? String(negocios.length + (onAbrirMisFichas ? (resumen.oficios?.length || 0) + (resumen.alquileres?.length || 0) : 0)) : null} onClick={() => (onAbrirMisFichas ? onAbrirMisFichas() : setVista("negocios"))} ultimo />
           </div>
 
           <button

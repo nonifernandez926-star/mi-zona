@@ -161,6 +161,10 @@ export const vincularSesionCliente = (sesionClienteId) => enviarUsuarioJSON("/au
 export const traerMisPedidos = () => enviarUsuarioJSON("/asistente/mis-pedidos", "POST", {}).then((r) => r.pedidos || []);
 export const traerMisConversaciones = () => enviarUsuarioJSON("/asistente/mis-conversaciones", "POST", {});
 
+// Reclamos, devoluciones y cambios: se envían al negocio (Mi Asistente) y la respuesta del dueño vuelve acá
+export const traerMisReclamos = () => getUsuarioJSON("/reclamos").then((r) => r.reclamos || []);
+export const enviarReclamo = (datos) => enviarUsuarioJSON("/reclamos", "POST", datos);
+
 // Seguridad: cambiar la contraseña (cuentas con correo) y cerrar sesión en los demás dispositivos. Ambas devuelven un token nuevo para este dispositivo.
 export const cambiarClave = async (actual, nueva) => {
   const r = await enviarUsuarioJSON("/auth/clave", "PUT", { actual, nueva });

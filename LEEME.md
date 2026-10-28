@@ -1,3 +1,16 @@
+# Mi Zona — Fase 15: pestañas Comunidad y Negocio, «+» en Chats y perfil de alquiler como el de negocio (volver a publicar SOLO la web · el servidor no cambió)
+
+- **Barra de abajo (5 pestañas iguales, como WhatsApp):** Inicio · Chats · Comunidad · Negocio (o Herramientas) · Ajustes. El «+» del centro se mantiene (agregar negocio, oficio o alquiler).
+- **Comunidad:** ahora es una pestaña (con solapas «Publicaciones | Mis publicaciones» y un botón «+» redondo para publicar las fichas). Si el servidor no la habilitó, muestra «llega muy pronto».
+- **Negocio** (`src/negocio.jsx`): aparece **solo cuando la cuenta tiene un negocio, un oficio o un alquiler**; si no, esa pestaña es «Herramientas» (con los accesos para sumar lo propio). Lista «Mis perfiles» (negocios, oficio y alquileres) y, al tocar uno, su panel: ver cómo lo ven, editar, plan/suscripción, estadísticas, pausar/activar, eliminar y sus herramientas (promociones, reseñas, historia, personal, QR, Mi Asistente en negocios; disponibilidad en oficio; artículos en alquiler). Mi agenda e invitaciones también están ahí. Reemplaza a «Mis fichas» y al panel que estaba en Herramientas.
+- **Quien ya tiene Negocio:** Mis pedidos, Favoritos, Mis puntos y Ranking pasan a la primera sección de Ajustes.
+- **Chats:** botón «+» abajo a la derecha (como WhatsApp). Abre «Chatear con un negocio» (lleva a Inicio), «Agregar un amigo» y «Crear un grupo» (marcados «Próximamente», para más adelante). El botón de búsqueda con asistente ahora se ve solo en Inicio.
+- **Perfil de alquiler** igual al de negocio (`src/componentes/PerfilFicha.jsx`): portada con botones flotantes, tarjeta con logo, números (artículos, disponibles, actualizada), WhatsApp y Cómo llegar, redes, pestañas Información / Artículos / Fotos y botón principal. Oficios puede usar el mismo componente.
+- **Cambia a mano en el código:** `MisFichasScreen` (misFichas.jsx) ya no se usa (se conservan `PasoNegocioActivado`, `BotonPlan` e `infoNegocio`). Textos de ayuda actualizados.
+- **No pude compilar con Vite** (sin internet): revisé sintaxis e identificadores y rendericé las pantallas nuevas sin errores en un entorno de prueba, pero sin estilos Tailwind. Corré `npm install && npm run build` y probalo en un celular real (barra de 5 pestañas a 360 px, botones «+», perfil de alquiler).
+
+---
+
 # Mi Zona — Fase 14: revisión y pulido (volver a publicar SOLO la web · el servidor no cambió)
 
 - **Qué es:** una revisión de accesibilidad y diseño hecha con cuidado de no cambiar cómo funciona nada. No hay cambios de datos, de servidor ni de la API.

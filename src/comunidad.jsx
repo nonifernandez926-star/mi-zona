@@ -72,7 +72,36 @@ function TarjetaPublicacion({ p, onAbrir }) {
 
 // ---------- listado ----------
 
-export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisFichas, refrescarKey = 0 }) {
+// Marco de la pantalla: como pestaña de la barra inferior no lleva cabecera propia (la pone la barra de título de la app)
+function Marco({ modoTab, onVolver, children }) {
+  return modoTab ? <div>{children}</div> : <Pagina titulo="Comunidad" onVolver={onVolver}>{children}</Pagina>;
+}
+
+// Botón redondo «+» abajo a la derecha (como el de WhatsApp) para publicar
+function BotonPublicar({ onClick }) {
+  return (
+    <button type="button" onClick={onClick} aria-label="Publicar en Comunidad" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
+      style={{ right: 16, bottom: "calc(78px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
+      <Plus size={26} color="#fff" strokeWidth={2.6} aria-hidden="true" />
+    </button>
+  );
+}
+
+// «Publicaciones | Mis publicaciones» (como las solapas de arriba de WhatsApp)
+function Solapas({ valor, onChange }) {
+  return (
+    <div className="flex items-center gap-1 p-1 mb-4" role="tablist" aria-label="Comunidad" style={{ borderRadius: 16, background: "#E8EEF7" }}>
+      {[["lista", "Publicaciones"], ["mias", "Mis publicaciones"]].map(([id, texto]) => (
+        <button key={id} type="button" role="tab" aria-selected={valor === id} onClick={() => onChange(id)} className="flex-1 py-2 text-sm font-semibold transition-all"
+          style={{ borderRadius: 12, minHeight: 40, background: valor === id ? "#fff" : "transparent", color: valor === id ? "#0B1437" : "#5B6482", boxShadow: valor === id ? "0 1px 2px rgba(11,20,55,.10), 0 4px 10px -2px rgba(11,20,55,.14)" : "none" }}>{texto}</button>
+      ))}
+    </div>
+  );
+}
+
+export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisFichas, onEditar, modoTab = false, refrescarKey = 0 }) {
+  const [panel, setPanel] = useState("lista"); // solo en modo pestaña: "lista" | "mias"
+
   const [tipo, setTipo] = useState("");
   const [localidad, setLocalidad] = useState(null); // { id, nombre } o null = todo el departamento
   const [actividad, setActividad] = useState("");
@@ -134,8 +163,19 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
   const limpiar = () => { setLocalidad(null); setActividad(""); setCategoria(""); setVista(""); setHistorial(false); };
   const tipoInfo = TIPO[tipo];
 
+  if (modoTab && panel === "mias") {
+    return (
+      <Marco modoTab>
+        <Solapas valor={panel} onChange={setPanel} />
+        <MisPublicaciones key={refrescarKey} onVer={onAbrir} onEditar={onEditar} onPublicar={onPublicar} />
+        <BotonPublicar onClick={() => onPublicar(null)} />
+      </Marco>
+    );
+  }
+
   return (
-    <Pagina titulo="Comunidad" onVolver={onVolver}>
+    <Marco modoTab={modoTab} onVolver={onVolver}>
+      {modoTab && <Solapas valor={panel} onChange={setPanel} />}
       <ComoFunciona pasos={["Acá los vecinos de tu departamento publican avisos, cosas perdidas, regalos, ayuda, deportes, eventos y sorteos.", "Publicar es gratis. Cada publicación vence sola: los avisos duran pocas horas.", "Tocá una publicación para ver el detalle. Mantenela apretada para compartirla."]} />
 
       <div className="flex gap-2 mt-3 overflow-x-auto" role="group" aria-label="Tipo de publicación" style={{ paddingBottom: 2 }}>
@@ -178,13 +218,14 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
         )}
       </div>
 
-      {estado === "ok" && items.length > 0 && <button type="button" onClick={() => onPublicar(tipo || null)} className="w-full mt-5" style={{ ...botonSecundario, minHeight: 52 }}><Plus size={18} aria-hidden="true" /> Publicar en Comunidad</button>}
-      <button type="button" onClick={onMisFichas} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 48, border: 0, background: "transparent", textDecoration: "underline", color: "#4A5372" }}>Mis publicaciones</button>
+      {!modoTab && estado === "ok" && items.length > 0 && <button type="button" onClick={() => onPublicar(tipo || null)} className="w-full mt-5" style={{ ...botonSecundario, minHeight: 52 }}><Plus size={18} aria-hidden="true" /> Publicar en Comunidad</button>}
+      {!modoTab && <button type="button" onClick={onMisFichas} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 48, border: 0, background: "transparent", textDecoration: "underline", color: "#4A5372" }}>Mis publicaciones</button>}
 
       {hoja === "localidad" && <HojaLocalidadDepartamento usuario={usuario} actual={localidad} onElegir={(l) => { setLocalidad(l); setHoja(null); }} onCerrar={() => setHoja(null)} />}
       {hoja === "actividad" && <HojaOpciones titulo="Actividad" opciones={DEPORTE_ACTIVIDADES} valor={actividad} todas="Todas" onElegir={(v) => { setActividad(v); setHoja(null); }} onCerrar={() => setHoja(null)} />}
       {hoja === "categoria" && <HojaOpciones titulo="Categoría" opciones={EVENTO_CATEGORIAS} valor={categoria} todas="Todas" onElegir={(v) => { setCategoria(v); setHoja(null); }} onCerrar={() => setHoja(null)} />}
-    </Pagina>
+      {modoTab && <BotonPublicar onClick={() => onPublicar(tipo || null)} />}
+    </Marco>
   );
 }
 
@@ -657,7 +698,7 @@ export function FormularioComunidad({ inicial, tipoInicial, tituloInicial = "", 
 export function PasoPublicado({ publicacion, onVer, onListo }) {
   return (
     <Pagina titulo="Publicado" onVolver={onListo}>
-      <EstadoVacio icono={Check} tono="verde" titulo="¡Listo! Ya está publicado" mensaje={`«${publicacion.titulo}» ya lo ven tus vecinos de ${publicacion.localidad?.departamento || "tu departamento"}. ${venceEn(publicacion.vence)}. Podés editarlo, resolverlo o eliminarlo desde Mis fichas.`} accion={{ texto: "Volver a Comunidad", onClick: onListo }} />
+      <EstadoVacio icono={Check} tono="verde" titulo="¡Listo! Ya está publicado" mensaje={`«${publicacion.titulo}» ya lo ven tus vecinos de ${publicacion.localidad?.departamento || "tu departamento"}. ${venceEn(publicacion.vence)}. Podés editarlo, resolverlo o eliminarlo desde Comunidad → Mis publicaciones.`} accion={{ texto: "Volver a Comunidad", onClick: onListo }} />
       <button type="button" onClick={onVer} className="w-full mt-3" style={botonSecundario}>Ver cómo lo ven los demás</button>
     </Pagina>
   );

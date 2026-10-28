@@ -13,7 +13,7 @@ import {
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
-  ShieldAlert, UserX, Camera,
+  ShieldAlert, UserX, Camera, UserPlus,
 } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
@@ -24,18 +24,21 @@ import { SelectorUbicacion } from "./selectorUbicacion.jsx";
 import { CAPAS_MAPA } from "./capasMapa.js";
 import { PrivacidadScreen } from "./privacidad.jsx";
 import { PedidosScreen } from "./pedidos.jsx";
+import { ReclamosScreen } from "./reclamos.jsx";
 import { AparienciaScreen } from "./apariencia.jsx";
 import { FondoClima } from "./clima.jsx";
 import { TONOS as TONOS_ICONOS } from "./tonos.js";
 import { leerApariencia, aplicarApariencia, guardarApariencia, useApariencia } from "./apariencia.js";
 import { PantallaBienvenida, PantallaCrearUsuario, PantallaDeclaracion } from "./bienvenida.jsx";
 import { PerfilPublicoScreen } from "./perfil.jsx";
-import { DetalleOficio, FormularioOficio, PasoOficioActivado, leerZona, Pagina, Campo, Chip as ChipForm, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
+import { DetalleOficio, FormularioOficio, PasoOficioActivado, leerZona, Pagina, Hoja, Campo, Chip as ChipForm, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
 import { Seccion, Interruptor, Avance, EntradaIcono, useSubidas, SelectorLogo, GaleriaFotos, EditorHorarios } from "./formKit.jsx";
 import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
-import ListaInicio, { SelectorModo, PLACEHOLDER, leerModo, guardarModo } from "./inicio.jsx";
+import ListaInicio, { SelectorModo, CategoriasInicio, BarraFiltros, PLACEHOLDER, leerModo, guardarModo, borrarVistosFichas } from "./inicio.jsx";
 import { DetalleAlquiler, FormularioAlquiler, PasoAlquilerActivado } from "./alquileres.jsx";
-import { MisFichasScreen, PasoNegocioActivado } from "./misFichas.jsx";
+import { PasoNegocioActivado } from "./misFichas.jsx";
+import NegocioScreen, { TarjetaIdentidad } from "./negocio.jsx";
+import { EstadoVacio } from "./componentes/Estados.jsx";
 import BuscadorScreen from "./buscador.jsx";
 import FavoritosPantalla from "./favoritosPantalla.jsx";
 import { compartirFicha, compartirTexto, textoInvitacion, avisoDeCompartir, usePulsacionLarga, ESTILO_PULSACION } from "./compartir.js";
@@ -2062,7 +2065,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, catFicha, onCatFicha, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, esDueno, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -2164,6 +2167,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           onAyuda={() => { setShowDrawer(false); onAyuda(); }}
           onSoporte={() => { setShowDrawer(false); onSoporte(); }}
           onOpenOwner={() => { setShowDrawer(false); onOpenOwner(); }}
+          esDueno={esDueno}
         />
       )}
 
@@ -2190,6 +2194,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       {/* categorías: tarjeta flotante que se superpone a la portada */}
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
         <SelectorModo modo={modo} onCambiar={onCambiarModo} />
+        {modo !== "negocios" && <CategoriasInicio modo={modo} cat={catFicha} onCambiar={onCatFicha} />}
         {modo === "negocios" && (
           <div className="mt-3">
         <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
@@ -2234,7 +2239,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   );
 }
 
-function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner }) {
+function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner, esDueno }) {
   const Item = ({ Icon, label, onClick, danger }) => (
     <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1437" }}>
       <Icon size={18} color={danger ? "#9A3B34" : "#0B1437"} />
@@ -2262,7 +2267,7 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
         <div className="py-2 flex-1 overflow-y-auto">
           <Item Icon={Wrench} label="Herramientas" onClick={onHerramientas} />
           <Item Icon={Settings} label="Ajustes" onClick={onAjustes} />
-          <Item Icon={Building2} label="Mi negocio" onClick={onOpenOwner} />
+          <Item Icon={Building2} label={esDueno ? "Mi negocio" : "Ofrecer algo en Mi Zona"} onClick={onOpenOwner} />
           <div style={{ borderTop: "1px solid #EEF0F6", margin: "8px 0" }} />
           <Item Icon={Share2} label="Invitar amigos" onClick={async () => {
             const aviso = avisoDeCompartir(await compartirTexto({ titulo: "Mi Zona", texto: textoInvitacion("") }));
@@ -2323,7 +2328,9 @@ function IlustracionChats() {
   );
 }
 
-function ChatsScreen({ businesses, onOpenChat, query = "" }) {
+function ChatsScreen({ businesses, onOpenChat, onIrInicio, query = "" }) {
+  const [hojaMas, setHojaMas] = useState(false);
+  const [avisoPronto, setAvisoPronto] = useState("");
   const conversaciones = useMemo(() => {
     return getAllConversationIds()
       .map((id) => {
@@ -2402,6 +2409,34 @@ function ChatsScreen({ businesses, onOpenChat, query = "" }) {
             );
           })}
         </div>
+      )}
+
+      {/* botón «+» (como el de WhatsApp): hoy abre «Chatear con un negocio»; amigos y grupos llegan más adelante */}
+      <button type="button" onClick={() => { setAvisoPronto(""); setHojaMas(true); }} aria-label="Nuevo chat" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
+        style={{ right: 16, bottom: "calc(78px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
+        <Plus size={26} color="#fff" strokeWidth={2.6} aria-hidden="true" />
+      </button>
+      {hojaMas && (
+        <Hoja titulo="Nuevo" onCerrar={() => setHojaMas(false)}>
+          <div className="flex flex-col gap-2">
+            {[
+              { Icon: MessageCircle, bg: "#E4F7F6", fg: "#13897F", t: "Chatear con un negocio", d: "Elegí un negocio y hablá con su asistente.", ir: true },
+              { Icon: UserPlus, bg: "#EEF4FF", fg: "#2350F5", t: "Agregar un amigo", d: "Para chatear con personas que conocés.", pronto: true },
+              { Icon: Users, bg: "#F5EFFE", fg: "#7A4FD6", t: "Crear un grupo", d: "Para hablar con varias personas a la vez.", pronto: true },
+            ].map(({ Icon, bg, fg, t, d, ir, pronto }) => (
+              <button key={t} type="button" aria-disabled={pronto || undefined}
+                onClick={() => { if (ir) { setHojaMas(false); onIrInicio?.(); } else setAvisoPronto(`«${t}» llega muy pronto.`); }}
+                className="w-full flex items-center gap-3.5 text-left p-3" style={{ borderRadius: 16, border: "1px solid #E6ECF5", background: "#fff", minHeight: 68, opacity: pronto ? 0.8 : 1 }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: bg }}><Icon size={21} color={fg} aria-hidden="true" /></span>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2"><span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15, color: "#0B1437" }}>{t}</span>{pronto && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>Próximamente</span>}</span>
+                  <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>{d}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {avisoPronto && <p role="status" className="text-sm mt-3 p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510" }}>{avisoPronto}</p>}
+        </Hoja>
       )}
     </div>
   );
@@ -3036,33 +3071,33 @@ function SwipeableNotification({ n, leida, onOpen, onDelete }) {
   return (
     <div
       className="relative overflow-hidden"
-      style={{ maxHeight: saliendo ? 0 : 220, opacity: saliendo ? 0 : 1, marginBottom: saliendo ? 0 : 8, borderRadius: 18, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s, margin 0.25s ease 0.12s" }}
+      style={{ maxHeight: saliendo ? 0 : 160, opacity: saliendo ? 0 : 1, marginBottom: saliendo ? 0 : 6, borderRadius: 14, transition: "max-height 0.25s ease 0.12s, opacity 0.2s ease 0.1s, margin 0.25s ease 0.12s" }}
     >
       {/* fondo que se descubre al deslizar */}
-      <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#D64545", borderRadius: 18, opacity: dx > 4 ? 1 : 0 }}>
-        <Trash2 size={20} color="#fff" />
-        <span className="text-xs font-bold" style={{ color: "#fff" }}>Eliminar</span>
+      <div className="absolute inset-0 flex items-center gap-2 px-5" style={{ background: "#D64545", borderRadius: 14, opacity: dx > 4 ? 1 : 0 }}>
+        <Trash2 size={16} color="#fff" />
+        <span className="text-[11px] font-bold" style={{ color: "#fff" }}>Eliminar</span>
       </div>
       <div
         role="button" tabIndex={0}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={terminar} onPointerCancel={terminar}
         onClick={() => { if (!seMovio.current) onOpen(); }}
         onKeyDown={(e) => (e.key === "Enter" ? onOpen() : null)}
-        className="relative flex items-start gap-3.5 p-3.5 cursor-pointer"
+        className="relative flex items-center gap-2.5 px-3 py-2.5 cursor-pointer"
         style={{
-          background: leida ? "#fff" : "color-mix(in srgb, var(--azul) 5%, white)", border: `1px solid ${leida ? "#E3E7F1" : "color-mix(in srgb, var(--azul) 22%, white)"}`, borderRadius: 18,
+          background: leida ? "#fff" : "color-mix(in srgb, var(--azul) 5%, white)", border: `1px solid ${leida ? "#E3E7F1" : "color-mix(in srgb, var(--azul) 22%, white)"}`, borderRadius: 14,
           transform: `translateX(${dx}px)`, transition: arrastrando ? "none" : "transform 0.25s ease", touchAction: "pan-y", userSelect: "none",
         }}
       >
-        <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 14, background: tono.bg, boxShadow: `inset 0 0 0 1px ${tono.aro}` }}>
-          <Icon size={20} color={tono.fg} />
+        <span className="flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 11, background: tono.bg, boxShadow: `inset 0 0 0 1px ${tono.aro}` }}>
+          <Icon size={16} color={tono.fg} />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm" style={{ color: "#0B1437", fontWeight: 700, lineHeight: 1.3 }}>{n.titulo}</p>
-          <p className="text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.4, wordBreak: "break-word" }}>{n.descripcion}</p>
-          <p className="text-[11px] mt-1.5 font-semibold" style={{ color: "#6B7390" }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
+          <p className="text-[13px]" style={{ color: "#0B1437", fontWeight: 700, lineHeight: 1.25 }}>{n.titulo}</p>
+          <p className="text-xs mt-px" style={{ color: "#5B6482", lineHeight: 1.3, wordBreak: "break-word", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{n.descripcion}</p>
+          <p className="text-[10.5px] mt-0.5 font-semibold" style={{ color: "#6B7390" }}>{fmtNotifTime(n.fecha, n.soloFecha)}</p>
         </div>
-        {!leida && <span className="shrink-0 rounded-full mt-1.5" style={{ width: 10, height: 10, background: "var(--azul)", boxShadow: "0 0 0 4px rgba(var(--azul-rgb), .15)" }} />}
+        {!leida && <span className="shrink-0 rounded-full" style={{ width: 8, height: 8, background: "var(--azul)", boxShadow: "0 0 0 3px rgba(var(--azul-rgb), .15)" }} />}
       </div>
     </div>
   );
@@ -3099,29 +3134,29 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
   return (
     <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
       <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
-        <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-3" style={{ paddingTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
+        <div className="max-w-3xl mx-auto px-4 pb-2.5 flex items-center gap-3" style={{ paddingTop: "calc(8px + env(safe-area-inset-top, 0px))" }}>
           <BotonAtras onClick={onBack} />
           <div className="flex-1 min-w-0 leading-tight">
-            <p style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em" }}>Notificaciones</p>
+            <p style={{ color: "#fff", fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em" }}>Notificaciones</p>
             <p className="text-xs" style={{ color: "var(--azul-palido)" }}>{sinLeer > 0 ? `${sinLeer} sin leer` : "Estás al día"}</p>
           </div>
           {sinLeer > 0 && (
-            <button onClick={onMarkAllRead} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 shrink-0" style={{ borderRadius: 10, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
-              <CheckCheck size={14} /> Marcar todas
+            <button onClick={onMarkAllRead} className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 shrink-0" style={{ borderRadius: 10, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
+              <CheckCheck size={13} /> Marcar todas
             </button>
           )}
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4" style={{ paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
-        <div className="flex gap-2 overflow-x-auto pt-3 pb-1" style={{ scrollbarWidth: "none" }}>
+        <div className="flex gap-1.5 overflow-x-auto pt-2.5 pb-1" style={{ scrollbarWidth: "none" }}>
           {NOTIF_FILTROS.map(([id, nombre]) => {
             const activo = filtro === id;
             return (
-              <button key={id} onClick={() => setFiltro(id)} className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2 shrink-0"
+              <button key={id} onClick={() => setFiltro(id)} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 shrink-0"
                 style={{ borderRadius: 999, background: activo ? "var(--azul-oscuro)" : "#fff", color: activo ? "#fff" : "#5B6482", border: `1px solid ${activo ? "var(--azul-oscuro)" : "#E3E7F1"}` }}>
                 {nombre}
-                {id === "sinleer" && sinLeer > 0 && <b className="flex items-center justify-center text-[11px]" style={{ background: "var(--azul)", color: "#fff", minWidth: 18, height: 18, borderRadius: 9, padding: "0 5px" }}>{sinLeer}</b>}
+                {id === "sinleer" && sinLeer > 0 && <b className="flex items-center justify-center text-[10px]" style={{ background: "var(--azul)", color: "#fff", minWidth: 16, height: 16, borderRadius: 8, padding: "0 4px" }}>{sinLeer}</b>}
               </button>
             );
           })}
@@ -3152,7 +3187,7 @@ function NotificacionesScreen({ notificaciones, leidas, onOpen, onDelete, onMark
           <>
             {grupos.map((g) => (
               <div key={g.label}>
-                <p className="text-[11px] font-extrabold px-1 pt-4 pb-2" style={{ color: "#6B7390", letterSpacing: "0.1em" }}>{g.label.toUpperCase()}</p>
+                <p className="text-[10px] font-extrabold px-1 pt-3 pb-1.5" style={{ color: "#6B7390", letterSpacing: "0.1em" }}>{g.label.toUpperCase()}</p>
                 {g.items.map((n) => (
                   <SwipeableNotification key={n.id} n={n} leida={leidas.has(n.id)} onOpen={() => onOpen(n)} onDelete={() => onDelete(n.id)} />
                 ))}
@@ -3735,10 +3770,50 @@ function RankingScreen({ businesses, zone, onOpenBusiness, onBack }) {
   );
 }
 
-function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusiness, onAgregarMeses, onEditBusiness, onViewProfile, onOpenAgenda, onOpenRanking, onOpenFavoritos, onOpenPedidos, onOpenPuntos, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
+// Herramientas (pestaña para quien todavía no tiene un negocio, oficio o alquiler): lo de cliente + cómo sumar lo propio.
+// Cuando la cuenta ya tiene alguno, la pestaña pasa a ser «Negocio» y estas herramientas quedan en Ajustes.
+function HerramientasScreen({ onOpenRanking, onOpenFavoritos, onOpenPedidos, onOpenPuntos, onOfrecerNegocio, onOfrecerOficio, onOfrecerAlquiler }) {
+  const Tool = ({ Icon, bg, title, desc, onClick }) => (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
+      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)", minHeight: 72 }}
+    >
+      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `inset 0 1px 0 rgba(255,255,255,.3), 0 6px 14px ${bg}55` }}>
+        <Icon size={20} color="#fff" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+        <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</span>
+      </span>
+      <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
+    </button>
+  );
+  const Titulo = ({ children, sub }) => (
+    <div className="mb-3 mt-6 first:mt-0">
+      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{children}</p>
+      {sub && <p className="text-xs" style={{ color: "#5B6482" }}>{sub}</p>}
+    </div>
+  );
+  return (
+    <div>
+      <Titulo>Para vos</Titulo>
+      <Tool Icon={Package} bg="#2350F5" title="Mis pedidos" desc="Seguí el estado de lo que pediste." onClick={onOpenPedidos} />
+      <Tool Icon={Heart} bg="#E5484D" title="Favoritos" desc="Lo que guardaste." onClick={onOpenFavoritos} />
+      <Tool Icon={Coins} bg="#F59E0B" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
+      <Tool Icon={Trophy} bg="#8B5CF6" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
+      <Titulo sub="Cuando sumes algo, vas a ver la pestaña «Negocio» para gestionarlo.">Ofrecé algo en Mi Zona</Titulo>
+      <Tool Icon={Store} bg="#1E8A55" title="Mi negocio" desc="Sumá tu local y empezá a recibir clientes." onClick={onOfrecerNegocio} />
+      <Tool Icon={Wrench} bg="#E08A12" title="Mis servicios" desc="Electricista, plomero, jardinero... armá tu ficha de oficios." onClick={onOfrecerOficio} />
+      <Tool Icon={Home} bg="#2B3E9E" title="Algo en alquiler" desc="Casas, salones, sillas, herramientas... con sus artículos." onClick={onOfrecerAlquiler} />
+    </div>
+  );
+}
+
+// Panel de UN negocio propio (dentro de la pestaña «Negocio»): identidad, suscripción, números y todo para gestionarlo.
+function PanelNegocio({ biz, ctx, sub, setSub, onEditar, onVerPerfil, onAgregarMeses, onGuardarEmpleo, onSubirHistoria, onSaveDiscount, onToggleDiscount, onDeleteDiscount }) {
   const [subiendoHistoria, setSubiendoHistoria] = useState(false);
   const historiaInputRef = useRef(null);
-
   const handleSubirHistoria = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -3754,30 +3829,11 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     }
   };
 
-  // fila de herramienta (para todos)
-  const Tool = ({ Icon, bg, title, desc, onClick }) => (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-2.5 transition-shadow hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
-    >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: bg, boxShadow: `inset 0 1px 0 rgba(255,255,255,.3), 0 6px 14px ${bg}55` }}>
-        <Icon size={20} color="#fff" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-        <span className="block text-xs mt-0.5" style={{ color: "#5B6482" }}>{desc}</span>
-      </span>
-      <ChevronDown size={15} color="#B9BCC5" style={{ transform: "rotate(-90deg)" }} />
-    </button>
-  );
-
-  // mosaico de gestión (solo dueños)
   const Mosaico = ({ Icon, color, title, desc, onClick, badge }) => (
     <button
       onClick={onClick}
       className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)" }}
+      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)", minHeight: 112 }}
     >
       <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: tinte(color, 10) }}>
         <Icon size={19} color={color} />
@@ -3787,47 +3843,16 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="block text-sm font-semibold leading-tight" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+      <span className="block text-sm font-semibold leading-tight" style={{ color: color === "#C1443A" ? "#9A3B34" : "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
       <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#5B6482" }}>{desc}</span>
     </button>
   );
-
-  const Titulo = ({ children, sub }) => (
+  const Titulo = ({ children, sub: s }) => (
     <div className="mb-3 mt-6">
       <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{children}</p>
-      {sub && <p className="text-xs" style={{ color: "#5B6482" }}>{sub}</p>}
+      {s && <p className="text-xs" style={{ color: "#5B6482" }}>{s}</p>}
     </div>
   );
-
-  const herramientasDeTodos = (
-    <>
-      <Tool Icon={Package} bg="#2350F5" title="Mis pedidos" desc="Seguí el estado de lo que pediste." onClick={onOpenPedidos} />
-      <Tool Icon={Heart} bg="#E5484D" title="Favoritos" desc="Los negocios que guardaste." onClick={onOpenFavoritos} />
-      <Tool Icon={Coins} bg="#F59E0B" title="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onOpenPuntos} />
-      <Tool Icon={Trophy} bg="#8B5CF6" title="Ranking" desc="Los negocios más destacados de tu zona." onClick={onOpenRanking} />
-    </>
-  );
-
-  // ---------- sin negocio: solo herramientas para clientes ----------
-  if (!ownerBiz) {
-    return (
-      <div>
-
-        {herramientasDeTodos}
-      </div>
-    );
-  }
-
-  // ---------- dueños: panel de control del negocio ----------
-  const c = catInfo(ownerBiz.cat);
-  const inf = infoSuscripcion(ownerBiz);
-  const estadoTexto = !inf ? "Activo" : inf.estado === "pendiente" ? "Falta pagar" : inf.estado === "vencida" ? "Vencida" : inf.estado === "por_vencer" ? "Por vencer" : "Activo";
-  const estadoColor = !inf || inf.estado === "activa" ? { bg: "#E4F3EA", fg: "#1E6B44" } : inf.estado === "por_vencer" || inf.estado === "pendiente" ? { bg: "#FBEBD1", fg: "#8A5B12" } : { bg: "#FDF1EF", fg: "#9A3B34" };
-  const rating = avgRating(ownerBiz.reviews);
-  const promosVigentes = activeDiscounts(ownerBiz).length;
-  const resenasSinVer = countUnseenReviews(ownerBiz);
-  const tieneAsistente = !!ownerBiz.asistenteCodigoPublico && !!ownerBiz.asistenteActivo;
-
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
     <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
       <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: tinte(color, 10) }}><Icon size={15} color={color} /></span>
@@ -3836,19 +3861,28 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
     </div>
   );
 
-  // ---------- subpantallas del dueño (cada una con su botón de volver) ----------
+  const c = catInfo(biz.cat);
+  const inf = infoSuscripcion(biz);
+  const estadoTexto = !inf ? "Activo" : inf.estado === "pendiente" ? "Falta pagar" : inf.estado === "vencida" ? "Vencida" : inf.estado === "por_vencer" ? "Por vencer" : "Activo";
+  const estadoColor = !inf || inf.estado === "activa" ? { bg: "#E4F3EA", fg: "#1E6B44" } : inf.estado === "por_vencer" || inf.estado === "pendiente" ? { bg: "#FBEBD1", fg: "#8A5B12" } : { bg: "#FDF1EF", fg: "#9A3B34" };
+  const rating = avgRating(biz.reviews);
+  const promosVigentes = activeDiscounts(biz).length;
+  const resenasSinVer = countUnseenReviews(biz);
+  const tieneAsistente = !!biz.asistenteCodigoPublico && !!biz.asistenteActivo;
+  const volverSub = () => setSub(null);
+
   if (sub === "promos") {
     return (
-      <SubPantalla titulo="Mis promociones" desc="Aparecen en tu perfil y destacan tu negocio en la lista." onBack={() => setSub(null)}>
-        <PromosSheet business={ownerBiz} onSave={onSaveDiscount} onToggle={onToggleDiscount} onDelete={onDeleteDiscount} />
+      <SubPantalla titulo="Mis promociones" desc="Aparecen en tu perfil y destacan tu negocio en la lista." onBack={volverSub} volverA="Mi negocio">
+        <PromosSheet business={biz} onSave={onSaveDiscount} onToggle={onToggleDiscount} onDelete={onDeleteDiscount} />
       </SubPantalla>
     );
   }
   if (sub === "empleo") {
     return (
-      <SubPantalla titulo="Búsqueda de personal" onBack={() => setSub(null)}>
+      <SubPantalla titulo="Búsqueda de personal" onBack={volverSub} volverA="Mi negocio">
         <EmpleoFormModal
-          business={ownerBiz}
+          business={biz}
           onSave={(datos) => { onGuardarEmpleo(datos); setSub(null); }}
           onDelete={() => { onGuardarEmpleo(null); setSub(null); }}
         />
@@ -3857,14 +3891,14 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
   }
   if (sub === "qr") {
     return (
-      <SubPantalla titulo="Mi código QR" onBack={() => setSub(null)}>
+      <SubPantalla titulo="Mi código QR" onBack={volverSub} volverA="Mi negocio">
         <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E3E7F1" }}>
           <QrLocal
-            texto={`${window.location.origin}${window.location.pathname}?negocio=${ownerBiz.id}`} tam={200} alt="Código QR de tu negocio"
+            texto={`${window.location.origin}${window.location.pathname}?negocio=${biz.id}`} tam={200} alt="Código QR de tu negocio"
             className="mx-auto mb-4" style={{ borderRadius: 14, border: "1px solid #E3E7F1" }}
           />
           <p className="text-xs mb-3" style={{ color: "#5B6482" }}>Los clientes que escaneen este código van a llegar directo al perfil de tu negocio en Mi Zona.</p>
-          <button onClick={() => shareBusiness(ownerBiz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14 }}>
+          <button onClick={() => shareBusiness(biz)} className="w-full text-sm font-semibold py-3" style={{ background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", color: "#fff", borderRadius: 14 }}>
             Compartir mi negocio
           </button>
         </div>
@@ -3874,61 +3908,45 @@ function HerramientasScreen({ sub, setSub, usuario, ownerBiz, onLogin, onAddBusi
 
   return (
     <div>
+      <BotonVolver texto="Volver a Negocio" onClick={ctx.volver} />
+      <TarjetaIdentidad
+        logo={biz.logo} icono={c?.icon || Store} color={c?.color || "var(--azul)"} titulo={biz.name} sub={`Negocio · ${c?.label || ""} · ${biz.zone}`}
+        chip={<span className="inline-block text-[10px] font-bold px-2 py-0.5" style={{ borderRadius: 10, background: estadoColor.bg, color: estadoColor.fg }}>{estadoTexto}</span>}
+        onVer={onVerPerfil}
+      />
 
-      {/* tarjeta de identidad */}
-      <div data-conservar-color className="relative overflow-hidden p-4 mb-3" style={{ borderRadius: 22, background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", boxShadow: "0 14px 30px rgba(11,20,55,.28)" }}>
-        <div style={{ position: "absolute", top: -50, right: -40, width: 150, height: 150, borderRadius: "50%", background: "#ffffff12" }} />
-        <div className="relative flex items-center gap-3.5">
-          <div className="shrink-0 overflow-hidden flex items-center justify-center text-xl font-bold" style={{ width: 62, height: 62, borderRadius: 20, background: c?.color || "var(--azul)", color: "#fff", border: "3px solid #ffffff55", fontFamily: "var(--fuente-titulo)" }}>
-            {ownerBiz.logo ? <img src={ownerBiz.logo} alt="" className="w-full h-full object-cover" /> : ownerBiz.name?.[0]?.toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{ownerBiz.name}</p>
-            <p className="text-xs truncate" style={{ color: "var(--azul-palido)" }}>{c?.label} · {ownerBiz.zone}</p>
-            <span className="inline-block text-[10px] font-bold px-2 py-0.5 mt-1.5" style={{ borderRadius: 10, background: estadoColor.bg, color: estadoColor.fg }}>{estadoTexto}</span>
-          </div>
-        </div>
-        <button onClick={onViewProfile} className="relative w-full flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 mt-4" style={{ borderRadius: 14, background: "#ffffff1f", color: "#fff", border: "1px solid #ffffff33" }}>
-          <Eye size={15} /> Ver cómo lo ven mis clientes
-        </button>
-      </div>
-
-      <TarjetaSuscripcion negocio={ownerBiz} onAgregar={onAgregarMeses} />
+      <TarjetaSuscripcion negocio={biz} onAgregar={onAgregarMeses} />
 
       {/* números del negocio */}
       <div className="grid grid-cols-2 gap-2.5 mb-1">
-        <Estadistica Icon={Eye} color="var(--azul)" valor={fmtNum(ownerBiz.views || 0)} etiqueta="Visitas a tu perfil" />
-        <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(ownerBiz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
-        <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${ownerBiz.reviews?.length || 0} ${(ownerBiz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
+        <Estadistica Icon={Eye} color="var(--azul)" valor={fmtNum(biz.views || 0)} etiqueta="Visitas a tu perfil" />
+        <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(biz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
+        <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${biz.reviews?.length || 0} ${(biz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
         <Estadistica Icon={Tag} color="#B8703F" valor={promosVigentes} etiqueta={promosVigentes === 1 ? "promoción vigente" : "promociones vigentes"} />
       </div>
 
       <Titulo sub="Todo para controlar los datos de tu negocio">Gestionar mi negocio</Titulo>
       <div className="grid grid-cols-2 gap-2.5">
-        <Mosaico Icon={CalendarCheck} color="#E5484D" title="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onOpenAgenda} />
-        <Mosaico Icon={Store} color="#1E8A55" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditBusiness} />
+        <Mosaico Icon={Store} color="#1E8A55" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditar} />
         <Mosaico Icon={Megaphone} color="#13897F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setSub("promos")} />
-        <Mosaico Icon={MessageCircle} color="#7A4FD6" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onViewProfile} badge={resenasSinVer} />
-        <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(ownerBiz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
-        <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(ownerBiz) ? `Publicada: ${ownerBiz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
+        <Mosaico Icon={MessageCircle} color="#7A4FD6" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onVerPerfil} badge={resenasSinVer} />
+        <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(biz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
+        <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(biz) ? `Publicada: ${biz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
         <Mosaico Icon={QrCode} color="#0B1437" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
-        <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(ownerBiz)} />
+        <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(biz)} />
         {tieneAsistente ? (
           <Mosaico Icon={Sparkles} color="#7A4F9E" title="Mi Asistente" desc="Clientes, pedidos, puntos y tu asistente virtual." onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")} />
         ) : (
           <Mosaico Icon={Download} color="#2C9A5F" title="Conseguir Mi Asistente" desc="Un asistente con IA que atiende a tus clientes." onClick={() => window.open(MI_ASISTENTE_URL, "_blank")} />
         )}
+        <Mosaico Icon={Trash2} color="#C1443A" title="Eliminar negocio" desc="Se borra para siempre." onClick={ctx.eliminar} />
       </div>
       <input ref={historiaInputRef} type="file" accept="image/*" className="hidden" onChange={handleSubirHistoria} />
-
-      <Titulo>Para explorar</Titulo>
-      {herramientasDeTodos}
-
     </div>
   );
 }
 
-function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrirFavoritos, onAbrirMisFichas, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada, onVerPerfil }) {
+function AjustesScreen({ sub, setSub, usuario, negocios, esDueno, onOpenPedidos, onOpenPuntos, onOpenRanking, onAbrirNegocio, onAbrirFavoritos, onAbrirMisFichas, onLogin, onLogged, onUsuarioActualizado, onCerrarSesion, onBorrarDatosLocales, onBorrarVistos, onCuentaEliminada, onVerPerfil }) {
   const tema = useApariencia().tema;
   // al cerrar sesión se vuelve a la lista de Ajustes (en vez de quedar en "Mi cuenta")
   useEffect(() => { if (!usuario && sub === "cuenta") setSub(null); }, [usuario?.id]);
@@ -4037,6 +4055,17 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
 
   return (
     <div>
+      {esDueno && (
+        <>
+          <SeccionAjustes Icon={Wrench}>Herramientas</SeccionAjustes>
+          <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
+            <Row Icon={Package} tono="azul" title="Mis pedidos" desc="Seguí el estado de lo que pediste" onClick={onOpenPedidos} />
+            <Row Icon={Heart} tono="rojo" title="Favoritos" desc="Lo que guardaste" onClick={onAbrirFavoritos} />
+            <Row Icon={Coins} tono="naranja" title="Mis puntos" desc="Puntos por negocio, recompensas y canjes" onClick={onOpenPuntos} />
+            <Row Icon={Trophy} tono="violeta" title="Ranking" desc="Los negocios más destacados de tu zona" onClick={onOpenRanking} />
+          </div>
+        </>
+      )}
       <SeccionAjustes Icon={User}>Cuenta y personalización</SeccionAjustes>
       <div className="overflow-hidden mb-6" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
         <Row Icon={User} tono="azul" title="Mi cuenta" desc={usuario ? (usuario.usuario ? `@${usuario.usuario}` : usuario.email) : "Iniciá sesión con Google para acceder"} onClick={() => setSub("cuenta")} />
@@ -4061,11 +4090,12 @@ function AjustesScreen({ sub, setSub, usuario, negocios, onAbrirNegocio, onAbrir
 }
 
 
-function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes, chatsSinLeer }) {
+function BottomNav({ active, onInicio, onChats, onAdd, onComunidad, onNegocio, onHerramientas, onAjustes, chatsSinLeer, mostrarNegocio }) {
+  // Cinco pestañas y el «+» en el medio (agregar negocio, oficio o alquiler). La cuarta pestaña es «Negocio» cuando la cuenta tiene un negocio, oficio o alquiler; si no, «Herramientas».
   const Item = ({ id, label, Icon, onClick, badge }) => {
     const on = active === id;
     return (
-      <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative" style={{ flex: 1 }}>
+      <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative min-w-0" style={{ flex: 1, minHeight: 52 }}>
         <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 9, background: on ? "#E9EEFF" : "transparent", transition: "background .2s ease" }}>
           <Icon size={20} color={on ? "var(--azul)" : "#6B7494"} strokeWidth={on ? 2.3 : 1.9} />
           {badge > 0 && (
@@ -4077,15 +4107,15 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
             </span>
           )}
         </span>
-        <span className="text-[11px]" style={{ color: on ? "var(--azul)" : "#6B7494", fontWeight: on ? 700 : 500 }}>{label}</span>
+        <span className="whitespace-nowrap" style={{ fontSize: 10, letterSpacing: "-0.2px", color: on ? "var(--azul)" : "#6B7494", fontWeight: on ? 700 : 500 }}>{label}</span>
       </button>
     );
   };
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "none", borderTop: "1px solid #E3E7F1" }}>
-      {/* botón flotante "+", elevado por encima de la barra, centrado */}
+      {/* botón flotante "+", elevado por encima de la barra, centrado: agregar negocio, oficio o alquiler */}
       <button
-        onClick={onAdd} aria-label="Agregar mi negocio"
+        onClick={onAdd} aria-label="Agregar negocio, oficio o alquiler"
         className="fixed flex items-center justify-center"
         style={{
           left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
@@ -4094,14 +4124,16 @@ function BottomNav({ active, onInicio, onChats, onAdd, onHerramientas, onAjustes
       >
         <Plus size={24} color="#fff" strokeWidth={2.6} />
       </button>
-
-      <div className="max-w-6xl mx-auto px-3 flex items-center" style={{ paddingTop: 8, paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
+      <nav aria-label="Secciones" className="max-w-6xl mx-auto px-1 flex items-center" style={{ paddingTop: 8, paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
         <Item id="inicio" label="Inicio" Icon={Home} onClick={onInicio} />
         <Item id="chats" label="Chats" Icon={MessageCircle} onClick={onChats} badge={chatsSinLeer} />
-        <div style={{ width: 62 }} />
-        <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />
+        <div style={{ width: 62, flexShrink: 0 }} />
+        <Item id="comunidad" label="Comunidad" Icon={Users} onClick={onComunidad} />
+        {mostrarNegocio
+          ? <Item id="negocio" label="Negocio" Icon={Store} onClick={onNegocio} />
+          : <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />}
         <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
-      </div>
+      </nav>
     </div>
   );
 }
@@ -4609,7 +4641,6 @@ export default function MiZona() {
   const [onlyNuevos, setOnlyNuevos] = useState(false);
   const [onlyEmpleo, setOnlyEmpleo] = useState(false); // negocios que buscan personal
   const [sortBy, setSortBy] = useState("destacados");
-  const [showOrden, setShowOrden] = useState(false); // hoja para elegir cómo se ordenan los negocios
   const [selectedId, setSelectedId] = useState(null);
   const [perfilVer, setPerfilVer] = useState(null); // usuario cuyo perfil público está abierto
   const [showAllCats, setShowAllCats] = useState(false);
@@ -4653,6 +4684,8 @@ export default function MiZona() {
   // Oficios y servicios (Fase 4): listado, ficha, formulario, paso final y "Mis fichas"
   const [modo, setModoInicio] = useState(leerModo);
   const cambiarModo = (m) => { setModoInicio(m); guardarModo(m); };
+  const [catAlquiler, setCatAlquiler] = useState(""); // categoría elegida en Alquileres
+  const [rubroOficio, setRubroOficio] = useState(""); // oficio elegido en Oficios
   const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
   const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
   const [oficioActivado, setOficioActivado] = useState(null);
@@ -4660,8 +4693,20 @@ export default function MiZona() {
   const [alquilerVer, setAlquilerVer] = useState(null); // { id }
   const [alquilerForm, setAlquilerForm] = useState(null); // { inicial } (null = crear)
   const [alquilerActivado, setAlquilerActivado] = useState(null);
-  const [misFichasAbierto, setMisFichasAbierto] = useState(false);
-  const [fichasVersion, setFichasVersion] = useState(0); // sube cuando cambia una ficha, para que "Mis fichas" la vuelva a pedir
+  // Pestaña «Negocio» (aparece cuando la cuenta tiene un negocio, oficio o alquiler): perfil abierto y subpantalla del negocio
+  const [negocioSel, setNegocioSel] = useState(null); // { tipo: "negocio" | "oficio" | "alquiler", id }
+  const [subNegocio, setSubNegocio] = useState(null); // null | "promos" | "empleo" | "qr"
+  const [fichasResumen, setFichasResumen] = useState({ oficio: false, alquileres: 0 }); // qué fichas (aparte de negocios) tiene la cuenta
+  const [fichasVersion, setFichasVersion] = useState(0); // sube cuando cambia una ficha, para que la pestaña Negocio la vuelva a pedir
+  useEffect(() => {
+    if (!usuario?.id) { setFichasResumen({ oficio: false, alquileres: 0 }); return; }
+    let cancelado = false;
+    Promise.allSettled([oficiosApi.mio(), alquileresApi.mios()]).then(([o, a]) => {
+      if (cancelado) return;
+      setFichasResumen({ oficio: o.status === "fulfilled" && !!o.value, alquileres: a.status === "fulfilled" ? (a.value || []).length : 0 });
+    });
+    return () => { cancelado = true; };
+  }, [usuario?.id, fichasVersion]);
   const [negocioEditandoId, setNegocioEditandoId] = useState(null); // negocio que se edita desde "Mis fichas" (si no, el primero)
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [borrador, setBorrador] = useState(null); // negocio recién completado, esperando que elija el plan
@@ -4696,7 +4741,7 @@ export default function MiZona() {
     if (!requerirSesion("Para ofrecer tus servicios necesitás una cuenta de Mi Zona. Es rápido y gratis.", "oficio")) return;
     try {
       const mio = await oficiosApi.mio();
-      if (mio) setMisFichasAbierto(true); else setOficioForm({ inicial: null });
+      if (mio) irANegocio({ tipo: "oficio", id: mio.id }); else setOficioForm({ inicial: null });
     } catch { setOficioForm({ inicial: null }); }
   };
   // "Ofrecer en alquiler": se pueden tener hasta 5 fichas; si ya llegó al máximo se abre "Mis fichas"
@@ -4704,13 +4749,13 @@ export default function MiZona() {
     if (!requerirSesion("Para ofrecer algo en alquiler necesitás una cuenta de Mi Zona. Es rápido y gratis.", "alquiler")) return;
     try {
       const mias = await alquileresApi.mios();
-      if (mias.length >= 5) setMisFichasAbierto(true); else setAlquilerForm({ inicial: null });
+      if (mias.length >= 5) irANegocio(); else setAlquilerForm({ inicial: null });
     } catch { setAlquilerForm({ inicial: null }); }
   };
   // Comunidad: hace falta cuenta y localidad (de ahí sale el departamento que ve lo publicado)
   const abrirComunidad = () => {
     if (!requerirSesion("Para ver Comunidad necesitás una cuenta de Mi Zona. Es rápido y gratis.", null)) return;
-    setComunidadAbierta(true);
+    irATab("comunidad");
   };
   const abrirPublicarComunidad = (tipo = null, titulo = "") => {
     if (!requerirSesion("Para publicar en Comunidad necesitás una cuenta de Mi Zona. Es rápido y gratis.", null)) return;
@@ -4827,6 +4872,7 @@ export default function MiZona() {
       if (m.tipo === "oficio") setOficioActivado(m.ficha); else setAlquilerActivado(m.ficha);
     }
   };
+  const abrirAgregarMesesDe = (b) => setPlanesModal({ tipo: "negocio", nombre: b.name, fichaId: b.id, vencimiento: b.pendientePago ? null : b.expiresAt });
   const abrirAgregarMeses = () => {
     const b = businesses.find((x) => x.id === ownerBizId);
     if (!b) return;
@@ -4848,8 +4894,9 @@ export default function MiZona() {
     return () => mq?.removeEventListener?.("change", alCambiar);
   }, []);
   const [subAjustes, setSubAjustes] = useState(null); // null | "cuenta" | "notificaciones" | "seguridad" | "apariencia" | "acerca" | "ayuda" | "soporte" | "privacidad"
-  const [subHerramientas, setSubHerramientas] = useState(null); // null | "promos" | "empleo" | "qr"
-  const irATab = (tab) => { setSubHerramientas(null); setSubAjustes(null); setActiveTab(tab); window.scrollTo(0, 0); };
+  const irATab = (tab) => { setNegocioSel(null); setSubNegocio(null); setSubAjustes(null); setActiveTab(tab); window.scrollTo(0, 0); };
+  // Va a la pestaña Negocio; con "sel" abre directo el panel de ese perfil
+  const irANegocio = (sel = null) => { setNegocioSel(sel); setSubNegocio(null); setSubAjustes(null); setActiveTab("negocio"); window.scrollTo(0, 0); };
 
   // favoritos (guardados en este dispositivo)
   const [favorites, setFavorites] = useState(() => getFavorites());
@@ -4878,7 +4925,6 @@ export default function MiZona() {
   const [showFavoritos, setShowFavoritos] = useState(false);
   // Comunidad (Fase 7): se ve solo si el servidor la tiene habilitada (se enciende al completar la moderación, Fase 8)
   const [comunidadHabilitada, setComunidadHabilitada] = useState(false);
-  const [comunidadAbierta, setComunidadAbierta] = useState(false);
   const [comunidadVer, setComunidadVer] = useState(null); // { id }
   const [comunidadForm, setComunidadForm] = useState(null); // { inicial, tipo, titulo }
   const [comunidadPublicada, setComunidadPublicada] = useState(null); // publicación recién creada
@@ -4888,6 +4934,7 @@ export default function MiZona() {
   const [pasoNegocio, setPasoNegocio] = useState(null); // negocio recién activado: se le muestra el paso de compartir
   // Mis pedidos: lista con el estado de cada pedido (viene de Mi Asistente) y su recarga
   const [showPedidos, setShowPedidos] = useState(false);
+  const [reclamosView, setReclamosView] = useState(null); // { pedido } = formulario para ese pedido; {} = lista de mis reclamos; null = cerrado
   const [misPedidos, setMisPedidos] = useState([]);
   const [pedidosCargando, setPedidosCargando] = useState(true);
   const [pedidosError, setPedidosError] = useState(false);
@@ -5016,9 +5063,12 @@ export default function MiZona() {
     if (!usuario?.usuario) return;
     const q = new URLSearchParams(window.location.search);
     if (q.get("abrir") === "pedidos") { setShowPedidos(true); window.history.replaceState(null, "", window.location.pathname); }
+    if (q.get("abrir") === "reclamos") { setReclamosView({}); window.history.replaceState(null, "", window.location.pathname); }
   }, [usuario?.usuario]);
 
   const ownerBiz = businesses.find((b) => b.id === ownerBizId);
+  const negociosPropios = useMemo(() => misNegocios.map((m) => businesses.find((b) => b.id === m.id) || m), [misNegocios, businesses]);
+  const esDueno = negociosPropios.length > 0 || fichasResumen.oficio || fichasResumen.alquileres > 0;
   const bizEditando = negocioEditandoId ? businesses.find((b) => b.id === negocioEditandoId) : ownerBiz; // el que se está editando (desde Herramientas, el primero)
   const notificaciones = useMemo(
     () => buildNotificaciones({ actividad, businesses, favorites, autorId: getAutorResenasId(), ownerBizs: misNegocios.map((m) => businesses.find((b) => b.id === m.id) || m) }).filter((n) => !notifEliminadas.has(n.id)),
@@ -5133,27 +5183,25 @@ export default function MiZona() {
   };
 
   // acciones del dueño (solo afectan su propio negocio, nunca otros)
-  const saveOwnerDiscount = (discount) => {
-    persistOne(ownerBizId, (b) => {
+  const saveOwnerDiscount = (id, discount) => {
+    persistOne(id, (b) => {
       const exists = (b.discounts || []).some((d) => d.id === discount.id);
       const discounts = exists ? b.discounts.map((d) => (d.id === discount.id ? discount : d)) : [...(b.discounts || []), discount];
       return { ...b, discounts };
     });
   };
-  const toggleOwnerDiscount = (discountId) => {
-    persistOne(ownerBizId, (b) => ({ ...b, discounts: b.discounts.map((d) => (d.id === discountId ? { ...d, active: !d.active } : d)) }));
+  const toggleOwnerDiscount = (id, discountId) => {
+    persistOne(id, (b) => ({ ...b, discounts: b.discounts.map((d) => (d.id === discountId ? { ...d, active: !d.active } : d)) }));
   };
-  const deleteOwnerDiscount = (discountId) => {
-    persistOne(ownerBizId, (b) => ({ ...b, discounts: b.discounts.filter((d) => d.id !== discountId) }));
+  const deleteOwnerDiscount = (id, discountId) => {
+    persistOne(id, (b) => ({ ...b, discounts: b.discounts.filter((d) => d.id !== discountId) }));
   };
 
   // Botón "atrás" de Android: cierra la pantalla o ventana de más arriba en vez de salir de la app (de abajo hacia arriba)
   useAtrasDeCapas([
-    [showOrden, () => setShowOrden(false)],
     [!!selectedId, () => setSelectedId(null)],
     [showFavoritos, () => setShowFavoritos(false)],
     [!!buscador, () => setBuscador(null)],
-    [comunidadAbierta, () => setComunidadAbierta(false)],
     [!!comunidadVer, () => setComunidadVer(null)],
     [!!comunidadForm, () => setComunidadForm(null)],
     [!!comunidadPublicada, () => setComunidadPublicada(null)],
@@ -5164,9 +5212,9 @@ export default function MiZona() {
     [showNotificaciones, () => setShowNotificaciones(false)],
     [showBusquedaAsistente, () => setShowBusquedaAsistente(false)],
     [!!chatBiz, () => setChatBiz(null)],
-    [!!subHerramientas, () => setSubHerramientas(null)],
+    [!!negocioSel, () => setNegocioSel(null)],
+    [!!subNegocio, () => setSubNegocio(null)],
     [!!subAjustes, () => setSubAjustes(null)],
-    [misFichasAbierto, () => setMisFichasAbierto(false)],
     [!!oficioVer, () => setOficioVer(null)],
     [!!oficioForm, () => setOficioForm(null)],
     [!!oficioActivado, () => setOficioActivado(null)],
@@ -5186,6 +5234,7 @@ export default function MiZona() {
     [!!lightboxSrc, () => setLightboxSrc(null)],
     [!!selectorUbic, () => setSelectorUbic(null)],
     [showPedidos, () => setShowPedidos(false)],
+    [!!reclamosView, () => setReclamosView(null)],
   ]);
 
   // Puerta de entrada: sin sesión se ve la bienvenida (Empezar → Registrarme / Iniciar sesión); con sesión abierta se entra directo al inicio.
@@ -5245,7 +5294,7 @@ export default function MiZona() {
           onOpen={(n) => {
             marcarNotifLeida(n.id);
             if (n.destino === "puntos") { setShowNotificaciones(false); setPuntosView({}); return; }
-            if (n.destino === "suscripcion") { setShowNotificaciones(false); setActiveTab("herramientas"); window.scrollTo(0, 0); return; }
+            if (n.destino === "suscripcion") { setShowNotificaciones(false); irATab("negocio"); return; }
             if (n.bizId) { setShowNotificaciones(false); openDetail(n.bizId); }
           }}
         />
@@ -5316,6 +5365,20 @@ export default function MiZona() {
     );
   }
 
+  /* ---- reclamos, devoluciones y cambios ---- */
+  if (reclamosView) {
+    return (
+      <div style={{ fontFamily: "var(--fuente-texto)" }}>
+        {globalStyle}
+        <ReclamosScreen
+          pedidoInicial={reclamosView.pedido || null}
+          onBack={() => setReclamosView(null)}
+          onAbrirNegocio={(codigo) => { const b = businesses.find((x) => x.asistenteCodigoPublico === codigo); if (b) { setReclamosView(null); setShowPedidos(false); openDetail(b.id); } }}
+        />
+      </div>
+    );
+  }
+
   /* ---- vista de favoritos ---- */
   if (showPedidos) {
     return (
@@ -5326,6 +5389,8 @@ export default function MiZona() {
           onRecargar={recargarPedidos}
           onBack={() => setShowPedidos(false)}
           onAbrirNegocio={(codigo) => { const b = businesses.find((x) => x.asistenteCodigoPublico === codigo); if (b) { setShowPedidos(false); openDetail(b.id); } }}
+          onReclamar={(p) => setReclamosView({ pedido: p })}
+          onVerReclamos={() => setReclamosView({})}
         />
       </div>
     );
@@ -5422,19 +5487,21 @@ export default function MiZona() {
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
           modo={modo} onCambiarModo={cambiarModo}
+          catFicha={modo === "alquileres" ? catAlquiler : rubroOficio} onCatFicha={modo === "alquileres" ? setCatAlquiler : setRubroOficio}
           onOpenComunidad={comunidadHabilitada ? abrirComunidad : undefined}
-          onOpenOwner={() => irATab("herramientas")}
-          onHerramientas={() => irATab("herramientas")}
+          onOpenOwner={() => (esDueno ? irATab("negocio") : irATab("herramientas"))}
+          onHerramientas={() => irATab(esDueno ? "ajustes" : "herramientas")}
+          esDueno={esDueno}
           onAjustes={() => irATab("ajustes")}
           onAyuda={() => { irATab("ajustes"); setSubAjustes("ayuda"); }}
           onSoporte={() => { irATab("ajustes"); setSubAjustes("soporte"); }}
           notifSinLeer={notifSinLeer} campanaSacude={campanaSacude}
           onOpenNotificaciones={() => setShowNotificaciones(true)}
         />
-      ) : (subHerramientas || subAjustes) ? null : (
+      ) : (subAjustes || (activeTab === "negocio" && negocioSel)) ? null : (
         <BarraTitulo
-          titulo={activeTab === "chats" ? "Chats" : activeTab === "herramientas" ? (ownerBiz ? "Mi negocio" : "Herramientas") : "Ajustes"}
-          sub={activeTab === "chats" ? "Tus conversaciones con negocios" : activeTab === "herramientas" ? (ownerBiz ? "Controlá y mejorá tu negocio en Mi Zona" : "Todo lo que necesitás en Mi Zona") : "Configurá tu cuenta y preferencias"}
+          titulo={activeTab === "chats" ? "Chats" : activeTab === "comunidad" ? "Comunidad" : activeTab === "negocio" ? "Negocio" : activeTab === "herramientas" ? "Herramientas" : "Ajustes"}
+          sub={activeTab === "chats" ? "Tus conversaciones con negocios" : activeTab === "comunidad" ? "Lo que pasa en tu zona" : activeTab === "negocio" ? "Todo lo que ofrecés, en un solo lugar" : activeTab === "herramientas" ? "Todo lo que necesitás en Mi Zona" : "Configurá tu cuenta y preferencias"}
           notifSinLeer={notifSinLeer}
           onOpenNotificaciones={() => setShowNotificaciones(true)}
           buscador={activeTab === "chats" ? { valor: chatQuery, onChange: setChatQuery, placeholder: "Buscar chats..." } : undefined}
@@ -5468,18 +5535,6 @@ export default function MiZona() {
       )}
 
       {/* Oficios y servicios + Mis fichas: pantallas completas encima de la principal (por debajo del formulario de negocio) */}
-      {misFichasAbierto && (
-        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <MisFichasScreen
-            key={fichasVersion} usuario={usuario} negocios={misNegocios} onVolver={() => setMisFichasAbierto(false)}
-            onVerNegocio={(id) => openDetail(id)} onEditarNegocio={(id) => { setNegocioEditandoId(id); setShowEditOwnerBiz(true); }} onEliminarNegocio={eliminarNegocioPropio}
-            onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })} onCrearOficio={() => setOficioForm({ inicial: null })}
-            onVerAlquiler={(id) => setAlquilerVer({ id })} onEditarAlquiler={(a) => setAlquilerForm({ inicial: a })} onCrearAlquiler={() => setAlquilerForm({ inicial: null })}
-            onAgregarNegocio={() => { setMisFichasAbierto(false); abrirAgregarNegocio(); }} onActivar={activarFicha}
-            comunidad={comunidadHabilitada ? { onVer: (id) => setComunidadVer({ id }), onEditar: (p) => setComunidadForm({ inicial: p, tipo: p.tipo }), onPublicar: (t) => abrirPublicarComunidad(t) } : undefined}
-          />
-        </div>
-      )}
       {showFavoritos && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <FavoritosPantalla
@@ -5502,12 +5557,6 @@ export default function MiZona() {
           />
         </div>
       )}
-      {comunidadAbierta && (
-        <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <ComunidadScreen usuario={usuario} refrescarKey={comunidadVersion} onVolver={() => setComunidadAbierta(false)} onAbrir={(id) => setComunidadVer({ id })}
-            onPublicar={(t) => abrirPublicarComunidad(t)} onMisFichas={() => { if (requerirSesion("Para ver tus fichas necesitás una cuenta de Mi Zona.", null)) setMisFichasAbierto(true); }} />
-        </div>
-      )}
       {comunidadVer && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <DetalleComunidad key={comunidadVer.id + comunidadVersion} id={comunidadVer.id} onVolver={() => setComunidadVer(null)} onEditar={(p) => setComunidadForm({ inicial: p, tipo: p.tipo })} onCambio={() => { setComunidadVersion((v) => v + 1); setFichasVersion((v) => v + 1); }} />
@@ -5521,7 +5570,7 @@ export default function MiZona() {
       )}
       {comunidadPublicada && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <PasoPublicado publicacion={comunidadPublicada} onVer={() => { setComunidadVer({ id: comunidadPublicada.id }); setComunidadPublicada(null); }} onListo={() => { setComunidadPublicada(null); setComunidadAbierta(true); }} />
+          <PasoPublicado publicacion={comunidadPublicada} onVer={() => { setComunidadVer({ id: comunidadPublicada.id }); setComunidadPublicada(null); }} onListo={() => { setComunidadPublicada(null); irATab("comunidad"); }} />
         </div>
       )}
       {oficioVer && (
@@ -5539,14 +5588,14 @@ export default function MiZona() {
       )}
       {oficioActivado && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <PasoOficioActivado oficio={oficioActivado} onVerFicha={() => setOficioVer({ id: oficioActivado.id })} onListo={() => { setOficioActivado(null); setMisFichasAbierto(true); }} />
+          <PasoOficioActivado oficio={oficioActivado} onVerFicha={() => setOficioVer({ id: oficioActivado.id })} onListo={() => { setOficioActivado(null); irANegocio(); }} />
         </div>
       )}
 
       {alquilerVer && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
           <DetalleAlquiler key={alquilerVer.id} id={alquilerVer.id} usuario={usuario} onVolver={() => setAlquilerVer(null)} onAbrirPerfil={(u) => { setAlquilerVer(null); setPerfilVer(u); }}
-            onGestionar={() => { setAlquilerVer(null); setMisFichasAbierto(true); }} />
+            onGestionar={() => { const idAlq = alquilerVer?.id; setAlquilerVer(null); irANegocio(idAlq ? { tipo: "alquiler", id: idAlq } : null); }} />
         </div>
       )}
       {alquilerForm && (
@@ -5559,13 +5608,13 @@ export default function MiZona() {
       )}
       {alquilerActivado && (
         <div className="fixed inset-0 z-[72] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <PasoAlquilerActivado alquiler={alquilerActivado} onVerFicha={() => setAlquilerVer({ id: alquilerActivado.id })} onListo={() => { setAlquilerActivado(null); setMisFichasAbierto(true); }} />
+          <PasoAlquilerActivado alquiler={alquilerActivado} onVerFicha={() => setAlquilerVer({ id: alquilerActivado.id })} onListo={() => { setAlquilerActivado(null); irANegocio(); }} />
         </div>
       )}
 
       {pasoNegocio && (
         <div className="fixed inset-0 z-[73] overflow-y-auto" style={{ background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
-          <PasoNegocioActivado negocio={pasoNegocio} onListo={() => { setPasoNegocio(null); setMisFichasAbierto(true); }} />
+          <PasoNegocioActivado negocio={pasoNegocio} onListo={() => { setPasoNegocio(null); irANegocio(); }} />
         </div>
       )}
 
@@ -5577,37 +5626,6 @@ export default function MiZona() {
           onCancel={() => { setShowEditOwnerBiz(false); setNegocioEditandoId(null); }}
           abrirMapa={setSelectorUbic}
         />
-      )}
-
-      {showOrden && (
-        <div className="fixed inset-0 z-[78] flex items-end sm:items-center sm:justify-center" style={{ background: "rgba(5,12,40,.55)", backdropFilter: "blur(2px)" }} onClick={() => setShowOrden(false)} role="dialog" aria-modal="true" aria-label="Ordenar negocios">
-          <div className="w-full sm:max-w-sm bg-white px-4 pt-2.5 pb-5" style={{ borderRadius: "26px 26px 0 0", boxShadow: "0 -12px 40px rgba(5,12,40,.35)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto mb-3" style={{ width: 42, height: 4, borderRadius: 4, background: "#D5DCF0" }} />
-            <div className="flex items-center justify-between mb-1 px-1">
-              <h3 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 19, letterSpacing: "-0.02em", color: "#0B1437" }}>Ordenar negocios por</h3>
-              <button onClick={() => setShowOrden(false)} aria-label="Cerrar" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 13, background: "#F3F5FA" }}><X size={17} color="#2B3768" /></button>
-            </div>
-            <p className="px-1 mb-3 text-[13px]" style={{ color: "#5B6482" }}>Elegí cómo querés ver la lista.</p>
-            <div className="flex flex-col gap-2">
-              {ORDEN_OPCIONES.map((o) => {
-                const activo = sortBy === o.id;
-                return (
-                  <button key={o.id} onClick={() => { setSortBy(o.id); setShowOrden(false); }} className="flex items-center gap-3.5 text-left p-3"
-                    style={{ borderRadius: 16, border: `1.5px solid ${activo ? "var(--azul)" : "#E6ECF5"}`, background: activo ? "var(--azul-suave)" : "#fff" }}>
-                    <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 14, background: o.fondo }}><o.Icon size={21} color={o.color} strokeWidth={2.2} /></span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15.5, color: "#0B1437" }}>{o.titulo}</span>
-                      <span className="block text-[12.5px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>{o.desc}</span>
-                    </span>
-                    <span className="flex items-center justify-center shrink-0" style={{ width: 24, height: 24, borderRadius: "50%", background: activo ? "var(--azul)" : "transparent", border: activo ? "none" : "1.5px solid #C9D2E8" }}>
-                      {activo && <Check size={14} color="#fff" strokeWidth={3} />}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       )}
 
       {showAddSheet && (
@@ -5702,7 +5720,7 @@ export default function MiZona() {
             </div>
             <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18, color: "#0B1437" }} className="mb-2">¡Tu negocio ya está publicado!</h2>
             <p className="text-sm mb-5" style={{ color: "#2B3768" }}>
-              Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde Herramientas.
+              Como ya pagaste Mi Asistente con esta cuenta de Google, no pagás Mi Zona{addBusinessDone.hasta ? `: tu negocio queda activo hasta el ${fmtDate(addBusinessDone.hasta)}` : ""}. Lo administrás desde la pestaña Negocio.
             </p>
                         <button onClick={() => { const n = addBusinessDone.negocio; setAddBusinessDone(null); if (n) setPasoNegocio(n); }} className="w-full text-sm font-semibold py-3" style={{ backgroundColor: "var(--azul)", color: "#fff", borderRadius: 10 }}>
               Entendido
@@ -5730,7 +5748,7 @@ export default function MiZona() {
           <AjustesScreen
             sub={subAjustes} setSub={setSubAjustes}
             usuario={usuario}
-            negocios={businesses} onAbrirNegocio={openDetail} onAbrirFavoritos={() => setShowFavoritos(true)} onAbrirMisFichas={() => setMisFichasAbierto(true)}
+            negocios={businesses} esDueno={esDueno} onOpenPedidos={() => setShowPedidos(true)} onOpenPuntos={() => setPuntosView({})} onOpenRanking={() => setShowRanking(true)} onAbrirNegocio={openDetail} onAbrirFavoritos={() => setShowFavoritos(true)} onAbrirMisFichas={() => irANegocio()}
             onLogin={(modo) => abrirLogin(null, null, modo || "login")}
             onLogged={alIniciarSesion}
             onUsuarioActualizado={setUsuario}
@@ -5743,7 +5761,7 @@ export default function MiZona() {
               setMisNegocios([]);
               setShowEditOwnerBiz(false);
             }}
-            onBorrarVistos={() => { try { localStorage.removeItem("miZonaVistosRecientemente"); } catch { /* sin almacenamiento */ } setVistosIds([]); setOnlyVistos(false); }}
+            onBorrarVistos={() => { try { localStorage.removeItem("miZonaVistosRecientemente"); } catch { /* sin almacenamiento */ } borrarVistosFichas(); setVistosIds([]); setOnlyVistos(false); }}
             onCuentaEliminada={async () => {
               // la cuenta ya se borró en el servidor: se limpia este dispositivo y se vuelve al inicio
               try { await desactivarPush(); } catch { /* no había push activo */ }
@@ -5760,39 +5778,60 @@ export default function MiZona() {
           <ChatsScreen
             businesses={businesses}
             onOpenChat={abrirChat}
+            onIrInicio={() => irATab("inicio")}
             query={chatQuery}
+          />
+        ) : activeTab === "comunidad" ? (
+          comunidadHabilitada ? (
+            <ComunidadScreen
+              modoTab usuario={usuario} refrescarKey={comunidadVersion} onVolver={() => irATab("inicio")} onAbrir={(id) => setComunidadVer({ id })}
+              onPublicar={(t) => abrirPublicarComunidad(t)} onEditar={(p) => setComunidadForm({ inicial: p, tipo: p.tipo })}
+            />
+          ) : (
+            <EstadoVacio icono={Users} titulo="Comunidad llega muy pronto" mensaje="Va a ser el lugar donde los vecinos de tu zona publiquen avisos, eventos, regalos y más." />
+          )
+        ) : activeTab === "negocio" ? (
+          <NegocioScreen
+            key={fichasVersion}
+            negocios={negociosPropios} sel={negocioSel} setSel={(x) => { setNegocioSel(x); setSubNegocio(null); window.scrollTo(0, 0); }}
+            catInfo={catInfo} onResumen={setFichasResumen} onAgregar={() => setShowAddSheet(true)}
+            onAgenda={ownerBizId ? () => { setShowAgenda(true); window.scrollTo(0, 0); } : undefined}
+            onEliminarNegocio={eliminarNegocioPropio}
+            onVerOficio={(id) => setOficioVer({ id })} onEditarOficio={(o) => setOficioForm({ inicial: o })}
+            onVerAlquiler={(id) => setAlquilerVer({ id })} onEditarAlquiler={(a) => setAlquilerForm({ inicial: a })}
+            onActivar={activarFicha}
+            renderNegocio={(n, ctx) => (
+              <PanelNegocio
+                biz={n} ctx={ctx} sub={subNegocio} setSub={setSubNegocio}
+                onEditar={() => { setNegocioEditandoId(n.id); setShowEditOwnerBiz(true); }}
+                onVerPerfil={() => openDetail(n.id)}
+                onAgregarMeses={() => abrirAgregarMesesDe(n)}
+                onGuardarEmpleo={(datos) => persistOne(n.id, { ...n, busquedaEmpleo: datos })}
+                onSubirHistoria={(url) => {
+                  const hace48h = Date.now() - 48 * 60 * 60 * 1000;
+                  const historiasVigentes = (n.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace48h);
+                  persistOne(n.id, { ...n, historias: [...historiasVigentes, { id: uid(), url, subidaEn: new Date().toISOString() }] });
+                }}
+                onSaveDiscount={(d) => saveOwnerDiscount(n.id, d)}
+                onToggleDiscount={(did) => toggleOwnerDiscount(n.id, did)}
+                onDeleteDiscount={(did) => deleteOwnerDiscount(n.id, did)}
+              />
+            )}
           />
         ) : activeTab === "herramientas" ? (
           <HerramientasScreen
-            sub={subHerramientas} setSub={setSubHerramientas}
-            usuario={usuario}
-            ownerBiz={ownerBiz}
-            onLogin={(modo) => abrirLogin("Entrá con tu cuenta de Google para administrar tu negocio.", null, modo)}
-            onAddBusiness={abrirAgregarNegocio}
-            onAgregarMeses={abrirAgregarMeses}
-            onEditBusiness={() => setShowEditOwnerBiz(true)}
-            onViewProfile={() => openDetail(ownerBizId)}
             onOpenRanking={() => setShowRanking(true)}
             onOpenPuntos={() => setPuntosView({})}
             onOpenFavoritos={() => setShowFavoritos(true)}
             onOpenPedidos={() => setShowPedidos(true)}
-            onOpenAgenda={() => { setShowAgenda(true); window.scrollTo(0, 0); }}
-            onSaveDiscount={saveOwnerDiscount}
-            onToggleDiscount={toggleOwnerDiscount}
-            onDeleteDiscount={deleteOwnerDiscount}
-            onGuardarEmpleo={(datos) => persistOne(ownerBizId, { ...ownerBiz, busquedaEmpleo: datos })}
-            onSubirHistoria={(url) => {
-              const hace48h = Date.now() - 48 * 60 * 60 * 1000;
-              const historiasVigentes = (ownerBiz.historias || []).filter((h) => new Date(h.subidaEn).getTime() > hace48h);
-              persistOne(ownerBizId, { ...ownerBiz, historias: [...historiasVigentes, { id: uid(), url, subidaEn: new Date().toISOString() }] });
-            }}
+            onOfrecerNegocio={abrirAgregarNegocio}
+            onOfrecerOficio={abrirOfrecerOficio}
+            onOfrecerAlquiler={abrirOfrecerAlquiler}
           />
         ) : modo !== "negocios" ? (
           <ListaInicio
-            modo={modo} zone={zone} query={query}
+            modo={modo} zone={zone} query={query} cat={modo === "alquileres" ? catAlquiler : rubroOficio}
             onAbrirAlquiler={(id) => setAlquilerVer({ id })} onAbrirOficio={(id) => setOficioVer({ id })}
-            onOfrecerAlquiler={abrirOfrecerAlquiler} onOfrecerOficio={abrirOfrecerOficio}
-            onBuscarTodo={(q) => setBuscador({ inicial: q })}
           />
         ) : (
         <>
@@ -5809,58 +5848,22 @@ export default function MiZona() {
             <MapIcon size={13} /> Ver en el mapa
           </button>
         </div>
-        <div className="mb-4">
+        <div>
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>
               {filtered.length} {filtered.length === 1 ? "negocio" : "negocios"} <span style={{ fontWeight: 500, color: "#5B6482" }}>en {zone}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
-            {(() => {
-              const op = ORDEN_OPCIONES.find((o) => o.id === sortBy) || ORDEN_OPCIONES[0];
-              return (
-                <button
-                  onClick={() => setShowOrden(true)} aria-haspopup="dialog" aria-label={`Ordenar por: ${op.titulo}`}
-                  className="flex items-center gap-2 font-semibold pl-2 pr-3 py-1.5"
-                  style={{ fontSize: 13, borderRadius: 20, border: "1px solid #D5DCF0", color: "#0B1437", backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06)" }}
-                >
-                  <span className="flex items-center justify-center" style={{ width: 24, height: 24, borderRadius: 8, background: op.fondo }}><op.Icon size={14} color={op.color} strokeWidth={2.3} /></span>
-                  {op.titulo}
-                  <ChevronDown size={14} color="#5B6482" />
-                </button>
-              );
-            })()}
-            {onlyFavorites && (
-              <button
-                onClick={() => setOnlyFavorites(false)}
-                className="flex items-center gap-1.5 font-medium px-3.5 py-2"
-                style={{ fontSize: 13, borderRadius: 20, backgroundColor: "#FDF1EF", color: "#9A3B34", border: "1px solid #C1443A" }}
-              >
-                <Heart size={14} fill="#9A3B34" /> Solo favoritos <X size={14} />
-              </button>
-            )}
-            {[
-              { activo: onlyOpen, alternar: () => setOnlyOpen((v) => !v), texto: "Abiertos", verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} /> },
-              { activo: onlyVistos, alternar: () => setOnlyVistos((v) => !v), texto: "Vistos", icono: <Clock size={14} /> },
-              { activo: onlyNuevos, alternar: () => setOnlyNuevos((v) => !v), texto: "Nuevos", verde: true, icono: <Sparkles size={14} /> },
-              { activo: onlyEmpleo, alternar: () => setOnlyEmpleo((v) => !v), texto: "Busca personal", icono: <Briefcase size={14} /> },
-            ].map((c) => (
-              <button
-                key={c.texto}
-                onClick={c.alternar}
-                className="flex items-center gap-1.5 font-medium px-3.5 py-2"
-                style={{
-                  fontSize: 13, borderRadius: 20,
-                  backgroundColor: c.activo ? (c.verde ? "#E4F3EA" : "var(--azul-suave)") : "#fff",
-                  color: c.activo ? (c.verde ? "#1E6B44" : "var(--azul)") : "#2B3768",
-                  border: "1px solid " + (c.activo ? (c.verde ? "#2C9A5F" : "var(--azul)") : "#E3E7F1"),
-                }}
-              >
-                {c.icono}
-                {c.texto}
-              </button>
-            ))}
-          </div>
+          <BarraFiltros
+            orden={{ opciones: ORDEN_OPCIONES, valor: sortBy, onChange: setSortBy }}
+            pildoras={[
+              ...(onlyFavorites ? [{ id: "favoritos", texto: "Solo favoritos", activo: true, peligro: true, cerrar: true, onClick: () => setOnlyFavorites(false), icono: <Heart size={14} fill="#9A3B34" /> }] : []),
+              { id: "abiertos", activo: onlyOpen, onClick: () => setOnlyOpen((v) => !v), texto: "Abiertos", verde: true, icono: <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: onlyOpen ? "#2C9A5F" : "#B9BCC5" }} /> },
+              { id: "vistos", activo: onlyVistos, onClick: () => setOnlyVistos((v) => !v), texto: "Vistos", icono: <Clock size={14} /> },
+              { id: "nuevos", activo: onlyNuevos, onClick: () => setOnlyNuevos((v) => !v), texto: "Nuevos", verde: true, icono: <Sparkles size={14} /> },
+              { id: "empleo", activo: onlyEmpleo, onClick: () => setOnlyEmpleo((v) => !v), texto: "Busca personal", icono: <Briefcase size={14} /> },
+            ]}
+          />
         </div>
 
         {sortBy === "cercanos" && locStatus === "idle" && (
@@ -5900,7 +5903,7 @@ export default function MiZona() {
               {businesses.length === 0 ? "Todavía no hay negocios cargados" : onlyVistos && vistosIds.length === 0 ? "Todavía no viste ningún negocio" : `No hay resultados en ${zone}`}
             </p>
             <p className="text-sm">
-              {businesses.length === 0 ? "Sé el primero: tocá el botón \"+\" para agregar tu negocio." : "Probá con otra categoría, otra búsqueda, o cambiá de zona."}
+              {businesses.length === 0 ? `Sé el primero: sumá tu negocio desde la pestaña ${esDueno ? "Negocio" : "Herramientas"}.` : "Probá con otra categoría, otra búsqueda, o cambiá de zona."}
             </p>
           </div>
         ) : (
@@ -5920,7 +5923,7 @@ export default function MiZona() {
         )}
       </main>
 
-      {!subAjustes && !subHerramientas && (
+      {activeTab === "inicio" && (
       <button
         onClick={() => setShowBusquedaAsistente(true)}
         className="fixed z-40 flex items-center justify-center"
@@ -5937,9 +5940,12 @@ export default function MiZona() {
 
       <BottomNav
         active={activeTab}
+        mostrarNegocio={esDueno}
         onInicio={() => { irATab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); }}
         onChats={() => irATab("chats")}
         onAdd={() => setShowAddSheet(true)}
+        onComunidad={() => irATab("comunidad")}
+        onNegocio={() => irATab("negocio")}
         onHerramientas={() => irATab("herramientas")}
         onAjustes={() => irATab("ajustes")}
         chatsSinLeer={countUnreadChats()}

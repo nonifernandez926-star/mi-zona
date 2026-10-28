@@ -176,7 +176,7 @@ export const ARTICULOS = [
     cuerpo: [
       "Si hacés un trabajo (electricista, plomero, jardinero, fletes...), podés tener una ficha de oficios en Mi Zona. Es una sola ficha por persona y podés elegir varios rubros: aparecés en la búsqueda de cada uno.",
       { pasos: ["Tocá el botón + y elegí «Ofrecer mis servicios» (o entrá desde la pestaña Oficios del Inicio).", "Elegí tus rubros, contá qué hacés y elegí tu localidad. El resto es opcional: dirección, WhatsApp, redes, fotos, horarios y precio orientativo.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
-      "Desde Ajustes → Mi cuenta → Mis fichas podés marcar «Disponible hoy» u «Ocupado» con un toque, editar tu ficha, pausarla (deja de verse sin borrar nada) o eliminarla.",
+      "Desde la pestaña Negocio, abriendo tu ficha, podés marcar «Disponible hoy» u «Ocupado» con un toque, editar tu ficha, pausarla (deja de verse sin borrar nada) o eliminarla.",
       { nota: "«Disponible hoy» se apaga solo a medianoche. Mi Zona no verifica ni certifica a quienes publican sus servicios." },
     ],
     relacionados: ["oficios-buscar", "privacidad-fichas"],
@@ -197,7 +197,7 @@ export const ARTICULOS = [
     cuerpo: [
       "Si alquilás viviendas, salones, sillas, mesas, peloteros, herramientas u otras cosas, armá una ficha de alquiler con tus artículos. Podés tener hasta 5 fichas (por ejemplo, una de eventos y otra de herramientas).",
       { pasos: ["Tocá el botón + y elegí «Ofrecer en alquiler» (o entrá desde la pestaña Alquileres del Inicio).", "Elegí la categoría y qué alquilás, contá cómo trabajás y elegí tu localidad. Dirección, WhatsApp, redes, fotos y condiciones son opcionales.", "Cargá al menos un artículo: nombre, precio (por hora, día, semana, mes o «Consultar precio») y, si querés, una foto.", "Tocá «Activar mi ficha». Antes te avisamos que va a ser pública."] },
-      "Desde Ajustes → Mi cuenta → Mis fichas → Artículos cambiás el estado de cada uno con un toque: Disponible, Ocupado o Ya no lo tengo (este último lo oculta al público). También podés agregar, editar o quitar artículos sin tocar el resto de la ficha, y pausar o eliminar la ficha entera.",
+      "Desde Negocio → tu ficha de alquiler → Artículos cambiás el estado de cada uno con un toque: Disponible, Ocupado o Ya no lo tengo (este último lo oculta al público). También podés agregar, editar o quitar artículos sin tocar el resto de la ficha, y pausar o eliminar la ficha entera.",
       { nota: "Si pasan más de 30 días sin confirmar un artículo, se muestra como «Sin confirmar» para no prometer lo que quizá ya no está. Con «Todo sigue igual» lo renovás de un toque. Mi Zona no maneja pagos ni reservas de alquileres." },
     ],
     relacionados: ["alquileres-buscar", "privacidad-fichas"],
@@ -240,7 +240,7 @@ export const ARTICULOS = [
       "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes, eventos y sorteos. Publicar es gratis.",
       { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», o entrá a Comunidad desde Inicio.", "Elegí el tipo, completá el formulario corto y leé el aviso antes de publicar.", "Tu publicación la ven las personas de tu departamento y vence sola: los avisos duran pocas horas."] },
       { nota: "Los avisos de seguridad se muestran como «No verificado». Si fue un delito, denunciálo a la policía. No subas fotos de personas ni nombres." },
-      "Podés editar, marcar como resuelta o eliminar lo que publicaste desde Mis fichas.",
+      "Podés editar, marcar como resuelta o eliminar lo que publicaste desde Comunidad → Mis publicaciones.",
     ],
     relacionados: ["buscador-unico"],
   },
@@ -314,7 +314,7 @@ export const ARTICULOS = [
     id: "renovar", cat: "pagos", titulo: "Renovar o agregar meses",
     claves: "extender suscripcion vence",
     cuerpo: [
-      { pasos: ["Andá a Ajustes → Mis fichas y tocá “Agregar tiempo” en la ficha.", "Elegí 1, 3 o 6 meses (o usá tus días de invitación).", "Pagá con Google Play."] },
+      { pasos: ["Andá a la pestaña Negocio, abrí tu ficha y tocá “Agregar tiempo” en la ficha.", "Elegí 1, 3 o 6 meses (o usá tus días de invitación).", "Pagá con Google Play."] },
       "Los meses nuevos se suman a la fecha de vencimiento que ya tenías: no perdés los días que te quedaban.",
     ],
     relacionados: ["que-pasa-si-vence", "planes"],
@@ -334,7 +334,7 @@ export const ARTICULOS = [
     claves: "pago google play no se publico pendiente acreditado",
     cuerpo: [
       "La ficha se activa cuando nuestro servidor confirma la compra con Google Play. Suele tardar segundos, pero puede demorar si se cortó la conexión.",
-      { pasos: ["Volvé a abrir Mis fichas y tocá “Agregar tiempo” en esa ficha.", "Si Google ya te cobró, vas a ver “Encontramos una compra sin activar”: tocá “Activar con mi compra”. No pagás de nuevo.", "Revisá en Google Play → Pagos y suscripciones que la compra figure como completada."] },
+      { pasos: ["Volvé a abrir la pestaña Negocio, abrí esa ficha y tocá “Agregar tiempo” en esa ficha.", "Si Google ya te cobró, vas a ver “Encontramos una compra sin activar”: tocá “Activar con mi compra”. No pagás de nuevo.", "Revisá en Google Play → Pagos y suscripciones que la compra figure como completada."] },
       "Si el pago está aprobado y pasó más de una hora, escribinos desde Soporte con el motivo “Pagos y suscripción” e indicá la fecha de la compra. No hace falta que envíes datos de tu tarjeta.",
     ],
     relacionados: ["planes", "registrar-negocio"],

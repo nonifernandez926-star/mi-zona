@@ -72,7 +72,7 @@ function Progreso({ estado }) {
   );
 }
 
-function Tarjeta({ p, onAbrirNegocio }) {
+function Tarjeta({ p, onAbrirNegocio, onReclamar }) {
   const retiro = p.tipoEntrega === "retiro";
   const pago = PAGO[p.estadoPago];
   const entregado = p.estado === "entregado";
@@ -132,6 +132,11 @@ function Tarjeta({ p, onAbrirNegocio }) {
           </p>
         ); })()}
         {p.observaciones ? <p className="text-xs" style={{ color: "#5B6482" }}>Nota: {p.observaciones}</p> : null}
+        {p.estado !== "pendiente" && p.negocio?.codigoPublico && onReclamar ? (
+          <button onClick={() => onReclamar(p)} className="flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5" style={{ borderRadius: 12, background: "#fff", color: "#2B3768", border: "1px solid #E3E7F1" }}>
+            <AlertTriangle size={15} /> ¿Hubo un problema? Hacer un reclamo
+          </button>
+        ) : null}
         {p.negocio?.codigoPublico && (
           <button onClick={() => onAbrirNegocio?.(p.negocio.codigoPublico)} className="flex items-center justify-center gap-1 text-sm font-semibold py-2.5 mt-1" style={{ borderRadius: 12, background: "var(--azul-suave)", color: "var(--azul)" }}>
             Ver negocio <ChevronRight size={16} />
@@ -142,7 +147,7 @@ function Tarjeta({ p, onAbrirNegocio }) {
   );
 }
 
-export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, onAbrirNegocio }) {
+export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, onAbrirNegocio, onReclamar, onVerReclamos }) {
   const [filtro, setFiltro] = useState(null); // null = automático: "En curso" si hay, si no "Todos"
   const enCurso = useMemo(() => pedidos.filter((p) => p.estado !== "entregado"), [pedidos]);
   const entregados = useMemo(() => pedidos.filter((p) => p.estado === "entregado"), [pedidos]);
@@ -187,6 +192,12 @@ export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, on
           })}
         </div>
 
+        {onVerReclamos ? (
+          <button onClick={onVerReclamos} className="flex items-center justify-between w-full text-sm font-semibold px-4 py-3 mb-3" style={{ borderRadius: 14, background: "#fff", border: "1px solid #E3E7F1", color: "#2B3768" }}>
+            <span>Mis reclamos y devoluciones</span><ChevronRight size={16} />
+          </button>
+        ) : null}
+
         {error && pedidos.length === 0 ? (
           <div className="text-center px-5 py-8" style={{ borderRadius: 20, background: "#fff", border: "1px solid #E3E7F1" }}>
             <span className="flex items-center justify-center mx-auto mb-3" style={{ width: 52, height: 52, borderRadius: 17, background: TONOS.rojo.bg, boxShadow: `inset 0 0 0 1px ${TONOS.rojo.aro}` }}><AlertTriangle size={24} color={TONOS.rojo.fg} /></span>
@@ -207,7 +218,7 @@ export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, on
             </p>
           </div>
         ) : (
-          lista.map((p) => <Tarjeta key={p.id} p={p} onAbrirNegocio={onAbrirNegocio} />)
+          lista.map((p) => <Tarjeta key={p.id} p={p} onAbrirNegocio={onAbrirNegocio} onReclamar={onReclamar} />)
         )}
       </div>
     </div>

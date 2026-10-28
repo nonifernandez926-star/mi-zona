@@ -23,7 +23,7 @@ const rubrosTexto = (o, max = 3) => {
 };
 
 // Estado de un negocio propio, con las mismas reglas que Mi cuenta (pendiente de pago, activa, por vencer, vencida)
-function infoNegocio(n) {
+export function infoNegocio(n) {
   const i = infoSuscripcion(n);
   if (!i) return { estado: "activa" };
   if (i.estado === "pendiente") return { estado: "pendiente" };
@@ -33,7 +33,7 @@ function infoNegocio(n) {
 
 const fmtVence = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" }) : "");
 // Línea de plan de una ficha: hasta cuándo está activa, y el botón para activarla o agregarle tiempo (mes gratis, Google Play o días de invitación)
-function BotonPlan({ estado, vence, onClick }) {
+export function BotonPlan({ estado, vence, onClick }) {
   const pendiente = estado === "pendiente";
   return (
     <div className="w-full">
@@ -221,7 +221,7 @@ export function PasoNegocioActivado({ negocio, onListo }) {
   const nombre = negocio.name || negocio.nombre || "Tu negocio";
   return (
     <Pagina titulo="Tu negocio está publicado" onVolver={onListo}>
-      <EstadoExito titulo="¡Listo! Tu negocio ya es público" mensaje={`${nombre} ya aparece en Mi Zona. Podés editarlo desde Mis fichas.`} />
+      <EstadoExito titulo="¡Listo! Tu negocio ya es público" mensaje={`${nombre} ya aparece en Mi Zona. Podés editarlo desde la pestaña Negocio.`} />
       <PasoCompartir tipo="negocio" ficha={{ id: negocio.id, nombre }} onSalir={onListo} />
     </Pagina>
   );
