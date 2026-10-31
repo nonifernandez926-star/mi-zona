@@ -13,8 +13,7 @@ import {
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
-  ShieldAlert, UserX, Camera, UserPlus,
-} from "lucide-react";
+  ShieldAlert, UserX, Camera, UserPlus,, ChevronRight } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
   traerMisNegocios, traerCobertura, suscripcionApi, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, traerMisPedidos, soporteApi,
@@ -2023,7 +2022,7 @@ function IconoSolLuna({ size = 22 }) {
 
 function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, buscador }) {
   return (
-    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", borderRadius: 0 }}>
+    <div data-conservar-color className="sticky top-0 z-40" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", borderRadius: "0 0 26px 26px", boxShadow: "0 10px 28px rgba(var(--azul-rgb),.24)" }}>
       <div className="max-w-6xl mx-auto px-4 pt-3 pb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -2065,9 +2064,10 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, catFicha, onCatFicha, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, esDueno, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, catFicha, onCatFicha, tipoFicha, onTipoFicha, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, esDueno, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
+  const [hojaOtros, setHojaOtros] = useState(false); // subpantalla con el resto de los rubros de Negocios
   const [showDrawer, setShowDrawer] = useState(false);
   const [historial, setHistorial] = useState(() => getSearchHistory());
   return (
@@ -2111,7 +2111,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       </div>
 
       {/* portada: saludo, buscador y zona */}
-      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)" }}>
+      <div data-conservar-color className="relative overflow-hidden" style={{ background: "radial-gradient(420px 220px at 105% -20%, rgba(var(--azul-brillo-rgb),.55), transparent 60%), radial-gradient(260px 160px at -10% 120%, rgba(var(--azul-claro-rgb),.22), transparent 60%), var(--azul-oscuro)", borderRadius: "0 0 26px 26px" }}>
         <div style={{ position: "absolute", top: -70, right: -60, width: 220, height: 220, borderRadius: "50%", background: "#ffffff0d" }} />
         <div style={{ position: "absolute", bottom: -30, left: -60, width: 160, height: 160, borderRadius: "50%", background: "rgba(var(--azul-claro-rgb),0.1)" }} />
         <FondoClima zona={zone} />
@@ -2194,7 +2194,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
       {/* categorías: tarjeta flotante que se superpone a la portada */}
       <div className="max-w-6xl mx-auto px-4" style={{ marginTop: -26, position: "relative", zIndex: 5 }}>
         <SelectorModo modo={modo} onCambiar={onCambiarModo} />
-        {modo !== "negocios" && <CategoriasInicio modo={modo} cat={catFicha} onCambiar={onCatFicha} />}
+        {modo !== "negocios" && <CategoriasInicio modo={modo} cat={catFicha} onCambiar={onCatFicha} tipo={tipoFicha} onTipo={onTipoFicha} />}
         {modo === "negocios" && (
           <div className="mt-3">
         <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
@@ -2221,9 +2221,38 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
                 </button>
               );
             })}
+            {/* «Otros»: abre una subpantalla con todos los demás rubros (no se despliegan debajo de los filtros) */}
+            {(() => {
+              const otroActivo = !!activeCat && !QUICK_CATEGORIES.some((q) => q.id === activeCat);
+              return (
+                <button onClick={() => setHojaOtros(true)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+                  <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: otroActivo ? "linear-gradient(135deg,#13897F,#13897Fcc)" : "#13897F17" }}>
+                    <Package size={21} color={otroActivo ? "#fff" : "#13897F"} />
+                  </span>
+                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: otroActivo ? "#0B1437" : "#2B3768" }}>Otros</span>
+                </button>
+              );
+            })()}
           </div>
         </div>
           </div>
+        )}
+        {hojaOtros && (
+          <Hoja titulo="Otros rubros" onCerrar={() => setHojaOtros(false)}>
+            <p className="text-sm mb-3" style={{ color: "#5B6482" }}>Elegí un rubro para ver esos negocios.</p>
+            <div className="grid grid-cols-3 gap-2.5 mb-2">
+              {CATEGORIES.filter((c) => !c.quick).map((c) => {
+                const Icon = c.icon; const act = activeCat === c.id;
+                return (
+                  <button key={c.id} type="button" onClick={() => { setActiveCat(c.id); setHojaOtros(false); }} aria-pressed={act} className="flex flex-col items-center justify-start gap-1.5 text-center"
+                    style={{ minHeight: 96, padding: "12px 6px", borderRadius: 18, border: `1.5px solid ${act ? "var(--azul)" : "#E3E7F1"}`, background: act ? "var(--azul-suave)" : "#fff" }}>
+                    <span className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 13, background: `${c.color}17` }}><Icon size={19} color={c.color} aria-hidden="true" /></span>
+                    <span className="text-[11px] leading-tight font-medium" style={{ color: act ? "var(--azul)" : "#2B3768" }}>{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Hoja>
         )}
         {onOpenComunidad && (
           <button onClick={onOpenComunidad} className="flex items-center gap-2.5 text-left bg-white w-full mt-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
@@ -2328,7 +2357,7 @@ function IlustracionChats() {
   );
 }
 
-function ChatsScreen({ businesses, onOpenChat, onIrInicio, query = "" }) {
+function ChatsScreen({ businesses, onOpenChat, onIrInicio, onAbrirComunidad, query = "" }) {
   const [hojaMas, setHojaMas] = useState(false);
   const [avisoPronto, setAvisoPronto] = useState("");
   const conversaciones = useMemo(() => {
@@ -2353,6 +2382,17 @@ function ChatsScreen({ businesses, onOpenChat, onIrInicio, query = "" }) {
 
   return (
     <div>
+      {/* Comunidad: fichas de la zona (mascotas y objetos perdidos, avisos, regalos, eventos...). Solo se publican fichas, no se escribe. */}
+      {onAbrirComunidad && !query.trim() && (
+        <button type="button" onClick={onAbrirComunidad} className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-4" style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", minHeight: 78 }}>
+          <span className="flex items-center justify-center shrink-0" style={{ width: 50, height: 50, borderRadius: 16, background: "linear-gradient(135deg,#1E8A55,#2C9A5F)", boxShadow: "0 8px 16px -6px rgba(30,138,85,.55)" }}><Users size={23} color="#fff" aria-hidden="true" /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 16, color: "#0B1437" }}>Comunidad</span>
+            <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>Fichas de tu zona: mascotas y objetos perdidos, avisos, regalos y eventos.</span>
+          </span>
+          <ChevronDown size={16} color="#B9C0D6" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />
+        </button>
+      )}
       {conversaciones.length === 0 ? (
         <div className="text-center flex flex-col items-center" style={{ paddingTop: 36 }}>
           <IlustracionChats />
@@ -2413,7 +2453,7 @@ function ChatsScreen({ businesses, onOpenChat, onIrInicio, query = "" }) {
 
       {/* botón «+» (como el de WhatsApp): hoy abre «Chatear con un negocio»; amigos y grupos llegan más adelante */}
       <button type="button" onClick={() => { setAvisoPronto(""); setHojaMas(true); }} aria-label="Nuevo chat" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
-        style={{ right: 16, bottom: "calc(78px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
+        style={{ right: 16, bottom: "calc(98px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
         <Plus size={26} color="#fff" strokeWidth={2.6} aria-hidden="true" />
       </button>
       {hojaMas && (
@@ -3832,29 +3872,29 @@ function PanelNegocio({ biz, ctx, sub, setSub, onEditar, onVerPerfil, onAgregarM
   const Mosaico = ({ Icon, color, title, desc, onClick, badge }) => (
     <button
       onClick={onClick}
-      className="relative text-left p-3.5 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-      style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)", minHeight: 112 }}
+      className="relative text-left bg-white transition-all active:scale-[.98] flex flex-col"
+      style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", padding: 16, minHeight: 132 }}
     >
-      <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: tinte(color, 10) }}>
-        <Icon size={19} color={color} />
+      <span className="flex items-center justify-center mb-3" style={{ width: 44, height: 44, borderRadius: 14, background: tinte(color, 10) }}>
+        <Icon size={21} color={color} />
       </span>
       {badge > 0 && (
-        <span className="absolute flex items-center justify-center text-[10px] font-bold" style={{ top: 10, right: 10, minWidth: 20, height: 20, borderRadius: 10, background: "#E5484D", color: "#fff", padding: "0 5px" }}>
+        <span className="absolute flex items-center justify-center text-[10px] font-bold" style={{ top: 12, right: 12, minWidth: 20, height: 20, borderRadius: 10, background: "#E5484D", color: "#fff", padding: "0 5px" }}>
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="block text-sm font-semibold leading-tight" style={{ color: color === "#C1443A" ? "#9A3B34" : "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
-      <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#5B6482" }}>{desc}</span>
+      <span className="block text-[15px] font-bold leading-tight" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{title}</span>
+      <span className="block text-xs mt-1.5 leading-snug" style={{ color: "#5B6482", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{desc}</span>
     </button>
   );
   const Titulo = ({ children, sub: s }) => (
-    <div className="mb-3 mt-6">
-      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>{children}</p>
-      {s && <p className="text-xs" style={{ color: "#5B6482" }}>{s}</p>}
+    <div className="mb-3 mt-7">
+      <p style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 17, color: "#0B1437", letterSpacing: "-0.01em" }}>{children}</p>
+      {s && <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>{s}</p>}
     </div>
   );
   const Estadistica = ({ Icon, color, valor, etiqueta }) => (
-    <div className="p-3 bg-white" style={{ borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 4px 14px rgba(11,20,55,0.05)" }}>
+    <div className="bg-white" style={{ borderRadius: 18, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", padding: 14 }}>
       <span className="flex items-center justify-center mb-2" style={{ width: 30, height: 30, borderRadius: 10, background: tinte(color, 10) }}><Icon size={15} color={color} /></span>
       <span className="block leading-none" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 20, color: "#0B1437" }}>{valor}</span>
       <span className="block text-[11px] mt-1" style={{ color: "#5B6482" }}>{etiqueta}</span>
@@ -3891,7 +3931,7 @@ function PanelNegocio({ biz, ctx, sub, setSub, onEditar, onVerPerfil, onAgregarM
   }
   if (sub === "qr") {
     return (
-      <SubPantalla titulo="Mi código QR" onBack={volverSub} volverA="Mi negocio">
+      <SubPantalla titulo="Compartir mi negocio" onBack={volverSub} volverA="Mi negocio">
         <div className="bg-white p-6 text-center" style={{ borderRadius: 24, border: "1px solid #E3E7F1" }}>
           <QrLocal
             texto={`${window.location.origin}${window.location.pathname}?negocio=${biz.id}`} tam={200} alt="Código QR de tu negocio"
@@ -3918,7 +3958,7 @@ function PanelNegocio({ biz, ctx, sub, setSub, onEditar, onVerPerfil, onAgregarM
       <TarjetaSuscripcion negocio={biz} onAgregar={onAgregarMeses} />
 
       {/* números del negocio */}
-      <div className="grid grid-cols-2 gap-2.5 mb-1">
+      <div className="grid grid-cols-2 gap-3 mb-1">
         <Estadistica Icon={Eye} color="var(--azul)" valor={fmtNum(biz.views || 0)} etiqueta="Visitas a tu perfil" />
         <Estadistica Icon={Heart} color="#E5484D" valor={fmtNum(biz.vecesFavorito || 0)} etiqueta="Veces guardado en favoritos" />
         <Estadistica Icon={Star} color="#F5A623" valor={rating ? `${rating}` : "—"} etiqueta={`${biz.reviews?.length || 0} ${(biz.reviews?.length || 0) === 1 ? "reseña" : "reseñas"}`} />
@@ -3926,21 +3966,28 @@ function PanelNegocio({ biz, ctx, sub, setSub, onEditar, onVerPerfil, onAgregarM
       </div>
 
       <Titulo sub="Todo para controlar los datos de tu negocio">Gestionar mi negocio</Titulo>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
         <Mosaico Icon={Store} color="#1E8A55" title="Editar mis datos" desc="Nombre, fotos, horarios, dirección y contacto." onClick={onEditar} />
         <Mosaico Icon={Megaphone} color="#13897F" title="Promociones" desc={promosVigentes ? `${promosVigentes} vigente(s) ahora` : "Creá descuentos para atraer clientes."} onClick={() => setSub("promos")} />
         <Mosaico Icon={MessageCircle} color="#7A4FD6" title="Reseñas" desc="Leé y respondé lo que dicen tus clientes." onClick={onVerPerfil} badge={resenasSinVer} />
         <Mosaico Icon={PartyPopper} color="#2C9A5F" title="Subir historia" desc={subiendoHistoria ? "Subiendo..." : `${historiasActivas(biz).length} activa(s) ahora`} onClick={() => !subiendoHistoria && historiaInputRef.current?.click()} />
         <Mosaico Icon={Briefcase} color="#C97B4A" title="Buscar personal" desc={busquedaEmpleoActiva(biz) ? `Publicada: ${biz.busquedaEmpleo.puesto}` : "Publicá si necesitás sumar gente."} onClick={() => setSub("empleo")} />
-        <Mosaico Icon={QrCode} color="#0B1437" title="Mi código QR" desc="Para que tus clientes te encuentren." onClick={() => setSub("qr")} />
-        <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir" desc="Mandalo por redes o WhatsApp." onClick={() => shareBusiness(biz)} />
-        {tieneAsistente ? (
-          <Mosaico Icon={Sparkles} color="#7A4F9E" title="Mi Asistente" desc="Clientes, pedidos, puntos y tu asistente virtual." onClick={() => window.open(MI_ASISTENTE_ADMIN_URL, "_blank")} />
-        ) : (
-          <Mosaico Icon={Download} color="#2C9A5F" title="Conseguir Mi Asistente" desc="Un asistente con IA que atiende a tus clientes." onClick={() => window.open(MI_ASISTENTE_URL, "_blank")} />
-        )}
-        <Mosaico Icon={Trash2} color="#C1443A" title="Eliminar negocio" desc="Se borra para siempre." onClick={ctx.eliminar} />
+        <Mosaico Icon={Share2} color="#7A4F9E" title="Compartir mi negocio" desc="Código QR, redes y WhatsApp." onClick={() => setSub("qr")} />
       </div>
+
+      {/* Mi Asistente: una fila ancha propia (no es una baldosa más) */}
+      <button type="button" onClick={() => window.open(tieneAsistente ? MI_ASISTENTE_ADMIN_URL : MI_ASISTENTE_URL, "_blank")} className="w-full flex items-center gap-3.5 text-left bg-white mt-3 active:scale-[.99] transition-all" style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", padding: 16, minHeight: 84 }}>
+        <span className="flex items-center justify-center shrink-0" style={{ width: 48, height: 48, borderRadius: 15, background: "linear-gradient(135deg,#2b5bff,#1638c9)" }}>{tieneAsistente ? <Sparkles size={22} color="#fff" /> : <Download size={22} color="#fff" />}</span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[15px] font-bold leading-tight" style={{ color: "#0B1437", fontFamily: "var(--fuente-titulo)" }}>{tieneAsistente ? "Mi Asistente" : "Conseguir Mi Asistente"}</span>
+          <span className="block text-xs mt-1" style={{ color: "#5B6482", lineHeight: 1.35 }}>{tieneAsistente ? "Clientes, pedidos, puntos y tu asistente virtual." : "Un asistente con IA que atiende a tus clientes."}</span>
+        </span>
+        <ChevronRight size={18} color="#B9C0D6" aria-hidden="true" />
+      </button>
+
+      {/* Eliminar: aparte y discreto, lejos de las acciones de todos los días */}
+      <button type="button" onClick={ctx.eliminar} className="w-full flex items-center justify-center gap-2 text-sm font-semibold mt-8" style={{ minHeight: 48, borderRadius: 16, border: "1px solid #F5C6C1", background: "#FFF8F7", color: "#9A3B34" }}><Trash2 size={16} aria-hidden="true" /> Eliminar negocio</button>
+      <p className="text-[11px] text-center mt-2" style={{ color: "#8D95B0" }}>Se borra para siempre.</p>
       <input ref={historiaInputRef} type="file" accept="image/*" className="hidden" onChange={handleSubirHistoria} />
     </div>
   );
@@ -4090,14 +4137,16 @@ function AjustesScreen({ sub, setSub, usuario, negocios, esDueno, onOpenPedidos,
 }
 
 
-function BottomNav({ active, onInicio, onChats, onAdd, onComunidad, onNegocio, onHerramientas, onAjustes, chatsSinLeer, mostrarNegocio }) {
-  // Cinco pestañas y el «+» en el medio (agregar negocio, oficio o alquiler). La cuarta pestaña es «Negocio» cuando la cuenta tiene un negocio, oficio o alquiler; si no, «Herramientas».
+function BottomNav({ active, onInicio, onChats, onAdd, onNegocio, onHerramientas, onAjustes, chatsSinLeer, mostrarNegocio }) {
+  // Barra flotante como la de Mi Asistente: cuatro pestañas (dos a cada lado) y el «+» al medio, siempre centrado.
+  // Comunidad vive dentro de Chats: estando en Comunidad, la pestaña Chats queda marcada. La tercera pestaña es «Negocio» cuando la cuenta
+  // tiene un negocio, oficio o alquiler; si no, «Herramientas».
   const Item = ({ id, label, Icon, onClick, badge }) => {
-    const on = active === id;
+    const on = active === id || (id === "chats" && active === "comunidad");
     return (
-      <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative min-w-0" style={{ flex: 1, minHeight: 52 }}>
-        <span className="relative flex items-center justify-center" style={{ width: 46, height: 28, borderRadius: 9, background: on ? "#E9EEFF" : "transparent", transition: "background .2s ease" }}>
-          <Icon size={20} color={on ? "var(--azul)" : "#6B7494"} strokeWidth={on ? 2.3 : 1.9} />
+      <button onClick={onClick} aria-current={on ? "page" : undefined} className="flex flex-col items-center gap-0.5 py-1 relative min-w-0" style={{ flex: 1, minHeight: 54 }}>
+        <span className="relative flex items-center justify-center" style={{ width: 48, height: 30, borderRadius: 15, background: on ? "linear-gradient(135deg,#e3eaff,#d3dfff)" : "transparent", transition: "background .2s ease" }}>
+          <Icon size={20} color={on ? "var(--azul)" : "#667085"} strokeWidth={on ? 2.3 : 1.9} />
           {badge > 0 && (
             <span
               className="absolute flex items-center justify-center text-[9px] font-bold"
@@ -4107,28 +4156,27 @@ function BottomNav({ active, onInicio, onChats, onAdd, onComunidad, onNegocio, o
             </span>
           )}
         </span>
-        <span className="whitespace-nowrap" style={{ fontSize: 10, letterSpacing: "-0.2px", color: on ? "var(--azul)" : "#6B7494", fontWeight: on ? 700 : 500 }}>{label}</span>
+        <span className="whitespace-nowrap" style={{ fontSize: 10.5, letterSpacing: "-0.1px", color: on ? "var(--azul)" : "#667085", fontWeight: on ? 800 : 600 }}>{label}</span>
       </button>
     );
   };
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: "#fff", borderRadius: "24px 24px 0 0", boxShadow: "none", borderTop: "1px solid #E3E7F1" }}>
-      {/* botón flotante "+", elevado por encima de la barra, centrado: agregar negocio, oficio o alquiler */}
+    <div className="fixed bottom-0 left-0 right-0 z-40" style={{ left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", background: "#fff", borderRadius: 24, border: "1px solid #edf0f8", boxShadow: "0 14px 38px rgba(15,22,55,0.18)" }}>
+      {/* botón «+» elevado, centrado sobre la barra: agregar negocio, oficio o alquiler. Va dentro de la barra (position absolute) para no moverse nunca. */}
       <button
         onClick={onAdd} aria-label="Agregar negocio, oficio o alquiler"
-        className="fixed flex items-center justify-center"
+        className="absolute flex items-center justify-center"
         style={{
-          left: "50%", transform: "translateX(-50%)", bottom: 44, width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 12px 24px -6px rgba(var(--azul-rgb),0.6), 0 0 0 1px rgba(var(--azul-rgb),0.18)", border: "4px solid #fff", zIndex: 41,
+          left: "50%", transform: "translateX(-50%)", top: -24, width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(135deg,#2b5bff,#1638c9)", boxShadow: "0 12px 24px -6px rgba(36,84,255,0.6)", border: "4px solid #fff", zIndex: 41,
         }}
       >
         <Plus size={24} color="#fff" strokeWidth={2.6} />
       </button>
-      <nav aria-label="Secciones" className="max-w-6xl mx-auto px-1 flex items-center" style={{ paddingTop: 8, paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
+      <nav aria-label="Secciones" className="mx-auto flex items-center" style={{ padding: "6px 6px" }}>
         <Item id="inicio" label="Inicio" Icon={Home} onClick={onInicio} />
         <Item id="chats" label="Chats" Icon={MessageCircle} onClick={onChats} badge={chatsSinLeer} />
-        <div style={{ width: 62, flexShrink: 0 }} />
-        <Item id="comunidad" label="Comunidad" Icon={Users} onClick={onComunidad} />
+        <div style={{ width: 64, flexShrink: 0 }} />
         {mostrarNegocio
           ? <Item id="negocio" label="Negocio" Icon={Store} onClick={onNegocio} />
           : <Item id="herramientas" label="Herramientas" Icon={Wrench} onClick={onHerramientas} />}
@@ -4685,6 +4733,7 @@ export default function MiZona() {
   const [modo, setModoInicio] = useState(leerModo);
   const cambiarModo = (m) => { setModoInicio(m); guardarModo(m); };
   const [catAlquiler, setCatAlquiler] = useState(""); // categoría elegida en Alquileres
+  const [tipoAlquiler, setTipoAlquiler] = useState(""); // tipo elegido dentro de esa categoría (se elige en una subpantalla)
   const [rubroOficio, setRubroOficio] = useState(""); // oficio elegido en Oficios
   const [oficioVer, setOficioVer] = useState(null); // { id, rubro }
   const [oficioForm, setOficioForm] = useState(null); // { inicial } (null = crear)
@@ -5487,8 +5536,8 @@ export default function MiZona() {
           activeCat={activeCat} setActiveCat={setActiveCat}
           onOpenAllCats={() => setShowAllCats(true)}
           modo={modo} onCambiarModo={cambiarModo}
-          catFicha={modo === "alquileres" ? catAlquiler : rubroOficio} onCatFicha={modo === "alquileres" ? setCatAlquiler : setRubroOficio}
-          onOpenComunidad={comunidadHabilitada ? abrirComunidad : undefined}
+          catFicha={modo === "alquileres" ? catAlquiler : rubroOficio} onCatFicha={modo === "alquileres" ? (id) => { setCatAlquiler(id); setTipoAlquiler(""); } : setRubroOficio}
+          tipoFicha={tipoAlquiler} onTipoFicha={setTipoAlquiler}
           onOpenOwner={() => (esDueno ? irATab("negocio") : irATab("herramientas"))}
           onHerramientas={() => irATab(esDueno ? "ajustes" : "herramientas")}
           esDueno={esDueno}
@@ -5779,14 +5828,18 @@ export default function MiZona() {
             businesses={businesses}
             onOpenChat={abrirChat}
             onIrInicio={() => irATab("inicio")}
+            onAbrirComunidad={comunidadHabilitada ? abrirComunidad : undefined}
             query={chatQuery}
           />
         ) : activeTab === "comunidad" ? (
           comunidadHabilitada ? (
-            <ComunidadScreen
-              modoTab usuario={usuario} refrescarKey={comunidadVersion} onVolver={() => irATab("inicio")} onAbrir={(id) => setComunidadVer({ id })}
-              onPublicar={(t) => abrirPublicarComunidad(t)} onEditar={(p) => setComunidadForm({ inicial: p, tipo: p.tipo })}
-            />
+            <>
+              <BotonVolver texto="Volver a Chats" onClick={() => irATab("chats")} />
+              <ComunidadScreen
+                modoTab usuario={usuario} refrescarKey={comunidadVersion} onVolver={() => irATab("chats")} onAbrir={(id) => setComunidadVer({ id })}
+                onPublicar={(t) => abrirPublicarComunidad(t)} onEditar={(p) => setComunidadForm({ inicial: p, tipo: p.tipo })}
+              />
+            </>
           ) : (
             <EstadoVacio icono={Users} titulo="Comunidad llega muy pronto" mensaje="Va a ser el lugar donde los vecinos de tu zona publiquen avisos, eventos, regalos y más." />
           )
@@ -5830,7 +5883,7 @@ export default function MiZona() {
           />
         ) : modo !== "negocios" ? (
           <ListaInicio
-            modo={modo} zone={zone} query={query} cat={modo === "alquileres" ? catAlquiler : rubroOficio}
+            modo={modo} zone={zone} query={query} cat={modo === "alquileres" ? catAlquiler : rubroOficio} tipo={tipoAlquiler} onTipo={setTipoAlquiler}
             onAbrirAlquiler={(id) => setAlquilerVer({ id })} onAbrirOficio={(id) => setOficioVer({ id })}
           />
         ) : (
@@ -5928,7 +5981,7 @@ export default function MiZona() {
         onClick={() => setShowBusquedaAsistente(true)}
         className="fixed z-40 flex items-center justify-center"
         style={{
-          right: 16, bottom: 78, width: 54, height: 54, borderRadius: "50%",
+          right: 16, bottom: "calc(98px + env(safe-area-inset-bottom, 0px))", width: 54, height: 54, borderRadius: "50%",
           background: "linear-gradient(135deg, var(--azul), var(--azul-claro))",
           boxShadow: "0 8px 20px rgba(var(--azul-rgb),0.45)",
         }}
@@ -5944,7 +5997,6 @@ export default function MiZona() {
         onInicio={() => { irATab("inicio"); setActiveCat(null); setSortBy("destacados"); setOnlyFavorites(false); }}
         onChats={() => irATab("chats")}
         onAdd={() => setShowAddSheet(true)}
-        onComunidad={() => irATab("comunidad")}
         onNegocio={() => irATab("negocio")}
         onHerramientas={() => irATab("herramientas")}
         onAjustes={() => irATab("ajustes")}

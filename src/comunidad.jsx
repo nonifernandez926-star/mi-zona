@@ -81,7 +81,7 @@ function Marco({ modoTab, onVolver, children }) {
 function BotonPublicar({ onClick }) {
   return (
     <button type="button" onClick={onClick} aria-label="Publicar en Comunidad" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
-      style={{ right: 16, bottom: "calc(78px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
+      style={{ right: 16, bottom: "calc(98px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
       <Plus size={26} color="#fff" strokeWidth={2.6} aria-hidden="true" />
     </button>
   );

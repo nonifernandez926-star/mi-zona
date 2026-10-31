@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --fuente-titulo: "Manrope", -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
-  --fuente-texto: "Manrope", -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+  /* mismo tipo de letra que Mi Asistente: el del sistema (en Android, Roboto). No se baja ninguna fuente de internet. */
+  --fuente-titulo: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+  --fuente-texto: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
 }
 html, body, button, input, textarea, select {
   font-family: var(--fuente-texto);
@@ -12,7 +13,7 @@ html, body, button, input, textarea, select {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-body { color: #0B1437; letter-spacing: -0.005em; background: #eef1f8; }
+body { color: #10193f; letter-spacing: -0.005em; background: #f4f6fb; }
 h1, h2, h3 { font-family: var(--fuente-titulo); letter-spacing: -0.02em; }
 
 /* ---------- modo oscuro ----------
@@ -362,3 +363,15 @@ html.sin-movimiento .fz-nubes, html.sin-movimiento .fz-gota, html.sin-movimiento
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* =====================================================================
+   Fase 18: diseño como Mi Asistente
+   ===================================================================== */
+/* Los hijos de <main> aparecen solo con opacidad. Con "translate" cada pantalla se vuelve el "marco" de los botones fijos que lleva adentro
+   (el «+» de Chats y el de Comunidad): durante la animación aparecían arriba y después saltaban a su lugar. */
+@keyframes zona-aparecer-suave { from { opacity: 0; } to { opacity: 1; } }
+main > *, .zona-pantalla > * { animation: zona-aparecer-suave .3s ease backwards; }
+/* Pantalla azul de bienvenida: el fondo detrás también es azul, para que no quede una línea clara arriba o abajo */
+html:has(.bv), html:has(.bv) body { background: #0B1437; }
+button, a, select { -webkit-tap-highlight-color: transparent; }

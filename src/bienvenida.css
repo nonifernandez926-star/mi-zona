@@ -1,5 +1,5 @@
 /* Pantalla de bienvenida y acceso de Mi Zona — mismo sistema visual que la de Mi Asistente (inicio.css) */
-.bv { position: fixed; inset: 0; z-index: 200; overflow-y: auto; overflow-x: hidden; background: #050b2a; color: #fff; font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-overflow-scrolling: touch; }
+.bv { position: fixed; inset: 0; z-index: 200; overflow-y: auto; overflow-x: hidden; background: #0B1437; color: #fff; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-overflow-scrolling: touch; }
 .bv-pantalla { position: relative; min-height: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; }
 .bv-fondo { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .bv-fondo i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .65; }

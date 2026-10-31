@@ -43,22 +43,24 @@ function FilaPerfil({ logo, icono: Icono, color, titulo, sub, chip, onClick }) {
   );
 }
 
-// Baldosa de acción del panel (2 por fila)
-function Accion({ icono: Icono, color, titulo, desc, onClick, peligro, disabled }) {
+// Baldosa de acción del panel (2 por fila). Todas miden lo mismo: el alto lo fija la fila (gridAutoRows: 1fr) y la descripción se corta en 2 renglones.
+function Accion({ icono: Icono, color, titulo, desc, onClick, peligro, disabled, punto }) {
   const c = peligro ? "#C1443A" : color;
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="text-left p-3.5 bg-white transition-all active:scale-[.98]" style={{ borderRadius: 18, border: "1px solid #E3E7F1", boxShadow: "0 4px 16px rgba(11,20,55,0.06)", opacity: disabled ? 0.6 : 1, minHeight: 112 }}>
-      <span className="flex items-center justify-center mb-2.5" style={{ width: 40, height: 40, borderRadius: 13, background: tinte(c, 12) }}><Icono size={19} color={c} aria-hidden="true" /></span>
-      <span className="block text-sm font-semibold leading-tight" style={{ ...TITULO, color: peligro ? "#9A3B34" : "#0B1437" }}>{titulo}</span>
-      {desc && <span className="block text-[11px] mt-1 leading-snug" style={{ color: "#5B6482" }}>{desc}</span>}
+    <button type="button" onClick={onClick} disabled={disabled} className="relative text-left bg-white transition-all active:scale-[.98] flex flex-col"
+      style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", padding: 16, minHeight: 132, opacity: disabled ? 0.55 : 1 }}>
+      <span className="flex items-center justify-center mb-3" style={{ width: 44, height: 44, borderRadius: 14, background: tinte(c, 12) }}><Icono size={21} color={c} aria-hidden="true" /></span>
+      {punto && <span aria-label="Pendiente" className="absolute" style={{ top: 14, right: 14, width: 10, height: 10, borderRadius: "50%", background: "#E5484D", border: "2px solid #fff", boxSizing: "content-box" }} />}
+      <span className="block text-[15px] font-bold leading-tight" style={{ ...TITULO, color: peligro ? "#9A3B34" : "#0B1437" }}>{titulo}</span>
+      {desc && <span className="block text-xs mt-1.5 leading-snug" style={{ color: "#5B6482", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{desc}</span>}
     </button>
   );
 }
 
 function Seccion({ titulo, sub, children }) {
   return (
-    <section className="mb-6">
-      <div className="mb-2.5 px-0.5"><p style={{ ...TITULO, fontWeight: 700, fontSize: 16, color: "#0B1437" }}>{titulo}</p>{sub && <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>{sub}</p>}</div>
+    <section className="mb-7">
+      <div className="mb-3 px-0.5"><p style={{ ...TITULO, fontWeight: 800, fontSize: 17, color: "#0B1437", letterSpacing: "-0.01em" }}>{titulo}</p>{sub && <p className="text-xs mt-0.5" style={{ color: "#5B6482" }}>{sub}</p>}</div>
       {children}
     </section>
   );
@@ -192,7 +194,7 @@ export default function NegocioScreen({
             {oficio.estado !== "pendiente" && <div className="mt-3"><PanelDueno tipo="oficio" id={oficio.id} /></div>}
           </div>
           <Seccion titulo="Gestionar mi ficha">
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
               <Accion icono={Pencil} color="#1E8A55" titulo="Editar mis datos" desc="Rubros, fotos, zona, contacto." onClick={() => onEditarOficio(oficio)} />
               <Accion icono={Share2} color="#7A4F9E" titulo="Compartir" desc="Mandala por redes o WhatsApp." onClick={() => compartir({ tipo: "oficio", nombre: oficio.nombre, zona: oficio.localidad ? textoLocalidad(oficio.localidad) : "", detalle: oficio.desc })} />
               {oficio.estado !== "pendiente" && <Accion icono={Power} color="#E08A12" titulo={oficio.estado === "pausada" ? "Activar" : "Pausar"} desc={oficio.estado === "pausada" ? "Volvé a mostrarla." : "Ocultala por un tiempo."} onClick={() => setDialogo({ tipo: oficio.estado === "pausada" ? "activarOficio" : "pausarOficio" })} />}
@@ -220,7 +222,7 @@ export default function NegocioScreen({
               <div className="bg-white p-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1" }}><GestorArticulos alquiler={a} onCambio={reemplazarAlquiler} /></div>
             </Seccion>
             <Seccion titulo="Gestionar mi ficha">
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
                 <Accion icono={Pencil} color="#1E8A55" titulo="Editar mis datos" desc="Nombre, fotos, zona, horarios, contacto." onClick={() => onEditarAlquiler(a)} />
                 <Accion icono={Share2} color="#7A4F9E" titulo="Compartir" desc="Mandala por redes o WhatsApp." onClick={() => compartir({ tipo: "alquiler", nombre: a.nombre, zona: a.localidad ? textoLocalidad(a.localidad) : "", detalle: a.desc, imagen: a.logo })} />
                 {a.estado !== "pendiente" && <Accion icono={Power} color="#E08A12" titulo={a.estado === "pausada" ? "Activar" : "Pausar"} desc={a.estado === "pausada" ? "Volvé a mostrarla." : "Ocultala por un tiempo."} onClick={() => setDialogo({ tipo: a.estado === "pausada" ? "activarAlquiler" : "pausarAlquiler", dato: a })} />}
@@ -241,15 +243,6 @@ export default function NegocioScreen({
     <div>
       {mensajes}
       {error && <div className="mb-3"><EstadoError onReintentar={cargar} /></div>}
-      {pendientes.length > 0 && (
-        <section aria-label="Compartir Mi Zona" className="mb-5" style={{ background: "#EDF1FF", border: "1px solid #C9D6FA", borderRadius: 18, padding: 14 }}>
-          <p className="flex items-center gap-2 font-bold" style={{ color: "#0B1437", fontSize: "1rem" }}><Users size={18} aria-hidden="true" /> Todavía no compartiste Mi Zona</p>
-          <p className="text-sm mt-1" style={{ color: "#2B3768", lineHeight: 1.45 }}>Para que tus clientes puedan encontrarte, necesitan descargar la app. Compartila con ellos.</p>
-          <button type="button" onClick={compartirMiZona} className="w-full mt-3" style={{ ...botonPrincipal, minHeight: 50 }}><Share2 size={18} aria-hidden="true" /> Compartir Mi Zona</button>
-          {avisoCompartir && <p role="status" className="text-sm mt-2" style={{ color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}
-        </section>
-      )}
-
       <Seccion titulo={`Mis perfiles${total ? ` (${total})` : ""}`} sub="Tocá uno para verlo, editarlo y gestionarlo.">
         {cargando ? <EstadoCarga texto="Cargando tus perfiles..." filas={2} /> : (
           <div className="overflow-hidden" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 1px 2px rgba(11,20,55,.04)" }}>
@@ -272,11 +265,11 @@ export default function NegocioScreen({
       </Seccion>
 
       <Seccion titulo="Herramientas">
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
           {onAgenda && <Accion icono={CalendarCheck} color="#E5484D" titulo="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onAgenda} />}
-          <Accion icono={Share2} color="#13897F" titulo="Compartir Mi Zona" desc="Invitá a tus clientes a descargar la app." onClick={compartirMiZona} />
+          <Accion icono={Share2} color="#13897F" titulo="Compartir Mi Zona" desc={pendientes.length > 0 ? "Todavía no la compartiste: invitá a tus clientes." : "Invitá a tus clientes a descargar la app."} onClick={compartirMiZona} punto={pendientes.length > 0} />
         </div>
-        {avisoCompartir && pendientes.length === 0 && <p role="status" className="text-sm mt-2" style={{ color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}
+        {avisoCompartir && <p role="status" className="text-sm mt-2" style={{ color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}
       </Seccion>
 
       <TarjetaInvitaciones invitaciones={invitaciones} onCambio={cargarInvitaciones} />

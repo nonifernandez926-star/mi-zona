@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Store, Home, Wrench, MapPin, Heart, Search, Star, Clock, Sparkles, ChevronRight, ChevronDown, Package, PartyPopper, Hammer, Grid3x3, X, Zap, Droplets, Flame, HardHat, Paintbrush, Car, Truck, KeyRound, Check } from "lucide-react";
 import { alquileresApi, oficiosApi, getPrivacidad } from "./api.js";
-import { CATEGORIAS, textoPrecio, resumenVivienda } from "./alquileres.js";
+import { CATEGORIAS, ETIQUETA_TIPO, textoPrecio, resumenVivienda } from "./alquileres.js";
 import { RUBROS } from "./rubros.js";
 import { Hoja, Chip, botonSecundario, diasDesde } from "./oficios.jsx";
 import { alternarFavFicha, useEsFavFicha } from "./favoritos.js";
@@ -48,22 +48,45 @@ export function SelectorModo({ modo, onCambiar }) {
 }
 
 // ---------- barra de filtros: la misma para Negocios, Alquileres y Oficios ----------
-// Un desplegable de orden que se abre ahí mismo, hacia abajo (sin hojas ni pantallas aparte), y al lado las píldoras de filtro.
+// El selector de orden (ej. «Destacados») abre una lista chica justo debajo, con una opción por renglón. Al elegir una, se cierra.
+// Al lado, las píldoras de filtro (se deslizan hacia los costados sin tapar la lista).
 // orden: { opciones: [{ id, titulo, Icon, color, fondo }], valor, onChange }
 // pildoras: [{ id, texto, activo, onClick, icono, verde, peligro, cerrar }]
 export function BarraFiltros({ orden, pildoras }) {
   const [abierto, setAbierto] = useState(false);
   const op = orden.opciones.find((o) => o.id === orden.valor) || orden.opciones[0];
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0" style={{ scrollbarWidth: "none" }}>
-        <button type="button" onClick={() => setAbierto((v) => !v)} aria-expanded={abierto} aria-label={`Ordenar por: ${op.titulo}`}
+    <div className="mb-4 flex items-center gap-2">
+      <div className="relative shrink-0">
+        <button type="button" onClick={() => setAbierto((v) => !v)} aria-expanded={abierto} aria-haspopup="listbox" aria-label={`Ordenar por: ${op.titulo}`}
           className="flex items-center gap-2 font-semibold pl-2 pr-3 py-1.5"
           style={{ fontSize: 13, borderRadius: 20, border: `1px solid ${abierto ? "var(--azul)" : "#D5DCF0"}`, color: TINTA, backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(11,20,55,.06)" }}>
           <span className="flex items-center justify-center" style={{ width: 24, height: 24, borderRadius: 8, background: op.fondo }}><op.Icon size={14} color={op.color} strokeWidth={2.3} /></span>
           {op.titulo}
           <ChevronDown size={14} color={SUAVE} style={{ transform: abierto ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
         </button>
+        {abierto && (
+          <>
+            {/* toque fuera de la lista: la cierra */}
+            <div onClick={() => setAbierto(false)} aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+            <div role="listbox" aria-label="Ordenar por" style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 31, minWidth: 220, background: "#fff", borderRadius: 16, border: `1px solid ${LINEA}`, boxShadow: "0 14px 34px rgba(15,22,55,.18)", padding: 6, animation: "zona-subir .18s var(--zona-ease) backwards" }}>
+              {orden.opciones.map((o) => {
+                const act = o.id === orden.valor;
+                return (
+                  <button key={o.id} type="button" role="option" aria-selected={act} onClick={() => { orden.onChange(o.id); setAbierto(false); }}
+                    className="w-full flex items-center gap-2.5 text-left"
+                    style={{ minHeight: 46, padding: "6px 10px", borderRadius: 12, fontSize: 14, fontWeight: act ? 700 : 500, background: act ? "var(--azul-suave)" : "transparent", color: act ? "var(--azul)" : "#2B3768" }}>
+                    <span className="flex items-center justify-center shrink-0" style={{ width: 28, height: 28, borderRadius: 9, background: o.fondo }}><o.Icon size={15} color={o.color} strokeWidth={2.3} aria-hidden="true" /></span>
+                    <span className="flex-1">{o.titulo}</span>
+                    {act && <Check size={16} strokeWidth={3} aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 min-w-0 flex-1 [&>*]:shrink-0" style={{ scrollbarWidth: "none" }}>
         {pildoras.map((c) => (
           <button key={c.id} type="button" onClick={c.onClick} aria-pressed={!!c.activo}
             className="flex items-center gap-1.5 font-medium px-3.5 py-2"
@@ -77,36 +100,28 @@ export function BarraFiltros({ orden, pildoras }) {
           </button>
         ))}
       </div>
-      {abierto && (
-        <div className="flex flex-wrap gap-2 mt-2" role="listbox" aria-label="Ordenar por" style={{ animation: "zona-subir .2s var(--zona-ease) backwards" }}>
-          {orden.opciones.map((o) => {
-            const act = o.id === orden.valor;
-            return (
-              <button key={o.id} type="button" role="option" aria-selected={act} onClick={() => { orden.onChange(o.id); setAbierto(false); }}
-                className="flex items-center gap-1.5 font-medium px-3 py-1.5"
-                style={{ fontSize: 12.5, borderRadius: 20, border: `1px solid ${act ? "var(--azul)" : LINEA}`, background: act ? "var(--azul-suave)" : "#fff", color: act ? "var(--azul)" : "#2B3768" }}>
-                <o.Icon size={13} color={act ? "var(--azul)" : o.color} strokeWidth={2.3} aria-hidden="true" />
-                {o.titulo}
-                {act && <Check size={13} strokeWidth={3} aria-hidden="true" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
 
-// Subfiltro chico (tipo de alquiler) con el mismo estilo de píldora
-function FilaTipos({ tipos, valor, onElegir }) {
-  if (!tipos?.length) return null;
+// Subpantalla (hoja) con todos los tipos de una categoría de alquileres. Reemplaza a las píldoras que antes aparecían debajo de los filtros.
+function HojaTiposAlquiler({ categoria, tipo, onElegir, onCerrar }) {
+  const cat = CATEGORIAS.find((c) => c.id === categoria);
+  if (!cat) return null;
+  const Fila = ({ activo, children, onClick }) => (
+    <button type="button" onClick={onClick} aria-pressed={activo} className="w-full flex items-center justify-between gap-3 text-left"
+      style={{ minHeight: 54, padding: "8px 16px", borderRadius: 16, fontSize: 15, fontWeight: activo ? 700 : 500, border: `1.5px solid ${activo ? "var(--azul)" : LINEA}`, background: activo ? "var(--azul-suave)" : "#fff", color: activo ? "var(--azul)" : TINTA }}>
+      <span>{children}</span>{activo && <Check size={18} strokeWidth={3} aria-hidden="true" />}
+    </button>
+  );
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4 [&>*]:shrink-0" style={{ scrollbarWidth: "none", marginTop: -8 }}>
-      {tipos.map((t) => {
-        const act = valor === t.id;
-        return <button key={t.id} type="button" onClick={() => onElegir(act ? "" : t.id)} aria-pressed={act} className="font-medium px-3 py-1.5" style={{ fontSize: 12.5, borderRadius: 20, border: `1px solid ${act ? "var(--azul)" : LINEA}`, background: act ? "var(--azul-suave)" : "#fff", color: act ? "var(--azul)" : "#2B3768" }}>{t.label}</button>;
-      })}
-    </div>
+    <Hoja titulo={cat.label} onCerrar={onCerrar}>
+      <p className="text-sm mb-3" style={{ color: SUAVE }}>Elegí qué tipo buscás.</p>
+      <div className="flex flex-col gap-2 mb-2">
+        <Fila activo={!tipo} onClick={() => onElegir("")}>Todo en «{cat.corto || cat.label}»</Fila>
+        {cat.tipos.map((t) => <Fila key={t.id} activo={tipo === t.id} onClick={() => onElegir(t.id)}>{t.label}</Fila>)}
+      </div>
+    </Hoja>
   );
 }
 
@@ -229,8 +244,9 @@ const ICONO_RUBRO = { electricista: Zap, plomero: Droplets, gasista: Flame, alba
 const PALETA_RUBRO = ["#E08A12", "#2350F5", "#C1443A", "#7A4FD6", "#13897F", "#2C9A5F"];
 const nombreRubro = (id) => RUBROS.find((r) => r.id === id)?.label || id;
 
-export function CategoriasInicio({ modo, cat, onCambiar }) {
+export function CategoriasInicio({ modo, cat, onCambiar, tipo = "", onTipo }) {
   const [hoja, setHoja] = useState(false);
+  const [hojaTipos, setHojaTipos] = useState(null); // id de la categoría de alquileres cuya subpantalla está abierta
   const esAlq = modo === "alquileres";
   const items = esAlq
     ? CATEGORIAS.map((c) => ({ id: c.id, label: c.corto || c.label, Icono: ICONO_CAT[c.id] || Package, color: COLOR_CAT[c.id] || "#2350F5" }))
@@ -252,7 +268,7 @@ export function CategoriasInicio({ modo, cat, onCambiar }) {
           {items.map((c) => {
             const act = cat === c.id, Icono = c.Icono;
             return (
-              <button key={c.id} type="button" onClick={() => onCambiar(act ? "" : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
+              <button key={c.id} type="button" onClick={() => { if (esAlq) { onCambiar(c.id); setHojaTipos(c.id); } else onCambiar(act ? "" : c.id); }} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
                 <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: act ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: act ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
                   <Icono size={21} color={act ? "#fff" : c.color} />
                 </span>
@@ -263,6 +279,7 @@ export function CategoriasInicio({ modo, cat, onCambiar }) {
         </div>
       </div>
       {hoja && <HojaRubros rubro={cat} onCerrar={() => setHoja(false)} onElegir={(id) => { onCambiar(id); setHoja(false); }} />}
+      {hojaTipos && <HojaTiposAlquiler categoria={hojaTipos} tipo={tipo} onCerrar={() => setHojaTipos(null)} onElegir={(t) => { onTipo?.(t); setHojaTipos(null); }} />}
     </div>
   );
 }
@@ -272,15 +289,13 @@ const ORDEN_ALQ = [
   { id: "destacados", titulo: "Destacados", Icon: Star, color: "#E08A1E", fondo: "#FFF4E0" },
   { id: "recientes", titulo: "Más recientes", Icon: Clock, color: "#2A58FF", fondo: "#E8EEFF" },
 ];
-function ListaAlquileres({ zone, q, cat, onAbrir }) {
-  const [tipo, setTipo] = useState("");
+function ListaAlquileres({ zone, q, cat, tipo, onTipo, onAbrir }) {
   const [orden, setOrden] = useState("destacados");
   const [soloAbiertos, setSoloAbiertos] = useState(false);
   const [soloVistos, setSoloVistos] = useState(false);
   const [soloNuevos, setSoloNuevos] = useState(false);
   const [soloDisp, setSoloDisp] = useState(false);
   const [vistos, setVistos] = useState(() => leerVistos("alquiler"));
-  useEffect(() => setTipo(""), [cat]);
   const z = partesZona(zone);
   const params = useMemo(() => ({ ...z, q: q.length >= 2 ? q : "", categoria: cat, tipo }), [zone, q, cat, tipo]); // eslint-disable-line react-hooks/exhaustive-deps
   const L = useListado((pagina) => alquileresApi.listar({ ...params, pagina }).then((r) => ({ items: r.alquileres, total: r.total, hayMas: r.hayMas })), JSON.stringify(params));
@@ -300,8 +315,8 @@ function ListaAlquileres({ zone, q, cat, onAbrir }) {
         { id: "vistos", texto: "Vistos", activo: soloVistos, onClick: () => setSoloVistos((v) => !v), icono: <Clock size={14} /> },
         { id: "nuevos", texto: "Nuevos", activo: soloNuevos, onClick: () => setSoloNuevos((v) => !v), verde: true, icono: <Sparkles size={14} /> },
         { id: "disp", texto: "Disponibles", activo: soloDisp, onClick: () => setSoloDisp((v) => !v), verde: true, icono: <Check size={14} /> },
+        ...(tipo ? [{ id: "tipo", texto: ETIQUETA_TIPO[tipo] || "Tipo", activo: true, cerrar: true, onClick: () => onTipo?.("") }] : []),
       ]} />
-      <FilaTipos tipos={CATEGORIAS.find((c) => c.id === cat)?.tipos} valor={tipo} onElegir={setTipo} />
       {L.estado === "cargando" ? <Esqueleto /> : L.estado === "error" ? <EstadoError titulo="No pudimos cargar los alquileres" mensaje="Revisá tu conexión e intentá de nuevo." onReintentar={L.reintentar} /> : lista.length === 0 ? (
         <Vacio titulo={`No hay alquileres en ${z.localidad}`} texto={conFiltros ? "Probá con otra categoría, otro filtro, o cambiá de zona." : "Todavía nadie publicó alquileres acá. Podés ser el primero con el botón +."} />
       ) : (<>
@@ -415,10 +430,10 @@ function ListaOficios({ zone, q, cat: rubro, onAbrir }) {
 }
 
 // ---------- entrada ----------
-export default function ListaInicio({ modo, zone, query, cat, onAbrirAlquiler, onAbrirOficio }) {
+export default function ListaInicio({ modo, zone, query, cat, tipo = "", onTipo, onAbrirAlquiler, onAbrirOficio }) {
   const [q, setQ] = useState("");
   useEffect(() => { const t = setTimeout(() => setQ(query.trim()), 350); return () => clearTimeout(t); }, [query]);
-  if (modo === "alquileres") return <ListaAlquileres zone={zone} q={q} cat={cat} onAbrir={onAbrirAlquiler} />;
+  if (modo === "alquileres") return <ListaAlquileres zone={zone} q={q} cat={cat} tipo={tipo} onTipo={onTipo} onAbrir={onAbrirAlquiler} />;
   if (modo === "oficios") return <ListaOficios zone={zone} q={q} cat={cat} onAbrir={onAbrirOficio} />;
   return null;
 }

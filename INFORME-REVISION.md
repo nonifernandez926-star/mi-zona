@@ -95,3 +95,16 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 
 **Sigue pendiente (no lo toqué a propósito):** rediseño de detalle de negocio, Herramientas, Ajustes y chats (hay que verlo compilado); paginar listas largas; dividir `App.jsx`; alojar la fuente Manrope en la propia app; la prueba que compara datos duplicados entre web y servidor.
 
+---
+
+## Fase 18 (28/10/2026): arreglos de pantalla y diseño como Mi Asistente
+
+- **«Otros» abre una subpantalla.** En Alquileres, al tocar una categoría (Viviendas, Eventos, Herramientas, Otros) se abre una hoja con todos sus tipos, y el tipo elegido queda como una píldora que se quita con la «x». Ya no aparecen píldoras debajo de los filtros. En Negocios se sumó el botón «Otros», que abre una hoja con el resto de los rubros.
+- **Selector «Destacados»:** ahora abre una lista chica debajo del botón, con una opción por renglón; al elegir una se cierra, y tocar afuera también la cierra.
+- **Comunidad dentro de Chats:** se quitó de la barra de abajo y de la portada del inicio. En Chats hay una tarjeta «Comunidad» arriba de todo. La barra queda con dos pestañas a cada lado del «+» (Inicio, Chats, Negocio o Herramientas, Ajustes). Comunidad ya era solo de fichas (sin escribir ni comentar) y cada persona ve las de su departamento, así que eso no cambió.
+- **Botón «+» de Chats:** el error era que la animación de entrada de cada pantalla usaba `translate`, y eso hace que los botones fijos de adentro se coloquen según la pantalla y no según el celular: aparecían arriba y saltaban. Ahora la entrada es solo un fundido (`index.css`, final del archivo). También corrige el «+» de Comunidad.
+- **Línea en blanco al abrir la app:** el fondo detrás de la pantalla azul de bienvenida ahora es del mismo azul.
+- **Pantalla Negocio ordenada:** baldosas del mismo tamaño y más aire; un solo acceso para compartir (se quitó el cartel grande «Todavía no compartiste Mi Zona»: ahora es una baldosa con un punto rojo mientras esté pendiente); «Código QR» y «Compartir» se unieron en «Compartir mi negocio»; «Mi Asistente» es una fila ancha propia; «Eliminar negocio» quedó aparte y discreto.
+- **Diseño como Mi Asistente:** tipo de letra del sistema (Roboto en Android; ya no se baja Manrope de internet, ni en las páginas legales), fondo y tinta de Mi Asistente, barra de abajo flotante con la pestaña activa en una píldora celeste, cabeceras con esquinas redondeadas, botones con degradado azul y esquinas de 16.
+- **Pendiente / no verificado:** no se pudo compilar ni probar (sin internet); revisé a mano que las llaves de los archivos estén balanceadas. Probalo en el celular, sobre todo la barra de abajo, la lista del selector y la subpantalla de «Otros». Otras pantallas (detalle de negocio, Ajustes, chats) conservan su estilo anterior salvo lo anterior.
+

@@ -27,8 +27,8 @@ const ETIQUETA_RUBRO = Object.fromEntries(RUBROS.map((r) => [r.id, r.label]));
 const MAX_RUBROS = 6, MAX_OTROS = 3, MAX_FOTOS = 8;
 export const FONDO = "#F3F5FA";
 
-export const botonPrincipal = { minHeight: 50, borderRadius: 14, border: 0, color: "#fff", backgroundColor: "#2350F5", fontWeight: 700, fontSize: "1rem", padding: "0 20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 };
-export const botonSecundario = { minHeight: 46, borderRadius: 14, border: "1px solid #CFD6E8", background: "#fff", color: "#0B1437", fontWeight: 700, fontSize: "0.9375rem", padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+export const botonPrincipal = { minHeight: 50, borderRadius: 16, border: 0, color: "#fff", background: "linear-gradient(135deg,#2b5bff,#1638c9)", boxShadow: "0 12px 24px rgba(36,84,255,.26)", fontWeight: 700, fontSize: "1rem", padding: "0 20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 };
+export const botonSecundario = { minHeight: 46, borderRadius: 16, border: "1px solid #e0e5f2", background: "#fff", color: "#0B1437", fontWeight: 700, fontSize: "0.9375rem", padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
 export const caja = { width: "100%", boxSizing: "border-box", minHeight: 48, border: "1px solid #CFD6E8", borderRadius: 12, padding: "11px 14px", font: "inherit", fontSize: "1rem", background: "#fff", color: "#0B1437" };
 
 const rubrosTexto = (o, primero = "", max = 2) => {
