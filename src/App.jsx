@@ -13,7 +13,7 @@ import {
   Baby, Church, Tag, Navigation, User, LocateFixed, Briefcase,
   Heart, Share2, Send, Mail, Settings, Menu, Bell, QrCode, Download, TrendingUp, Trophy,
   Sun, Moon, Smartphone, Coins, Ticket, List, Map as MapIcon, Minus, CheckCheck, CalendarCheck, BellOff, Crown, Medal, Phone, Layers, Facebook, Music2, Megaphone, Store, Info, BookOpen, Flag, EyeOff, Users,
-  ShieldAlert, UserX, Camera, UserPlus,, ChevronRight } from "lucide-react";
+  ShieldAlert, UserX, Camera, UserPlus, ChevronRight } from "lucide-react";
 import {
   API_URL, authHeaders, userHeaders, setToken, traerMiSesion, getPrivacidad, setPrivacidadLocal, privacidadApi,
   traerMisNegocios, traerCobertura, suscripcionApi, desactivarPush, activarPush, estadoPush, getAvisosApp, sonidoAviso, seguridadApi, vincularSesionCliente, traerMisConversaciones, traerMisPedidos, soporteApi,
