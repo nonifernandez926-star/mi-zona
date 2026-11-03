@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Megaphone, ShieldAlert, PawPrint, HeartHandshake, Gift, Dumbbell, CalendarDays, MapPin, MessageCircle, Plus, Pencil, Trash2, Check, X, ChevronDown, Share2, Users, Clock, Info, RotateCcw, ExternalLink, History, Ticket, Trophy } from "lucide-react";
 import { comunidadApi } from "./api.js";
 import { localidadesDeProvincia, textoLocalidad } from "./localidades.js";
@@ -16,6 +17,7 @@ import ComoFunciona from "./componentes/ComoFunciona.jsx";
 import { EstadoCarga, EstadoVacio, EstadoError } from "./componentes/Estados.jsx";
 import { compartirFicha, avisoDeCompartir } from "./compartir.js";
 import { uploadImage, comprimirFoto } from "./subirFoto.js";
+import { tinte } from "./hojaCategorias.jsx";
 
 // Comunidad (Fase 7): fichas breves de los vecinos. Publicar es GRATIS. Cada publicación la ven las personas del mismo departamento
 // (con filtro por localidad). Todas vencen. La sección se muestra solo si el servidor la tiene habilitada (hasta completar la Fase 8).
@@ -80,10 +82,49 @@ function Marco({ modoTab, onVolver, children }) {
 // Botón redondo «+» abajo a la derecha (como el de WhatsApp) para publicar
 function BotonPublicar({ onClick }) {
   return (
-    <button type="button" onClick={onClick} aria-label="Publicar en Comunidad" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
+    <button type="button" onClick={onClick} aria-label="Publicar ficha" className="fixed z-40 flex items-center justify-center active:scale-95 transition-transform"
       style={{ right: 16, bottom: "calc(98px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: 20, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.45)" }}>
       <Plus size={26} color="#fff" strokeWidth={2.6} aria-hidden="true" />
     </button>
+  );
+}
+
+// Botón grande «Publicar ficha» (arriba de todo) y la hoja con todos los tipos de ficha
+const COLOR_TIPO = { aviso: "#E08A12", seguridad: "#C1443A", perdido: "#B0793A", ayuda: "#3C8558", regalo: "#7A4F9E", deporte: "#2350F5", evento: "#A6437A", sorteo: "#13897F" };
+// Cómo se nombra cada tipo al elegir qué publicar (los ejemplos de arriba: mascota perdida, objeto perdido...)
+const TEXTO_PUBLICAR = {
+  perdido: { titulo: "Mascota u objeto perdido o encontrado", ayuda: "Perdiste o encontraste una mascota, un objeto o un documento." },
+};
+function BotonPublicarFicha({ onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="w-full flex items-center justify-center gap-2 mb-4 active:scale-[.99] transition-transform"
+      style={{ minHeight: 54, borderRadius: 18, color: "#fff", fontWeight: 700, fontSize: 16, background: "linear-gradient(135deg,var(--azul),var(--azul-medio))", boxShadow: "0 10px 24px rgba(var(--azul-rgb),.35)" }}>
+      <Plus size={20} strokeWidth={2.6} aria-hidden="true" /> Publicar ficha
+    </button>
+  );
+}
+function HojaPublicarFicha({ onElegir, onCerrar }) {
+  // se dibuja en <body>: queda por encima de la barra de abajo
+  return createPortal(
+    <Hoja titulo="Publicar ficha" onCerrar={onCerrar}>
+      <p className="text-sm mb-3" style={{ color: "#5B6482" }}>¿Qué querés publicar? Elegí el tipo de ficha. Publicar es gratis y la ven los vecinos de tu zona.</p>
+      <div className="flex flex-col gap-2">
+        {TIPOS.map((t) => {
+          const I = ICONO[t.id] || Megaphone, color = COLOR_TIPO[t.id] || "#2350F5", txt = TEXTO_PUBLICAR[t.id] || {};
+          return (
+            <button key={t.id} type="button" onClick={() => onElegir(t.id)} className="w-full flex items-center gap-3.5 text-left p-3" style={{ borderRadius: 16, border: "1px solid #E6ECF5", background: "#fff", minHeight: 68 }}>
+              <span className="flex items-center justify-center shrink-0" style={{ width: 46, height: 46, borderRadius: 15, background: tinte(color) }}><I size={21} color={color} aria-hidden="true" /></span>
+              <span className="flex-1 min-w-0">
+                <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 700, fontSize: 15, color: "#0B1437" }}>{txt.titulo || t.singular}</span>
+                <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>{txt.ayuda || t.ayuda}</span>
+              </span>
+              <ChevronDown size={16} color="#B9C0D6" className="shrink-0" style={{ transform: "rotate(-90deg)" }} aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
+    </Hoja>,
+    document.body,
   );
 }
 
@@ -101,6 +142,8 @@ function Solapas({ valor, onChange }) {
 
 export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisFichas, onEditar, modoTab = false, refrescarKey = 0 }) {
   const [panel, setPanel] = useState("lista"); // solo en modo pestaña: "lista" | "mias"
+  const [elegirTipo, setElegirTipo] = useState(false); // hoja «Publicar ficha» con todos los tipos
+  const publicarTipo = (t) => { setElegirTipo(false); onPublicar(t); };
 
   const [tipo, setTipo] = useState("");
   const [localidad, setLocalidad] = useState(null); // { id, nombre } o null = todo el departamento
@@ -167,8 +210,10 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
     return (
       <Marco modoTab>
         <Solapas valor={panel} onChange={setPanel} />
-        <MisPublicaciones key={refrescarKey} onVer={onAbrir} onEditar={onEditar} onPublicar={onPublicar} />
-        <BotonPublicar onClick={() => onPublicar(null)} />
+        <BotonPublicarFicha onClick={() => setElegirTipo(true)} />
+        <MisPublicaciones key={refrescarKey} onVer={onAbrir} onEditar={onEditar} onPublicar={() => setElegirTipo(true)} />
+        <BotonPublicar onClick={() => setElegirTipo(true)} />
+        {elegirTipo && <HojaPublicarFicha onElegir={publicarTipo} onCerrar={() => setElegirTipo(false)} />}
       </Marco>
     );
   }
@@ -176,6 +221,7 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
   return (
     <Marco modoTab={modoTab} onVolver={onVolver}>
       {modoTab && <Solapas valor={panel} onChange={setPanel} />}
+      {modoTab && <BotonPublicarFicha onClick={() => setElegirTipo(true)} />}
       <ComoFunciona pasos={["Acá los vecinos de tu departamento publican avisos, cosas perdidas, regalos, ayuda, deportes, eventos y sorteos.", "Publicar es gratis. Cada publicación vence sola: los avisos duran pocas horas.", "Tocá una publicación para ver el detalle. Mantenela apretada para compartirla."]} />
 
       <div className="flex gap-2 mt-3 overflow-x-auto" role="group" aria-label="Tipo de publicación" style={{ paddingBottom: 2 }}>
@@ -207,7 +253,7 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
         {estado === "ok" && items.length === 0 && (
           hayFiltros
             ? <EstadoVacio icono={Megaphone} titulo="No hay publicaciones con esos filtros" mensaje="Probá con otra localidad, otro día o quitá los filtros." accion={{ texto: "Quitar los filtros", onClick: limpiar }} />
-            : <EstadoVacio icono={ICONO[tipo] || Megaphone} titulo={tipoInfo ? `Todavía no hay ${tipoInfo.label.toLowerCase()} en tu zona` : "Todavía no hay publicaciones en tu zona"} mensaje="Sé el primero en publicar: es gratis y lo ven tus vecinos." accion={{ texto: "Publicar en Comunidad", onClick: () => onPublicar(tipo || null) }} />
+            : <EstadoVacio icono={ICONO[tipo] || Megaphone} titulo={tipoInfo ? `Todavía no hay ${tipoInfo.label.toLowerCase()} en tu zona` : "Todavía no hay publicaciones en tu zona"} mensaje="Sé el primero en publicar: es gratis y lo ven tus vecinos." accion={{ texto: "Publicar ficha", onClick: () => onPublicar(tipo || null) }} />
         )}
         {estado === "ok" && items.length > 0 && (
           <>
@@ -218,13 +264,14 @@ export function ComunidadScreen({ usuario, onVolver, onAbrir, onPublicar, onMisF
         )}
       </div>
 
-      {!modoTab && estado === "ok" && items.length > 0 && <button type="button" onClick={() => onPublicar(tipo || null)} className="w-full mt-5" style={{ ...botonSecundario, minHeight: 52 }}><Plus size={18} aria-hidden="true" /> Publicar en Comunidad</button>}
+      {!modoTab && estado === "ok" && items.length > 0 && <button type="button" onClick={() => onPublicar(tipo || null)} className="w-full mt-5" style={{ ...botonSecundario, minHeight: 52 }}><Plus size={18} aria-hidden="true" /> Publicar ficha</button>}
       {!modoTab && <button type="button" onClick={onMisFichas} className="w-full mt-3" style={{ ...botonSecundario, minHeight: 48, border: 0, background: "transparent", textDecoration: "underline", color: "#4A5372" }}>Mis publicaciones</button>}
 
       {hoja === "localidad" && <HojaLocalidadDepartamento usuario={usuario} actual={localidad} onElegir={(l) => { setLocalidad(l); setHoja(null); }} onCerrar={() => setHoja(null)} />}
       {hoja === "actividad" && <HojaOpciones titulo="Actividad" opciones={DEPORTE_ACTIVIDADES} valor={actividad} todas="Todas" onElegir={(v) => { setActividad(v); setHoja(null); }} onCerrar={() => setHoja(null)} />}
       {hoja === "categoria" && <HojaOpciones titulo="Categoría" opciones={EVENTO_CATEGORIAS} valor={categoria} todas="Todas" onElegir={(v) => { setCategoria(v); setHoja(null); }} onCerrar={() => setHoja(null)} />}
-      {modoTab && <BotonPublicar onClick={() => onPublicar(tipo || null)} />}
+      {modoTab && <BotonPublicar onClick={() => setElegirTipo(true)} />}
+      {elegirTipo && <HojaPublicarFicha onElegir={publicarTipo} onCerrar={() => setElegirTipo(false)} />}
     </Marco>
   );
 }
@@ -746,7 +793,7 @@ export function MisPublicaciones({ onVer, onEditar, onPublicar }) {
           </div>
         );
       })}
-      <button type="button" onClick={() => onPublicar(null)} className="w-full" style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Publicar en Comunidad</button>
+      <button type="button" onClick={() => onPublicar(null)} className="w-full" style={{ ...botonSecundario, minHeight: 50 }}><Plus size={18} aria-hidden="true" /> Publicar ficha</button>
       {dialogo && (
         <DialogoAdvertencia titulo={`¿Eliminar «${dialogo.titulo}»?`} queHace="Borra esta publicación para siempre." paraQue="Sirve si ya no hace falta o la publicaste por error." queSucedera="Deja de verse para todos los vecinos y no se puede recuperar." textoAceptar="Sí, eliminar" peligro cargando={trabajando} onAceptar={eliminar} onCancelar={() => setDialogo(null)} />
       )}

@@ -1,4 +1,5 @@
 // Categorías y tipos de alquileres (copia de server/utils/alquileres.js: si cambiás uno, cambiá el otro). El id es fijo; "label" es lo que se ve.
+// "corto" (solo web, el servidor no lo usa) es el nombre que entra en las tarjetas de la subpantalla.
 export const CATEGORIAS = [
   { id: "viviendas", label: "Viviendas y espacios", corto: "Viviendas", tipos: [
     { id: "casa", label: "Casa" }, { id: "departamento", label: "Departamento" }, { id: "habitacion", label: "Habitación" },
@@ -9,8 +10,8 @@ export const CATEGORIAS = [
     { id: "sonido", label: "Sonido e iluminación" }, { id: "vajilla", label: "Vajilla y manteles" }, { id: "carpas", label: "Carpas y gazebos" },
     { id: "disfraces", label: "Disfraces" }, { id: "otro_evento", label: "Otro para eventos" } ] },
   { id: "herramientas", label: "Herramientas y equipos", corto: "Herramientas", tipos: [
-    { id: "herr_electricas", label: "Herramientas eléctricas" }, { id: "herr_manuales", label: "Herramientas manuales" }, { id: "construccion", label: "Construcción (andamios, mezcladoras)" },
-    { id: "jardin", label: "Jardín y campo" }, { id: "limpieza", label: "Limpieza (hidrolavadoras, alfombras)" }, { id: "generadores", label: "Generadores y compresores" },
+    { id: "herr_electricas", label: "Herramientas eléctricas" }, { id: "herr_manuales", label: "Herramientas manuales" }, { id: "construccion", label: "Construcción (andamios, mezcladoras)", corto: "Construcción" },
+    { id: "jardin", label: "Jardín y campo" }, { id: "limpieza", label: "Limpieza (hidrolavadoras, alfombras)", corto: "Limpieza" }, { id: "generadores", label: "Generadores y compresores" },
     { id: "otro_equipo", label: "Otros equipos" } ] },
   { id: "otros", label: "Otros alquileres", corto: "Otros", tipos: [
     { id: "vehiculos", label: "Vehículos, bicicletas y remolques" }, { id: "tecnologia", label: "Tecnología y electrónica" }, { id: "deportes", label: "Deportes y camping" },

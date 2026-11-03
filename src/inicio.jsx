@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Store, Home, Wrench, MapPin, Heart, Search, Star, Clock, Sparkles, ChevronRight, ChevronDown, Package, PartyPopper, Hammer, Grid3x3, X, Zap, Droplets, Flame, HardHat, Paintbrush, Car, Truck, KeyRound, Check } from "lucide-react";
+import { Store, Home, Wrench, MapPin, Heart, Star, Clock, Sparkles, ChevronRight, ChevronDown, Package, X, Zap, Check } from "lucide-react";
 import { alquileresApi, oficiosApi, getPrivacidad } from "./api.js";
 import { CATEGORIAS, ETIQUETA_TIPO, textoPrecio, resumenVivienda } from "./alquileres.js";
-import { RUBROS } from "./rubros.js";
-import { Hoja, Chip, botonSecundario, diasDesde } from "./oficios.jsx";
+import { RUBROS, GRUPOS_RUBROS } from "./rubros.js";
+import { botonSecundario, diasDesde } from "./oficios.jsx";
+import { TarjetaCategorias, HojaCategorias } from "./hojaCategorias.jsx";
+import { ICONO_CAT, COLOR_CAT, ICONO_TIPO_ALQ, ICONO_RUBRO_OFICIO } from "./iconosFichas.js";
 import { alternarFavFicha, useEsFavFicha } from "./favoritos.js";
 import { abiertoAhora, resumenHorarios } from "./horarios.js";
 import { EstadoError } from "./componentes/Estados.jsx";
@@ -104,27 +106,6 @@ export function BarraFiltros({ orden, pildoras }) {
   );
 }
 
-// Subpantalla (hoja) con todos los tipos de una categoría de alquileres. Reemplaza a las píldoras que antes aparecían debajo de los filtros.
-function HojaTiposAlquiler({ categoria, tipo, onElegir, onCerrar }) {
-  const cat = CATEGORIAS.find((c) => c.id === categoria);
-  if (!cat) return null;
-  const Fila = ({ activo, children, onClick }) => (
-    <button type="button" onClick={onClick} aria-pressed={activo} className="w-full flex items-center justify-between gap-3 text-left"
-      style={{ minHeight: 54, padding: "8px 16px", borderRadius: 16, fontSize: 15, fontWeight: activo ? 700 : 500, border: `1.5px solid ${activo ? "var(--azul)" : LINEA}`, background: activo ? "var(--azul-suave)" : "#fff", color: activo ? "var(--azul)" : TINTA }}>
-      <span>{children}</span>{activo && <Check size={18} strokeWidth={3} aria-hidden="true" />}
-    </button>
-  );
-  return (
-    <Hoja titulo={cat.label} onCerrar={onCerrar}>
-      <p className="text-sm mb-3" style={{ color: SUAVE }}>Elegí qué tipo buscás.</p>
-      <div className="flex flex-col gap-2 mb-2">
-        <Fila activo={!tipo} onClick={() => onElegir("")}>Todo en «{cat.corto || cat.label}»</Fila>
-        {cat.tipos.map((t) => <Fila key={t.id} activo={tipo === t.id} onClick={() => onElegir(t.id)}>{t.label}</Fila>)}
-      </div>
-    </Hoja>
-  );
-}
-
 // ---------- vistos y nuevos (en este dispositivo) ----------
 const VISTOS_KEY = "miZonaVistosFichas";
 export const leerVistos = (tipo) => { try { const v = JSON.parse(localStorage.getItem(VISTOS_KEY) || "{}"); return Array.isArray(v[tipo]) ? v[tipo] : []; } catch { return []; } };
@@ -150,9 +131,10 @@ const Vacio = ({ titulo, texto }) => (
   </div>
 );
 
-const Esqueleto = () => (
-  <div role="status" aria-busy="true" aria-label="Cargando" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {[0, 1].map((i) => <div key={i} style={{ height: 300, borderRadius: 22, background: "linear-gradient(90deg,#EEF1F8,#F7F8FC,#EEF1F8)", backgroundSize: "200% 100%", animation: "zona-brillo 1.4s linear infinite" }} />)}
+// alto: el de la tarjeta que se está cargando (las de Alquileres tienen foto y son más altas que las de Oficios)
+const Esqueleto = ({ alto = 300, clases = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" }) => (
+  <div role="status" aria-busy="true" aria-label="Cargando" className={clases}>
+    {[0, 1].map((i) => <div key={i} style={{ height: alto, borderRadius: 22, background: "linear-gradient(90deg,#EEF1F8,#F7F8FC,#EEF1F8)", backgroundSize: "200% 100%", animation: "zona-brillo 1.4s linear infinite" }} />)}
   </div>
 );
 
@@ -193,8 +175,6 @@ const Insignia = ({ children, fondo = "#F1F4FA", color = SUAVE, icono: Icono }) 
 );
 
 // ---------- tarjetas ----------
-const ICONO_CAT = { viviendas: Home, eventos: PartyPopper, herramientas: Hammer, otros: Package };
-const COLOR_CAT = { viviendas: "#2350F5", eventos: "#7A4FD6", herramientas: "#E08A12", otros: "#13897F" };
 function TarjetaAlquiler({ a, onAbrir }) {
   const [falla, setFalla] = useState(false);
   const cat = CATEGORIAS.find((c) => c.id === a.categoria), Icono = ICONO_CAT[a.categoria] || Package, color = COLOR_CAT[a.categoria] || "#2350F5";
@@ -239,47 +219,69 @@ function TarjetaAlquiler({ a, onAbrir }) {
 
 
 // ---------- tarjeta de categorías (la misma de Negocios, para Alquileres y Oficios) ----------
+// Alquileres: Viviendas · Eventos · Herramientas · Otros. Tocar una categoría abre su subpantalla con sus tipos.
+// Oficios: los diez rubros más pedidos + «Otros» (el resto). «Ver todas» abre la lista completa, agrupada.
 const POPULARES = ["electricista", "plomero", "gasista", "albanil", "pintor", "mecanico", "limpieza", "fletes", "carpintero", "cerrajero"];
-const ICONO_RUBRO = { electricista: Zap, plomero: Droplets, gasista: Flame, albanil: HardHat, pintor: Paintbrush, mecanico: Car, limpieza: Sparkles, fletes: Truck, carpintero: Hammer, cerrajero: KeyRound };
-const PALETA_RUBRO = ["#E08A12", "#2350F5", "#C1443A", "#7A4FD6", "#13897F", "#2C9A5F"];
 const nombreRubro = (id) => RUBROS.find((r) => r.id === id)?.label || id;
+const itemRubro = (r) => { const [Icono, color] = ICONO_RUBRO_OFICIO[r.id] || [Wrench, "#2350F5"]; return { id: r.id, label: r.label, Icono, color }; };
+const itemTipoAlq = (t) => { const [Icono, color] = ICONO_TIPO_ALQ[t.id] || [Package, "#13897F"]; return { id: t.id, label: t.label, corto: t.corto, Icono, color }; };
+const CATS_ALQ_FILA = CATEGORIAS.filter((c) => c.id !== "otros");
 
 export function CategoriasInicio({ modo, cat, onCambiar, tipo = "", onTipo }) {
-  const [hoja, setHoja] = useState(false);
+  const [hoja, setHoja] = useState(null); // "todas" | "otros" (Oficios) · "todas" (Alquileres)
   const [hojaTipos, setHojaTipos] = useState(null); // id de la categoría de alquileres cuya subpantalla está abierta
   const esAlq = modo === "alquileres";
-  const items = esAlq
-    ? CATEGORIAS.map((c) => ({ id: c.id, label: c.corto || c.label, Icono: ICONO_CAT[c.id] || Package, color: COLOR_CAT[c.id] || "#2350F5" }))
-    : [...(cat && !POPULARES.includes(cat) ? [cat] : []), ...POPULARES].map((id, i) => ({ id, label: nombreRubro(id).split(" ")[0], Icono: ICONO_RUBRO[id] || Wrench, color: PALETA_RUBRO[i % PALETA_RUBRO.length] }));
+  const cerrar = () => { setHoja(null); setHojaTipos(null); };
+
+  let items, otros;
+  if (esAlq) {
+    items = CATS_ALQ_FILA.map((c) => ({ id: c.id, label: c.corto || c.label, Icono: ICONO_CAT[c.id] || Package, color: COLOR_CAT[c.id] || "#2350F5" }));
+    otros = { activo: cat === "otros", onClick: () => { onCambiar("otros"); setHojaTipos("otros"); } };
+  } else {
+    items = POPULARES.map((id) => ({ ...itemRubro({ id }), label: nombreRubro(id).split(" ")[0] }));
+    otros = { activo: !!cat && !POPULARES.includes(cat), onClick: () => setHoja("otros") };
+  }
+
+  // Subpantallas
+  let sheet = null;
+  if (esAlq && hojaTipos) {
+    const c = CATEGORIAS.find((x) => x.id === hojaTipos);
+    if (c) sheet = (
+      <HojaCategorias titulo={c.label} ayuda="Elegí qué tipo buscás." valor={tipo}
+        todo={{ texto: `Todo en «${c.corto || c.label}»`, activo: !tipo, onClick: () => { onTipo?.(""); cerrar(); } }}
+        grupos={[{ items: c.tipos.map(itemTipoAlq) }]}
+        onElegir={(it) => { onTipo?.(it.id); cerrar(); }} onCerrar={cerrar} />
+    );
+  } else if (esAlq && hoja === "todas") {
+    sheet = (
+      <HojaCategorias titulo="Todos los alquileres" ayuda="Elegí qué tipo de alquiler buscás." valor={tipo}
+        todo={{ texto: "Todo en Alquileres", activo: !cat && !tipo, onClick: () => { onCambiar(""); cerrar(); } }}
+        grupos={CATEGORIAS.map((c) => ({ id: c.id, titulo: c.label, items: c.tipos.map(itemTipoAlq) }))}
+        onElegir={(it, g) => { onCambiar(g.id); onTipo?.(it.id); cerrar(); }} onCerrar={cerrar} />
+    );
+  } else if (!esAlq && hoja === "todas") {
+    sheet = (
+      <HojaCategorias titulo="Todos los oficios" ayuda="Elegí un oficio para ver esos profesionales." valor={cat} buscar="Buscar (ej: plomero)"
+        todo={{ texto: "Todo en Oficios", activo: !cat, onClick: () => { onCambiar(""); cerrar(); } }}
+        grupos={Object.entries(GRUPOS_RUBROS).map(([id, titulo]) => ({ id, titulo, items: RUBROS.filter((r) => r.grupo === id).map(itemRubro) })).filter((g) => g.items.length > 0)}
+        onElegir={(it) => { onCambiar(it.id); cerrar(); }} onCerrar={cerrar} />
+    );
+  } else if (!esAlq && hoja === "otros") {
+    sheet = (
+      <HojaCategorias titulo="Otros oficios" ayuda="Elegí un oficio para ver esos profesionales." valor={cat} buscar="Buscar (ej: fotógrafo)"
+        todo={{ texto: "Todo en Oficios", activo: !cat, onClick: () => { onCambiar(""); cerrar(); } }}
+        grupos={Object.entries(GRUPOS_RUBROS).map(([id, titulo]) => ({ id, titulo, items: RUBROS.filter((r) => r.grupo === id && !POPULARES.includes(r.id)).map(itemRubro) })).filter((g) => g.items.length > 0)}
+        onElegir={(it) => { onCambiar(it.id); cerrar(); }} onCerrar={cerrar} />
+    );
+  }
+
   return (
     <div className="mt-3">
-      <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
-        <div className="flex items-center justify-between mb-3">
-          <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: TINTA }}>Categorías</span>
-          {!esAlq && <button type="button" onClick={() => setHoja(true)} className="text-xs font-semibold px-2.5 py-1" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20 }}>Ver todas</button>}
-        </div>
-        <div className="flex gap-3.5 overflow-x-auto pb-1">
-          <button type="button" onClick={() => onCambiar("")} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-            <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: !cat ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "#EEF3FB", boxShadow: !cat ? "0 8px 18px rgba(var(--azul-rgb),0.33)" : "none", transition: "all .2s" }}>
-              <Grid3x3 size={21} color={!cat ? "#fff" : "var(--azul)"} />
-            </span>
-            <span className="text-[11px] text-center font-medium" style={{ color: !cat ? TINTA : "#2B3768" }}>Todos</span>
-          </button>
-          {items.map((c) => {
-            const act = cat === c.id, Icono = c.Icono;
-            return (
-              <button key={c.id} type="button" onClick={() => { if (esAlq) { onCambiar(c.id); setHojaTipos(c.id); } else onCambiar(act ? "" : c.id); }} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-                <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: act ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: act ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
-                  <Icono size={21} color={act ? "#fff" : c.color} />
-                </span>
-                <span className="text-[11px] text-center leading-tight font-medium" style={{ color: act ? TINTA : "#2B3768" }}>{c.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      {hoja && <HojaRubros rubro={cat} onCerrar={() => setHoja(false)} onElegir={(id) => { onCambiar(id); setHoja(false); }} />}
-      {hojaTipos && <HojaTiposAlquiler categoria={hojaTipos} tipo={tipo} onCerrar={() => setHojaTipos(null)} onElegir={(t) => { onTipo?.(t); setHojaTipos(null); }} />}
+      <TarjetaCategorias items={items} valor={cat} otros={otros}
+        onTodos={() => onCambiar("")}
+        onElegir={(c) => { if (esAlq) { onCambiar(c.id); setHojaTipos(c.id); } else onCambiar(cat === c.id ? "" : c.id); }}
+        onVerTodas={() => setHoja("todas")} />
+      {sheet}
     </div>
   );
 }
@@ -371,23 +373,6 @@ function FavMini({ id }) {
   const fav = useEsFavFicha("oficio", id);
   return <button type="button" aria-label={fav ? "Quitar de favoritos" : "Guardar en favoritos"} aria-pressed={fav} onClick={(e) => { e.stopPropagation(); alternarFavFicha("oficio", id); }} style={{ position: "absolute", top: 8, right: 8, width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Heart size={20} color={fav ? "#E5484D" : "#64748B"} fill={fav ? "#E5484D" : "none"} /></button>;
 }
-function HojaRubros({ rubro, onElegir, onCerrar }) {
-  const [b, setB] = useState("");
-  const lista = RUBROS.filter((r) => !b.trim() || r.label.toLowerCase().includes(b.trim().toLowerCase()));
-  return (
-    <Hoja titulo="Elegí un oficio" onCerrar={onCerrar}>
-      <div style={{ position: "relative", marginBottom: 12 }}>
-        <Search size={18} color="#6B7494" aria-hidden="true" style={{ position: "absolute", left: 14, top: 15 }} />
-        <input value={b} onChange={(e) => setB(e.target.value)} placeholder="Buscar (ej: plomero)" aria-label="Buscar un oficio" style={{ width: "100%", boxSizing: "border-box", minHeight: 48, border: "1px solid #CFD6E8", borderRadius: 12, padding: "11px 14px 11px 42px", font: "inherit", fontSize: "1rem" }} />
-      </div>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Chip activo={!rubro} onClick={() => onElegir("")}>Todos</Chip>
-        {lista.map((r) => <Chip key={r.id} activo={rubro === r.id} onClick={() => onElegir(r.id)}>{r.label}</Chip>)}
-      </div>
-    </Hoja>
-  );
-}
-
 const ORDEN_OFI = [
   { id: "recomendados", titulo: "Destacados", Icon: Star, color: "#E08A1E", fondo: "#FFF4E0" },
   { id: "recientes", titulo: "Más recientes", Icon: Clock, color: "#2A58FF", fondo: "#E8EEFF" },
@@ -419,7 +404,7 @@ function ListaOficios({ zone, q, cat: rubro, onAbrir }) {
         { id: "nuevos", texto: "Nuevos", activo: soloNuevos, onClick: () => setSoloNuevos((v) => !v), verde: true, icono: <Sparkles size={14} /> },
         { id: "hoy", texto: "Disponibles hoy", activo: soloHoy, onClick: () => setSoloHoy((v) => !v), verde: true, icono: <Zap size={14} /> },
       ]} />
-      {L.estado === "cargando" ? <Esqueleto /> : L.estado === "error" ? <EstadoError titulo="No pudimos cargar los oficios" mensaje="Revisá tu conexión e intentá de nuevo." onReintentar={L.reintentar} /> : lista.length === 0 ? (
+      {L.estado === "cargando" ? <Esqueleto alto={190} clases="grid gap-3 sm:grid-cols-2" /> : L.estado === "error" ? <EstadoError titulo="No pudimos cargar los oficios" mensaje="Revisá tu conexión e intentá de nuevo." onReintentar={L.reintentar} /> : lista.length === 0 ? (
         <Vacio titulo={`No hay ${nombre ? nombre.toLowerCase() + "s" : "profesionales"} en ${z.localidad}`} texto={conFiltros ? "Probá con otro oficio, otro filtro, o cambiá de zona." : "Todavía nadie publicó su perfil acá. Si hacés este trabajo, publicá el tuyo con el botón +."} />
       ) : (<>
         <div className="grid gap-3 sm:grid-cols-2">{lista.map((o) => <TarjetaPersona key={o.id} o={o} onAbrir={abrir} />)}</div>

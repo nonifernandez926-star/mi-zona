@@ -426,7 +426,7 @@ export const compartidoApi = {
 // Fase 7 · Comunidad. Gratis. Cada publicación la ven los vecinos del mismo departamento; todo lo decide el servidor.
 const C = (id, resto = "") => `/comunidad/${encodeURIComponent(id)}${resto}`;
 export const comunidadApi = {
-  estado: () => pedirJSON("/comunidad/estado", { method: "GET" }, {}).then((r) => !!r.habilitada).catch(() => false), // false = la sección todavía no está disponible
+  estado: () => pedirJSON("/comunidad/estado", { method: "GET" }, {}).then((r) => !!r.habilitada).catch(() => null), // true = lista · false = apagada en el servidor («Próximamente») · null = no se pudo consultar (sin conexión o servidor dormido)
   listar: (filtros) => getUsuarioJSON(`/comunidad?${consulta(filtros)}`), // { publicaciones, total, pagina, hayMas, departamento }
   ver: (id) => getUsuarioJSON(C(id)), // { publicacion, esMia }
   mias: () => getUsuarioJSON("/comunidad/mias").then((r) => r.publicaciones),

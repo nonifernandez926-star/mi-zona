@@ -108,3 +108,17 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 - **Diseño como Mi Asistente:** tipo de letra del sistema (Roboto en Android; ya no se baja Manrope de internet, ni en las páginas legales), fondo y tinta de Mi Asistente, barra de abajo flotante con la pestaña activa en una píldora celeste, cabeceras con esquinas redondeadas, botones con degradado azul y esquinas de 16.
 - **Pendiente / no verificado:** no se pudo compilar ni probar (sin internet); revisé a mano que las llaves de los archivos estén balanceadas. Probalo en el celular, sobre todo la barra de abajo, la lista del selector y la subpantalla de «Otros». Otras pantallas (detalle de negocio, Ajustes, chats) conservan su estilo anterior salvo lo anterior.
 
+
+---
+
+## Fase 19 (31/10/2026): hojas iguales en las tres secciones, Comunidad en Chats, línea clara y «Cerrar sesión»
+
+- **Una sola subpantalla para Negocios, Alquileres y Oficios** (`src/hojaCategorias.jsx`): grilla de 3 columnas con tarjetas (cuadrado de color + ícono + nombre), la elegida con borde azul y fondo celeste, y siempre una primera opción «Todo en ...». También es común la tarjeta «Categorías» con «Ver todas» y el botón «Otros» al final (`TarjetaCategorias`). Íconos y colores de los tipos de alquiler y de los 34 rubros de Oficios: `src/iconosFichas.js`.
+- **Corrección de fondo:** las hojas de Inicio se dibujaban dentro de un contenedor con z-index bajo y la barra de abajo tapaba las últimas opciones. Ahora se dibujan en `<body>`.
+- **Alquileres:** Viviendas · Eventos · Herramientas · Otros (cada una abre sus tipos). «Ver todas» abre todos los tipos agrupados. **Oficios:** diez rubros + «Otros»; «Ver todas» y «Otros» tienen buscador y están agrupados.
+- **Negocios:** «Todo en «Otros»» usa el valor especial `__otros` (filtra en la web, también en el mapa). Turismo ya no pierde el fondo de su ícono.
+- **Comunidad en Chats:** la tarjeta se ve siempre; si el servidor la tiene apagada muestra «Próximamente». `GET /api/comunidad/estado` ahora distingue apagada (`false`) de «no se pudo consultar» (`null`, sin conexión o servidor dormido), y se vuelve a consultar al entrar a Chats/Comunidad. Botón grande «Publicar ficha» arriba de Comunidad con todos los tipos. «Atrás» de Android vuelve a Chats.
+- **Línea clara:** (1) tira del azul `#0B1437` detrás de la barra flotante (`BottomNav`); (2) en `twa-manifest.json.plantilla` se agregó `navigationDividerColor` (la línea la dibuja Android) y las variantes oscuras. Requiere una versión nueva en Play.
+- **Menú lateral:** «Cerrar sesión» (rojo, solo con sesión) debajo de «Soporte», con la misma confirmación de Ajustes.
+- Se limpió la doble coma `UserPlus,,` del import de lucide-react que seguía en `App.jsx`.
+- **Sin probar:** no se pudo correr `npm install` ni `npm run build` (sin acceso al registro de paquetes en el entorno de trabajo). Solo se revisó con esbuild (sintaxis e imports) y eslint (identificadores).

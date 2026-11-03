@@ -33,6 +33,7 @@ import { PerfilPublicoScreen } from "./perfil.jsx";
 import { DetalleOficio, FormularioOficio, PasoOficioActivado, leerZona, Pagina, Hoja, Campo, Chip as ChipForm, botonPrincipal, botonSecundario, caja } from "./oficios.jsx";
 import { Seccion, Interruptor, Avance, EntradaIcono, useSubidas, SelectorLogo, GaleriaFotos, EditorHorarios } from "./formKit.jsx";
 import DialogoAdvertencia from "./componentes/DialogoAdvertencia.jsx";
+import { TarjetaCategorias, HojaCategorias } from "./hojaCategorias.jsx";
 import ListaInicio, { SelectorModo, CategoriasInicio, BarraFiltros, PLACEHOLDER, leerModo, guardarModo, borrarVistosFichas } from "./inicio.jsx";
 import { DetalleAlquiler, FormularioAlquiler, PasoAlquilerActivado } from "./alquileres.jsx";
 import { PasoNegocioActivado } from "./misFichas.jsx";
@@ -88,6 +89,13 @@ const CATEGORIES = [
   { id: "religion", label: "Religión y artículos religiosos", icon: Church, color: "#6E5A8A", quick: false },
 ];
 const QUICK_CATEGORIES = CATEGORIES.filter((c) => c.quick);
+// «Todo en Otros» (Negocios): todos los rubros que no están en la fila de arriba. Es un valor especial de activeCat.
+const CAT_OTROS = "__otros";
+const INFO_OTROS = { id: CAT_OTROS, label: "Otros", icon: Package, color: "#13897F" };
+// Lo que reciben las tarjetas y las subpantallas compartidas (src/hojaCategorias.jsx)
+const ITEMS_RAPIDOS = QUICK_CATEGORIES.map((c) => ({ id: c.id, label: c.label.split(" ")[0], Icono: c.icon, color: c.color }));
+const ITEMS_OTROS = CATEGORIES.filter((c) => !c.quick).map((c) => ({ id: c.id, label: c.label, Icono: c.icon, color: c.color }));
+const ITEMS_TODOS = CATEGORIES.map((c) => ({ id: c.id, label: c.label, Icono: c.icon, color: c.color }));
 
 // Preguntas específicas según el rubro elegido, para el formulario de alta de negocio.
 // Los rubros más comunes tienen preguntas propias; el resto usa un set genérico.
@@ -173,7 +181,7 @@ const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "
 /* ---------- utilidades ---------- */
 
 function catInfo(id) {
-  return CATEGORIES.find((c) => c.id === id);
+  return id === CAT_OTROS ? INFO_OTROS : CATEGORIES.find((c) => c.id === id);
 }
 /* ---------- apariencia: claro, oscuro o automático (según el celular) ---------- */
 function getTema() { return leerApariencia().tema; }
@@ -624,7 +632,7 @@ function filtrarParaMapa(businesses, zone, f, favorites) {
   return businesses.filter((b) => {
     if (b.kind === "job" || b.status !== "active" || !enListados(b)) return false;
     if (b.zone !== zone) return false;
-    if (f.cat && b.cat !== f.cat) return false;
+    if (f.cat === CAT_OTROS ? QUICK_CATEGORIES.some((q) => q.id === b.cat) : f.cat && b.cat !== f.cat) return false;
     if (f.abiertos && !isOpenNow(b.weekHours)) return false;
     if (f.delivery && !b.delivery) return false;
     if (f.promos && activeDiscounts(b).length === 0) return false;
@@ -1326,40 +1334,12 @@ function AllPhotosModal({ photos, cat, onOpenPhoto, onClose }) {
   );
 }
 
+// «Ver todas»: la misma subpantalla que «Otros», pero con todos los rubros (también la usa el filtro «Rubro» del mapa)
 function CategoryModal({ activeCat, onSelect, onClose }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" style={{ background: "#0B1437cc" }} onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-lg max-h-[80vh] overflow-y-auto p-5" style={{ borderRadius: "16px 16px 0 0" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 18 }}>Todos los rubros</h2>
-          <button onClick={onClose} aria-label="Cerrar" style={{ minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><X size={20} aria-hidden="true" /></button>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          <button
-            onClick={() => onSelect(null)}
-            className="flex flex-col items-center gap-1.5 py-3 px-2 text-center"
-            style={{ borderRadius: 12, backgroundColor: activeCat === null ? "#0B1437" : "#F5F4EF" }}
-          >
-            <Grid3x3 size={22} color={activeCat === null ? "#fff" : "#0B1437"} />
-            <span className="text-xs font-medium" style={{ color: activeCat === null ? "#fff" : "#0B1437" }}>Todos</span>
-          </button>
-          {CATEGORIES.map((c) => {
-            const Icon = c.icon;
-            const active = activeCat === c.id;
-            return (
-              <button
-                key={c.id} onClick={() => onSelect(c.id)}
-                className="flex flex-col items-center gap-1.5 py-3 px-2 text-center"
-                style={{ borderRadius: 12, backgroundColor: active ? c.color : "#F5F4EF" }}
-              >
-                <Icon size={22} color={active ? "#fff" : c.color} />
-                <span className="text-xs font-medium leading-tight" style={{ color: active ? "#fff" : "#0B1437" }}>{c.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <HojaCategorias titulo="Todos los rubros" ayuda="Elegí un rubro para ver esos negocios." valor={activeCat}
+      todo={{ texto: "Todo en Negocios", activo: !activeCat, onClick: () => onSelect(null) }}
+      grupos={[{ items: ITEMS_TODOS }]} onElegir={(it) => onSelect(it.id)} onCerrar={onClose} />
   );
 }
 
@@ -2064,7 +2044,7 @@ function BarraTitulo({ titulo, sub, notifSinLeer = 0, onOpenNotificaciones, busc
 
 /* ---------- header público ---------- */
 
-function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, catFicha, onCatFicha, tipoFicha, onTipoFicha, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, esDueno, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
+function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat, onOpenAllCats, modo, onCambiarModo, catFicha, onCatFicha, tipoFicha, onTipoFicha, onOpenComunidad, onOpenOwner, onHerramientas, onAjustes, onAyuda, onSoporte, esDueno, usuario, onCerrarSesion, notifSinLeer = 0, campanaSacude = 0, onOpenNotificaciones }) {
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [pendingZone, setPendingZone] = useState(zone);
   const [hojaOtros, setHojaOtros] = useState(false); // subpantalla con el resto de los rubros de Negocios
@@ -2168,6 +2148,8 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
           onSoporte={() => { setShowDrawer(false); onSoporte(); }}
           onOpenOwner={() => { setShowDrawer(false); onOpenOwner(); }}
           esDueno={esDueno}
+          conSesion={!!usuario}
+          onCerrarSesion={() => { setShowDrawer(false); onCerrarSesion?.(); }}
         />
       )}
 
@@ -2197,62 +2179,15 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
         {modo !== "negocios" && <CategoriasInicio modo={modo} cat={catFicha} onCambiar={onCatFicha} tipo={tipoFicha} onTipo={onTipoFicha} />}
         {modo === "negocios" && (
           <div className="mt-3">
-        <div className="bg-white px-4 pt-3.5 pb-3" style={{ borderRadius: 22, border: "1px solid #E3E7F1", boxShadow: "0 12px 32px rgba(11,20,55,0.12)" }}>
-          <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 600, fontSize: 15, color: "#0B1437" }}>Categorías</span>
-            <button onClick={onOpenAllCats} className="text-xs font-semibold px-2.5 py-1" style={{ color: "var(--azul)", background: "var(--azul-suave)", borderRadius: 20 }}>Ver todas</button>
-          </div>
-          <div className="flex gap-3.5 overflow-x-auto pb-1">
-            <button onClick={() => setActiveCat(null)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-              <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: activeCat === null ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "#EEF3FB", boxShadow: activeCat === null ? "0 8px 18px rgba(var(--azul-rgb),0.33)" : "none", transition: "all .2s" }}>
-                <Grid3x3 size={21} color={activeCat === null ? "#fff" : "var(--azul)"} />
-              </span>
-              <span className="text-[11px] text-center font-medium" style={{ color: activeCat === null ? "#0B1437" : "#2B3768" }}>Todos</span>
-            </button>
-            {QUICK_CATEGORIES.map((c) => {
-              const Icon = c.icon;
-              const active = activeCat === c.id;
-              return (
-                <button key={c.id} onClick={() => setActiveCat(active ? null : c.id)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-                  <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : `${c.color}17`, boxShadow: active ? `0 8px 18px ${c.color}55` : "none", transition: "all .2s" }}>
-                    <Icon size={21} color={active ? "#fff" : c.color} />
-                  </span>
-                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: active ? "#0B1437" : "#2B3768" }}>{c.label.split(" ")[0]}</span>
-                </button>
-              );
-            })}
-            {/* «Otros»: abre una subpantalla con todos los demás rubros (no se despliegan debajo de los filtros) */}
-            {(() => {
-              const otroActivo = !!activeCat && !QUICK_CATEGORIES.some((q) => q.id === activeCat);
-              return (
-                <button onClick={() => setHojaOtros(true)} className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 64 }}>
-                  <span className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: 18, background: otroActivo ? "linear-gradient(135deg,#13897F,#13897Fcc)" : "#13897F17" }}>
-                    <Package size={21} color={otroActivo ? "#fff" : "#13897F"} />
-                  </span>
-                  <span className="text-[11px] text-center leading-tight font-medium" style={{ color: otroActivo ? "#0B1437" : "#2B3768" }}>Otros</span>
-                </button>
-              );
-            })()}
-          </div>
-        </div>
+            <TarjetaCategorias items={ITEMS_RAPIDOS} valor={activeCat} onTodos={() => setActiveCat(null)} onElegir={(c) => setActiveCat(activeCat === c.id ? null : c.id)} onVerTodas={onOpenAllCats}
+              otros={{ activo: !!activeCat && !QUICK_CATEGORIES.some((q) => q.id === activeCat), onClick: () => setHojaOtros(true) }} />
           </div>
         )}
+        {/* «Otros»: abre una subpantalla con todos los demás rubros (no se despliegan debajo de los filtros) */}
         {hojaOtros && (
-          <Hoja titulo="Otros rubros" onCerrar={() => setHojaOtros(false)}>
-            <p className="text-sm mb-3" style={{ color: "#5B6482" }}>Elegí un rubro para ver esos negocios.</p>
-            <div className="grid grid-cols-3 gap-2.5 mb-2">
-              {CATEGORIES.filter((c) => !c.quick).map((c) => {
-                const Icon = c.icon; const act = activeCat === c.id;
-                return (
-                  <button key={c.id} type="button" onClick={() => { setActiveCat(c.id); setHojaOtros(false); }} aria-pressed={act} className="flex flex-col items-center justify-start gap-1.5 text-center"
-                    style={{ minHeight: 96, padding: "12px 6px", borderRadius: 18, border: `1.5px solid ${act ? "var(--azul)" : "#E3E7F1"}`, background: act ? "var(--azul-suave)" : "#fff" }}>
-                    <span className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 13, background: `${c.color}17` }}><Icon size={19} color={c.color} aria-hidden="true" /></span>
-                    <span className="text-[11px] leading-tight font-medium" style={{ color: act ? "var(--azul)" : "#2B3768" }}>{c.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </Hoja>
+          <HojaCategorias titulo="Otros rubros" ayuda="Elegí un rubro para ver esos negocios." valor={activeCat}
+            todo={{ texto: "Todo en «Otros»", activo: activeCat === CAT_OTROS, onClick: () => { setActiveCat(CAT_OTROS); setHojaOtros(false); } }}
+            grupos={[{ items: ITEMS_OTROS }]} onElegir={(it) => { setActiveCat(it.id); setHojaOtros(false); }} onCerrar={() => setHojaOtros(false)} />
         )}
         {onOpenComunidad && (
           <button onClick={onOpenComunidad} className="flex items-center gap-2.5 text-left bg-white w-full mt-3" style={{ borderRadius: 18, border: "1px solid #E3E7F1", padding: "11px 12px", minHeight: 64, boxShadow: "0 4px 14px rgba(11,20,55,0.06)" }}>
@@ -2268,7 +2203,7 @@ function PublicHeader({ zone, setZone, query, setQuery, activeCat, setActiveCat,
   );
 }
 
-function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner, esDueno }) {
+function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, onOpenOwner, esDueno, conSesion, onCerrarSesion }) {
   const Item = ({ Icon, label, onClick, danger }) => (
     <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3 text-left" style={{ color: danger ? "#9A3B34" : "#0B1437" }}>
       <Icon size={18} color={danger ? "#9A3B34" : "#0B1437"} />
@@ -2305,6 +2240,8 @@ function DrawerMenu({ onClose, onHerramientas, onAjustes, onAyuda, onSoporte, on
           }} />
           <Item Icon={MessageCircle} label="Centro de ayuda" onClick={onAyuda} />
           <Item Icon={Send} label="Soporte" onClick={onSoporte} />
+          {/* solo con la sesión iniciada; pide la misma confirmación que Ajustes */}
+          {conSesion && <Item Icon={LogOut} label="Cerrar sesión" onClick={onCerrarSesion} danger />}
         </div>
         <button onClick={onClose} className="flex items-center gap-1.5 justify-center text-xs font-medium py-4" style={{ color: "#5B6482", borderTop: "1px solid #EEF0F6" }}>
           <X size={13} /> Cerrar menú
@@ -2357,8 +2294,10 @@ function IlustracionChats() {
   );
 }
 
-function ChatsScreen({ businesses, onOpenChat, onIrInicio, onAbrirComunidad, query = "" }) {
+function ChatsScreen({ businesses, onOpenChat, onIrInicio, onAbrirComunidad, comunidadHabilitada = true, query = "" }) {
   const [hojaMas, setHojaMas] = useState(false);
+  const [avisoComunidad, setAvisoComunidad] = useState(false);
+  const comunidadProximamente = comunidadHabilitada === false; // apagada en el servidor: la tarjeta se ve igual, con «Próximamente»
   const [avisoPronto, setAvisoPronto] = useState("");
   const conversaciones = useMemo(() => {
     return getAllConversationIds()
@@ -2383,15 +2322,19 @@ function ChatsScreen({ businesses, onOpenChat, onIrInicio, onAbrirComunidad, que
   return (
     <div>
       {/* Comunidad: fichas de la zona (mascotas y objetos perdidos, avisos, regalos, eventos...). Solo se publican fichas, no se escribe. */}
-      {onAbrirComunidad && !query.trim() && (
-        <button type="button" onClick={onAbrirComunidad} className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white mb-4" style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", minHeight: 78 }}>
-          <span className="flex items-center justify-center shrink-0" style={{ width: 50, height: 50, borderRadius: 16, background: "linear-gradient(135deg,#1E8A55,#2C9A5F)", boxShadow: "0 8px 16px -6px rgba(30,138,85,.55)" }}><Users size={23} color="#fff" aria-hidden="true" /></span>
-          <span className="flex-1 min-w-0">
-            <span className="block" style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 16, color: "#0B1437" }}>Comunidad</span>
-            <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>Fichas de tu zona: mascotas y objetos perdidos, avisos, regalos y eventos.</span>
-          </span>
-          <ChevronDown size={16} color="#B9C0D6" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />
-        </button>
+      {!query.trim() && (
+        <div className="mb-4">
+          <button type="button" onClick={() => { if (comunidadProximamente) setAvisoComunidad((v) => !v); else onAbrirComunidad?.(); }} aria-disabled={comunidadProximamente || undefined}
+            className="w-full flex items-center gap-3.5 p-3.5 text-left bg-white" style={{ borderRadius: 20, border: "1px solid #edf0f8", boxShadow: "0 3px 12px rgba(15,22,55,.055)", minHeight: 78 }}>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 50, height: 50, borderRadius: 16, background: "linear-gradient(135deg,#1E8A55,#2C9A5F)", boxShadow: "0 8px 16px -6px rgba(30,138,85,.55)", opacity: comunidadProximamente ? 0.85 : 1 }}><Users size={23} color="#fff" aria-hidden="true" /></span>
+            <span className="flex-1 min-w-0">
+              <span className="flex items-center gap-2"><span style={{ fontFamily: "var(--fuente-titulo)", fontWeight: 800, fontSize: 16, color: "#0B1437" }}>Comunidad</span>{comunidadProximamente && <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: "#F5F1E6", color: "#8A5B12", borderRadius: 6 }}>Próximamente</span>}</span>
+              <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.35 }}>Fichas de tu zona: mascotas y objetos perdidos, avisos, regalos y eventos.</span>
+            </span>
+            {!comunidadProximamente && <ChevronDown size={16} color="#B9C0D6" className="shrink-0" style={{ transform: "rotate(-90deg)" }} />}
+          </button>
+          {comunidadProximamente && avisoComunidad && <p role="status" className="text-sm mt-2 p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510" }}>Comunidad llega muy pronto: vas a poder publicar y ver fichas de tu zona.</p>}
+        </div>
       )}
       {conversaciones.length === 0 ? (
         <div className="text-center flex flex-col items-center" style={{ paddingTop: 36 }}>
@@ -4161,6 +4104,10 @@ function BottomNav({ active, onInicio, onChats, onAdd, onNegocio, onHerramientas
     );
   };
   return (
+    <>
+    {/* Franja de abajo: la barra flota 10px sobre el borde y por ahí se asomaba el fondo claro de la pantalla (una línea blanca contra la barra
+        de Android). Esta tira del mismo azul que la barra de Android la rellena y queda detrás de la barra blanca (no cambia cómo se ve). */}
+    <div aria-hidden="true" data-conservar-color className="fixed left-0 right-0 bottom-0 pointer-events-none" style={{ zIndex: 39, height: "calc(11px + env(safe-area-inset-bottom, 0px))", background: "#0B1437" }} />
     <div className="fixed bottom-0 left-0 right-0 z-40" style={{ left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", background: "#fff", borderRadius: 24, border: "1px solid #edf0f8", boxShadow: "0 14px 38px rgba(15,22,55,0.18)" }}>
       {/* botón «+» elevado, centrado sobre la barra: agregar negocio, oficio o alquiler. Va dentro de la barra (position absolute) para no moverse nunca. */}
       <button
@@ -4183,6 +4130,7 @@ function BottomNav({ active, onInicio, onChats, onAdd, onNegocio, onHerramientas
         <Item id="ajustes" label="Ajustes" Icon={Settings} onClick={onAjustes} />
       </nav>
     </div>
+    </>
   );
 }
 
@@ -4972,13 +4920,22 @@ export default function MiZona() {
   const [showRanking, setShowRanking] = useState(false);
   const [showMapa, setShowMapa] = useState(false);
   const [showFavoritos, setShowFavoritos] = useState(false);
-  // Comunidad (Fase 7): se ve solo si el servidor la tiene habilitada (se enciende al completar la moderación, Fase 8)
-  const [comunidadHabilitada, setComunidadHabilitada] = useState(false);
+  // Comunidad (Fase 7): el servidor la enciende con COMUNIDAD_HABILITADA=true y la moderación configurada (Fase 8).
+  // true = lista · false = apagada (en Chats se muestra la tarjeta con «Próximamente») · null = todavía no se sabe (sin conexión o servidor dormido)
+  const [comunidadHabilitada, setComunidadHabilitada] = useState(null);
   const [comunidadVer, setComunidadVer] = useState(null); // { id }
   const [comunidadForm, setComunidadForm] = useState(null); // { inicial, tipo, titulo }
   const [comunidadPublicada, setComunidadPublicada] = useState(null); // publicación recién creada
   const [comunidadVersion, setComunidadVersion] = useState(0); // sube cuando algo cambia, para refrescar la lista
   useEffect(() => { comunidadApi.estado().then(setComunidadHabilitada); }, []);
+  // Si todavía no se sabe o estaba apagada, se vuelve a preguntar al entrar a Chats o a Comunidad (así se nota apenas se enciende en el servidor)
+  useEffect(() => {
+    if (comunidadHabilitada === true || (activeTab !== "chats" && activeTab !== "comunidad")) return undefined;
+    let vigente = true;
+    comunidadApi.estado().then((v) => { if (vigente) setComunidadHabilitada(v); });
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
   const [buscador, setBuscador] = useState(null); // { inicial } cuando está abierto el buscador único (Fase 6)
   const [pasoNegocio, setPasoNegocio] = useState(null); // negocio recién activado: se le muestra el paso de compartir
   // Mis pedidos: lista con el estado de cada pedido (viene de Mi Asistente) y su recarga
@@ -5174,7 +5131,7 @@ export default function MiZona() {
     let list = businesses.filter((b) => {
       if (b.kind === "job") return false;
       if (b.status !== "active" || !enListados(b)) return false;
-      const matchCat = activeCat ? b.cat === activeCat : true;
+      const matchCat = activeCat === CAT_OTROS ? !QUICK_CATEGORIES.some((q) => q.id === b.cat) : activeCat ? b.cat === activeCat : true;
       const matchZone = b.zone === zone;
       const haystack = [b.name, b.desc, ...(b.services || []), ...(b.specialties || [])].join(" ").toLowerCase();
       const matchQ = q ? haystack.includes(q) : true;
@@ -5248,6 +5205,7 @@ export default function MiZona() {
 
   // Botón "atrás" de Android: cierra la pantalla o ventana de más arriba en vez de salir de la app (de abajo hacia arriba)
   useAtrasDeCapas([
+    [activeTab === "comunidad", () => irATab("chats")], // «atrás» desde Comunidad vuelve a Chats
     [!!selectedId, () => setSelectedId(null)],
     [showFavoritos, () => setShowFavoritos(false)],
     [!!buscador, () => setBuscador(null)],
@@ -5541,6 +5499,7 @@ export default function MiZona() {
           onOpenOwner={() => (esDueno ? irATab("negocio") : irATab("herramientas"))}
           onHerramientas={() => irATab(esDueno ? "ajustes" : "herramientas")}
           esDueno={esDueno}
+          usuario={usuario} onCerrarSesion={() => setConfirmarSalida(true)}
           onAjustes={() => irATab("ajustes")}
           onAyuda={() => { irATab("ajustes"); setSubAjustes("ayuda"); }}
           onSoporte={() => { irATab("ajustes"); setSubAjustes("soporte"); }}
@@ -5828,11 +5787,12 @@ export default function MiZona() {
             businesses={businesses}
             onOpenChat={abrirChat}
             onIrInicio={() => irATab("inicio")}
-            onAbrirComunidad={comunidadHabilitada ? abrirComunidad : undefined}
+            comunidadHabilitada={comunidadHabilitada}
+            onAbrirComunidad={abrirComunidad}
             query={chatQuery}
           />
         ) : activeTab === "comunidad" ? (
-          comunidadHabilitada ? (
+          comunidadHabilitada !== false ? (
             <>
               <BotonVolver texto="Volver a Chats" onClick={() => irATab("chats")} />
               <ComunidadScreen
@@ -5841,7 +5801,10 @@ export default function MiZona() {
               />
             </>
           ) : (
-            <EstadoVacio icono={Users} titulo="Comunidad llega muy pronto" mensaje="Va a ser el lugar donde los vecinos de tu zona publiquen avisos, eventos, regalos y más." />
+            <>
+              <BotonVolver texto="Volver a Chats" onClick={() => irATab("chats")} />
+              <EstadoVacio icono={Users} titulo="Comunidad llega muy pronto" mensaje="Va a ser el lugar donde los vecinos de tu zona publiquen fichas: avisos, perdidos, regalos, eventos y más." />
+            </>
           )
         ) : activeTab === "negocio" ? (
           <NegocioScreen
