@@ -1,3 +1,5 @@
+> **Fase 22: los sorteos y rifas se quitaron de la app** (política de Google Play). Este documento queda como historia por si más adelante se vuelven a agregar; el código completo está en el zip de la Fase 21.
+
 # Sorteos y rifas en Mi Zona
 
 > Resumen orientativo, **no es asesoramiento legal**. Las reglas cambian por provincia: confirmá siempre con la lotería o el ente de juegos de azar de tu provincia (en Tucumán, la Caja Popular de Ahorros; dato a verificar).

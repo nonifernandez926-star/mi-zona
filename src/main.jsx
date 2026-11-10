@@ -18,7 +18,7 @@ class AvisoDeError extends React.Component {
   render() {
     if (!this.state.fallo) return this.props.children;
     return (
-      <div role="alert" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 28, textAlign: "center", background: "#0B1437", color: "#fff", fontFamily: "Manrope, system-ui, sans-serif" }}>
+      <div role="alert" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 28, textAlign: "center", background: "#0B1437", color: "#fff", fontFamily: "Manrope, system-ui, sans-serif" }}>
         <div style={{ fontSize: 44 }} aria-hidden="true">📍</div>
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Algo salió mal</h1>
         <p style={{ margin: 0, maxWidth: 320, lineHeight: 1.5, color: "#BBD1FB" }}>No pudimos mostrar esta pantalla. Tus datos están a salvo. Probá de nuevo.</p>

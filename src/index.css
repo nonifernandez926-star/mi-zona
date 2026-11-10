@@ -55,8 +55,8 @@ input, textarea, select { font-size: 16px; }
 html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; color-scheme: light; }
 body {
   font-feature-settings: "cv11", "ss01", "tnum" 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   overscroll-behavior-y: none;
+  min-height: 100dvh; /* sin relleno abajo: cada pantalla ya cuida su propio margen inferior (no queda una franja clara al final) */
 }
 h1, h2, h3 { font-weight: 800; line-height: 1.15; text-wrap: balance; }
 p { text-wrap: pretty; }

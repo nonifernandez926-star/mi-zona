@@ -40,7 +40,7 @@ export function BotonPlan({ estado, vence, onClick }) {
       <p className="text-sm mb-1.5" style={{ color: "#4A5372", lineHeight: 1.4 }}>
         {pendiente ? "Todavía no se muestra: activala con tu mes gratis o un plan." : estado === "vencida" ? `Venció el ${fmtVence(vence)}. No se borró nada: al renovar vuelve a mostrarse.` : vence ? `Activa hasta el ${fmtVence(vence)}.` : ""}
       </p>
-      <button type="button" onClick={onClick} style={{ ...(pendiente || estado === "vencida" ? botonPrincipal : botonSecundario), width: "100%", minHeight: 48 }}><CalendarPlus size={17} aria-hidden="true" /> {pendiente ? "Activar mi ficha" : estado === "vencida" ? "Renovar" : "Agregar tiempo"}</button>
+      <button type="button" onClick={onClick} style={{ ...(pendiente || estado === "vencida" ? botonPrincipal : botonSecundario), width: "100%", minHeight: 48 }}><CalendarPlus size={17} aria-hidden="true" /> {pendiente ? "Activar mi ficha" : estado === "vencida" ? "Renovar" : "Extender publicación"}</button>
     </div>
   );
 }

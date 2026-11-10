@@ -23,7 +23,7 @@ const ROTULO = { negocio: "tu negocio", oficio: "tu ficha de oficios", alquiler:
 const TITULO_TIPO = { negocio: "Negocio", oficio: "Ficha de oficios", alquiler: "Ficha de alquiler" };
 
 // Precios de referencia por mes (los mismos que server/utils/planes.js). Se usan si el servidor no responde o manda datos incompletos.
-const BASE_MES = { negocio: 3000, oficio: 1000, alquiler: 2000 };
+const BASE_MES = { negocio: 2000, oficio: 1000, alquiler: 2000 };
 const PLANES_FIJOS = [["1_mes", 1, "1 mes", 0, "1m"], ["3_meses", 3, "3 meses", 10, "3m"], ["6_meses", 6, "6 meses", 20, "6m"]];
 function planesDeRespaldo(tipo) {
   const base = BASE_MES[tipo] || BASE_MES.negocio;
@@ -103,6 +103,7 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
   };
 
   const base = vencimientoActual && vencimientoActual > hoyISO() ? vencimientoActual : hoyISO();
+  const esperando = !cubierto && cargando && estado === null; // todavía no sabemos si ya usó el mes gratis: no se muestra nada que después cambie
   const gratisDisponible = !gratisUsado && (estado ? !!estado.mesGratisDisponible?.[tipo] : true); // sin respuesta del servidor se ofrece y el servidor decide
   const diasDisp = estado?.invitaciones?.diasDisponibles || 0;
   const elegido = planes[plan];
@@ -137,7 +138,7 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
   const boton = (fondo, extra = {}) => ({ width: "100%", minHeight: 52, borderRadius: 16, fontSize: "1rem", fontWeight: 700, color: "#fff", background: fondo, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: trabajando ? 0.6 : 1, ...extra });
   const VERDE = "linear-gradient(180deg,#38B06E,#2C9A5F)", AZUL = "linear-gradient(180deg,var(--azul-g1),var(--azul-g2))";
   const hayPagoPrincipal = !gratisDisponible;
-  const textoPagar = elegido ? `Pagar con Google Play · ${precioMostrado(elegido)}` : "Pagar con Google Play";
+  const textoPagar = elegido ? `Pagar ${precioMostrado(elegido)}` : "Continuar al pago";
 
   const BotonPagar = ({ principal }) => (
     <>
@@ -145,7 +146,7 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
         style={principal ? boton(AZUL, { opacity: trabajando || !puedePagar ? 0.5 : 1 }) : boton("#fff", { color: puedePagar ? "var(--azul)" : "#5B6482", border: `2px solid ${puedePagar ? "var(--azul)" : "#CFD6E8"}`, opacity: trabajando ? 0.6 : 1, background: puedePagar ? "#F1F6FF" : "#F3F5FA" })}>
         {trabajando && dialogo === null && puedePagar ? <><Loader2 size={17} className="animate-spin" aria-hidden="true" /> Procesando...</> : textoPagar}
       </button>
-      {enPlay === false && <p className="flex items-start gap-1.5 mt-2" style={{ fontSize: 13.5, color: "#4A5372", lineHeight: 1.4 }}><Info size={15} className="shrink-0" style={{ marginTop: 1 }} aria-hidden="true" /> Disponible en la app de Mi Zona de Google Play. Desde el navegador podés elegir el plan, pero el pago se hace en la app.</p>}
+      {enPlay === false && <p className="flex items-start gap-1.5 mt-2" style={{ fontSize: 13.5, color: "#4A5372", lineHeight: 1.4 }}><Info size={15} className="shrink-0" style={{ marginTop: 1 }} aria-hidden="true" /> Para pagar, abrí Mi Zona desde la app de Google Play. Acá podés ver y elegir el plan.</p>}
     </>
   );
 
@@ -155,7 +156,7 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
         <div className="relative px-5 pt-4 pb-4 text-white" style={{ background: "linear-gradient(135deg,#0B1437 0%,#1B3A8C 100%)" }}>
           <button type="button" onClick={onClose} disabled={trabajando} aria-label="Cerrar" className="absolute top-3 right-3 flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,.14)" }}><X size={20} color="#fff" /></button>
           <p className="text-[12px] font-semibold uppercase" style={{ letterSpacing: ".12em", opacity: .8 }}>{TITULO_TIPO[tipo]}</p>
-          <h2 style={{ ...TITULO, fontSize: 22, color: "#fff", marginTop: 2, paddingRight: 52, lineHeight: 1.15 }}>{vencimientoActual && vencimientoActual >= hoyISO() ? "Agregar tiempo" : "Publicá tu ficha"}</h2>
+          <h2 style={{ ...TITULO, fontSize: 22, color: "#fff", marginTop: 2, paddingRight: 52, lineHeight: 1.15 }}>{vencimientoActual && vencimientoActual >= hoyISO() ? "Extender publicación" : "Publicá tu ficha"}</h2>
           {nombre && <p className="text-sm mt-1.5" style={{ opacity: .9, overflowWrap: "anywhere", paddingRight: 52 }}>{nombre}</p>}
         </div>
 
@@ -166,6 +167,11 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
               <p className="text-[15px]" style={{ lineHeight: 1.55 }}>Con esta cuenta de Google no pagás Mi Zona: tu negocio se publica sin costo{hastaCubierto ? ` hasta el ${fmtFecha(hastaCubierto)}` : ""}.</p>
             </div>
           ) : (
+            esperando ? (
+              <div role="status" className="flex flex-col items-center justify-center gap-3" style={{ minHeight: 220, color: "#4A5372" }}>
+                <Loader2 size={26} className="animate-spin" aria-hidden="true" /><span className="text-[14.5px]">Cargando tus opciones...</span>
+              </div>
+            ) : (
             <>
               {vencimientoActual && <p className="text-[15px] mb-3" style={{ color: "#2B3768", lineHeight: 1.5 }}>{vencimientoActual >= hoyISO() ? <>Hoy vence el <b>{fmtFecha(vencimientoActual)}</b>. Lo que sumes se agrega a esa fecha: no perdés nada.</> : <>Venció el <b>{fmtFecha(vencimientoActual)}</b>. No se borró nada: al renovar vuelve a mostrarse.</>}</p>}
 
@@ -234,6 +240,7 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
               {gratisDisponible && <BotonPagar principal={false} />}
               {cargando && <p className="text-[13px] mt-3 flex items-center gap-2" style={{ color: "#4A5372" }} role="status"><Loader2 size={14} className="animate-spin" aria-hidden="true" /> Actualizando tu información...</p>}
             </>
+            )
           )}
           {aviso && <p role="status" className="text-[14.5px] my-3 p-3 flex items-start gap-2" style={{ borderRadius: 12, background: "#EDF1FF", color: "#1B3FB8", lineHeight: 1.45 }}><Info size={16} className="shrink-0 mt-0.5" aria-hidden="true" /> {aviso}</p>}
           {error && (
@@ -247,6 +254,8 @@ export function ActivarFichaModal({ tipo, nombre, fichaId, vencimientoActual, cu
         <div className="px-4 pt-3" style={{ borderTop: "1px solid #E8ECF5", paddingBottom: "calc(14px + env(safe-area-inset-bottom, 0px))", background: "#fff" }}>
           {cubierto ? (
             <button type="button" disabled={trabajando} onClick={() => setDialogo("cubierto")} style={boton(VERDE)}>Publicar mi negocio</button>
+          ) : esperando ? (
+            <button type="button" disabled style={boton("#B9C2D8")}><Loader2 size={17} className="animate-spin" aria-hidden="true" /> Cargando...</button>
           ) : gratisDisponible ? (
             <>
               <button type="button" disabled={trabajando} onClick={() => setDialogo("gratis")} style={boton(VERDE)}>{trabajando ? <><Loader2 size={17} className="animate-spin" aria-hidden="true" /> Activando...</> : "Empezar mi mes gratis"}</button>
@@ -289,7 +298,7 @@ export function TarjetaInvitaciones({ invitaciones, onCambio }) {
       </div>
       <button type="button" onClick={compartir} className="w-full mt-3 flex items-center justify-center gap-2" style={{ minHeight: 50, borderRadius: 14, background: "var(--azul)", color: "#fff", fontWeight: 700, fontSize: "1rem" }}><Share2 size={18} aria-hidden="true" /> Invitar con mi código</button>
       <p className="text-[14px] mt-3" style={{ color: "#4A5372", lineHeight: 1.45 }}>
-        Invitaciones acreditadas: <b>{acreditadas}</b>{pendientes ? ` · en revisión: ${pendientes}` : ""}. Ganaste {diasGanadosInvitando} de {topeDias} días posibles.{lleno ? " Llegaste al tope." : ""} {diasDisponibles > 0 ? <b>Tenés {diasDisponibles} días para usar: abrí una ficha y tocá «Agregar tiempo».</b> : ""}
+        Invitaciones acreditadas: <b>{acreditadas}</b>{pendientes ? ` · en revisión: ${pendientes}` : ""}. Ganaste {diasGanadosInvitando} de {topeDias} días posibles.{lleno ? " Llegaste al tope." : ""} {diasDisponibles > 0 ? <b>Tenés {diasDisponibles} días para usar: abrí una ficha y tocá «Extender publicación».</b> : ""}
       </p>
       {aviso && <p role="status" className="text-[14px] mt-2" style={{ color: "#6B4510" }}>{aviso}</p>}
     </section>

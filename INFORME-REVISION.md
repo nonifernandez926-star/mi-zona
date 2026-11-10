@@ -55,6 +55,8 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 
 ## Sorteos y la política de Google Play (Fase 13 · revisado el 25/10/2026)
 
+> **Actualización Fase 22:** se aplicó la «opción de cero riesgo»: los sorteos y rifas se quitaron de la app. Lo que sigue queda como referencia.
+
 **Lo que dicen las políticas hoy (páginas oficiales de Google Play):**
 - *Juegos de azar con dinero real, juegos y concursos* (`support.google.com/googleplay/android-developer/answer/9877032`): en general Google Play prohíbe que las apps faciliten apuestas y juegos con dinero real; hace una excepción para las que tienen licencia y están aprobadas por Google, y exige un trámite de aprobación. Entre los ejemplos no permitidos figuran los juegos que aceptan dinero a cambio de la oportunidad de ganar un premio físico o en dinero, y las apps con botones o menús que invitan a apostar o participar con dinero real. También dice que el contenido de la app no debe promover ni dirigir a las personas a juegos de azar, loterías o torneos con dinero real (esa frase está en la parte de anuncios, pero marca el criterio).
 - *Contenido generado por usuarios* (`.../answer/9876937`): hay que pedir que se acepten los términos antes de publicar, moderar de forma razonable según el tipo de contenido, y ofrecer dentro de la app funciones para denunciar contenido y personas y para bloquear usuarios.
@@ -75,7 +77,7 @@ Reemplaza al informe del 9 de octubre (quedó viejo: hablaba de Mercado Pago y d
 1. **Probar de verdad** (`npm install && npm run build` y un celular): sobre todo el botón fijo de abajo en oficios, alquileres y Comunidad, y el formulario de negocios a 360 px.
 2. **Rediseño pendiente, sin tocar a propósito:** detalle de negocio (`BusinessDetail`), Herramientas (`HerramientasScreen`), Ajustes (`AjustesScreen`) y chats. No pude ver cómo quedan los estilos de Tailwind sin compilar, y rediseñarlas a ciegas podía romper lo que hoy funciona. Conviene hacerlo con la web compilada y una pantalla por vez.
 3. **Listas largas sin paginar** (negocios, chats, notificaciones): hoy cargan todo. Es un cambio de comportamiento, por eso no se hizo.
-4. **Dividir `App.jsx`** (casi 6.000 líneas): baja el riesgo de errores a futuro.
+4. ~~**Dividir `App.jsx`** (casi 6.000 líneas)~~ — hecho en la Fase 22 (ver `LEEME.md`).
 5. **Modo oscuro** con un filtro CSS pesado en celulares modestos.
 6. **Fuente Manrope:** cargarla desde la propia app en vez de Google Fonts (más rápido y más privado).
 7. **Datos duplicados entre web y servidor** (categorías, rubros, planes): hoy coinciden; conviene una prueba que avise si dejan de coincidir.

@@ -495,7 +495,7 @@ export function AgendaScreen({ negocioNombre, onBack }) {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
+    <div style={{ minHeight: "100dvh", background: "#F3F5FA", fontFamily: "var(--fuente-texto)" }}>
       {/* barra de arriba */}
       <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "var(--azul-oscuro)" }}>
         <div className="max-w-3xl mx-auto px-4 pb-2.5 flex items-center gap-3" style={{ paddingTop: "calc(8px + env(safe-area-inset-top, 0px))" }}>

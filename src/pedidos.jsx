@@ -163,7 +163,7 @@ export function PedidosScreen({ pedidos, cargando, error, onRecargar, onBack, on
 
   const FILTROS = [["curso", "En curso", enCurso.length], ["entregados", "Entregados", entregados.length], ["todos", "Todos", pedidos.length]];
   return (
-    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100dvh" }}>
       <div data-conservar-color className="sticky top-0 z-30" style={{ backgroundColor: "#0B1437" }}>
         <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-3" style={{ paddingTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
           <BotonAtras onClick={onBack} />

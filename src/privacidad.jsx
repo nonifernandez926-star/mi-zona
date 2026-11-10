@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   MapPin, MessageCircle, Sparkles, BarChart3, Download, Trash2, Star, CalendarCheck, Smartphone, Lock, ChevronDown, Check, Loader2, User, UserX,
-  Eye, History, BellOff, ShieldCheck, Store, Search,
+  Eye, History, BellOff, ShieldCheck, Store, Search, Wrench, Home,
 } from "lucide-react";
 import { tonoDe } from "./tonos";
 import { BotonVolver } from "./cuenta.jsx";
@@ -62,15 +62,6 @@ function Dato({ etiqueta, valor, ultimo }) {
     <div className="flex items-center justify-between gap-4 px-4 py-3" style={ultimo ? null : LINEA}>
       <span className="text-sm" style={{ color: "#5B6482" }}>{etiqueta}</span>
       <span className="text-sm font-semibold text-right break-all" style={{ color: "#0B1437" }}>{valor}</span>
-    </div>
-  );
-}
-
-function Servicio({ nombre, desc, ultimo }) {
-  return (
-    <div className="px-4 py-3" style={ultimo ? null : LINEA}>
-      <span className="block text-sm font-medium" style={{ color: "#0B1437" }}>{nombre}</span>
-      <span className="block text-[13px] mt-0.5" style={{ color: "#5B6482", lineHeight: 1.45 }}>{desc}</span>
     </div>
   );
 }
@@ -154,7 +145,11 @@ function textosAviso(f, campo, v) {
     : { titulo: `¿Sacar ${n} de las búsquedas?`, queHace: "La ficha deja de aparecer en las búsquedas y en los listados.", paraQue: "Sirve para frenar las visitas sin borrar nada.", queSucedera: "Nadie va a poder encontrarla ni abrirla, y desaparece de los favoritos de otras personas. Vos la seguís viendo en tus fichas y la podés volver a mostrar cuando quieras.", textoAceptar: "Sí, sacarla" };
 }
 
-function ControlesPerfil({ resumen, onCambio }) {
+const ICONO_TIPO_FICHA = { negocio: Store, oficio: Wrench, alquiler: Home };
+
+// Sin «abierta»: «Tu perfil» y la lista de fichas (una fila por ficha, así la pantalla no crece con cada una).
+// Con «abierta» (clave de una ficha): solo los cuatro interruptores de esa ficha.
+function ControlesPerfil({ resumen, onCambio, abierta, onAbrir }) {
   const [guardando, setGuardando] = useState(null);
   const [error, setError] = useState(null);
   const [aviso, setAviso] = useState(null); // { f, campo, valor }
@@ -178,25 +173,38 @@ function ControlesPerfil({ resumen, onCambio }) {
   // Apagar «Dueño…» es directo; todo lo demás avisa antes, tanto al encender como al apagar
   const pedir = (f, campo, v) => ((campo === "perfil" || campo === "ficha") && !v ? cambiar(f, campo, false) : setAviso({ f, campo, valor: v }));
   const claveAviso = aviso && `${aviso.f.tipo}${aviso.f.id}${aviso.campo}`;
+  const fichaAbierta = abierta ? fichas.find((f) => `${f.tipo}${f.id}` === abierta) : null;
   return (
     <>
-      <Grupo titulo="Tu perfil" desc="Elegí qué ven otras personas sobre vos. Tu correo y tu teléfono nunca se muestran.">
-        <Control
-          Icon={User} titulo="Mi perfil es visible" desc="Otras personas pueden ver tu nombre, foto, localidad y descripción. Si lo apagás, solo ven que tu perfil es privado."
-          activo={visible} onChange={(v) => guardar("perfil", () => privacidadApi.guardarPreferencias({ perfilVisible: v }))} disabled={guardando === "perfil"} ultimo
-        />
-      </Grupo>
-      {fichas.map((f) => {
+      {!abierta && (
+        <>
+          <Grupo titulo="Tu perfil" desc="Elegí qué ven otras personas sobre vos. Tu correo y tu teléfono nunca se muestran.">
+            <Control
+              Icon={User} titulo="Mi perfil es visible" desc="Otras personas pueden ver tu nombre, foto, localidad y descripción. Si lo apagás, solo ven que tu perfil es privado."
+              activo={visible} onChange={(v) => guardar("perfil", () => privacidadApi.guardarPreferencias({ perfilVisible: v }))} disabled={guardando === "perfil"} ultimo
+            />
+          </Grupo>
+          {fichas.length > 0 && (
+            <Grupo titulo="Tus fichas" desc="Tocá una para elegir qué se ve de ella.">
+              {fichas.map((f, i) => (
+                <FilaIr key={`${f.tipo}${f.id}`} Icon={ICONO_TIPO_FICHA[f.tipo]} titulo={f.nombre} desc={TIPO_FICHA[f.tipo]} onClick={() => onAbrir(`${f.tipo}${f.id}`)} ultimo={i === fichas.length - 1} />
+              ))}
+            </Grupo>
+          )}
+        </>
+      )}
+      {fichaAbierta && (() => {
+        const f = fichaAbierta;
         const k = (campo) => `${f.tipo}${f.id}${campo}`;
         return (
-          <Grupo key={`${f.tipo}${f.id}`} titulo={`${TIPO_FICHA[f.tipo]}: ${f.nombre}`} desc="Estos cambios valen solo para esta ficha.">
+          <Grupo titulo={`${TIPO_FICHA[f.tipo]}: ${f.nombre}`} desc="Estos cambios valen solo para esta ficha.">
             <Control Icon={Store} titulo="«Dueño de» en mi perfil" desc="Tu perfil muestra esta ficha como tuya." activo={!!f.duenoEnPerfil} onChange={(v) => pedir(f, "perfil", v)} disabled={guardando === k("perfil")} />
             <Control Icon={Store} titulo="«Dueño: @usuario» en la ficha" desc="La ficha muestra tu usuario y lleva a tu perfil." activo={!!f.duenoEnFicha} onChange={(v) => pedir(f, "ficha", v)} disabled={guardando === k("ficha")} />
             <Control Icon={MessageCircle} titulo="Mostrar WhatsApp" desc="Si lo apagás, la ficha oculta tu WhatsApp al público: no se ve el número ni el botón." activo={f.mostrarWhatsapp !== false} onChange={(v) => pedir(f, "whatsapp", v)} disabled={guardando === k("whatsapp")} />
             <Control Icon={Search} titulo="Aparecer en búsquedas" desc="Si lo apagás, la ficha no sale en búsquedas ni listados. Vos la seguís viendo en tus fichas." activo={f.apareceEnBusquedas !== false} onChange={(v) => pedir(f, "busquedas", v)} disabled={guardando === k("busquedas")} ultimo />
           </Grupo>
         );
-      })}
+      })()}
       {error && <p role="alert" className="text-sm -mt-3 mb-5 px-1" style={{ color: "#9A3B34" }}>{error}</p>}
       {aviso && (
         <DialogoAdvertencia
@@ -216,6 +224,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
   const [errorCarga, setErrorCarga] = useState(null);
   const [errorPref, setErrorPref] = useState(null);
   const [guardando, setGuardando] = useState(null);
+  const [fichaAbierta, setFichaAbierta] = useState(null); // clave de la ficha cuyos interruptores se están viendo
   const esDueno = !!resumen && resumen.negocios.length > 0;
 
   const cargar = async () => {
@@ -243,6 +252,16 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
   };
 
   const nAgenda = resumen ? resumen.agenda.eventos + resumen.agenda.tareas : 0;
+
+  // Datos de una ficha: se abre al tocarla en la lista y vuelve a Privacidad
+  if (fichaAbierta && resumen) {
+    return (
+      <div>
+        <BotonVolver texto="Volver a Privacidad" onClick={() => setFichaAbierta(null)} />
+        <ControlesPerfil resumen={resumen} onCambio={cargar} abierta={fichaAbierta} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -292,7 +311,7 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
       </Grupo>
       {errorPref && <p className="text-sm -mt-3 mb-5 px-1" style={{ color: "#C1443A" }}>{errorPref}</p>}
 
-      {resumen && <ControlesPerfil resumen={resumen} onCambio={cargar} />}
+      {resumen && <ControlesPerfil resumen={resumen} onCambio={cargar} onAbrir={setFichaAbierta} />}
 
       <Grupo titulo="Lo que guardamos de vos" desc="Esto es todo lo que Mi Zona tiene sobre vos.">
         {usuario ? (
@@ -317,23 +336,6 @@ export function PrivacidadScreen({ usuario, onBack, onLogin, onIrCuenta, onIrSeg
         <Dato etiqueta="Chats en este dispositivo" valor={contLocal.chats} />
         <Dato etiqueta="Negocios vistos en este dispositivo" valor={contLocal.vistos} />
         <Dato etiqueta="Búsquedas recientes en este dispositivo" valor={contLocal.busquedas} ultimo />
-      </Grupo>
-
-      <Grupo titulo="Qué es público y qué es privado">
-        <Servicio nombre="Público" desc="Los datos de un negocio (nombre, dirección, teléfono, fotos), las reseñas (con el nombre que pusiste al escribirlas) y, si tu perfil es visible, tu nombre, foto, localidad y descripción. Nunca tu correo ni tu teléfono." />
-        <Servicio nombre="Privado" desc="Tu correo, tu agenda, tus pagos, tus favoritos y tus chats. Nadie más los ve." />
-        <Servicio nombre="Tu ubicación" desc="Se usa solo en el momento de buscar y no se guarda en el servidor." ultimo />
-      </Grupo>
-
-      <Grupo titulo="Quién recibe datos" desc="Mi Zona funciona con estos servicios.">
-        <Servicio nombre="Google" desc="Confirma quién sos al entrar. Solo nos da tu correo y nombre." />
-        <Servicio nombre="Servicio de correo" desc="Entrega el código de 6 números que te mandamos al correo cuando entrás con él." />
-        <Servicio nombre="OpenStreetMap y Esri" desc="Dibujan el mapa y buscan direcciones. Reciben la dirección o el punto que buscás o elegís en el mapa." />
-        <Servicio nombre="Mi Asistente" desc="Recibe tus mensajes, pedidos y puntos para atenderte." />
-        <Servicio nombre="Inteligencia artificial" desc="Procesa tu búsqueda y, si lo permitís, tu agenda." />
-        <Servicio nombre="Google Play" desc="Cobra los planes de pago (negocios, oficios y alquileres). Nunca vemos tu tarjeta." />
-        <Servicio nombre="Georef (datos.gob.ar)" desc="Es la lista oficial de provincias y localidades que usamos para que elijas tu localidad. Recibe tu consulta a la lista, no tus datos." />
-        <Servicio nombre="Cloudinary" desc="Aloja las fotos que sube un negocio y tu foto de perfil, visibles para todos." ultimo />
       </Grupo>
 
       <Grupo titulo="Tus datos">

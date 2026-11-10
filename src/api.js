@@ -436,8 +436,6 @@ export const comunidadApi = {
   estadoEvento: (id, estado) => enviarUsuarioJSON(C(id, "/evento"), "POST", { estado }).then((r) => r.publicacion),
   eliminar: (id) => enviarUsuarioJSON(C(id), "DELETE", {}),
   contacto: (id, mensaje) => enviarUsuarioJSON(C(id, "/contacto"), "POST", { mensaje }).then((r) => r.url),
-  // Sorteos (publicación de Comunidad): el organizador publica el resultado (solo texto), cancela o reactiva su sorteo
-  sorteo: (id, accion, texto) => enviarUsuarioJSON(C(id, "/sorteo"), "POST", { accion, texto }).then((r) => r.publicacion),
 };
 
 // Fase 8 · Denuncias, bloqueo y avisos del equipo. Todo se resuelve en el servidor; la web solo manda el tipo y el id público.

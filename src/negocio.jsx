@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Store, Wrench, Eye, Pencil, Trash2, Power, Share2, Check, ChevronRight, CalendarCheck, Users } from "lucide-react";
+import { Plus, Store, Wrench, Eye, Pencil, Trash2, Power, Share2, Check, ChevronRight, CalendarCheck, Users, Package, Heart, Coins, Trophy } from "lucide-react";
 import { oficiosApi, alquileresApi, compartidoApi, suscripcionApi } from "./api.js";
 import { compartirTexto, compartirFicha, textoInvitacion, avisoDeCompartir } from "./compartir.js";
 import { textoLocalidad } from "./localidades.js";
@@ -89,6 +89,7 @@ export function TarjetaIdentidad({ logo, icono: Icono, color, titulo, sub, chip,
 export default function NegocioScreen({
   negocios, sel, setSel, catInfo, onResumen, onAgregar, onAgenda, renderNegocio,
   onVerNegocio, onEditarNegocio, onEliminarNegocio, onVerOficio, onEditarOficio, onVerAlquiler, onEditarAlquiler, onActivar,
+  onPedidos, onFavoritos, onPuntos, onRanking,
 }) {
   const [oficio, setOficio] = useState(undefined); // undefined = cargando · null = no tiene
   const [alquileres, setAlquileres] = useState(undefined); // undefined = cargando · [] = no tiene
@@ -267,6 +268,10 @@ export default function NegocioScreen({
       <Seccion titulo="Herramientas">
         <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
           {onAgenda && <Accion icono={CalendarCheck} color="#E5484D" titulo="Mi agenda" desc="Eventos, tareas y recordatorios del día." onClick={onAgenda} />}
+          {onPedidos && <Accion icono={Package} color="#2350F5" titulo="Mis pedidos" desc="Seguí el estado de lo que pediste." onClick={onPedidos} />}
+          {onFavoritos && <Accion icono={Heart} color="#E5484D" titulo="Favoritos" desc="Lo que guardaste." onClick={onFavoritos} />}
+          {onPuntos && <Accion icono={Coins} color="#F59E0B" titulo="Mis puntos" desc="Tus puntos por negocio, recompensas y canjes." onClick={onPuntos} />}
+          {onRanking && <Accion icono={Trophy} color="#8B5CF6" titulo="Ranking" desc="Los negocios más destacados de tu zona." onClick={onRanking} />}
           <Accion icono={Share2} color="#13897F" titulo="Compartir Mi Zona" desc={pendientes.length > 0 ? "Todavía no la compartiste: invitá a tus clientes." : "Invitá a tus clientes a descargar la app."} onClick={compartirMiZona} punto={pendientes.length > 0} />
         </div>
         {avisoCompartir && <p role="status" className="text-sm mt-2" style={{ color: "#6B4510", lineHeight: 1.45 }}>{avisoCompartir}</p>}

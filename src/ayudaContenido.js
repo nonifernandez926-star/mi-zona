@@ -235,27 +235,14 @@ export const ARTICULOS = [
   },
   {
     id: "comunidad", cat: "empezar", titulo: "Comunidad: publicar y ver lo de tu zona",
-    claves: "comunidad avisos seguridad perdido encontrado ayuda regalo deporte evento feria sorteo rifa publicar gratis vence departamento",
+    claves: "comunidad avisos seguridad perdido encontrado ayuda regalo deporte evento feria publicar gratis vence departamento",
     cuerpo: [
-      "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes, eventos y sorteos. Publicar es gratis.",
+      "En Comunidad los vecinos publican avisos de la zona, cosas perdidas o encontradas, ayuda, regalos, deportes y eventos. Publicar es gratis.",
       { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», o entrá a Comunidad desde Inicio.", "Elegí el tipo, completá el formulario corto y leé el aviso antes de publicar.", "Tu publicación la ven las personas de tu departamento y vence sola: los avisos duran pocas horas."] },
       { nota: "Los avisos de seguridad se muestran como «No verificado». Si fue un delito, denunciálo a la policía. No subas fotos de personas ni nombres." },
       "Podés editar, marcar como resuelta o eliminar lo que publicaste desde Comunidad → Mis publicaciones.",
     ],
     relacionados: ["buscador-unico"],
-  },
-  {
-    id: "sorteos-rifas", cat: "empezar", titulo: "Sorteos y rifas: cómo publicar uno y cómo participar",
-    claves: "sorteo rifa números premios quiniela lotería beneficio organizar participar pagar whatsapp resultado cancelar",
-    cuerpo: [
-      "Un sorteo o una rifa es una publicación más de Comunidad. Mi Zona solo muestra la ficha: no vende números, no cobra, no reserva y no organiza el sorteo.",
-      { pasos: ["Tocá «+» y elegí «Publicar en Comunidad», y después «Sorteo o rifa».", "Completá quién organiza, el motivo, los premios, la fecha (la hora es opcional) y cómo se define el ganador.", "Dejá tu WhatsApp: las personas interesadas te escriben por ahí y arreglan todo con vos por privado."] },
-      "Si querés participar, abrí la ficha y tocá «Escribirle por WhatsApp». Lo que acuerden con el organizador, incluido el pago, pasa fuera de Mi Zona.",
-      { nota: "Mi Zona no organiza ni cobra sorteos: solo muestra lo que publica cada persona. Pagá únicamente a quien conocés y no pagues por adelantado si algo no te cierra." },
-      "No se aceptan premios en dinero y la ficha no puede llevar precios ni datos de cuentas. Si ves algo raro, tocá «Denunciar o bloquear».",
-      "Cuando llega el día, quien organiza puede escribir los números ganadores en la ficha. También puede editar, cancelar o eliminar su sorteo. La ficha se oculta sola unos días después de la fecha.",
-    ],
-    relacionados: ["comunidad"],
   },
   {
     id: "denunciar", cat: "privacidad", titulo: "Denunciar o bloquear a alguien",
@@ -314,7 +301,7 @@ export const ARTICULOS = [
     id: "renovar", cat: "pagos", titulo: "Renovar o agregar meses",
     claves: "extender suscripcion vence",
     cuerpo: [
-      { pasos: ["Andá a la pestaña Negocio, abrí tu ficha y tocá “Agregar tiempo” en la ficha.", "Elegí 1, 3 o 6 meses (o usá tus días de invitación).", "Pagá con Google Play."] },
+      { pasos: ["Andá a la pestaña Negocio, abrí tu ficha y tocá “Extender publicación” en la ficha.", "Elegí 1, 3 o 6 meses (o usá tus días de invitación).", "Pagá con Google Play."] },
       "Los meses nuevos se suman a la fecha de vencimiento que ya tenías: no perdés los días que te quedaban.",
     ],
     relacionados: ["que-pasa-si-vence", "planes"],
@@ -334,7 +321,7 @@ export const ARTICULOS = [
     claves: "pago google play no se publico pendiente acreditado",
     cuerpo: [
       "La ficha se activa cuando nuestro servidor confirma la compra con Google Play. Suele tardar segundos, pero puede demorar si se cortó la conexión.",
-      { pasos: ["Volvé a abrir la pestaña Negocio, abrí esa ficha y tocá “Agregar tiempo” en esa ficha.", "Si Google ya te cobró, vas a ver “Encontramos una compra sin activar”: tocá “Activar con mi compra”. No pagás de nuevo.", "Revisá en Google Play → Pagos y suscripciones que la compra figure como completada."] },
+      { pasos: ["Volvé a abrir la pestaña Negocio, abrí esa ficha y tocá “Extender publicación” en esa ficha.", "Si Google ya te cobró, vas a ver “Encontramos una compra sin activar”: tocá “Activar con mi compra”. No pagás de nuevo.", "Revisá en Google Play → Pagos y suscripciones que la compra figure como completada."] },
       "Si el pago está aprobado y pasó más de una hora, escribinos desde Soporte con el motivo “Pagos y suscripción” e indicá la fecha de la compra. No hace falta que envíes datos de tu tarjeta.",
     ],
     relacionados: ["planes", "registrar-negocio"],

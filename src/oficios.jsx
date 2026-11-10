@@ -54,7 +54,7 @@ function Cabecera({ titulo, onVolver, derecha }) {
 
 export function Pagina({ titulo, onVolver, derecha, children, pie }) {
   return (
-    <div style={{ backgroundColor: FONDO, minHeight: "100vh" }}>
+    <div style={{ backgroundColor: FONDO, minHeight: "100dvh" }}>
       <Cabecera titulo={titulo} onVolver={onVolver} derecha={derecha} />
       <div className="max-w-3xl mx-auto px-4" style={{ paddingTop: 16, paddingBottom: pie ? "calc(104px + env(safe-area-inset-bottom, 0px))" : "calc(32px + env(safe-area-inset-bottom, 0px))" }}>{children}</div>
       {pie && (
@@ -87,6 +87,25 @@ export function Chip({ activo, children, onClick, quitar }) {
       style={{ minHeight: 44, borderRadius: 999, padding: "0 14px", fontSize: "0.9375rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${activo ? "#2350F5" : "#CFD6E8"}`, background: activo ? "#EDF1FF" : "#fff", color: activo ? "#1B3FB8" : "#0B1437" }}>
       {activo && <Check size={15} aria-hidden="true" />}{children}{quitar && <X size={14} aria-hidden="true" />}
     </button>
+  );
+}
+
+// Barra de selección (la misma del selector «Negocios | Alquileres | Oficios» de Inicio): una sola tarjeta con las opciones en partes iguales.
+// opciones: [[id, texto, cantidad?]] · una sola opción activa
+export function BarraSeleccion({ opciones, valor, onChange, etiqueta }) {
+  return (
+    <div role="tablist" aria-label={etiqueta} className="bg-white" style={{ display: "grid", gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))`, gap: 3, padding: 4, borderRadius: 16, border: "1px solid #E3E7F1", boxShadow: "0 8px 22px rgba(11,20,55,0.10)" }}>
+      {opciones.map(([id, texto, cantidad]) => {
+        const act = valor === id;
+        return (
+          <button key={id} type="button" role="tab" aria-selected={act} onClick={() => onChange(id)}
+            style={{ minHeight: 44, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "0 4px", background: act ? "linear-gradient(135deg,var(--azul),var(--azul-medio))" : "transparent", color: act ? "#fff" : "#2B3768", boxShadow: act ? "0 6px 14px rgba(var(--azul-rgb),0.30)" : "none", transition: "all .2s", minWidth: 0 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.1, whiteSpace: "nowrap" }}>{texto}</span>
+            {cantidad !== undefined && <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1, opacity: act ? 0.9 : 0.7 }}>{cantidad}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

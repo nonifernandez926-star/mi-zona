@@ -265,7 +265,7 @@ export function ReclamosScreen({ pedidoInicial, onBack, onAbrirNegocio }) {
 
   if (pedido) {
     return (
-      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
+      <div style={{ backgroundColor: "#F3F5FA", minHeight: "100dvh" }}>
         <Encabezado titulo="Hacer un reclamo" subtitulo={pedido.negocio?.nombre} onBack={pedidoInicial ? onBack : () => setPedido(null)} />
         <Formulario
           pedido={pedido}
@@ -278,7 +278,7 @@ export function ReclamosScreen({ pedidoInicial, onBack, onAbrirNegocio }) {
 
   const abiertos = lista.filter((r) => r.enviado && (r.estado === "nuevo" || r.estado === "en_revision")).length;
   return (
-    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F3F5FA", minHeight: "100dvh" }}>
       <Encabezado titulo="Mis reclamos" subtitulo={abiertos ? `${abiertos} esperando respuesta` : "Reclamos, devoluciones y cambios"} onBack={onBack} onRecargar={recargar} cargando={cargando} />
       <div className="max-w-3xl mx-auto px-4 pt-4" style={{ paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
         {aviso ? (

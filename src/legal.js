@@ -19,9 +19,8 @@ export const TERMINOS = [
     "Podemos ocultar o eliminar contenido o negocios que incumplan estos términos o la ley, o que sean denunciados con motivo razonable.",
   ] },
   { t: "3 bis. Comunidad", p: [
-    "Comunidad es un espacio gratuito donde los vecinos publican avisos de la zona, alertas de seguridad, perdidos y encontrados, pedidos y ofrecimientos de ayuda, regalos, actividades deportivas, eventos y sorteos o rifas. Lo publicado lo ven las personas del mismo departamento mientras esté vigente; después vence y deja de mostrarse.",
+    "Comunidad es un espacio gratuito donde los vecinos publican avisos de la zona, alertas de seguridad, perdidos y encontrados, pedidos y ofrecimientos de ayuda, regalos, actividades deportivas y eventos. Lo publicado lo ven las personas del mismo departamento mientras esté vigente; después vence y deja de mostrarse.",
     "Las publicaciones de seguridad son avisos entre vecinos, no verificados por Mi Zona: no se pueden nombrar ni acusar personas, ni publicar fotos de personas. Si fue un delito, denunciálo a la policía. Mi Zona no reemplaza a los servicios de emergencia.",
-    "Los sorteos y rifas son fichas informativas: Mi Zona no organiza ni cobra sorteos, no vende ni reserva números, no administra pagos y no verifica a quien organiza ni los resultados. Solo muestra lo que publica cada persona. Quien organiza es el único responsable de su sorteo y de cumplir las normas de su provincia; no se aceptan premios en dinero ni precios o datos de cobro en la ficha. Cualquier arreglo entre personas, incluido el pago, ocurre fuera de la aplicación: pagá únicamente a quien conocés y no pagues por adelantado si algo no te cierra.",
     "Cada persona puede publicar una cantidad limitada por día. Quien publica puede editar, marcar como resuelta o eliminar su publicación cuando quiera.",
   ] },
   { t: "4. Reseñas", p: [

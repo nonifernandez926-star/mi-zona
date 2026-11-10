@@ -219,67 +219,56 @@ function TarjetaAlquiler({ a, onAbrir }) {
 
 
 // ---------- tarjeta de categorías (la misma de Negocios, para Alquileres y Oficios) ----------
-// Alquileres: Viviendas · Eventos · Herramientas · Otros. Tocar una categoría abre su subpantalla con sus tipos.
-// Oficios: los diez rubros más pedidos + «Otros» (el resto). «Ver todas» abre la lista completa, agrupada.
-const POPULARES = ["electricista", "plomero", "gasista", "albanil", "pintor", "mecanico", "limpieza", "fletes", "carpintero", "cerrajero"];
+// Alquileres: los 5 tipos más pedidos + «Otros». Oficios: los 5 rubros más pedidos + «Otros». «Ver todas» abre la lista completa, agrupada.
+// Las tres secciones muestran lo mismo: «Todos» + 5 opciones + «Otros» (todo el resto). Así «Otros» queda en el mismo lugar en las tres.
+const POPULARES = ["electricista", "plomero", "gasista", "albanil", "pintor"];
+const POP_ALQ = [["casa", "Casa"], ["departamento", "Depto"], ["salon", "Salón"], ["sillas_mesas", "Sillas y mesas"], ["herr_electricas", "Equipos"]];
+const POP_ALQ_IDS = POP_ALQ.map(([id]) => id);
 const nombreRubro = (id) => RUBROS.find((r) => r.id === id)?.label || id;
 const itemRubro = (r) => { const [Icono, color] = ICONO_RUBRO_OFICIO[r.id] || [Wrench, "#2350F5"]; return { id: r.id, label: r.label, Icono, color }; };
 const itemTipoAlq = (t) => { const [Icono, color] = ICONO_TIPO_ALQ[t.id] || [Package, "#13897F"]; return { id: t.id, label: t.label, corto: t.corto, Icono, color }; };
-const CATS_ALQ_FILA = CATEGORIAS.filter((c) => c.id !== "otros");
+const catDeTipo = (id) => CATEGORIAS.find((c) => c.tipos.some((t) => t.id === id))?.id || "";
 
 export function CategoriasInicio({ modo, cat, onCambiar, tipo = "", onTipo }) {
-  const [hoja, setHoja] = useState(null); // "todas" | "otros" (Oficios) · "todas" (Alquileres)
-  const [hojaTipos, setHojaTipos] = useState(null); // id de la categoría de alquileres cuya subpantalla está abierta
+  const [hoja, setHoja] = useState(null); // "todas" | "otros"
   const esAlq = modo === "alquileres";
-  const cerrar = () => { setHoja(null); setHojaTipos(null); };
+  const cerrar = () => setHoja(null);
 
   let items, otros;
   if (esAlq) {
-    items = CATS_ALQ_FILA.map((c) => ({ id: c.id, label: c.corto || c.label, Icono: ICONO_CAT[c.id] || Package, color: COLOR_CAT[c.id] || "#2350F5" }));
-    otros = { activo: cat === "otros", onClick: () => { onCambiar("otros"); setHojaTipos("otros"); } };
+    items = POP_ALQ.map(([id, label]) => ({ ...itemTipoAlq({ id, label }), label }));
+    otros = { activo: !!tipo && !POP_ALQ_IDS.includes(tipo), onClick: () => setHoja("otros") };
   } else {
     items = POPULARES.map((id) => ({ ...itemRubro({ id }), label: nombreRubro(id).split(" ")[0] }));
     otros = { activo: !!cat && !POPULARES.includes(cat), onClick: () => setHoja("otros") };
   }
+  const elegirTipoAlq = (it, g) => { onCambiar(g?.id || catDeTipo(it.id)); onTipo?.(it.id); cerrar(); };
+  const gruposAlq = (sinPopulares) => CATEGORIAS.map((c) => ({ id: c.id, titulo: c.label, items: c.tipos.filter((t) => !sinPopulares || !POP_ALQ_IDS.includes(t.id)).map(itemTipoAlq) })).filter((g) => g.items.length > 0);
+  const gruposOf = (sinPopulares) => Object.entries(GRUPOS_RUBROS).map(([id, titulo]) => ({ id, titulo, items: RUBROS.filter((r) => r.grupo === id && (!sinPopulares || !POPULARES.includes(r.id))).map(itemRubro) })).filter((g) => g.items.length > 0);
 
-  // Subpantallas
+  // Subpantallas (las mismas piezas para Alquileres y Oficios, igual que Negocios)
   let sheet = null;
-  if (esAlq && hojaTipos) {
-    const c = CATEGORIAS.find((x) => x.id === hojaTipos);
-    if (c) sheet = (
-      <HojaCategorias titulo={c.label} ayuda="Elegí qué tipo buscás." valor={tipo}
-        todo={{ texto: `Todo en «${c.corto || c.label}»`, activo: !tipo, onClick: () => { onTipo?.(""); cerrar(); } }}
-        grupos={[{ items: c.tipos.map(itemTipoAlq) }]}
-        onElegir={(it) => { onTipo?.(it.id); cerrar(); }} onCerrar={cerrar} />
-    );
-  } else if (esAlq && hoja === "todas") {
-    sheet = (
-      <HojaCategorias titulo="Todos los alquileres" ayuda="Elegí qué tipo de alquiler buscás." valor={tipo}
-        todo={{ texto: "Todo en Alquileres", activo: !cat && !tipo, onClick: () => { onCambiar(""); cerrar(); } }}
-        grupos={CATEGORIAS.map((c) => ({ id: c.id, titulo: c.label, items: c.tipos.map(itemTipoAlq) }))}
-        onElegir={(it, g) => { onCambiar(g.id); onTipo?.(it.id); cerrar(); }} onCerrar={cerrar} />
-    );
-  } else if (!esAlq && hoja === "todas") {
-    sheet = (
-      <HojaCategorias titulo="Todos los oficios" ayuda="Elegí un oficio para ver esos profesionales." valor={cat} buscar="Buscar (ej: plomero)"
+  if (hoja) {
+    const otrosHoja = hoja === "otros";
+    sheet = esAlq ? (
+      <HojaCategorias titulo={otrosHoja ? "Otros alquileres" : "Todos los alquileres"} ayuda="Elegí qué tipo de alquiler buscás." valor={tipo} buscar="Buscar (ej: carpa)"
+        todo={{ texto: "Todo en Alquileres", activo: !cat && !tipo, onClick: () => { onCambiar(""); onTipo?.(""); cerrar(); } }}
+        grupos={gruposAlq(otrosHoja)} onElegir={elegirTipoAlq} onCerrar={cerrar} />
+    ) : (
+      <HojaCategorias titulo={otrosHoja ? "Otros oficios" : "Todos los oficios"} ayuda="Elegí un oficio para ver esos profesionales." valor={cat} buscar={otrosHoja ? "Buscar (ej: fotógrafo)" : "Buscar (ej: plomero)"}
         todo={{ texto: "Todo en Oficios", activo: !cat, onClick: () => { onCambiar(""); cerrar(); } }}
-        grupos={Object.entries(GRUPOS_RUBROS).map(([id, titulo]) => ({ id, titulo, items: RUBROS.filter((r) => r.grupo === id).map(itemRubro) })).filter((g) => g.items.length > 0)}
-        onElegir={(it) => { onCambiar(it.id); cerrar(); }} onCerrar={cerrar} />
-    );
-  } else if (!esAlq && hoja === "otros") {
-    sheet = (
-      <HojaCategorias titulo="Otros oficios" ayuda="Elegí un oficio para ver esos profesionales." valor={cat} buscar="Buscar (ej: fotógrafo)"
-        todo={{ texto: "Todo en Oficios", activo: !cat, onClick: () => { onCambiar(""); cerrar(); } }}
-        grupos={Object.entries(GRUPOS_RUBROS).map(([id, titulo]) => ({ id, titulo, items: RUBROS.filter((r) => r.grupo === id && !POPULARES.includes(r.id)).map(itemRubro) })).filter((g) => g.items.length > 0)}
-        onElegir={(it) => { onCambiar(it.id); cerrar(); }} onCerrar={cerrar} />
+        grupos={gruposOf(otrosHoja)} onElegir={(it) => { onCambiar(it.id); cerrar(); }} onCerrar={cerrar} />
     );
   }
 
   return (
     <div className="mt-3">
-      <TarjetaCategorias items={items} valor={cat} otros={otros}
-        onTodos={() => onCambiar("")}
-        onElegir={(c) => { if (esAlq) { onCambiar(c.id); setHojaTipos(c.id); } else onCambiar(cat === c.id ? "" : c.id); }}
+      <TarjetaCategorias items={items} valor={esAlq ? tipo : cat} otros={otros}
+        onTodos={() => { onCambiar(""); if (esAlq) onTipo?.(""); }}
+        onElegir={(c) => {
+          if (esAlq) { if (tipo === c.id) { onCambiar(""); onTipo?.(""); } else { onCambiar(catDeTipo(c.id)); onTipo?.(c.id); } }
+          else onCambiar(cat === c.id ? "" : c.id);
+        }}
         onVerTodas={() => setHoja("todas")} />
       {sheet}
     </div>

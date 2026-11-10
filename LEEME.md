@@ -1,3 +1,19 @@
+# Mi Zona — Fase 22: se quitan los sorteos y se divide `App.jsx` (volver a publicar servidor Y web)
+
+- **Sorteos y rifas fuera de Comunidad (por la política de Google Play):** ya no se pueden crear ni ver. Se quitó el tipo «Sorteo o rifa» de la web (`src/comunidad.jsx`, `src/comunidad.js`, `src/api.js`, estado del chip, ayuda y términos) y del servidor (`server/utils/comunidad.js`, `server/routes/comunidad.js`: se fue la ruta `POST /api/comunidad/:id/sorteo` y los límites de sorteos). `npm run build` regenera los términos solo.
+- **Datos viejos:** si en la base quedó alguna publicación de tipo `sorteo`, el servidor la ignora (no sale en la lista, ni en «Mis publicaciones», ni se abre). Se sigue borrando con la cuenta. Si querés, podés borrarla de MongoDB: `db.publicacions.deleteMany({ tipo: "sorteo" })`.
+- **Se quitó también** `server/scripts/probar-comunidad-sorteos.mjs` y el script `probar:sorteos`. `SORTEOS-ARGENTINA.md` y la sección del informe quedan solo como historia, por si más adelante se vuelve a agregar.
+- **Para volver a agregarlos:** usá el zip de la Fase 21 como referencia (tiene todo el código del sorteo funcionando).
+- **`App.jsx` dividido (sin cambiar cómo funciona nada):** `src/App.jsx` ahora es un archivo de 5 líneas que carga `src/app/MiZona.jsx`. Las 150 piezas que tenía se movieron **sin modificar una sola línea de su código** a 22 archivos dentro de `src/app/`:
+  - **Datos y lógica (sin pantallas):** `constantes.js` (categorías, zonas, preguntas por rubro, `MI_ASISTENTE_URL`), `utilidades.js` (fechas, precios, distancias, tema, localidades), `almacen.js` (lo guardado en el celular: favoritos, vistos, conversaciones), `negocios.js` (puntaje, ranking, promociones, negocio vacío), `servidor.js` (llamadas al servidor de Negocios), `notificaciones.js` (armado de la campanita).
+  - **Pantallas y piezas:** `piezas.jsx`, `navegacion.jsx` (cabecera, menú y barra de abajo), `tarjetaNegocio.jsx`, `detalleNegocio.jsx`, `formularioNegocio.jsx`, `panelNegocio.jsx`, `empleoPromos.jsx`, `chats.jsx`, `busquedaAsistente.jsx`, `mapa.jsx`, `favoritosLista.jsx`, `pantallaNotificaciones.jsx`, `puntos.jsx`, `ranking.jsx`, `herramientas.jsx` (Herramientas y Ajustes).
+  - **`MiZona.jsx`:** el componente principal (estado general y navegación). Sigue siendo el archivo más largo (~1.400 líneas) porque todo su estado está entrelazado; dividirlo más conviene hacerlo con la app compilada y probada en un celular.
+  - **Dónde buscar ahora lo que antes estaba en `App.jsx`:** cuando una nota vieja diga «en `App.jsx`», usá la lista de arriba.
+- **Cómo lo comprobé:** las 150 piezas son idénticas, carácter por carácter, a las de la versión anterior; ningún nombre quedó sin definir ni sobra ningún import; no hay dependencias circulares entre los archivos nuevos; esbuild compila todo el proyecto; y la versión nueva y la anterior dibujan exactamente lo mismo al arrancar. Las pruebas del servidor que pude correr siguen pasando (la de borrado de cuenta necesita las dependencias instaladas y no la pude correr).
+- **No pude correr `npm run build` (sin internet) ni probar en un celular.** Corré `npm install && npm run build` y recorré la app (Inicio, ficha de negocio, mapa, chats, notificaciones, puntos, ajustes y Comunidad) antes de publicar.
+
+---
+
 # Mi Zona — Fase 15: pestañas Comunidad y Negocio, «+» en Chats y perfil de alquiler como el de negocio (volver a publicar SOLO la web · el servidor no cambió)
 
 - **Barra de abajo (5 pestañas iguales, como WhatsApp):** Inicio · Chats · Comunidad · Negocio (o Herramientas) · Ajustes. El «+» del centro se mantiene (agregar negocio, oficio o alquiler).
@@ -264,7 +280,7 @@ Para que siempre avise, creá un cron gratis (por ejemplo en cron-job.org) que c
 ## B. Cómo funciona ahora
 
 - **Registro:** botón de Google → si es la primera vez, pide el nombre → se edita en Ajustes → Mi cuenta.
-- **Agregar negocio:** completa el formulario → **Aceptar** → elige 1 mes ($3.000), 3 meses ($8.100) o 6 meses ($14.400) →
+- **Agregar negocio:** completa el formulario → **Aceptar** → elige 1 mes ($2.000), 3 meses ($5.400) o 6 meses ($9.600) →
   paga en Mercado Pago → el negocio se publica solo al confirmarse el pago. Si no paga, queda guardado pero oculto.
 - **Renovar / agregar meses:** en Herramientas → "Mi suscripción". Los meses nuevos se suman al vencimiento actual.
 - **Avisos:** cartel dentro de la app y notificación push a los 7, 3 y 1 día, y al vencer. Al vencer, el negocio deja de mostrarse.
@@ -513,12 +529,12 @@ El cliente sigue el estado de sus pedidos (Enviado → Confirmado → En prepara
 
 **Qué hace.** Se paga SOLO por tener un negocio, un oficio o un alquiler publicados. Cada tipo tiene **1 mes gratis por cuenta** (sin tarjeta). Después, planes de **1, 3 y 6 meses** (3 meses con 10% menos, 6 meses con 20% menos), pago único que no se renueva solo. Al vencer la ficha se **oculta, no se borra**, y vuelve al renovar. Mercado Pago se eliminó.
 
-**Precios de referencia (ARS):** negocio 3000 / 8100 / 14400 · oficio 1000 / 2700 / 4800 · alquiler 2000 / 5400 / 9600. Los precios reales de cobro se cargan en Play Console.
+**Precios de referencia (ARS):** negocio 2000 / 5400 / 9600 · oficio 1000 / 2700 / 4800 · alquiler 2000 / 5400 / 9600. Los precios reales de cobro se cargan en Play Console.
 
-**Invitaciones:** quien invita gana +5 días y quien se registra con el código gana +5 (tope 60 días ganados por invitar). Se acreditan a las 72 h si la cuenta nueva completó su registro y no está suspendida; se rechazan las que vienen de la misma red o más de 10 en 24 h. Los días se usan desde "Agregar tiempo" en cada ficha. Se ajustan con `INVITACION_DIAS`, `INVITACION_DIAS_INVITADO` e `INVITACION_TOPE_DIAS`.
+**Invitaciones:** quien invita gana +5 días y quien se registra con el código gana +5 (tope 60 días ganados por invitar). Se acreditan a las 72 h si la cuenta nueva completó su registro y no está suspendida; se rechazan las que vienen de la misma red o más de 10 en 24 h. Los días se usan desde "Extender publicación" en cada ficha. Se ajustan con `INVITACION_DIAS`, `INVITACION_DIAS_INVITADO` e `INVITACION_TOPE_DIAS`.
 
 **Servidor:** `utils/planes.js`, `utils/playBilling.js` (verifica cada compra con Google), `utils/fichas.js`, `utils/invitaciones.js`, `utils/estadisticas.js`, modelos `Compra` e `Invitacion`, y rutas nuevas en `/api/suscripcion` (`planes`, `estado`, `iniciar`, `mes-gratis`, `compra`, `usar-dias`, `panel`).
-**Web/app:** `src/suscripcion.jsx` (modal de activación, tarjeta de invitaciones, panel con estadísticas), `src/playBilling.js`, botón "Activar / Agregar tiempo" en Mis fichas y campo "Código de invitación" en el registro.
+**Web/app:** `src/suscripcion.jsx` (modal de activación, tarjeta de invitaciones, panel con estadísticas), `src/playBilling.js`, botón "Activar / Extender publicación" en Mis fichas y campo "Código de invitación" en el registro.
 
 **Antes de publicar (ver `play-store/GUIA-PLAY-STORE.md`):** crear los 9 productos en Play Console, configurar `PLAY_PACKAGE_NAME` y `PLAY_SERVICE_ACCOUNT_JSON`, y probar las compras con un tester de licencia. Este código no se pudo ejecutar contra Google Play ni compilar en el entorno donde se escribió: probalo en un dispositivo antes de subirlo.
 

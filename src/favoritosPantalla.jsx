@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Heart, Store, Wrench, MapPin, ChevronDown, Check, CalendarDays } from "lucide-react";
+import { Heart, Store, Wrench, MapPin, ChevronDown, Check } from "lucide-react";
 import { favoritosApi } from "./api.js";
 import { textoLocalidad } from "./localidades.js";
-import { Pagina, Hoja, Chip, botonSecundario } from "./oficios.jsx";
+import { Pagina, Hoja, BarraSeleccion, botonSecundario } from "./oficios.jsx";
 import { iconoCategoria, TONO_CATEGORIA } from "./alquileres.jsx";
 import TarjetaFicha from "./componentes/TarjetaFicha.jsx";
 import { EstadoCarga, EstadoVacio } from "./componentes/Estados.jsx";
@@ -18,7 +18,7 @@ const leerCache = () => { try { return JSON.parse(localStorage.getItem(CLAVE_CAC
 const guardarCache = (v) => { try { localStorage.setItem(CLAVE_CACHE, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
 
 const DIA = 86400000;
-const FECHAS = [["todas", "Cualquier fecha", 0], ["semana", "Esta semana", 7 * DIA], ["mes", "Este mes", 30 * DIA]];
+const FECHAS = [["todas", "Siempre", 0], ["semana", "Esta semana", 7 * DIA], ["mes", "Este mes", 30 * DIA]];
 const TIPOS = [["todos", "Todo"], ["negocio", "Negocios"], ["oficio", "Oficios"], ["alquiler", "Alquileres"]];
 
 const rubrosTexto = (o) => { const n = [...(o.rubros || []).map((r) => r.label), ...(o.otros || [])]; return n.length > 2 ? `${n.slice(0, 2).join(", ")} +${n.length - 2}` : n.join(", "); };
@@ -32,7 +32,7 @@ export default function FavoritosPantalla({ businesses, favorites, categoriasNeg
   const [tipo, setTipo] = useState("todos");
   const [zona, setZona] = useState("");
   const [fecha, setFecha] = useState("todas");
-  const [hoja, setHoja] = useState(null); // "zona" | "fecha"
+  const [hoja, setHoja] = useState(null); // "zona"
   const [aviso, setAviso] = useState("");
 
   // Se pregunta al servidor al abrir (y si se guarda algo nuevo desde otra pantalla): qué sigue visible y qué ya no existe
@@ -72,8 +72,7 @@ export default function FavoritosPantalla({ businesses, favorites, categoriasNeg
   }, [items, tipo, zona, fecha]);
   const hayFiltros = tipo !== "todos" || !!zona || fecha !== "todas";
   const limpiar = () => { setTipo("todos"); setZona(""); setFecha("todas"); };
-  const textoFecha = FECHAS.find((f) => f[0] === fecha)?.[1];
-
+  
   const quitar = (i) => (i.tipo === "negocio" ? onToggleFavorite(i.id) : alternarFavFicha(i.tipo, i.id));
   const abrir = (i) => (i.tipo === "negocio" ? onAbrirNegocio(i.id) : i.tipo === "oficio" ? onAbrirOficio(i.id) : onAbrirAlquiler(i.id));
   const compartir = async (i) => {
@@ -85,15 +84,16 @@ export default function FavoritosPantalla({ businesses, favorites, categoriasNeg
   return (
     <Pagina titulo="Favoritos" onVolver={onVolver}>
       {items.length > 0 && (
-        <>
-          <div className="flex gap-2 overflow-x-auto" role="group" aria-label="Tipo de favorito" style={{ paddingBottom: 2 }}>
-            {TIPOS.map(([id, texto]) => <span key={id} style={{ flexShrink: 0 }}><Chip activo={tipo === id} onClick={() => setTipo(id)}>{texto} ({cuenta(id)})</Chip></span>)}
-          </div>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {zonas.length > 1 && <Chip onClick={() => setHoja("zona")} activo={!!zona}><MapPin size={15} aria-hidden="true" /> {zona || "Zona"} <ChevronDown size={14} aria-hidden="true" /></Chip>}
-            <Chip onClick={() => setHoja("fecha")} activo={fecha !== "todas"}><CalendarDays size={15} aria-hidden="true" /> {textoFecha} <ChevronDown size={14} aria-hidden="true" /></Chip>
-          </div>
-        </>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <BarraSeleccion etiqueta="Tipo de favorito" valor={tipo} onChange={setTipo} opciones={TIPOS.map(([id, texto]) => [id, texto, cuenta(id)])} />
+          <BarraSeleccion etiqueta="¿Cuándo los guardaste?" valor={fecha} onChange={setFecha} opciones={FECHAS.map(([id, texto]) => [id, texto])} />
+          {zonas.length > 1 && (
+            <button type="button" onClick={() => setHoja("zona")} aria-label="Elegir zona" className="bg-white flex items-center gap-2 text-left"
+              style={{ minHeight: 46, padding: "0 14px", borderRadius: 16, border: `1px solid ${zona ? "var(--azul)" : "#E3E7F1"}`, boxShadow: "0 8px 22px rgba(11,20,55,0.10)", color: "#0B1437", fontSize: 13.5, fontWeight: 700 }}>
+              <MapPin size={16} color="var(--azul)" aria-hidden="true" /><span className="flex-1 truncate">{zona || "Todas las zonas"}</span><ChevronDown size={16} color="#5B6482" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       )}
 
       {sinConexion && <p role="status" className="text-sm mt-3 p-3" style={{ borderRadius: 12, background: "#FFF3D6", color: "#6B4510", lineHeight: 1.45 }}>Sin conexión: te mostramos lo último que cargaste. Puede estar desactualizado.</p>}
@@ -127,14 +127,6 @@ export default function FavoritosPantalla({ businesses, favorites, categoriasNeg
             <button type="button" onClick={() => { setZona(""); setHoja(null); }} style={{ ...botonSecundario, justifyContent: "flex-start", minHeight: 50, borderColor: !zona ? "#2350F5" : "#CFD6E8", background: !zona ? "#EDF1FF" : "#fff" }}>{!zona && <Check size={16} aria-hidden="true" />}Todas las zonas</button>
             {zonas.map((z) => <button key={z} type="button" onClick={() => { setZona(z); setHoja(null); }} style={{ ...botonSecundario, justifyContent: "flex-start", minHeight: 50, borderColor: zona === z ? "#2350F5" : "#CFD6E8", background: zona === z ? "#EDF1FF" : "#fff" }}>{zona === z && <Check size={16} aria-hidden="true" />}{z}</button>)}
           </div>
-        </Hoja>
-      )}
-      {hoja === "fecha" && (
-        <Hoja titulo="¿Cuándo los guardaste?" onCerrar={() => setHoja(null)}>
-          <div className="flex flex-col gap-2">
-            {FECHAS.map(([id, texto]) => <button key={id} type="button" onClick={() => { setFecha(id); setHoja(null); }} style={{ ...botonSecundario, justifyContent: "flex-start", minHeight: 50, borderColor: fecha === id ? "#2350F5" : "#CFD6E8", background: fecha === id ? "#EDF1FF" : "#fff" }}>{fecha === id && <Check size={16} aria-hidden="true" />}{texto}</button>)}
-          </div>
-          <p className="text-xs mt-3" style={{ color: "#6B7390", lineHeight: 1.45 }}>Los negocios que guardaste antes de esta versión no tienen fecha: solo aparecen en «Cualquier fecha».</p>
         </Hoja>
       )}
     </Pagina>
