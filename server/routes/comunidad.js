@@ -7,7 +7,7 @@ import { enlaceWhatsapp } from "../utils/oficios.js";
 import { ownersExcluidos, ownerExcluido } from "../utils/exclusiones.js";
 import { moderacionLista } from "../utils/adminAuth.js";
 import {
-  TIPOS, TIPO_IDS, ESTADOS_EVENTO, LIMITES, fechaAR, limpiarTextoSorteo, sanearPublicacion, prioridadAviso, textoBusqueda,
+  TIPOS, TIPO_IDS, ESTADOS_EVENTO, LIMITES, sanearPublicacion, prioridadAviso, textoBusqueda,
   publicacionPublica, publicacionDelAutor, rangosAR,
 } from "../utils/comunidad.js";
 
@@ -52,7 +52,7 @@ async function miPublicacion(req, res) {
 router.get("/mias", requiereUsuario, async (req, res) => {
   try {
     const ahora = new Date();
-    const filas = await Publicacion.find({ ownerId: String(req.actor.usuario._id) }).sort({ createdAt: -1 }).limit(100).lean();
+    const filas = await Publicacion.find({ ownerId: String(req.actor.usuario._id), tipo: { $in: TIPO_IDS } }).sort({ createdAt: -1 }).limit(100).lean();
     res.json({ publicaciones: filas.map((p) => publicacionDelAutor(p, ahora)) });
   } catch (e) {
     console.error(e);
@@ -67,7 +67,7 @@ router.get("/", requiereUsuario, vecino, limitar("comunidad-lista", 240, 10 * 60
     const ahora = new Date();
     const { tipo, localidadId, actividad, categoria, vista, historial } = req.query;
     // Fase 8: sin lo que el equipo ocultó, ni lo de cuentas suspendidas o personas bloqueadas (en cualquier sentido)
-    const y = [{ departamentoId: req.vecino.departamentoId }, { ocultaPorEquipo: { $ne: true } }, { ownerId: { $nin: await ownersExcluidos(req) } }];
+    const y = [{ departamentoId: req.vecino.departamentoId }, { tipo: { $in: TIPO_IDS } }, { ocultaPorEquipo: { $ne: true } }, { ownerId: { $nin: await ownersExcluidos(req) } }];
     if (tipo !== undefined && tipo !== "") { if (!TIPOS[String(tipo)]) return res.status(400).json({ error: "Ese tipo no existe." }); y.push({ tipo: String(tipo) }); }
     if (localidadId) {
       if (!/^\d{5,12}$/.test(String(localidadId))) return res.status(400).json({ error: "Localidad inválida." });
@@ -76,7 +76,7 @@ router.get("/", requiereUsuario, vecino, limitar("comunidad-lista", 240, 10 * 60
     if (actividad) y.push({ "datos.actividad": String(actividad).slice(0, 20) });
     if (categoria) y.push({ "datos.categoria": String(categoria).slice(0, 20) });
 
-    const cronologico = ["evento", "deporte", "sorteo"].includes(String(tipo || "")) || !!vista;
+    const cronologico = ["evento", "deporte"].includes(String(tipo || "")) || !!vista;
     let orden = { createdAt: -1, _id: 1 };
     if (historial === "1") {
       // historial: solo eventos que ya terminaron (últimos 60 días)
@@ -110,7 +110,7 @@ router.get("/:id", requiereUsuario, limitar("comunidad-ficha", 240, 10 * 60 * 10
   try {
     const ahora = new Date();
     const p = await Publicacion.findOne({ id: String(req.params.id) }).lean();
-    if (!p) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
+    if (!p || !TIPOS[p.tipo]) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
     if (esAutor(p, req)) return res.json({ publicacion: publicacionDelAutor(p, ahora), esMia: true });
     const loc = localidadDe(req.actor.usuario);
     if (!loc || loc.departamentoId !== p.departamentoId || p.ocultaPorEquipo === true || (await ownerExcluido(req, p.ownerId))) return res.status(404).json({ error: "Esta publicación ya no está disponible." });
@@ -149,10 +149,6 @@ router.post("/", requiereUsuario, vecino, limitar("comunidad-crear", 20, 3600 * 
     if (error) return res.status(400).json({ error });
     if (datos.localidad.departamentoId !== req.vecino.departamentoId) return res.status(400).json({ error: `Solo podés publicar en tu departamento (${req.vecino.departamento}).` });
 
-    if (tipo === "sorteo") {
-      const abiertos = await Publicacion.countDocuments({ ownerId, tipo: "sorteo", resuelta: { $ne: true }, expiresAt: { $gt: ahora } });
-      if (abiertos >= LIMITES.sorteosActivos) return res.status(429).json({ error: `Ya tenés ${LIMITES.sorteosActivos} sorteos publicados. Eliminá o cancelá alguno para publicar otro.`, codigo: "limite_sorteos" });
-    }
     const [hoy24, ultima, activas] = await Promise.all([
       Publicacion.countDocuments({ ownerId, createdAt: { $gte: new Date(ahora.getTime() - DIA) } }),
       Publicacion.findOne({ ownerId }).sort({ createdAt: -1 }).select("createdAt").lean(),
@@ -187,9 +183,7 @@ router.put("/:id", requiereUsuario, vecino, limitar("comunidad-editar", 60, 3600
     const { datos, extra, vence, inicio, error } = sanearPublicacion(req.body, p.tipo, ahora);
     if (error) return res.status(400).json({ error });
     if (datos.localidad.departamentoId !== req.vecino.departamentoId) return res.status(400).json({ error: `Solo podés publicar en tu departamento (${req.vecino.departamento}).` });
-    const conFecha = p.tipo === "deporte" || p.tipo === "evento" || p.tipo === "sorteo";
-    // al editar un sorteo no se pierde el resultado que ya publicó el organizador
-    if (p.tipo === "sorteo" && p.datos?.resultado) { extra.resultado = p.datos.resultado; extra.resultadoEn = p.datos.resultadoEn; }
+    const conFecha = p.tipo === "deporte" || p.tipo === "evento";
     const nuevoVence = conFecha || req.body?.renovar === true ? vence : p.expiresAt;
     const cambioFecha = p.tipo === "evento" && p.inicioAt && inicio && new Date(p.inicioAt).getTime() !== inicio.getTime();
     Object.assign(p, datos, {
@@ -230,34 +224,6 @@ router.post("/:id/evento", requiereUsuario, limitar("comunidad-evento", 60, 3600
     const estado = String(req.body?.estado || "");
     if (!ESTADOS_EVENTO.includes(estado)) return res.status(400).json({ error: "Estado inválido." });
     p.estadoEvento = estado;
-    await p.save();
-    res.json({ publicacion: publicacionDelAutor(p.toObject(), new Date()) });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "No se pudo guardar." });
-  }
-});
-
-// POST /api/comunidad/:id/sorteo   { accion: "resultado", texto } | { accion: "cancelar" } | { accion: "reactivar" } → solo sorteos, solo su autor.
-// El resultado es un texto que escribe el organizador (por ejemplo «Salió el 047 en la Quiniela nocturna»); Mi Zona no sortea ni verifica nada.
-// Se puede cargar desde el día del sorteo. Texto vacío = borrar el resultado.
-router.post("/:id/sorteo", requiereUsuario, limitar("comunidad-sorteo", 60, 3600 * 1000), async (req, res) => {
-  try {
-    const p = await miPublicacion(req, res);
-    if (!p) return;
-    if (p.tipo !== "sorteo") return res.status(400).json({ error: "Esta acción es solo para sorteos." });
-    const accion = String(req.body?.accion || "");
-    if (accion === "cancelar") p.estadoEvento = "cancelado";
-    else if (accion === "reactivar") p.estadoEvento = "normal";
-    else if (accion === "resultado") {
-      if ((p.estadoEvento || "normal") === "cancelado") return res.status(400).json({ error: "El sorteo está cancelado. Reactivalo para publicar un resultado." });
-      const desdeDia = fechaAR(`${new Date(new Date(p.inicioAt).getTime() - 3 * 3600 * 1000).toISOString().slice(0, 10)}T00:00`);
-      if (!desdeDia || desdeDia.getTime() > Date.now()) return res.status(400).json({ error: "Podés publicar el resultado desde el día del sorteo." });
-      const texto = limpiarTextoSorteo(req.body?.texto);
-      if (texto.error) return res.status(400).json({ error: texto.error });
-      p.datos = { ...(p.datos || {}), resultado: texto.valor, resultadoEn: texto.valor ? new Date().toISOString() : null };
-      p.markModified("datos");
-    } else return res.status(400).json({ error: "Acción inválida." });
     await p.save();
     res.json({ publicacion: publicacionDelAutor(p.toObject(), new Date()) });
   } catch (e) {

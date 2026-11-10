@@ -8,7 +8,7 @@ export const TIPOS = ["negocio", "oficio", "alquiler"];
 export const ROTULO_TIPO = { negocio: "negocio", oficio: "ficha de oficios", alquiler: "ficha de alquiler" };
 
 const BASE = {
-  negocio: num(process.env.PRECIO_NEGOCIO_1_MES ?? process.env.PRECIO_1_MES, 3000),
+  negocio: num(process.env.PRECIO_NEGOCIO_1_MES ?? process.env.PRECIO_1_MES, 2000),
   oficio: num(process.env.PRECIO_OFICIO_1_MES, 1000),
   alquiler: num(process.env.PRECIO_ALQUILER_1_MES, 2000),
 };
